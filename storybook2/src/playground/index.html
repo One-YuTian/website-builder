@@ -1,0 +1,33 @@
+<!doctype html>
+<html lang="zh-CN">
+<head><meta charset="UTF-8"><meta name="viewport" content="width=device-width,initial-scale=1"><title>组件 Playground</title></head>
+<body class="bg-accent/20 font-sans text-content">
+  <div class="flex min-h-screen flex-col">
+    <header class="flex flex-wrap items-center justify-between gap-4 border-b border-outline bg-surface px-6 py-4">
+      <div><h1 class="text-xl font-semibold">Playground 演练场</h1><p class="mt-1 text-sm text-muted">组合组件与板块，检查真实宽度下的布局，导出完整 HTML。</p></div>
+      <div class="flex gap-2"><button id="clear" class="rounded-lg border border-outline px-4 py-2 text-sm">清空</button><button id="export" class="rounded-lg bg-primary px-4 py-2 text-sm text-white">查看组合代码</button></div>
+    </header>
+    <div class="grid flex-1 grid-cols-1 lg:grid-cols-[260px_minmax(0,1fr)_280px]">
+      <aside class="space-y-6 border-r border-outline bg-surface p-4">
+        <section><h2 class="mb-3 font-semibold">添加组件 / 板块</h2><div id="palette" class="grid grid-cols-2 gap-2 lg:grid-cols-1"></div></section>
+        <section><h2 class="mb-3 font-semibold">组合顺序</h2><ol id="sequence" class="space-y-2"></ol></section>
+      </aside>
+      <main class="min-w-0">
+        <div class="flex flex-wrap items-end gap-4 border-b border-outline bg-surface p-4">
+          <label class="grid gap-1 text-xs text-muted">视口宽度<input id="viewport-width" type="number" min="320" max="2560" step="1" class="w-28 rounded-md border border-outline p-2 text-sm text-content"></label>
+          <label class="grid gap-1 text-xs text-muted">内容最大宽度<input id="content-width" type="number" min="320" max="2560" step="1" class="w-28 rounded-md border border-outline p-2 text-sm text-content"></label>
+          <label class="grid gap-1 text-xs text-muted">主题<select id="theme" class="rounded-md border border-outline p-2 text-sm text-content"><option value="default">默认</option><option value="ocean">海洋蓝</option><option value="forest">森林绿</option></select></label>
+          <div class="flex gap-1"><button data-width="1440" class="rounded-md border border-outline px-3 py-2 text-sm">PC</button><button data-width="768" class="rounded-md border border-outline px-3 py-2 text-sm">Paid / 平板</button><button data-width="390" class="rounded-md border border-outline px-3 py-2 text-sm">Mobile</button></div>
+        </div>
+        <div class="overflow-auto p-4"><iframe id="preview" src="./frame.html" title="组合预览" class="block h-[800px] shrink-0 border-0 bg-white shadow-sm ring-1 ring-outline"></iframe></div>
+      </main>
+      <aside class="border-l border-outline bg-surface p-4"><h2 id="selected-title" class="font-semibold">组件属性</h2><p class="my-3 text-xs leading-6 text-muted">选择顺序列表中的条目编辑属性。宽度和主题作用于整个预览。</p><label for="properties" class="text-xs text-muted">属性 JSON</label><textarea id="properties" spellcheck="false" class="mt-2 h-72 w-full rounded-lg border border-outline p-3 font-mono text-xs"></textarea><button id="apply" class="mt-3 w-full rounded-lg border border-outline px-4 py-2 text-sm">应用属性</button><p id="status" role="status" class="mt-4 text-xs leading-6 text-muted"></p></aside>
+    </div>
+  </div>
+  <dialog id="code-dialog" class="w-[calc(100%_-_32px)] max-w-6xl rounded-xl border border-outline bg-surface p-5 backdrop:bg-black/50">
+    <div class="mb-4 flex flex-wrap items-center justify-between gap-3"><h2 class="font-semibold">可直接运行的组合 HTML</h2><div class="flex gap-2"><button id="copy" class="rounded-md bg-primary px-3 py-2 text-sm text-white">复制全部</button><button id="download" class="rounded-md border border-outline px-3 py-2 text-sm">下载 HTML</button><button id="close-code" aria-label="关闭代码" class="rounded-md border border-outline px-3 py-2 text-sm">关闭</button></div></div>
+    <textarea id="code-output" readonly spellcheck="false" aria-label="完整组合代码" class="h-[65vh] w-full rounded-lg border border-outline bg-accent/20 p-4 font-mono text-xs"></textarea><p id="copy-status" role="status" class="mt-3 text-xs text-muted"></p>
+  </dialog>
+  <script type="module" src="./main.js"></script>
+</body>
+</html>

@@ -1,0 +1,19 @@
+<!doctype html>
+<html lang="zh-CN">
+  <head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>storybook2 · 独立预览</title>
+  </head>
+  <body>
+    <div id="component-preview" class="contents"></div>
+    <main class="content-container py-6 font-sans text-content">
+      <h1 class="text-2xl font-semibold">storybook2 独立预览</h1>
+      <p class="mt-3 text-sm text-slate-600">组件及基础能力的演示区域使用骨架；可点击组件名切换独立预览。</p>
+      <nav id="components" aria-label="已迁移组件" class="mt-4 flex flex-wrap gap-4"></nav>
+      <div id="preview" class="mt-8" aria-label="骨架屏基础能力演示"></div>
+      <p id="status" role="status" class="mt-6 text-sm text-slate-600">正在初始化公共资源…</p>
+    </main>
+    <script type="module" src="/src/standalone.js"></script>
+  </body>
+</html>

@@ -1,0 +1,12 @@
+{
+  "id": "__STABLE_ID__",
+  "name": "__DISPLAY_NAME__",
+  "originalId": "__ORIGINAL_ID__",
+  "site": "__SITE__",
+  "page": "__PAGE__",
+  "target": "__TARGET__",
+  "retainedLayout": ["__填写__"],
+  "retainedInteractions": ["__填写__"],
+  "removed": ["__填写删减内容及原因__"],
+  "acceptance": { "status": "pending", "date": "__实际验证日期__", "results": ["__实际检查与结果__"] }
+}

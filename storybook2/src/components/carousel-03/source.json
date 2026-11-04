@@ -1,0 +1,47 @@
+{
+  "id": "carousel-03",
+  "name": "Carousel-03",
+  "originalId": "carousel-3",
+  "site": "www.bahaynova.net",
+  "page": "index.html",
+  "target": "html > body:nth-of-type(1) > main:nth-of-type(1) > section:nth-of-type(1)",
+  "retainedLayout": [
+    "2/3主轮播加1/3双静态横幅",
+    "250px横幅区域",
+    "六个分类入口",
+    "桌面分支lg以上、小屏独立分支lg以下显示",
+    "独立Paid/Mobile三横幅，比例60:17，加约3.5项可见的横滑分类"
+  ],
+  "retainedInteractions": [
+    "原2500ms自动循环与分页",
+    "分类导航",
+    "新增键盘滑动及可暂停播放"
+  ],
+  "removed": [
+    "整站Swiper/jQuery及原页面依赖",
+    "真实图文和品牌硬编码配色",
+    "原1300px宽度改为全局内容宽度"
+  ],
+  "acceptance": {
+    "status": "passed",
+    "date": "2026-11-04",
+    "results": [
+      "首轮整库38/38浏览器验收通过，包含1440/768/390显示规则、无溢出、骨架内容及公开Doc",
+      "交互验收通过：导航、Card网格/列表、评分排序与响应式商品数、轮播分页/键盘/滑动/自动播放/暂停与多实例清理，按组件适用范围检查",
+      "静态检查及构建通过；默认浏览器网络下实际画面无脚本或资源错误，截图已视觉检查",
+      "统一使用全局主题和内容宽度，文字骨架相对上一版再增2px（全局偏移由1变3）",
+      "正式目录收录后最终40/40浏览器测试通过，覆盖全部独立入口、普通script注册、全局主题/字号共享及轮播图片填充高度",
+      "补齐独立Paid/Tablet与Mobile分支；整库49项浏览器测试通过，覆盖小屏比例/分页/分类横滑、完整源码独立运行、Playground组合/属性/宽度/导出及资源去重",
+      "静态检查与完整构建通过；默认Chrome网络验证Playground与响应式完整HTML正常，Tailwind和jQuery 3.7.1实际CDN加载成功，无脚本错误"
+    ]
+  },
+  "adaptations": [
+    {
+      "originalId": "carousel-4",
+      "site": "www.bahaynova.net",
+      "page": "index.html",
+      "target": "html > body:nth-of-type(1) > main:nth-of-type(1) > section:nth-of-type(2)",
+      "tag": "carousel-03-mobile"
+    }
+  ]
+}

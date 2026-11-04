@@ -1,0 +1,49 @@
+---
+title: Storybook2 Component Library
+description: Standard Native Web Components and Tailwind CSS Documentation
+template: splash
+hero:
+  tagline: Standard Native Web Components + Light DOM with Storybook 8 Design Aesthetics
+  actions:
+    - text: Browse Components / Header
+      link: /components/header/header-01/
+      icon: right-arrow
+      variant: primary
+    - text: Theme & Global Specs
+      link: /guides/theme/
+      icon: external
+      variant: secondary
+---
+
+import { Card, CardGrid } from '@astrojs/starlight/components';
+
+## Features
+
+<CardGrid stagger>
+  <Card title="3-Level Hierarchy" icon="bars">
+    Structured into Group (Components / Blocks / Pages), Kind (Header / Card / Footer / Carousel / ProductList), and Component items.
+  </Card>
+  <Card title="Storybook 8 Design System" icon="star">
+    Restores Storybook 8 Explorer tree navigation, gray sidebars, active badges, minimalist toolbars, and collapsible code drawers.
+  </Card>
+  <Card title="Clear Source Code Tabs" icon="open-book">
+    Separately displays JavaScript source, HTML markup structure, and CSS / Tailwind styling.
+  </Card>
+  <Card title="Interactive Pure-White Sandbox" icon="laptop">
+    Live preview sandbox with instant Desktop (100%), Tablet (768px), and Mobile (390px) viewport switching.
+  </Card>
+</CardGrid>
+
+## Catalog Index
+
+| Group | Kind | Component ID | Component Name | Custom Element Tag | Document Link |
+| --- | --- | --- | --- | --- | --- |
+| **Components** | **Header** | `header-01` | **Header-01** | `<header-component>` | [Open Document](/components/header/header-01/) |
+| **Components** | **Header** | `header-02` | **Header-02** | `<header-component>` | [Open Document](/components/header/header-02/) |
+| **Components** | **Footer** | `footer-01` | **Footer-01** | `<footer-component>` | [Open Document](/components/footer/footer-01/) |
+| **Components** | **Footer** | `footer-02` | **Footer-02** | `<footer-component>` | [Open Document](/components/footer/footer-02/) |
+| **Components** | **Card** | `card-01` | **Card-01** | `<product-card>` | [Open Document](/components/card/card-01/) |
+| **Blocks** | **Carousel** | `carousel-01` | **Carousel-01** | `<hero-carousel>` | [Open Document](/blocks/carousel/carousel-01/) |
+| **Blocks** | **Carousel** | `carousel-03` | **Carousel-03** | `<hero-carousel>` | [Open Document](/blocks/carousel/carousel-03/) |
+| **Blocks** | **ProductList** | `productlist-01` | **ProductList-01** | `<product-list>` | [Open Document](/blocks/productlist/productlist-01/) |
+| **Blocks** | **ProductList** | `productlist-04` | **ProductList-04** | `<product-list>` | [Open Document](/blocks/productlist/productlist-04/) |

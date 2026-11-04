@@ -1,0 +1,113 @@
+---
+title: Component Architecture & Communication Specification
+description: Standards for standalone native web components, global window.$[component] communication, and component lifecycle.
+---
+
+This document establishes the architecture standards for all components in the library. Every component must be built as a standalone Native Web Component and communicate across instances using standard global references.
+
+---
+
+## 1. Standalone Native Web Component
+
+- **No Shared Base Class Dependency**: Each component class directly extends `HTMLElement`. Do not rely on intermediate base classes like `base.js` or `markup.js` in consumer code.
+- **Self-Contained Rendering**: All HTML structures, placeholders, and interactive logic are encapsulated within the component instance.
+- **External Libraries**: Styling is powered by Tailwind CSS (and utilities like jQuery where necessary). These libraries are provided globally via the environment and do not need to be imported within component source code.
+
+---
+
+## 2. Global Component Registration: `window.$[component]`
+
+In legacy templates, methods were often placed directly onto `window` (for example, `window.toggleMobileMenu()`, `window.goToAccount()`). This pollutes the global scope and leads to naming collisions.
+
+Under the new standard:
+1. Every component instance exposes its public API methods on the instance itself.
+2. The active component instance mounts itself onto the corresponding `window.$[name]` namespace.
+3. Other components and scripts interact strictly via `window.$[name].[method]()`.
+
+### Standard Global Namespace Mapping
+
+| Component Type | Global Namespace | Custom Element Tag | Standard Public Methods |
+| --- | --- | --- | --- |
+| Header | `window.$header` | `<header-01>`, `<header-02>` | `toggleMobileMenu(force?)`, `toggleAccountDropdown()`, `updateCart(count)`, `updateWishlist(count)` |
+| Footer | `window.$footer` | `<footer-01>`, `<footer-02>` | `scrollToTop()`, `navigate(dest)` |
+| Card | `window.$card` | `<card-01>` | `open(productId)`, `toggleWishlist()` |
+| Carousel | `window.$carousel` | `<carousel-01>`, `<carousel-03>` | `next()`, `prev()`, `goTo(index)` |
+| ProductList | `window.$productList` | `<productlist-01>`, `<productlist-04>` | `refresh()`, `setProducts(list)` |
+| Cart Drawer | `window.$cart` | `<cart-drawer>` | `toggleDrawer(force?)`, `addItem(item)`, `removeItem(id)` |
+
+---
+
+## 3. Lifecycle & Cleanup Standard
+
+When registering to `window`, ensure memory leaks and dead references are prevented:
+
+```javascript
+class Header01 extends HTMLElement {
+  constructor() {
+    super();
+    // Expose active instance to window namespace
+    window.$header = this;
+  }
+
+  disconnectedCallback() {
+    this._controller?.abort();
+    // Clean up global reference when disconnected
+    if (window.$header === this) {
+      delete window.$header;
+    }
+  }
+
+  // Public Methods
+  toggleMobileMenu(force) {
+    const dialog = this.querySelector('dialog');
+    if (!dialog) return;
+    if (typeof force === 'boolean') {
+      if (force && !dialog.open) dialog.showModal();
+      else if (!force && dialog.open) dialog.close();
+    } else {
+      if (dialog.open) dialog.close();
+      else dialog.showModal();
+    }
+  }
+
+  updateCart(count) {
+    this.cartCount = count;
+  }
+}
+
+customElements.define('header-01', Header01);
+```
+
+---
+
+## 4. Cross-Component Interoperability Example
+
+When the user clicks the Cart button inside `Header`:
+```javascript
+// Header delegating to Cart component without tight coupling
+if (window.$cart?.toggleDrawer) {
+  window.$cart.toggleDrawer();
+}
+```
+
+When a product is added from `Card` or `ProductList`:
+```javascript
+// Card updating Header counters and triggering Cart drawer
+if (window.$header?.updateCart) {
+  window.$header.updateCart(newCartCount);
+}
+```
+
+---
+
+## 5. Attributes, Properties & Custom Events
+
+- **Attributes**: Use kebab-case for HTML attributes (`is-logged-in`, `cart-count`, `product-id`) and camelCase for JavaScript getters/setters (`isLoggedIn`, `cartCount`, `productId`).
+- **Events**: Always dispatch bubbling and composed CustomEvents for host listening:
+  ```javascript
+  this.dispatchEvent(new CustomEvent('header-navigate', {
+    detail: { destination: 'shop' },
+    bubbles: true,
+    composed: true
+  }));
+  ```

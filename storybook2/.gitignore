@@ -1,0 +1,9 @@
+node_modules/
+storybook-static/
+test-results/
+playwright-report/
+.npm-cache/
+public/library/
+public/code/
+public/playground/
+src/generated/

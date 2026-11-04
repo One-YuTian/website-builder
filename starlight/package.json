@@ -1,0 +1,15 @@
+{
+  "name": "starlight-docs",
+  "version": "1.0.0",
+  "type": "module",
+  "scripts": {
+    "docs:generate": "node scripts/generate-docs.mjs",
+    "dev": "npm run docs:generate && astro dev --port 4321",
+    "build": "npm run docs:generate && astro build",
+    "preview": "astro preview --port 4321"
+  },
+  "dependencies": {
+    "@astrojs/starlight": "^0.32.0",
+    "astro": "^5.4.2"
+  }
+}

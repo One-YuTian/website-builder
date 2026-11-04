@@ -1,0 +1,40 @@
+{
+  "id": "header-02",
+  "name": "Header-02",
+  "originalId": "header-2",
+  "site": "www.bahaynova.net",
+  "page": "index.html",
+  "target": "html > body:nth-of-type(1) > header-component:nth-of-type(1)",
+  "implementation": "components/header.js",
+  "retainedLayout": [
+    "纵向渐变吸顶页头",
+    "促销及顶部紧凑导航",
+    "Logo、搜索、两端可见购物车",
+    "移动搜索第二行及左侧320px抽屉",
+    "促销lg断点、桌面md断点均映射为共享配置"
+  ],
+  "retainedInteractions": [
+    "搜索输入提交及建议选取",
+    "认证状态导航切换",
+    "收藏导航及购物车入口",
+    "抽屉关闭、遮罩与Esc",
+    "键盘焦点循环与恢复"
+  ],
+  "removed": [
+    "原站全局函数、存储、商品数据库、翻译及jQuery依赖",
+    "隐藏且不可达的账户弹层和收藏图标DOM",
+    "重复桌面移动搜索DOM",
+    "原站图片、图标、文案和品牌硬编码颜色",
+    "真实页面跳转改为Header统一事件"
+  ],
+  "acceptance": {
+    "status": "passed",
+    "date": "2026-11-04",
+    "results": [
+      "Header-02专项6/6通过：1440/768/390、促销及导航断点、空白预览吸顶、搜索及建议、购物车与认证事件、移动抽屉键盘及遮罩、与Header-01跨组件隔离及重连",
+      "正式目录收录后整库27/27浏览器回归通过，Header-02 Doc及独立入口验证通过，静态检查及构建通过",
+      "默认浏览器网络下开发预览无脚本及资源错误；桌面、移动和抽屉截图已视觉检查",
+      "复用全局主题、内容宽度及文字字号+1px配置，使用Header共同行为基类和统一属性事件"
+    ]
+  }
+}

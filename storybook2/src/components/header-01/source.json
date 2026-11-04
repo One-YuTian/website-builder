@@ -1,0 +1,43 @@
+{
+  "id": "header-01",
+  "name": "Header-01",
+  "originalId": "header-1",
+  "site": "www.agoian.com",
+  "page": "index.html",
+  "target": "html > body:nth-of-type(1) > header-component:nth-of-type(1)",
+  "implementation": "components/header.js",
+  "retainedLayout": [
+    "黑色双层桌面导航",
+    "品牌、搜索和账户收藏购物车操作区",
+    "768px断点",
+    "移动端320px左侧抽屉"
+  ],
+  "retainedInteractions": [
+    "搜索输入、提交及建议选取",
+    "账户认证分支与弹层",
+    "收藏和购物车入口",
+    "移动抽屉、遮罩关闭",
+    "原生键盘操作及焦点恢复"
+  ],
+  "removed": [
+    "原站全局函数、jQuery及图标库",
+    "重复桌面与移动搜索DOM",
+    "原商品数据库、翻译及localStorage状态",
+    "原站资源、图片与可见文案",
+    "整站跳转及延迟跳转改为宿主事件",
+    "购物车抽屉属于其他组件，仅保留入口事件"
+  ],
+  "acceptance": {
+    "status": "passed",
+    "date": "2026-11-04",
+    "results": [
+      "Header-01 浏览器验收 7/7 通过：1440/768/390、全部可见内容骨架化、搜索、账户及导航事件、抽屉焦点与关闭、多实例和移除重连",
+      "静态检查及 Storybook/独立页构建通过",
+      "默认浏览器网络下开发预览正常，控制台和资源加载错误均为0；桌面、移动、抽屉截图已视觉检查",
+      "字号与标识迭代验收：文字骨架继承字号/支持font-size，Logo显示LOGO，图片显示CSS图片符号；整库18/18浏览器测试通过，字号对比与大小图片标识已截图检查",
+      "全局设计及接口迭代验收：整库20/20通过；共享主题色、内容宽度、字体及圆角，Header与内容区居中对齐，Storybook及独立页滚动吸顶；无前缀标签header-01，统一isLoggedIn/cartCount/wishlistCount/searchSuggestions及header-*事件",
+      "公开展示仅Doc/PC/Tablet/Mobile，Header分类Doc及全局配置Doc正常；普通script和jQuery示例实际运行，默认浏览器网络下无脚本或资源错误；全局工具栏及主题吸顶截图已视觉检查",
+      "移除预览下方可见内容、文字骨架基准字号统一+1px，提取Header共同行为后整库27/27回归通过"
+    ]
+  }
+}

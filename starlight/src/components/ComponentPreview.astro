@@ -1,0 +1,303 @@
+---
+interface Props {
+  code: string;
+  htmlCode?: string;
+  jsCode?: string;
+  cssCode?: string;
+  height?: string;
+  title?: string;
+}
+
+const {
+  code,
+  htmlCode = '',
+  jsCode = '',
+  cssCode = '',
+  height = '480px',
+  title = 'Interactive Preview',
+} = Astro.props;
+
+const previewId = 'sb-preview-' + Math.random().toString(36).substring(2, 9);
+---
+
+<div class="sbdocs-preview-wrap not-content" id={previewId}>
+  <!-- Storybook Doc Toolbar (Canvas Header) -->
+  <div class="sbdocs-preview-toolbar">
+    <!-- Left: Viewport Switcher & Max Width Control -->
+    <div class="sbdocs-toolbar-left">
+      <!-- Viewport Switcher (PC / Tablet / Mobile) -->
+      <div class="sb-viewport-switcher">
+        <button type="button" class="sb-vp-btn active" data-viewport="100%" title="Desktop 100%">
+          <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="2" y="3" width="20" height="14" rx="2"/><line x1="8" y1="21" x2="16" y2="21"/><line x1="12" y1="17" x2="12" y2="21"/></svg>
+          <span>PC 100%</span>
+        </button>
+        <button type="button" class="sb-vp-btn" data-viewport="768px" title="Tablet 768px">
+          <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="4" y="2" width="16" height="20" rx="2"/><line x1="12" y1="18" x2="12.01" y2="18"/></svg>
+          <span>Tablet 768</span>
+        </button>
+        <button type="button" class="sb-vp-btn" data-viewport="390px" title="Mobile 390px">
+          <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="5" y="2" width="14" height="20" rx="2"/><line x1="12" y1="18" x2="12.01" y2="18"/></svg>
+          <span>Mobile 390</span>
+        </button>
+      </div>
+
+      <!-- Max Width Preset Selector -->
+      <div class="sb-toolbar-select-group">
+        <span class="sb-select-label">Max Width:</span>
+        <select class="sb-max-width-select" title="Set content container max width">
+          <option value="1200px" selected>1200px (Default)</option>
+          <option value="1440px">1440px</option>
+          <option value="1024px">1024px</option>
+          <option value="100%">Full Width (100%)</option>
+        </select>
+      </div>
+    </div>
+
+    <!-- Right: Theme Preset Switcher, Reload, and Show Code -->
+    <div class="sbdocs-toolbar-right">
+      <!-- Theme Preset Selector -->
+      <div class="sb-toolbar-select-group">
+        <span class="sb-select-label">Theme:</span>
+        <select class="sb-theme-select" title="Switch theme preset">
+          <option value="default" selected>Default (Red/Black)</option>
+          <option value="ocean">Ocean (Blue)</option>
+          <option value="forest">Forest (Green)</option>
+        </select>
+      </div>
+
+      <!-- Reload Sandbox Button -->
+      <button type="button" class="sb-icon-tool-btn sb-refresh-btn" title="Reload sandbox">
+        <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M21.5 2v6h-6M21.34 15.57a10 10 0 1 1-.57-8.38l5.67-5.67"/></svg>
+      </button>
+
+      <!-- Storybook Show Code Drawer Toggle -->
+      <button type="button" class="sb-show-code-btn" title="Toggle code drawer">
+        <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="16 18 22 12 16 6"/><polyline points="8 6 2 12 8 18"/></svg>
+        <span class="sb-code-btn-text">Show code</span>
+      </button>
+    </div>
+  </div>
+
+  <!-- Pure White Preview Sandbox -->
+  <div class="sbdocs-preview-body">
+    <!-- Loading Skeleton Overlay -->
+    <div class="sbdocs-loading-overlay" aria-label="Loading component preview">
+      <div class="sbdocs-loading-spinner"></div>
+      <span class="sbdocs-loading-text">Loading preview...</span>
+    </div>
+    <iframe
+      class="sbdocs-preview-iframe"
+      srcdoc={code}
+      style={`height: ${height}; width: 100%;`}
+      sandbox="allow-scripts allow-same-origin allow-forms allow-popups"
+      loading="lazy"
+    ></iframe>
+  </div>
+
+  <!-- Bottom Drawer for Code Display -->
+  <div class="sbdocs-code-drawer" hidden>
+    <div class="sbdocs-code-header">
+      <div class="sbdocs-code-tabs">
+        <button type="button" class="sbdocs-tab-btn active" data-tab="js">JavaScript</button>
+        <button type="button" class="sbdocs-tab-btn" data-tab="html">HTML</button>
+        {cssCode ? <button type="button" class="sbdocs-tab-btn" data-tab="css">CSS</button> : null}
+      </div>
+      <button type="button" class="sbdocs-copy-btn" title="Copy code">
+        <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="9" y="9" width="13" height="13" rx="2"/><path d="M5 15H4a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h9a2 2 0 0 1 2 2v1"/></svg>
+        <span>Copy</span>
+      </button>
+    </div>
+    
+    <!-- JavaScript Source Panel -->
+    <div class="sbdocs-tab-content active" data-panel="js">
+      <pre class="sbdocs-code-pre"><code>{jsCode}</code></pre>
+    </div>
+
+    <!-- HTML Structure Panel -->
+    <div class="sbdocs-tab-content" data-panel="html">
+      <pre class="sbdocs-code-pre"><code>{htmlCode}</code></pre>
+    </div>
+
+    <!-- CSS / Tailwind Panel -->
+    {cssCode ? (
+      <div class="sbdocs-tab-content" data-panel="css">
+        <pre class="sbdocs-code-pre"><code>{cssCode}</code></pre>
+      </div>
+    ) : null}
+  </div>
+</div>
+
+<script>
+  document.querySelectorAll('.sbdocs-preview-wrap').forEach(container => {
+    const iframe = container.querySelector('.sbdocs-preview-iframe') as HTMLIFrameElement | null;
+    const loadingOverlay = container.querySelector('.sbdocs-loading-overlay') as HTMLElement | null;
+    const vpButtons = container.querySelectorAll('.sb-vp-btn');
+    const refreshBtn = container.querySelector('.sb-refresh-btn');
+    const showCodeBtn = container.querySelector('.sb-show-code-btn');
+    const codeDrawer = container.querySelector('.sbdocs-code-drawer') as HTMLElement | null;
+    const codeBtnText = showCodeBtn?.querySelector('.sb-code-btn-text');
+    const tabButtons = container.querySelectorAll('.sbdocs-tab-btn');
+    const tabPanels = container.querySelectorAll('.sbdocs-tab-content');
+    const copyBtn = container.querySelector('.sbdocs-copy-btn');
+    const maxWidthSelect = container.querySelector('.sb-max-width-select') as HTMLSelectElement | null;
+    const themeSelect = container.querySelector('.sb-theme-select') as HTMLSelectElement | null;
+
+    // Apply max width into preview iframe
+    const applyMaxWidth = (maxWidth: string) => {
+      try {
+        const doc = iframe?.contentDocument || iframe?.contentWindow?.document;
+        if (!doc) return;
+        doc.documentElement.style.setProperty('--theme-content-max-width', maxWidth);
+        const containers = doc.querySelectorAll('.content-container, .max-w-\\[1550px\\], .max-w-7xl, .container');
+        containers.forEach(el => {
+          (el as HTMLElement).style.maxWidth = maxWidth;
+        });
+      } catch (e) {
+        // cross-origin safe
+      }
+    };
+
+    // Apply theme preset into preview iframe
+    const themePresets = {
+      default: {
+        '--theme-primary': '#bd0e16',
+        '--theme-secondary': '#000000',
+        '--theme-accent': '#e2e8f0',
+        '--theme-surface': '#ffffff',
+        '--theme-text': '#0f172a',
+      },
+      ocean: {
+        '--theme-primary': '#2563eb',
+        '--theme-secondary': '#172554',
+        '--theme-accent': '#dbeafe',
+        '--theme-surface': '#ffffff',
+        '--theme-text': '#0f172a',
+      },
+      forest: {
+        '--theme-primary': '#15803d',
+        '--theme-secondary': '#052e16',
+        '--theme-accent': '#dcfce7',
+        '--theme-surface': '#ffffff',
+        '--theme-text': '#0f172a',
+      },
+    };
+
+    const applyTheme = (presetKey: string) => {
+      try {
+        const doc = iframe?.contentDocument || iframe?.contentWindow?.document;
+        if (!doc) return;
+        const colors = themePresets[presetKey as keyof typeof themePresets] || themePresets.default;
+        for (const [prop, val] of Object.entries(colors)) {
+          doc.documentElement.style.setProperty(prop, val);
+        }
+      } catch (e) {
+        // cross-origin safe
+      }
+    };
+
+    maxWidthSelect?.addEventListener('change', () => {
+      applyMaxWidth(maxWidthSelect.value);
+    });
+
+    themeSelect?.addEventListener('change', () => {
+      applyTheme(themeSelect.value);
+    });
+
+    const hideLoading = () => {
+      if (loadingOverlay) {
+        loadingOverlay.classList.add('is-hidden');
+      }
+    };
+
+    const showLoading = () => {
+      if (loadingOverlay) {
+        loadingOverlay.classList.remove('is-hidden');
+      }
+    };
+
+    iframe?.addEventListener('load', () => {
+      if (maxWidthSelect) applyMaxWidth(maxWidthSelect.value);
+      if (themeSelect) applyTheme(themeSelect.value);
+      hideLoading();
+    });
+
+    // Safety fallback in case iframe load event fired early
+    setTimeout(() => {
+      try {
+        const doc = iframe?.contentDocument || iframe?.contentWindow?.document;
+        if (doc && doc.readyState === 'complete') {
+          hideLoading();
+        }
+      } catch (e) {
+        hideLoading();
+      }
+    }, 1500);
+
+    // Viewport switching
+    vpButtons.forEach(btn => {
+      btn.addEventListener('click', () => {
+        vpButtons.forEach(b => b.classList.remove('active'));
+        btn.classList.add('active');
+        const viewport = btn.getAttribute('data-viewport');
+        if (iframe && viewport) {
+          iframe.style.width = viewport;
+        }
+      });
+    });
+
+    // Reload preview sandbox
+    if (refreshBtn && iframe) {
+      refreshBtn.addEventListener('click', () => {
+        showLoading();
+        const srcdoc = iframe.srcdoc;
+        iframe.srcdoc = '';
+        setTimeout(() => { iframe.srcdoc = srcdoc; }, 60);
+      });
+    }
+
+    // Toggle code drawer
+    if (showCodeBtn && codeDrawer) {
+      showCodeBtn.addEventListener('click', () => {
+        const isHidden = codeDrawer.hidden;
+        codeDrawer.hidden = !isHidden;
+        showCodeBtn.classList.toggle('active', isHidden);
+        if (codeBtnText) {
+          codeBtnText.textContent = isHidden ? 'Hide code' : 'Show code';
+        }
+      });
+    }
+
+    // Code tab switcher
+    tabButtons.forEach(btn => {
+      btn.addEventListener('click', () => {
+        tabButtons.forEach(b => b.classList.remove('active'));
+        tabPanels.forEach(p => p.classList.remove('active'));
+        btn.classList.add('active');
+        const tab = btn.getAttribute('data-tab');
+        const activePanel = container.querySelector(`.sbdocs-tab-content[data-panel="${tab}"]`);
+        if (activePanel) {
+          activePanel.classList.add('active');
+        }
+      });
+    });
+
+    // Copy active code snippet
+    if (copyBtn) {
+      copyBtn.addEventListener('click', async () => {
+        const activeCodeEl = container.querySelector('.sbdocs-tab-content.active code');
+        if (!activeCodeEl) return;
+        try {
+          await navigator.clipboard.writeText(activeCodeEl.textContent || '');
+          const span = copyBtn.querySelector('span');
+          if (span) {
+            const origin = span.textContent;
+            span.textContent = 'Copied!';
+            setTimeout(() => { span.textContent = origin; }, 1500);
+          }
+        } catch (err) {
+          console.error('Copy failed', err);
+        }
+      });
+    }
+  });
+</script>

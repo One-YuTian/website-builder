@@ -1,0 +1,16 @@
+// 复制至 src/components/<stable-id>/index.js，填写所有占位符。
+// 命名示例：Header-01 / header-01 / header-01 / Header01；后续同类型递增。
+import { createSkeleton } from '../../index.js';
+
+export class __CLASS_NAME__ extends HTMLElement {
+  connectedCallback() {
+    // 使用实例状态，不使用原站全局变量。外部监听在 disconnectedCallback 清理。
+    const root = document.createElement('section');
+    root.className = 'content-container grid min-w-0 gap-4';
+    const media = createSkeleton({ kind: 'image', ratio: '4/3' });
+    media.dataset.region = 'media';
+    root.append(media);
+    this.replaceChildren(root);
+  }
+}
+// 在 src/index.js 中显式具名导出，并将 __STABLE_ID__ 加入注册列表。

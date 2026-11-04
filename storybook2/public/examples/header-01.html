@@ -1,0 +1,32 @@
+<!doctype html>
+<html lang="zh-CN">
+  <head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <title>Header-01 · script 引入示例</title>
+    <script src="../library/component-library.js"></script>
+  </head>
+  <body>
+    <header-01 cart-count="3" wishlist-count="2"></header-01>
+    <main class="content-container min-h-[180vh] py-10">
+      <h1 class="text-2xl font-semibold text-content">Header-01 使用示例</h1>
+      <p class="mt-4 text-muted">使用普通 script 和自定义标签；向下滚动可验证吸顶。</p>
+      <button id="jquery-example" class="mt-6 rounded-lg bg-primary px-4 py-2 text-white">运行 jQuery 示例</button>
+      <p id="example-result" role="status" class="mt-4 text-muted"></p>
+    </main>
+    <script>
+      const header = document.querySelector('header-01');
+      header.addEventListener('header-search-input', function (event) {
+        header.searchSuggestions = event.detail.query.length >= 2 ? [{ id: 'demo-product-1' }] : [];
+      });
+      document.querySelector('#jquery-example').addEventListener('click', function () {
+        ComponentLibrary.loadJQuery().then(function ($) {
+          $('header-01').prop('cartCount', 5).prop('isLoggedIn', true);
+          $('#example-result').text('jQuery 已更新购物车数量和登录状态');
+        }).catch(function () {
+          document.querySelector('#example-result').textContent = 'jQuery CDN 加载失败';
+        });
+      });
+    </script>
+  </body>
+</html>

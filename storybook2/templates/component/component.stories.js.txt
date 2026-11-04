@@ -1,0 +1,7 @@
+import { createComponentStory } from './component-story.js';
+import description from '../components/__STABLE_ID__/README.md?raw';
+
+export default { ...createComponentStory('__STABLE_ID__', description), title: '__GROUP__/__KIND__/__DISPLAY_NAME__', component: '__STABLE_ID__', tags: ['autodocs'] };
+export const PC = { parameters: { viewport: { defaultViewport: 'pc' } } };
+export const Tablet = { parameters: { viewport: { defaultViewport: 'tablet' } } };
+export const Mobile = { parameters: { viewport: { defaultViewport: 'mobile' } } };

@@ -1,0 +1,188 @@
+---
+title: Carousel-03
+description: Carousel-03 Component specification, interactive sandbox, and source code.
+---
+
+import ComponentPreview from '../../../../components/ComponentPreview.astro';
+import { Tabs, TabItem } from '@astrojs/starlight/components';
+
+## Interactive Preview
+
+<ComponentPreview
+  code={"<!doctype html>\n<html lang=\"zh-CN\">\n<head>\n  <meta charset=\"UTF-8\">\n  <meta name=\"viewport\" content=\"width=device-width, initial-scale=1\">\n  <title>Carousel-03 响应式组合</title>\n</head>\n<body>\n<carousel-03 id=\"component-1-0\"></carousel-03>\n<carousel-03-mobile id=\"component-1-1\"></carousel-03-mobile>\n<script>\n// 下方是组件实际实现（含共享骨架、主题及在线资源加载代码）。\n(function() {\n  \"use strict\";\n  const shapes = {\n    image: \"relative block w-full aspect-video overflow-hidden rounded-xl bg-accent\",\n    logo: \"relative flex h-10 w-32 items-center justify-center overflow-hidden rounded-xl bg-accent\",\n    text: \"block h-[0.75em] w-full rounded-sm bg-accent\",\n    title: \"block h-[0.75em] w-3/4 rounded-sm bg-accent\",\n    circle: \"block size-12 rounded-full bg-accent\",\n    button: \"block h-[0.75em] w-20 rounded-sm bg-accent\"\n  };\n  const lengths = /^(?:0|\\d+(?:\\.\\d+)?(?:px|rem|em|%|vw|vh|ch))$/;\n  class Skeleton extends HTMLElement {\n    static observedAttributes = [\"kind\", \"lines\", \"width\", \"height\", \"ratio\", \"radius\", \"font-size\"];\n    connectedCallback() {\n      this.render();\n    }\n    attributeChangedCallback() {\n      if (this.isConnected) this.render();\n    }\n    render() {\n      const kind = Object.hasOwn(shapes, this.getAttribute(\"kind\")) ? this.getAttribute(\"kind\") : \"text\";\n      const count = kind === \"text\" ? Math.max(1, Math.min(12, Number.parseInt(this.getAttribute(\"lines\"), 10) || 1)) : 1;\n      const container = this.ownerDocument.createElement(\"span\");\n      container.className = \"grid min-w-0 gap-[0.5em]\";\n      container.setAttribute(\"aria-hidden\", \"true\");\n      const fontSize = this.getAttribute(\"font-size\");\n      if ([\"text\", \"title\", \"button\"].includes(kind)) {\n        const baseSize = fontSize && lengths.test(fontSize) ? fontSize : \"1em\";\n        container.style.fontSize = `calc(${baseSize} + var(--theme-skeleton-text-offset, 3px))`;\n      }\n      for (let i = 0; i < count; i++) {\n        const line = this.ownerDocument.createElement(\"span\");\n        line.className = shapes[kind];\n        line.dataset.sb2Part = \"shape\";\n        for (const [attribute, property] of [[\"width\", \"width\"], [\"height\", \"height\"], [\"radius\", \"borderRadius\"]]) {\n          const value = this.getAttribute(attribute);\n          if (value && lengths.test(value)) line.style[property] = value;\n        }\n        const ratio = this.getAttribute(\"ratio\");\n        if (ratio && /^\\d+(?:\\.\\d+)?\\s*\\/\\s*\\d+(?:\\.\\d+)?$/.test(ratio) && ratio.split(\"/\").every((value) => Number(value) > 0)) line.style.aspectRatio = ratio;\n        if (kind === \"text\" && count > 1 && i === count - 1 && !this.hasAttribute(\"width\")) {\n          line.classList.remove(\"w-full\");\n          line.classList.add(\"w-2/3\");\n        }\n        if (kind === \"logo\" || kind === \"image\") {\n          const marker = this.ownerDocument.createElement(\"span\");\n          marker.dataset.sb2Marker = kind;\n          marker.className = \"pointer-events-none absolute inset-0 flex items-center justify-center\";\n          if (kind === \"logo\") {\n            const label = this.ownerDocument.createElement(\"span\");\n            label.className = \"select-none text-xs font-semibold tracking-widest text-muted\";\n            label.textContent = \"LOGO\";\n            marker.append(label);\n          } else {\n            marker.innerHTML = '<span class=\"relative block aspect-[6/5] w-1/4 min-w-4 max-w-12 overflow-hidden rounded-sm border border-muted\"><span class=\"absolute right-[15%] top-[15%] size-1/5 rounded-full bg-muted\"></span><span class=\"absolute -bottom-1/4 left-[5%] size-3/4 rotate-45 border-l border-t border-muted\"></span><span class=\"absolute -bottom-1/4 right-0 size-1/2 rotate-45 border-l border-t border-muted\"></span></span>';\n          }\n          line.append(marker);\n        }\n        container.append(line);\n      }\n      this.replaceChildren(container);\n    }\n  }\n  class Carousel03 extends HTMLElement {\n    static observedAttributes = [\"active-index\", \"paused\", \"interval\"];\n    constructor() {\n      super();\n      this._slides = [{ id: \"slide-01\" }, { id: \"slide-02\" }];\n      this._categories = Array.from({ length: 6 }, (_, i) => ({ id: `category-0${i + 1}` }));\n      window.$carousel = this;\n    }\n    get activeIndex() {\n      return Number(this.getAttribute(\"active-index\")) || 0;\n    }\n    set activeIndex(val) {\n      this.setAttribute(\"active-index\", String(Number(val) || 0));\n    }\n    get paused() {\n      return this.hasAttribute(\"paused\");\n    }\n    set paused(val) {\n      this.toggleAttribute(\"paused\", Boolean(val));\n    }\n    get interval() {\n      return Number(this.getAttribute(\"interval\")) || 3e3;\n    }\n    set interval(val) {\n      this.setAttribute(\"interval\", String(val));\n    }\n    next() {\n      this.goTo(this.activeIndex + 1);\n    }\n    prev() {\n      this.goTo(this.activeIndex - 1);\n    }\n    goTo(index) {\n      const total = this._slides.length;\n      this.activeIndex = total ? (index % total + total) % total : 0;\n      this.updateActive();\n      this.emit(\"carousel-change\", { activeIndex: this.activeIndex });\n    }\n    connectedCallback() {\n      this.classList.add(\"block\", \"min-w-0\");\n      this.render();\n      this.bindEvents();\n      this.startTimer();\n    }\n    disconnectedCallback() {\n      clearInterval(this._timer);\n      this._controller?.abort();\n      if (window.$carousel === this) delete window.$carousel;\n    }\n    attributeChangedCallback() {\n      if (this.isConnected) {\n        this.updateActive();\n        this.startTimer();\n      }\n    }\n    emit(name, detail = {}) {\n      this.dispatchEvent(new CustomEvent(name, { detail, bubbles: true, composed: true }));\n    }\n    startTimer() {\n      clearInterval(this._timer);\n      if (this.paused || this._slides.length < 2) return;\n      this._timer = setInterval(() => this.next(), this.interval);\n    }\n    updateActive() {\n      this.querySelectorAll(\"[data-slide]\").forEach((el, i) => {\n        el.hidden = i !== this.activeIndex;\n      });\n      this.querySelectorAll(\"[data-index]\").forEach((btn, i) => {\n        const active = i === this.activeIndex;\n        btn.firstElementChild.className = `size-2 rounded-full ${active ? \"bg-primary\" : \"bg-muted/50\"}`;\n      });\n    }\n    bindEvents() {\n      this._controller?.abort();\n      this._controller = new AbortController();\n      const { signal } = this._controller;\n      this.addEventListener(\"click\", (e) => {\n        const dot = e.target.closest(\"[data-index]\");\n        if (dot) this.goTo(Number(dot.dataset.index));\n        const pauseBtn = e.target.closest(\"[data-pause]\");\n        if (pauseBtn) this.paused = !this.paused;\n        const cat = e.target.closest(\"[data-category]\");\n        if (cat) {\n          e.preventDefault();\n          this.emit(\"carousel-navigate\", { categoryId: cat.dataset.category });\n        }\n      }, { signal });\n      this.addEventListener(\"pointerenter\", () => clearInterval(this._timer), { signal });\n      this.addEventListener(\"pointerleave\", () => this.startTimer(), { signal });\n    }\n    render() {\n      const focusRing = \"focus-visible:outline-2 focus-visible:outline-offset-4 focus-visible:outline-primary\";\n      const stage = `\n      <div data-region=\"carousel-stage\" class=\"relative h-[250px] overflow-hidden rounded-xl touch-pan-y ${focusRing}\">\n        ${this._slides.map((_, index) => `\n          <div data-slide=\"${index}\" ${index !== this.activeIndex ? \"hidden\" : \"\"} class=\"absolute inset-0 bg-accent flex items-center justify-center\">\n            <span class=\"relative block aspect-[6/5] w-1/4 min-w-8 max-w-16 overflow-hidden rounded-sm border border-muted\">\n              <span class=\"absolute right-[15%] top-[15%] size-1/5 rounded-full bg-muted\"></span>\n              <span class=\"absolute -bottom-1/4 left-[5%] size-3/4 rotate-45 border-l border-t border-muted\"></span>\n              <span class=\"absolute -bottom-1/4 right-0 size-1/2 rotate-45 border-l border-t border-muted\"></span>\n            </span>\n          </div>\n        `).join(\"\")}\n        <div data-region=\"pagination\" class=\"absolute inset-x-0 bottom-3 flex items-center justify-center gap-3\">\n          ${this._slides.map((_, index) => `\n            <button type=\"button\" data-index=\"${index}\" class=\"flex size-7 items-center justify-center rounded-full ${focusRing}\">\n              <span class=\"size-2 rounded-full ${index === this.activeIndex ? \"bg-primary\" : \"bg-muted/50\"}\"></span>\n            </button>\n          `).join(\"\")}\n        </div>\n        <button type=\"button\" data-pause class=\"absolute right-3 top-3 flex size-8 items-center justify-center rounded-lg border border-outline bg-surface/80 ${focusRing}\">\n          <span class=\"block size-3 rounded-full bg-accent\"></span>\n        </button>\n      </div>`;\n      this.innerHTML = `\n      <section class=\"bg-surface font-sans text-content py-6\">\n        <div class=\"content-container\">\n          <div class=\"grid grid-cols-1 md:grid-cols-3 gap-3\">\n            <div class=\"md:col-span-2 min-w-0\">${stage}</div>\n            <div data-region=\"side-banners\" class=\"hidden md:grid h-[250px] grid-rows-2 gap-3\">\n              <div class=\"bg-accent rounded-xl flex items-center justify-center\"><span class=\"block size-8 rounded-full bg-muted/40\"></span></div>\n              <div class=\"bg-accent rounded-xl flex items-center justify-center\"><span class=\"block size-8 rounded-full bg-muted/40\"></span></div>\n            </div>\n          </div>\n          <nav data-region=\"categories\" class=\"mt-6 grid grid-cols-3 sm:grid-cols-6 gap-3\">\n            ${this._categories.map((c) => `\n              <a href=\"#${c.id}\" data-category=\"${c.id}\" class=\"flex flex-col items-center gap-2 rounded-lg border border-outline/60 p-3 hover:bg-accent/20 ${focusRing}\">\n                <span class=\"block size-10 rounded-full bg-accent\"></span>\n                <span class=\"block h-[0.75em] w-14 rounded-sm bg-accent\"></span>\n              </a>\n            `).join(\"\")}\n          </nav>\n        </div>\n      </section>`;\n      this.updateActive();\n    }\n  }\n  const themeConfig = Object.freeze({\n    colors: Object.freeze({\n      primary: \"#bd0e16\",\n      secondary: \"#000000\",\n      accent: \"#e2e8f0\",\n      surface: \"#ffffff\",\n      text: \"#0f172a\",\n      muted: \"#64748b\",\n      border: \"#cbd5e1\",\n      onSecondary: \"#ffffff\"\n    }),\n    contentMaxWidth: 1200,\n    gutters: Object.freeze({ mobile: 16, desktop: 24 }),\n    font: Object.freeze({\n      family: \"Noto Sans SC\",\n      weights: [400, 500, 600, 700],\n      fallback: \"ui-sans-serif, system-ui, sans-serif\"\n    }),\n    radius: 8,\n    radii: Object.freeze({\n      sm: 4,\n      md: 6,\n      lg: 8,\n      xl: 12\n    }),\n    skeletonTextSizeOffset: 3,\n    breakpoints: Object.freeze({ sm: 640, md: 768, lg: 1024, xl: 1280, \"2xl\": 1536 })\n  });\n  const themePresets = Object.freeze({\n    default: Object.freeze({}),\n    ocean: Object.freeze({ primary: \"#2563eb\", secondary: \"#172554\", accent: \"#dbeafe\" }),\n    forest: Object.freeze({ primary: \"#15803d\", secondary: \"#052e16\", accent: \"#dcfce7\" })\n  });\n  const resources = Object.freeze({\n    tailwind: \"https://cdn.jsdelivr.net/npm/@tailwindcss/browser@4.1.13/dist/index.global.js\",\n    tailwindFallback: \"https://unpkg.com/@tailwindcss/browser@4.1.13/dist/index.global.js\",\n    jquery: \"https://cdn.jsdelivr.net/npm/jquery@3.7.1/dist/jquery.min.js\",\n    jqueryFallback: \"https://unpkg.com/jquery@3.7.1/dist/jquery.min.js\",\n    font: `https://fonts.googleapis.com/css2?family=${encodeURIComponent(themeConfig.font.family)}:wght@${themeConfig.font.weights.join(\";\")}&display=swap`\n  });\n  const fontStack = `${JSON.stringify(themeConfig.font.family)}, ${themeConfig.font.fallback}`;\n  function applyTheme({ preset = \"default\", contentMaxWidth = themeConfig.contentMaxWidth } = {}, doc = document) {\n    if (!Object.hasOwn(themePresets, preset)) throw new Error(`未知全局主题：${preset}`);\n    if (!Number.isFinite(contentMaxWidth) || contentMaxWidth <= 0) throw new Error(\"全局内容宽度必须是正数\");\n    const root = doc.documentElement;\n    const colors = { ...themeConfig.colors, ...themePresets[preset] };\n    for (const [name, value] of Object.entries(colors)) {\n      const key = name.replace(/[A-Z]/g, (letter) => `-${letter.toLowerCase()}`);\n      root.style.setProperty(`--theme-${key}`, value);\n    }\n    root.style.setProperty(\"--theme-content-max-width\", `${contentMaxWidth}px`);\n    root.style.setProperty(\"--theme-radius\", `${themeConfig.radius}px`);\n    root.style.setProperty(\"--theme-radius-sm\", `${themeConfig.radii.sm}px`);\n    root.style.setProperty(\"--theme-radius-md\", `${themeConfig.radii.md}px`);\n    root.style.setProperty(\"--theme-radius-lg\", `${themeConfig.radii.lg}px`);\n    root.style.setProperty(\"--theme-radius-xl\", `${themeConfig.radii.xl}px`);\n    root.style.setProperty(\"--theme-font\", fontStack);\n    root.style.setProperty(\"--theme-gutter-mobile\", `${themeConfig.gutters.mobile}px`);\n    root.style.setProperty(\"--theme-gutter-desktop\", `${themeConfig.gutters.desktop}px`);\n    root.style.setProperty(\"--theme-skeleton-text-offset\", `${themeConfig.skeletonTextSizeOffset}px`);\n    root.dataset.themePreset = preset;\n  }\n  const themeCss = `\n  @theme {\n    ${Object.entries(themeConfig.breakpoints).map(([key, value]) => `--breakpoint-${key}: ${value / 16}rem;`).join(\"\\n\")}\n  }\n  @theme inline {\n    --font-sans: var(--theme-font);\n    --color-primary: var(--theme-primary);\n    --color-secondary: var(--theme-secondary);\n    --color-accent: var(--theme-accent);\n    --color-surface: var(--theme-surface);\n    --color-content: var(--theme-text);\n    --color-muted: var(--theme-muted);\n    --color-outline: var(--theme-border);\n    --color-on-secondary: var(--theme-on-secondary);\n    --radius-sm: var(--theme-radius-sm, calc(var(--theme-radius) / 2));\n    --radius-md: var(--theme-radius-md, calc(var(--theme-radius) * 0.75));\n    --radius-lg: var(--theme-radius-lg, var(--theme-radius));\n    --radius-xl: var(--theme-radius-xl, calc(var(--theme-radius) * 1.5));\n  }\n  @layer base {\n    :root { --theme-gutter: ${themeConfig.gutters.mobile}px; }\n    @media (width >= ${themeConfig.breakpoints.md / 16}rem) { :root { --theme-gutter: ${themeConfig.gutters.desktop}px; } }\n    body { margin: 0; font-family: var(--theme-font); color: var(--theme-text); }\n    skeleton-placeholder { display: block; min-width: 0; }\n  }\n  @utility content-container {\n    width: 100%;\n    max-width: calc(var(--theme-content-max-width) + var(--theme-gutter) * 2);\n    margin-inline: auto;\n    padding-inline: var(--theme-gutter);\n  }\n`;\n  const documents = /* @__PURE__ */ new WeakMap();\n  const documentResourceKey = Symbol.for(\"components.resources.ready\");\n  const jqueryDocuments = /* @__PURE__ */ new WeakMap();\n  const jqueryResourceKey = Symbol.for(\"components.jquery.ready\");\n  function loadAttempt(doc, tag, key, url) {\n    return new Promise((resolve, reject) => {\n      const element = doc.createElement(tag);\n      element.dataset.sb2Resource = key;\n      if (tag === \"script\") element.src = url;\n      else {\n        element.rel = \"stylesheet\";\n        element.href = url;\n      }\n      const timer = setTimeout(() => finish(new Error(`${key} 加载超时，请检查网络后刷新。`)), 8e3);\n      function finish(error) {\n        clearTimeout(timer);\n        element.onload = element.onerror = null;\n        if (error) {\n          element.remove();\n          reject(error);\n        } else resolve();\n      }\n      element.onload = () => finish();\n      element.onerror = () => finish(new Error(`${key} 加载失败，请检查 CDN 连接后刷新。`));\n      doc.head.append(element);\n    });\n  }\n  async function load(doc, tag, key, urls) {\n    let failure;\n    for (const url of urls) {\n      try {\n        await loadAttempt(doc, tag, key, url);\n        return;\n      } catch (error) {\n        failure = error;\n      }\n    }\n    throw failure;\n  }\n  function report(doc, message) {\n    let alert = doc.querySelector(\"[data-sb2-resource-error]\");\n    if (!alert) {\n      alert = doc.createElement(\"div\");\n      alert.dataset.sb2ResourceError = \"\";\n      alert.setAttribute(\"role\", \"alert\");\n      alert.style.cssText = \"padding:16px;background:#fff1f2;color:#9f1239;font:14px system-ui;white-space:pre-wrap\";\n      (doc.body || doc.documentElement).prepend(alert);\n    }\n    alert.textContent = message;\n  }\n  function initializeResources(doc = document) {\n    if (doc[documentResourceKey]) return doc[documentResourceKey];\n    if (documents.has(doc)) return documents.get(doc);\n    applyTheme({}, doc);\n    const fallback = doc.createElement(\"style\");\n    fallback.dataset.sb2Font = \"\";\n    fallback.textContent = \"body { font-family: var(--theme-font); }\";\n    doc.head.append(fallback);\n    const style = doc.createElement(\"style\");\n    style.type = \"text/tailwindcss\";\n    style.dataset.sb2Theme = \"\";\n    style.textContent = themeCss;\n    doc.head.append(style);\n    const ready = Promise.allSettled([\n      load(doc, \"script\", \"Tailwind\", [resources.tailwind, resources.tailwindFallback]),\n      load(doc, \"link\", \"Google Fonts\", [resources.font])\n    ]).then((results) => {\n      const errors = results.filter((result) => result.status === \"rejected\").map((result) => result.reason.message);\n      if (errors.length) report(doc, errors.join(\"\\n\"));\n      return { ready: errors.length === 0, errors };\n    });\n    documents.set(doc, ready);\n    doc[documentResourceKey] = ready;\n    return ready;\n  }\n  function loadJQuery(doc = document) {\n    if (doc[jqueryResourceKey]) return doc[jqueryResourceKey];\n    if (jqueryDocuments.has(doc)) return jqueryDocuments.get(doc);\n    const ready = load(doc, \"script\", \"jQuery\", [resources.jquery, resources.jqueryFallback]).then(() => doc.defaultView.jQuery).catch((error) => {\n      report(doc, error.message);\n      throw error;\n    });\n    jqueryDocuments.set(doc, ready);\n    doc[jqueryResourceKey] = ready;\n    return ready;\n  }\n  for (const [tag, implementation] of [[\"skeleton-placeholder\", Skeleton], [\"carousel-03\", Carousel03]]) if (!customElements.get(tag)) customElements.define(tag, implementation);\n  Promise.all([initializeResources(), loadJQuery()]).then(([result, $]) => {\n    document.documentElement.dataset.exampleReady = String(result.ready);\n    const eventKey = Symbol.for(\"components.demo.events\");\n    if (!document[eventKey]) {\n      document[eventKey] = true;\n      $(document).on(\"product-navigate footer-navigate header-navigate carousel-navigate\", function(event) {\n        console.log(event.originalEvent.detail);\n      });\n    }\n  }).catch(() => {\n    document.documentElement.dataset.exampleReady = \"false\";\n  });\n})();\n\n// 配置和实例变量；只需修改本段即可调整组合。\n(() => {\nconst configuration = {\"properties\":[{\"id\":\"component-1-0\",\"values\":{\"paused\":false,\"interval\":2500,\"activeIndex\":0}},{\"id\":\"component-1-1\",\"values\":{\"paused\":false,\"interval\":2500,\"activeIndex\":0}}],\"values\":{\"--theme-primary\":\"#bd0e16\",\"--theme-secondary\":\"#000000\",\"--theme-accent\":\"#e2e8f0\",\"--theme-surface\":\"#ffffff\",\"--theme-text\":\"#0f172a\",\"--theme-muted\":\"#64748b\",\"--theme-border\":\"#cbd5e1\",\"--theme-on-secondary\":\"#ffffff\",\"--theme-content-max-width\":\"1200px\"}};\nfor (const [name, value] of Object.entries(configuration.values)) document.documentElement.style.setProperty(name, value);\nfor (const item of configuration.properties) {\n  const element = document.getElementById(item.id);\n  for (const [name, value] of Object.entries(item.values)) element[name] = value;\n  if (element.localName.startsWith('header-')) element.addEventListener('header-search-input', event => {\n    element.searchSuggestions = event.detail.query.length >= 2 ? [{ id: 'demo-product-1' }] : [];\n  });\n}\n})();\n</script>\n</body>\n</html>"}
+  htmlCode={"<carousel id=\"component-1-0\"></carousel>\n<carousel-mobile id=\"component-1-1\"></carousel-03-mobile>"}
+  jsCode={"export class Carousel03 extends HTMLElement {\n  static observedAttributes = ['active-index', 'paused', 'interval'];\n\n  constructor() {\n    super();\n    this._slides = [{ id: 'slide-01' }, { id: 'slide-02' }];\n    this._categories = Array.from({ length: 6 }, (_, i) => ({ id: `category-0${i + 1}` }));\n    window.$carousel = this;\n  }\n\n  get activeIndex() { return Number(this.getAttribute('active-index')) || 0; }\n  set activeIndex(val) { this.setAttribute('active-index', String(Number(val) || 0)); }\n\n  get paused() { return this.hasAttribute('paused'); }\n  set paused(val) { this.toggleAttribute('paused', Boolean(val)); }\n\n  get interval() { return Number(this.getAttribute('interval')) || 3000; }\n  set interval(val) { this.setAttribute('interval', String(val)); }\n\n  next() { this.goTo(this.activeIndex + 1); }\n  prev() { this.goTo(this.activeIndex - 1); }\n  goTo(index) {\n    const total = this._slides.length;\n    this.activeIndex = total ? ((index % total) + total) % total : 0;\n    this.updateActive();\n    this.emit('carousel-change', { activeIndex: this.activeIndex });\n  }\n\n  connectedCallback() {\n    this.classList.add('block', 'min-w-0');\n    this.render();\n    this.bindEvents();\n    this.startTimer();\n  }\n\n  disconnectedCallback() {\n    clearInterval(this._timer);\n    this._controller?.abort();\n    if (window.$carousel === this) delete window.$carousel;\n  }\n\n  attributeChangedCallback() {\n    if (this.isConnected) {\n      this.updateActive();\n      this.startTimer();\n    }\n  }\n\n  emit(name, detail = {}) {\n    this.dispatchEvent(new CustomEvent(name, { detail, bubbles: true, composed: true }));\n  }\n\n  startTimer() {\n    clearInterval(this._timer);\n    if (this.paused || this._slides.length < 2) return;\n    this._timer = setInterval(() => this.next(), this.interval);\n  }\n\n  updateActive() {\n    this.querySelectorAll('[data-slide]').forEach((el, i) => {\n      el.hidden = i !== this.activeIndex;\n    });\n    this.querySelectorAll('[data-index]').forEach((btn, i) => {\n      const active = i === this.activeIndex;\n      btn.firstElementChild.className = `size-2 rounded-full ${active ? 'bg-primary' : 'bg-muted/50'}`;\n    });\n  }\n\n  bindEvents() {\n    this._controller?.abort();\n    this._controller = new AbortController();\n    const { signal } = this._controller;\n\n    this.addEventListener('click', (e) => {\n      const dot = e.target.closest('[data-index]');\n      if (dot) this.goTo(Number(dot.dataset.index));\n      const pauseBtn = e.target.closest('[data-pause]');\n      if (pauseBtn) this.paused = !this.paused;\n      const cat = e.target.closest('[data-category]');\n      if (cat) {\n        e.preventDefault();\n        this.emit('carousel-navigate', { categoryId: cat.dataset.category });\n      }\n    }, { signal });\n\n    this.addEventListener('pointerenter', () => clearInterval(this._timer), { signal });\n    this.addEventListener('pointerleave', () => this.startTimer(), { signal });\n  }\n\n  render() {\n    const focusRing = 'focus-visible:outline-2 focus-visible:outline-offset-4 focus-visible:outline-primary';\n\n    const stage = `\n      <div data-region=\"carousel-stage\" class=\"relative h-[250px] overflow-hidden rounded-xl touch-pan-y ${focusRing}\">\n        ${this._slides.map((_, index) => `\n          <div data-slide=\"${index}\" ${index !== this.activeIndex ? 'hidden' : ''} class=\"absolute inset-0 bg-accent flex items-center justify-center\">\n            <span class=\"relative block aspect-[6/5] w-1/4 min-w-8 max-w-16 overflow-hidden rounded-sm border border-muted\">\n              <span class=\"absolute right-[15%] top-[15%] size-1/5 rounded-full bg-muted\"></span>\n              <span class=\"absolute -bottom-1/4 left-[5%] size-3/4 rotate-45 border-l border-t border-muted\"></span>\n              <span class=\"absolute -bottom-1/4 right-0 size-1/2 rotate-45 border-l border-t border-muted\"></span>\n            </span>\n          </div>\n        `).join('')}\n        <div data-region=\"pagination\" class=\"absolute inset-x-0 bottom-3 flex items-center justify-center gap-3\">\n          ${this._slides.map((_, index) => `\n            <button type=\"button\" data-index=\"${index}\" class=\"flex size-7 items-center justify-center rounded-full ${focusRing}\">\n              <span class=\"size-2 rounded-full ${index === this.activeIndex ? 'bg-primary' : 'bg-muted/50'}\"></span>\n            </button>\n          `).join('')}\n        </div>\n        <button type=\"button\" data-pause class=\"absolute right-3 top-3 flex size-8 items-center justify-center rounded-lg border border-outline bg-surface/80 ${focusRing}\">\n          <span class=\"block size-3 rounded-full bg-accent\"></span>\n        </button>\n      </div>`;\n\n    this.innerHTML = `\n      <section class=\"bg-surface font-sans text-content py-6\">\n        <div class=\"content-container\">\n          <div class=\"grid grid-cols-1 md:grid-cols-3 gap-3\">\n            <div class=\"md:col-span-2 min-w-0\">${stage}</div>\n            <div data-region=\"side-banners\" class=\"hidden md:grid h-[250px] grid-rows-2 gap-3\">\n              <div class=\"bg-accent rounded-xl flex items-center justify-center\"><span class=\"block size-8 rounded-full bg-muted/40\"></span></div>\n              <div class=\"bg-accent rounded-xl flex items-center justify-center\"><span class=\"block size-8 rounded-full bg-muted/40\"></span></div>\n            </div>\n          </div>\n          <nav data-region=\"categories\" class=\"mt-6 grid grid-cols-3 sm:grid-cols-6 gap-3\">\n            ${this._categories.map((c) => `\n              <a href=\"#${c.id}\" data-category=\"${c.id}\" class=\"flex flex-col items-center gap-2 rounded-lg border border-outline/60 p-3 hover:bg-accent/20 ${focusRing}\">\n                <span class=\"block size-10 rounded-full bg-accent\"></span>\n                <span class=\"block h-[0.75em] w-14 rounded-sm bg-accent\"></span>\n              </a>\n            `).join('')}\n          </nav>\n        </div>\n      </section>`;\n    this.updateActive();\n  }\n}"}
+  cssCode={""}
+  height="620px"
+  title="Carousel-03 Interactive Preview"
+/>
+
+## Overview & Attributes
+
+Composite banner carousel integrated with secondary side banners and an interactive category navigation strip.
+
+## Attributes
+
+| Attribute | Property | Type | Default | Description |
+| --- | --- | --- | --- | --- |
+| `active-index` | `activeIndex` | number | `0` | Current active slide index. |
+| `paused` | `paused` | boolean | `false` | Freezes carousel autoplay when present. |
+| `interval` | `interval` | number | `2500` | Autoplay transition interval in milliseconds. |
+
+
+## Source Code
+
+<Tabs>
+  <TabItem label="JavaScript">
+
+```javascript title="Carousel-03 JavaScript Web Component"
+export class Carousel03 extends HTMLElement {
+  static observedAttributes = ['active-index', 'paused', 'interval'];
+
+  constructor() {
+    super();
+    this._slides = [{ id: 'slide-01' }, { id: 'slide-02' }];
+    this._categories = Array.from({ length: 6 }, (_, i) => ({ id: `category-0${i + 1}` }));
+    window.$carousel = this;
+  }
+
+  get activeIndex() { return Number(this.getAttribute('active-index')) || 0; }
+  set activeIndex(val) { this.setAttribute('active-index', String(Number(val) || 0)); }
+
+  get paused() { return this.hasAttribute('paused'); }
+  set paused(val) { this.toggleAttribute('paused', Boolean(val)); }
+
+  get interval() { return Number(this.getAttribute('interval')) || 3000; }
+  set interval(val) { this.setAttribute('interval', String(val)); }
+
+  next() { this.goTo(this.activeIndex + 1); }
+  prev() { this.goTo(this.activeIndex - 1); }
+  goTo(index) {
+    const total = this._slides.length;
+    this.activeIndex = total ? ((index % total) + total) % total : 0;
+    this.updateActive();
+    this.emit('carousel-change', { activeIndex: this.activeIndex });
+  }
+
+  connectedCallback() {
+    this.classList.add('block', 'min-w-0');
+    this.render();
+    this.bindEvents();
+    this.startTimer();
+  }
+
+  disconnectedCallback() {
+    clearInterval(this._timer);
+    this._controller?.abort();
+    if (window.$carousel === this) delete window.$carousel;
+  }
+
+  attributeChangedCallback() {
+    if (this.isConnected) {
+      this.updateActive();
+      this.startTimer();
+    }
+  }
+
+  emit(name, detail = {}) {
+    this.dispatchEvent(new CustomEvent(name, { detail, bubbles: true, composed: true }));
+  }
+
+  startTimer() {
+    clearInterval(this._timer);
+    if (this.paused || this._slides.length < 2) return;
+    this._timer = setInterval(() => this.next(), this.interval);
+  }
+
+  updateActive() {
+    this.querySelectorAll('[data-slide]').forEach((el, i) => {
+      el.hidden = i !== this.activeIndex;
+    });
+    this.querySelectorAll('[data-index]').forEach((btn, i) => {
+      const active = i === this.activeIndex;
+      btn.firstElementChild.className = `size-2 rounded-full ${active ? 'bg-primary' : 'bg-muted/50'}`;
+    });
+  }
+
+  bindEvents() {
+    this._controller?.abort();
+    this._controller = new AbortController();
+    const { signal } = this._controller;
+
+    this.addEventListener('click', (e) => {
+      const dot = e.target.closest('[data-index]');
+      if (dot) this.goTo(Number(dot.dataset.index));
+      const pauseBtn = e.target.closest('[data-pause]');
+      if (pauseBtn) this.paused = !this.paused;
+      const cat = e.target.closest('[data-category]');
+      if (cat) {
+        e.preventDefault();
+        this.emit('carousel-navigate', { categoryId: cat.dataset.category });
+      }
+    }, { signal });
+
+    this.addEventListener('pointerenter', () => clearInterval(this._timer), { signal });
+    this.addEventListener('pointerleave', () => this.startTimer(), { signal });
+  }
+
+  render() {
+    const focusRing = 'focus-visible:outline-2 focus-visible:outline-offset-4 focus-visible:outline-primary';
+
+    const stage = `
+      <div data-region="carousel-stage" class="relative h-[250px] overflow-hidden rounded-xl touch-pan-y ${focusRing}">
+        ${this._slides.map((_, index) => `
+          <div data-slide="${index}" ${index !== this.activeIndex ? 'hidden' : ''} class="absolute inset-0 bg-accent flex items-center justify-center">
+            <span class="relative block aspect-[6/5] w-1/4 min-w-8 max-w-16 overflow-hidden rounded-sm border border-muted">
+              <span class="absolute right-[15%] top-[15%] size-1/5 rounded-full bg-muted"></span>
+              <span class="absolute -bottom-1/4 left-[5%] size-3/4 rotate-45 border-l border-t border-muted"></span>
+              <span class="absolute -bottom-1/4 right-0 size-1/2 rotate-45 border-l border-t border-muted"></span>
+            </span>
+          </div>
+        `).join('')}
+        <div data-region="pagination" class="absolute inset-x-0 bottom-3 flex items-center justify-center gap-3">
+          ${this._slides.map((_, index) => `
+            <button type="button" data-index="${index}" class="flex size-7 items-center justify-center rounded-full ${focusRing}">
+              <span class="size-2 rounded-full ${index === this.activeIndex ? 'bg-primary' : 'bg-muted/50'}"></span>
+            </button>
+          `).join('')}
+        </div>
+        <button type="button" data-pause class="absolute right-3 top-3 flex size-8 items-center justify-center rounded-lg border border-outline bg-surface/80 ${focusRing}">
+          <span class="block size-3 rounded-full bg-accent"></span>
+        </button>
+      </div>`;
+
+    this.innerHTML = `
+      <section class="bg-surface font-sans text-content py-6">
+        <div class="content-container">
+          <div class="grid grid-cols-1 md:grid-cols-3 gap-3">
+            <div class="md:col-span-2 min-w-0">${stage}</div>
+            <div data-region="side-banners" class="hidden md:grid h-[250px] grid-rows-2 gap-3">
+              <div class="bg-accent rounded-xl flex items-center justify-center"><span class="block size-8 rounded-full bg-muted/40"></span></div>
+              <div class="bg-accent rounded-xl flex items-center justify-center"><span class="block size-8 rounded-full bg-muted/40"></span></div>
+            </div>
+          </div>
+          <nav data-region="categories" class="mt-6 grid grid-cols-3 sm:grid-cols-6 gap-3">
+            ${this._categories.map((c) => `
+              <a href="#${c.id}" data-category="${c.id}" class="flex flex-col items-center gap-2 rounded-lg border border-outline/60 p-3 hover:bg-accent/20 ${focusRing}">
+                <span class="block size-10 rounded-full bg-accent"></span>
+                <span class="block h-[0.75em] w-14 rounded-sm bg-accent"></span>
+              </a>
+            `).join('')}
+          </nav>
+        </div>
+      </section>`;
+    this.updateActive();
+  }
+}
+```
+
+  </TabItem>
+  <TabItem label="HTML">
+
+```html title="Carousel-03 HTML"
+<carousel id="component-1-0"></carousel>
+<carousel-mobile id="component-1-1"></carousel-03-mobile>
+```
+
+  </TabItem>
+</Tabs>
