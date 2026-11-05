@@ -5,7 +5,7 @@ const policy = [['terms', 'Terms'], ['privacy', 'Privacy'], ['returns', 'Returns
 
 export class FooterBase extends ViewElement {
   navigation(entries) {
-    return entries.map(([destination]) => `<a href="#${destination}" data-destination="${destination}" class="inline-block rounded-sm py-2 hover:opacity-70 ${focusRing}">${placeholder('text', '7em', '14px', 'link-label')}</a>`).join('');
+    return entries.map(([destination]) => `<div role="button" tabindex="0" data-destination="${destination}" class="inline-block rounded-sm py-2 hover:opacity-70 cursor-pointer ${focusRing}">${placeholder('text', '7em', '14px', 'link-label')}</div>`).join('');
   }
   render() {
     const dark = this.constructor.appearance === 'dark';

@@ -2,6 +2,10 @@
 website/
 template/
 storybook/
+storybook2/
+edge-profile-test/
+src/
+public/
 
 # Dependencies
 node_modules/

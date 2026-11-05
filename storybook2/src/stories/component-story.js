@@ -8,7 +8,7 @@ export function createComponentStory(tag, description, args = {}, argTypes = {})
     render: values => {
       registerComponents();
       const component = createPreviewItem(tag, values);
-      if (tag === 'card-01') {
+      if (tag.startsWith('card-')) {
         const frame = document.createElement('div');
         frame.className = 'content-container py-6';
         component.firstElementChild.classList.add('w-full', values.viewMode === 'list' ? 'max-w-3xl' : 'max-w-sm');

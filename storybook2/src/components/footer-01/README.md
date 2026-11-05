@@ -1,7 +1,23 @@
 # Footer-01
 
-Dark-themed three-column footer layout with brand presentation, quick navigation links, contact details, and copyright policy links.
+深色三列标准页脚布局组件，包含品牌介绍、快速导航与联系方式。
 
-## Attributes
+### 区域划分
+- `footer-columns`: 核心三列内容区域。
+- `logo-section`: 品牌标志与介绍区域。
+- `bottom-bar`: 底部版权与法律政策区域。
 
-Inherits global layout and styling defaults. No required attributes.
+### 尺寸与响应式
+- 桌面端：3 列网格排布，遵循全局内容宽度。
+- 移动端：单列纵向流式排布，自适应小屏。
+
+### 属性与接口
+| 属性名 | 属性说明 | 类型 | 默认值 |
+| --- | --- | --- | --- |
+| 无 | 纯标准展示组件，复用全局主题变量 | - | - |
+
+### 事件机制
+- `footer-navigate`: 页脚链接导航点击触发。
+
+### 独立使用说明
+组件可作为独立 Web Component 使用，复用全局主题变量。

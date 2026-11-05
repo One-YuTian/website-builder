@@ -1,46 +1,27 @@
-export class ProductList04 extends HTMLElement {
-  constructor() {
-    super();
-    this._products = Array.from({ length: 10 }, (_, i) => ({
-      id: `product-${String(i + 1).padStart(2, '0')}`,
-      discounted: i % 3 === 0
-    }));
-    window.$productList = this;
-  }
+$(function() {
+  const $container = $('#product-grid-04');
+  if (!$container.length) return;
 
-  get products() { return [...this._products]; }
-  set products(list) {
-    this._products = Array.isArray(list) ? list : [];
-    if (this.isConnected) this.render();
-  }
+  const products = [
+    { id: 'product-01', discounted: true },
+    { id: 'product-02', discounted: false },
+    { id: 'product-03', discounted: false },
+    { id: 'product-04', discounted: true },
+    { id: 'product-05', discounted: false },
+    { id: 'product-06', discounted: false },
+    { id: 'product-07', discounted: true },
+    { id: 'product-08', discounted: false },
+    { id: 'product-09', discounted: false },
+    { id: 'product-10', discounted: true }
+  ];
 
-  refresh() {
-    this.render();
+  $container.empty();
+  for (let i = 0; i < products.length; i++) {
+    const p = products[i];
+    const $card = $('<card-01></card-01>').attr('product-id', p.id);
+    if (p.discounted) {
+      $card.attr('discounted', '');
+    }
+    $container.append($card);
   }
-
-  connectedCallback() {
-    this.classList.add('block', 'min-w-0');
-    this.render();
-  }
-
-  disconnectedCallback() {
-    if (window.$productList === this) delete window.$productList;
-  }
-
-  render() {
-    this.innerHTML = `
-      <section class="bg-surface py-8 font-sans text-content border-t border-outline/30">
-        <div class="content-container">
-          <div data-region="section-title" class="mb-6 flex items-center justify-between">
-            <span class="block h-[0.75em] w-52 rounded-sm bg-accent text-xl"></span>
-            <span class="block h-[0.75em] w-20 rounded-sm bg-accent"></span>
-          </div>
-          <div data-region="product-grid" class="grid grid-cols-2 gap-3 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5 gap-4">
-            ${this._products.map(p => `
-              <product-card product-id="${p.id}" ${p.discounted ? 'discounted' : ''}></product-card>
-            `).join('')}
-          </div>
-        </div>
-      </section>`;
-  }
-}
+});

@@ -1,11 +1,23 @@
 # Carousel-03
 
-Composite banner carousel integrated with secondary side banners and an interactive category navigation strip.
+复合型横幅轮播与核心类目导航板块组件，桌面端 2/3 主轮播 + 1/3 双横幅，移动端瘦身横幅与横滑分类。
 
-## Attributes
+### 区域划分
+- `carousel-stage`: 桌面端 2/3 主轮播区域。
+- `side-banners`: 桌面端右侧 1/3 垂直双静态横幅区域。
+- `categories-area`: 底部 6 列分类卡片或移动端横滑分类区域。
 
-| Attribute | Property | Type | Default | Description |
-| --- | --- | --- | --- | --- |
-| `active-index` | `activeIndex` | number | `0` | Current active slide index. |
-| `paused` | `paused` | boolean | `false` | Freezes carousel autoplay when present. |
-| `interval` | `interval` | number | `2500` | Autoplay transition interval in milliseconds. |
+### 尺寸与响应式
+- 桌面端：2/3 主轮播 + 1/3 侧边横幅高度固定 250px。
+- 移动端：横幅瘦身为 60:17 宽高比，分类导航单屏可见约 3.5 个胶囊卡片支持滑动。
+
+### 属性与接口
+| 属性名 | 属性说明 | 类型 | 默认值 |
+| --- | --- | --- | --- |
+| `stageSelector` | 初始化容器选择器 | `string` | `'#carousel-03-stage'` |
+
+### 事件机制
+- `carousel-navigate`: 轮播与分类点击跳转事件。
+
+### 独立使用说明
+板块采用纯 HTML 模板与原生 JavaScript 驱动，支持独立初始化渲染。

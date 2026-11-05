@@ -87,5 +87,3 @@ export class Card extends HTMLElement {
   }
 }
 
-export { Card as Card01 };
-

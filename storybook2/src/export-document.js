@@ -6,13 +6,17 @@ export function createDocument(items, runtimes, { contentWidth = themeConfig.con
   const scripts = [...new Set(items.map(item => item.id))].map(id => runtimes[id]).filter(Boolean);
   const properties = [];
   const body = items.map((item, index) => {
+    if (item.customHtml) {
+      return item.customHtml.trim();
+    }
     const id = `component-${index + 1}`;
     const tags = device !== 'desktop' && (item.id === 'carousel-01' || item.id === 'carousel-03') ? [item.id, `${item.id}-mobile`] : [item.id];
     const markup = tags.map((tag, variant) => {
       const elementId = `${id}-${variant}`;
       properties.push({ id: elementId, values: item.props || {} });
-      const node = `<${tag} id="${elementId}"${tag === 'card-01' ? ` class="block w-full ${item.props?.viewMode === 'list' ? 'max-w-3xl' : 'max-w-sm'}"` : ''}></${tag}>`;
-      return tag === 'card-01' ? `<div class="content-container py-6">${node}</div>` : node;
+      const isCard = tag.startsWith('card-');
+      const node = `<${tag} id="${elementId}"${isCard ? ` class="block w-full ${item.props?.viewMode === 'list' ? 'max-w-3xl' : 'max-w-sm'}"` : ''}></${tag}>`;
+      return isCard ? `<div class="content-container py-6 flex justify-center">${node}</div>` : node;
     }).join('\n');
     return markup;
   }).join('\n');
@@ -38,6 +42,7 @@ const configuration = ${data};
 for (const [name, value] of Object.entries(configuration.values)) document.documentElement.style.setProperty(name, value);
 for (const item of configuration.properties) {
   const element = document.getElementById(item.id);
+  if (!element) continue;
   for (const [name, value] of Object.entries(item.values)) element[name] = value;
   if (element.localName.startsWith('header-')) element.addEventListener('header-search-input', event => {
     element.searchSuggestions = event.detail.query.length >= 2 ? [{ id: 'demo-product-1' }] : [];

@@ -1,20 +1,37 @@
 import { catalog } from '../catalog.js';
 
 export const defaults = {
-  'header-01': { isLoggedIn: false, cartCount: 3, wishlistCount: 2 },
-  'header-02': { isLoggedIn: false, cartCount: 3, wishlistCount: 2 },
+  'header-01': { isLoggedIn: false, cartCount: 3, wishlistCount: 2, theme: 'dark' },
+  'header-02': { isLoggedIn: false, cartCount: 3, wishlistCount: 2, theme: 'dark' },
+  'header-03': { isLoggedIn: false, cartCount: 3, wishlistCount: 2, theme: 'dark' },
+  'header-04': { isLoggedIn: false, cartCount: 3, wishlistCount: 2, theme: 'dark' },
+  'header-05': { isLoggedIn: false, cartCount: 3, wishlistCount: 2, theme: 'light' },
+  'header-06': { isLoggedIn: false, cartCount: 3, wishlistCount: 2, theme: 'dark' },
+  'header-07': { isLoggedIn: false, cartCount: 3, wishlistCount: 2, theme: 'dark' },
+  'header-08': { isLoggedIn: false, cartCount: 3, wishlistCount: 2, theme: 'dark' },
+  'header-09': { isLoggedIn: false, cartCount: 3, wishlistCount: 2, theme: 'dark' },
+  'header-10': { isLoggedIn: false, cartCount: 3, wishlistCount: 2, theme: 'dark' },
   'footer-01': {}, 'footer-02': {},
   'card-01': { productId: 'product-01', viewMode: 'grid', discounted: true },
+  'card-02': { productId: 'product-01', viewMode: 'grid', discounted: true },
+  'card-07': { productId: 'product-01', viewMode: 'grid', discounted: true },
+  'card-11': { productId: 'product-01', viewMode: 'grid', discounted: true },
+  'card-19': { productId: 'product-01', viewMode: 'grid', discounted: true },
+  'card-23': { productId: 'product-01', viewMode: 'grid', discounted: true },
   'carousel-01': { paused: false, interval: 2500, activeIndex: 0 },
   'carousel-03': { paused: false, interval: 2500, activeIndex: 0 },
-  'productlist-01': {}, 'productlist-04': {},
+  'productlist-01': {}, 'productlist-02': {}, 'productlist-03': {}, 'productlist-04': {},
+  'shop-01': {}, 'shop-02': {}, 'shop-04': {}, 'shop-12': {},
+  'detail-01': {}, 'detail-04': {},
 };
 export function validateProps(id, value) {
   if (!value || Array.isArray(value) || typeof value !== 'object') throw new Error('属性需要是 JSON 对象');
-  const schema = id.startsWith('header-') ? { isLoggedIn: 'boolean', cartCount: 'number', wishlistCount: 'number', searchSuggestions: 'array' }
-    : id === 'card-01' ? { productId: 'string', viewMode: 'string', discounted: 'boolean' }
+  const schema = id.startsWith('header-') ? { isLoggedIn: 'boolean', cartCount: 'number', wishlistCount: 'number', searchSuggestions: 'array', theme: 'string' }
+    : id.startsWith('card-') ? { productId: 'string', viewMode: 'string', discounted: 'boolean' }
     : id.startsWith('carousel-') ? { paused: 'boolean', interval: 'number', activeIndex: 'number', slides: 'array', categories: 'array' }
-    : id.startsWith('productlist-') ? { products: 'array' } : {};
+    : id.startsWith('productlist-') ? { products: 'array' }
+    : id.startsWith('shop-') ? { sortOrder: 'string' }
+    : id.startsWith('detail-') ? {} : {};
   const result = {};
   for (const [key, item] of Object.entries(value)) {
     if (!Object.hasOwn(schema, key)) throw new Error(`不支持的属性：${key}`);
@@ -22,6 +39,7 @@ export function validateProps(id, value) {
     if (typeof item === 'number' && !Number.isFinite(item)) throw new Error(`属性必须是有限数字：${key}`);
     result[key] = item;
   }
+  if (result.theme && !['dark', 'light'].includes(result.theme)) throw new Error('theme 只能是 dark 或 light');
   if (result.viewMode && !['grid', 'list'].includes(result.viewMode)) throw new Error('viewMode 只能是 grid 或 list');
   return result;
 }

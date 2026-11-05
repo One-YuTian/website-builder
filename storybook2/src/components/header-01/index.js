@@ -1,5 +1,5 @@
 export class Header extends HTMLElement {
-  static observedAttributes = ['is-logged-in', 'cart-count', 'wishlist-count'];
+  static observedAttributes = ['is-logged-in', 'cart-count', 'wishlist-count', 'theme'];
 
   constructor() {
     super();
@@ -16,6 +16,9 @@ export class Header extends HTMLElement {
 
   get wishlistCount() { return Number(this.getAttribute('wishlist-count')) || 0; }
   set wishlistCount(val) { this.setAttribute('wishlist-count', String(Math.max(0, Math.floor(Number(val) || 0)))); }
+
+  get theme() { return this.getAttribute('theme') || 'dark'; }
+  set theme(val) { this.setAttribute('theme', String(val)); }
 
   get searchSuggestions() { return [...this._searchSuggestions]; }
   set searchSuggestions(list) {
@@ -167,21 +170,27 @@ export class Header extends HTMLElement {
   }
 
   render() {
+    const isLight = this.theme === 'light';
     const focusRing = 'focus-visible:outline-2 focus-visible:outline-offset-4 focus-visible:outline-primary';
+    const headerCls = isLight ? 'bg-surface font-sans text-content border-b border-outline/30 shadow-xs' : 'bg-secondary font-sans text-on-secondary';
+    const actionBtnCls = isLight ? 'hover:bg-accent/40 text-content' : 'hover:bg-on-secondary/10 text-on-secondary';
+    const searchWrapCls = isLight ? 'bg-accent/25 border border-outline/40 text-content focus-within:ring-2 focus-within:ring-primary' : 'bg-surface text-content focus-within:ring-2 focus-within:ring-primary';
+    const navLinkCls = isLight ? 'text-content/80 hover:text-primary' : 'text-on-secondary/90 hover:opacity-75';
+
     const authSection = this.isLoggedIn
-      ? `<a href="#orders" data-destination="orders" class="rounded-sm py-2 hover:opacity-75 ${focusRing}"><span class="block h-[0.75em] w-16 rounded-sm bg-accent"></span></a>
-         <button type="button" data-action="logout" class="rounded-sm py-2 hover:opacity-75 ${focusRing}"><span class="block h-[0.75em] w-14 rounded-sm bg-accent"></span></button>`
-      : `<a href="#login" data-destination="login" class="rounded-sm py-2 hover:opacity-75 ${focusRing}"><span class="block h-[0.75em] w-12 rounded-sm bg-accent"></span></a>
-         <a href="#register" data-destination="register" class="rounded-sm py-2 hover:opacity-75 ${focusRing}"><span class="block h-[0.75em] w-12 rounded-sm bg-accent"></span></a>`;
+      ? `<div role="button" tabindex="0" data-destination="orders" class="rounded-sm py-2 ${navLinkCls} ${focusRing}"><span class="block h-[0.75em] w-16 rounded-sm bg-accent"></span></div>
+         <button type="button" data-action="logout" class="rounded-sm py-2 ${navLinkCls} ${focusRing}"><span class="block h-[0.75em] w-14 rounded-sm bg-accent"></span></button>`
+      : `<div role="button" tabindex="0" data-destination="login" class="rounded-sm py-2 ${navLinkCls} ${focusRing}"><span class="block h-[0.75em] w-12 rounded-sm bg-accent"></span></div>
+         <div role="button" tabindex="0" data-destination="register" class="rounded-sm py-2 ${navLinkCls} ${focusRing}"><span class="block h-[0.75em] w-12 rounded-sm bg-accent"></span></div>`;
 
     this.innerHTML = `
-      <header class="bg-secondary font-sans text-on-secondary">
+      <header class="${headerCls}">
         <div data-region="header-content" class="content-container grid grid-cols-[auto_minmax(0,1fr)] items-center gap-x-4 gap-y-3 pb-3 pt-2 md:grid-cols-[auto_minmax(0,1fr)_auto] md:gap-x-8 md:pb-4">
-          <a href="#home" data-destination="home" class="order-1 flex h-14 shrink-0 items-center rounded-sm ${focusRing}">
+          <div role="button" tabindex="0" data-destination="home" class="order-1 flex h-14 shrink-0 items-center rounded-sm ${focusRing}">
             <span class="relative flex h-10 w-32 items-center justify-center overflow-hidden rounded-xl bg-accent select-none text-xs font-semibold tracking-widest text-muted">LOGO</span>
-          </a>
+          </div>
           <form role="search" class="relative order-3 col-span-2 min-w-0 md:order-2 md:col-span-1 md:mx-auto md:w-full md:max-w-2xl">
-            <div class="relative flex h-11 items-center rounded-full bg-surface text-content focus-within:ring-2 focus-within:ring-primary">
+            <div class="relative flex h-11 items-center rounded-full ${searchWrapCls}">
               <input type="search" name="query" autocomplete="off" class="peer h-full w-full min-w-0 rounded-full border-0 bg-transparent py-2 pl-4 pr-2 outline-none">
               <span data-region="search-placeholder" class="pointer-events-none absolute left-4"><span class="block h-[0.75em] w-36 rounded-sm bg-accent"></span></span>
               <button type="submit" class="mr-1 flex size-10 shrink-0 items-center justify-center rounded-full ${focusRing}">
@@ -192,34 +201,34 @@ export class Header extends HTMLElement {
           </form>
           <div class="order-2 flex items-center justify-end gap-1 md:order-3 md:gap-2">
             <div class="relative">
-              <button type="button" data-action="account" class="relative flex size-10 shrink-0 items-center justify-center rounded-lg hover:bg-on-secondary/10 ${focusRing}">
+              <button type="button" data-action="account" class="relative flex size-10 shrink-0 items-center justify-center rounded-lg ${actionBtnCls} ${focusRing}">
                 <span class="block size-5 rounded-full bg-accent"></span>
               </button>
               <div data-region="account-panel" hidden class="absolute right-0 top-full z-20 mt-2 w-48 rounded-xl border border-outline bg-surface p-3 text-content shadow-xl">
                 <span class="block h-[0.75em] w-24 rounded-sm bg-accent mb-3"></span>
                 <div class="flex flex-col items-start gap-2">
-                  <a href="#orders" data-destination="orders" class="py-2 hover:opacity-75"><span class="block h-[0.75em] w-20 rounded-sm bg-accent"></span></a>
+                  <div role="button" tabindex="0" data-destination="orders" class="py-2 hover:opacity-75"><span class="block h-[0.75em] w-20 rounded-sm bg-accent"></span></div>
                   <button type="button" data-action="logout" class="py-2 hover:opacity-75"><span class="block h-[0.75em] w-16 rounded-sm bg-accent"></span></button>
                 </div>
               </div>
             </div>
-            <button type="button" data-action="wishlist" class="relative flex size-10 shrink-0 items-center justify-center rounded-lg hover:bg-on-secondary/10 ${focusRing}">
+            <button type="button" data-action="wishlist" class="relative flex size-10 shrink-0 items-center justify-center rounded-lg ${actionBtnCls} ${focusRing}">
               <span class="block size-5 rounded-full bg-accent"></span>
               ${this.wishlistCount ? `<span class="absolute right-0 top-0 flex size-4 items-center justify-center rounded-full bg-primary text-[10px] text-white font-bold">${this.wishlistCount}</span>` : ''}
             </button>
-            <button type="button" data-action="cart" class="relative hidden md:flex size-10 shrink-0 items-center justify-center rounded-lg hover:bg-on-secondary/10 ${focusRing}">
+            <button type="button" data-action="cart" class="relative hidden md:flex size-10 shrink-0 items-center justify-center rounded-lg ${actionBtnCls} ${focusRing}">
               <span class="block size-5 rounded-full bg-accent"></span>
               ${this.cartCount ? `<span class="absolute right-0 top-0 flex size-4 items-center justify-center rounded-full bg-primary text-[10px] text-white font-bold">${this.cartCount}</span>` : ''}
             </button>
-            <button type="button" data-action="menu" class="flex md:hidden size-10 shrink-0 items-center justify-center rounded-lg hover:bg-on-secondary/10 ${focusRing}">
+            <button type="button" data-action="menu" class="flex md:hidden size-10 shrink-0 items-center justify-center rounded-lg ${actionBtnCls} ${focusRing}">
               <span class="block size-5 rounded-full bg-accent"></span>
             </button>
           </div>
           <nav class="order-4 col-span-3 hidden items-center justify-center gap-8 md:flex">
-            <a href="#home" data-destination="home" class="rounded-sm py-2 hover:opacity-75 ${focusRing}"><span class="block h-[0.75em] w-14 rounded-sm bg-accent"></span></a>
-            <a href="#shop" data-destination="shop" class="rounded-sm py-2 hover:opacity-75 ${focusRing}"><span class="block h-[0.75em] w-14 rounded-sm bg-accent"></span></a>
-            <a href="#about" data-destination="about" class="rounded-sm py-2 hover:opacity-75 ${focusRing}"><span class="block h-[0.75em] w-14 rounded-sm bg-accent"></span></a>
-            <a href="#contact" data-destination="contact" class="rounded-sm py-2 hover:opacity-75 ${focusRing}"><span class="block h-[0.75em] w-14 rounded-sm bg-accent"></span></a>
+            <div role="button" tabindex="0" data-destination="home" class="rounded-sm py-2 ${navLinkCls} ${focusRing}"><span class="block h-[0.75em] w-14 rounded-sm bg-accent"></span></div>
+            <div role="button" tabindex="0" data-destination="shop" class="rounded-sm py-2 ${navLinkCls} ${focusRing}"><span class="block h-[0.75em] w-14 rounded-sm bg-accent"></span></div>
+            <div role="button" tabindex="0" data-destination="about" class="rounded-sm py-2 ${navLinkCls} ${focusRing}"><span class="block h-[0.75em] w-14 rounded-sm bg-accent"></span></div>
+            <div role="button" tabindex="0" data-destination="contact" class="rounded-sm py-2 ${navLinkCls} ${focusRing}"><span class="block h-[0.75em] w-14 rounded-sm bg-accent"></span></div>
             ${authSection}
           </nav>
         </div>
@@ -232,11 +241,11 @@ export class Header extends HTMLElement {
           </button>
         </div>
         <nav class="space-y-3">
-          <a href="#home" data-destination="home" class="block rounded-lg px-2 py-3 hover:bg-accent/40"><span class="block h-[0.75em] w-24 rounded-sm bg-accent"></span></a>
-          <a href="#shop" data-destination="shop" class="block rounded-lg px-2 py-3 hover:bg-accent/40"><span class="block h-[0.75em] w-24 rounded-sm bg-accent"></span></a>
-          <a href="#about" data-destination="about" class="block rounded-lg px-2 py-3 hover:bg-accent/40"><span class="block h-[0.75em] w-24 rounded-sm bg-accent"></span></a>
-          <a href="#contact" data-destination="contact" class="block rounded-lg px-2 py-3 hover:bg-accent/40"><span class="block h-[0.75em] w-24 rounded-sm bg-accent"></span></a>
-          <a href="#wishlist" data-destination="wishlist" class="block rounded-lg px-2 py-3 hover:bg-accent/40"><span class="block h-[0.75em] w-24 rounded-sm bg-accent"></span></a>
+          <div role="button" tabindex="0" data-destination="home" class="block rounded-lg px-2 py-3 hover:bg-accent/40"><span class="block h-[0.75em] w-24 rounded-sm bg-accent"></span></div>
+          <div role="button" tabindex="0" data-destination="shop" class="block rounded-lg px-2 py-3 hover:bg-accent/40"><span class="block h-[0.75em] w-24 rounded-sm bg-accent"></span></div>
+          <div role="button" tabindex="0" data-destination="about" class="block rounded-lg px-2 py-3 hover:bg-accent/40"><span class="block h-[0.75em] w-24 rounded-sm bg-accent"></span></div>
+          <div role="button" tabindex="0" data-destination="contact" class="block rounded-lg px-2 py-3 hover:bg-accent/40"><span class="block h-[0.75em] w-24 rounded-sm bg-accent"></span></div>
+          <div role="button" tabindex="0" data-destination="wishlist" class="block rounded-lg px-2 py-3 hover:bg-accent/40"><span class="block h-[0.75em] w-24 rounded-sm bg-accent"></span></div>
         </nav>
         <div class="mt-6 flex flex-col items-start gap-3 border-t border-outline px-2 pt-6">
           ${authSection}
@@ -244,6 +253,4 @@ export class Header extends HTMLElement {
       </dialog>`;
   }
 }
-
-export { Header as Header01 };
 

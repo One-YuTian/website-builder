@@ -17,9 +17,9 @@ if (entry) {
   component.addEventListener('header-search-input', event => {
     event.target.searchSuggestions = event.detail.query.length >= 2 ? [{ id: 'demo-product-1' }] : [];
   });
-  if (entry.id === 'card-01') {
+  if (entry.id.startsWith('card-')) {
     const frame = document.createElement('div');
-    frame.className = 'content-container py-6';
+    frame.className = 'content-container py-6 flex justify-center';
     component.firstElementChild.classList.add('w-full', 'max-w-sm');
     frame.append(component);
     document.querySelector('#component-preview').append(frame);

@@ -73,7 +73,7 @@ export class HeaderBase extends HTMLElement {
   }
 
   navigation(destination, label, mobile = false) {
-    return `<a href="#${destination}" data-destination="${destination}" class="${mobile ? 'block rounded-lg px-2 py-3 hover:bg-accent/40' : 'rounded-sm py-2 hover:opacity-75'} ${focusRing}">${placeholder('text', mobile ? '112px' : '64px', mobile ? '18px' : '14px', 'navigation-label')}</a>`;
+    return `<div role="button" tabindex="0" data-destination="${destination}" class="${mobile ? 'block rounded-lg px-2 py-3 hover:bg-accent/40' : 'rounded-sm py-2 hover:opacity-75'} cursor-pointer ${focusRing}">${placeholder('text', mobile ? '112px' : '64px', mobile ? '18px' : '14px', 'navigation-label')}</div>`;
   }
 
   action(action, label, region, extra = '', count = 0) {

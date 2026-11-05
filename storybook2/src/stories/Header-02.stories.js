@@ -7,6 +7,8 @@ export default {
   component: 'header-02',
   tags: ['autodocs'],
 };
+export const Dark = { args: { theme: 'dark' } };
+export const Light = { args: { theme: 'light' } };
 export const PC = { parameters: { viewport: { defaultViewport: 'pc' } } };
 export const Tablet = { parameters: { viewport: { defaultViewport: 'tablet' } } };
 export const Mobile = { parameters: { viewport: { defaultViewport: 'mobile' } } };

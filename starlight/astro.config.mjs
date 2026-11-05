@@ -1,7 +1,33 @@
 import { defineConfig } from 'astro/config';
 import starlight from '@astrojs/starlight';
+import starlightLlmsTxt from 'starlight-llms-txt';
+import { catalog } from '../storybook2/src/catalog.js';
+
+// Build customSets for starlight-llms-txt so each component gets an individual LLM route
+const componentCustomSets = catalog.map((c) => {
+  const level1 = (c.group || 'Components').toLowerCase();
+  const level2 = (c.kind || c.name.split('-')[0]).toLowerCase();
+  const routePath = `${level1}/${level2}/${c.id}`;
+  return {
+    label: `${c.group} / ${c.kind} / ${c.name}`,
+    paths: [routePath],
+    description: `${c.name} standalone Native Web Component API, observed attributes, and source code.`
+  };
+});
+
+// Provide optional direct clean links to the dedicated .txt docs
+const dedicatedOptionalLinks = catalog.map((c) => {
+  const level1 = (c.group || 'Components').toLowerCase();
+  const level2 = (c.kind || c.name.split('-')[0]).toLowerCase();
+  return {
+    label: `Clean LLM Raw: ${c.group} > ${c.kind} > ${c.name}`,
+    url: `/llms/${level1}/${level2}/${c.id}.txt`,
+    description: `Pure isolated prompt context for ${c.name} without UI wrapper artifacts.`
+  };
+});
 
 export default defineConfig({
+  site: 'https://storybook2.internal',
   integrations: [
     starlight({
       title: 'Storybook2 Docs',
@@ -13,6 +39,15 @@ export default defineConfig({
           lang: 'en',
         },
       },
+      plugins: [
+        starlightLlmsTxt({
+          projectName: 'Storybook2 Web Components & Blocks',
+          description: 'Production-ready Native Web Components, Tailwind CSS, and Light DOM templates.',
+          details: 'Hierarchy is structured across Groups (Components / Blocks), Kinds (Header, Footer, Card, Carousel, ProductList), and Individual Components. Each component has an isolated LLM document specification.',
+          customSets: componentCustomSets,
+          optionalLinks: dedicatedOptionalLinks,
+        }),
+      ],
       sidebar: [
         {
           label: 'GUIDE',
@@ -57,9 +92,16 @@ export default defineConfig({
         },
         {
           label: 'PAGES',
-          collapsed: true,
+          collapsed: false,
           items: [
-            { label: 'Templates (Planning)', link: '/' },
+            {
+              label: 'Shop',
+              autogenerate: { directory: 'pages/shop' },
+            },
+            {
+              label: 'Detail',
+              autogenerate: { directory: 'pages/detail' },
+            },
           ],
         },
       ],

@@ -238,6 +238,74 @@ header.header input {
   border-color: #029cfd !important;
 }
 
+/* Mode Switch in Component Preview Toolbar */
+.sb-toolbar-switch-group {
+  display: inline-flex !important;
+  align-items: center !important;
+  gap: 0.35rem !important;
+  height: 28px !important;
+}
+
+.sb-mode-switch {
+  display: inline-flex !important;
+  align-items: center !important;
+  gap: 0.35rem !important;
+  height: 24px !important;
+  padding: 0 0.4rem 0 0.2rem !important;
+  background-color: #f8fafc !important;
+  border: 1px solid #dce4ec !important;
+  border-radius: 9999px !important;
+  cursor: pointer !important;
+  outline: none !important;
+  transition: all 0.15s ease !important;
+  user-select: none !important;
+}
+
+.sb-mode-switch:hover {
+  border-color: #029cfd !important;
+  background-color: #f1f5f9 !important;
+}
+
+.sb-mode-switch .sb-switch-track {
+  display: inline-flex !important;
+  align-items: center !important;
+  width: 28px !important;
+  height: 16px !important;
+  background-color: #0f172a !important;
+  border-radius: 9999px !important;
+  padding: 2px !important;
+  box-sizing: border-box !important;
+  transition: background-color 0.2s ease !important;
+}
+
+.sb-mode-switch .sb-switch-thumb {
+  display: block !important;
+  width: 12px !important;
+  height: 12px !important;
+  background-color: #ffffff !important;
+  border-radius: 50% !important;
+  box-shadow: 0 1px 2px rgba(0, 0, 0, 0.3) !important;
+  transform: translateX(0px) !important;
+  transition: transform 0.2s cubic-bezier(0.4, 0, 0.2, 1) !important;
+}
+
+.sb-mode-switch.is-light .sb-switch-track {
+  background-color: #0284c7 !important;
+}
+
+.sb-mode-switch.is-light .sb-switch-thumb {
+  transform: translateX(12px) !important;
+}
+
+.sb-mode-switch .sb-switch-text {
+  font-size: 0.725rem !important;
+  font-weight: 600 !important;
+  color: #334155 !important;
+  min-width: 28px !important;
+  text-align: left !important;
+  line-height: 1 !important;
+}
+
 .sbdocs-title {
   font-size: 0.85rem !important;
   font-weight: 600 !important;
@@ -515,16 +583,15 @@ header.header input {
   border-color: #029cfd !important;
 }
 
-.sbdocs-code-pre {
+.sbdocs-code-pre,
+.sbdocs-tab-content pre.astro-code {
   margin: 0 !important;
   padding: 1.25rem 1.5rem !important;
   max-height: 480px !important;
   overflow: auto !important;
-  background-color: #ffffff !important;
   font-family: 'SFMono-Regular', Consolas, 'Liberation Mono', Menlo, Courier, monospace !important;
-  font-size: 0.8rem !important;
-  line-height: 1.55 !important;
-  color: #1e293b !important;
+  font-size: 0.825rem !important;
+  line-height: 1.6 !important;
 }
 
 /* Right TOC removal & full width */

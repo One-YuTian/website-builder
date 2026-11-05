@@ -5,6 +5,8 @@ const documents = new WeakMap();
 const documentResourceKey = Symbol.for('components.resources.ready');
 const jqueryDocuments = new WeakMap();
 const jqueryResourceKey = Symbol.for('components.jquery.ready');
+const swiperDocuments = new WeakMap();
+const swiperResourceKey = Symbol.for('components.swiper.ready');
 
 function loadAttempt(doc, tag, key, url) {
   return new Promise((resolve, reject) => {
@@ -83,5 +85,20 @@ export function loadJQuery(doc = document) {
   });
   jqueryDocuments.set(doc, ready);
   doc[jqueryResourceKey] = ready;
+  return ready;
+}
+
+export function loadSwiper(doc = document) {
+  if (doc[swiperResourceKey]) return doc[swiperResourceKey];
+  if (swiperDocuments.has(doc)) return swiperDocuments.get(doc);
+  const ready = Promise.all([
+    load(doc, 'link', 'Swiper CSS', [resources.swiperCss, resources.swiperCssFallback]),
+    load(doc, 'script', 'Swiper JS', [resources.swiper, resources.swiperFallback]),
+  ]).then(() => doc.defaultView.Swiper).catch(error => {
+    report(doc, error.message);
+    throw error;
+  });
+  swiperDocuments.set(doc, ready);
+  doc[swiperResourceKey] = ready;
   return ready;
 }

@@ -1,4 +1,6 @@
 ---
+import { Code } from 'astro:components';
+
 interface Props {
   code: string;
   htmlCode?: string;
@@ -17,6 +19,8 @@ const {
   title = 'Interactive Preview',
 } = Astro.props;
 
+const isHeader = title.toLowerCase().includes('header');
+const isHeader05 = title.includes('Header-05');
 const previewId = 'sb-preview-' + Math.random().toString(36).substring(2, 9);
 ---
 
@@ -65,6 +69,26 @@ const previewId = 'sb-preview-' + Math.random().toString(36).substring(2, 9);
         </select>
       </div>
 
+      <!-- Mode Switcher (Dark / Light Inversion for Header) -->
+      {isHeader ? (
+        <div class="sb-toolbar-switch-group">
+          <span class="sb-select-label">Mode:</span>
+          <button
+            type="button"
+            role="switch"
+            class={`sb-mode-switch ${isHeader05 ? 'is-light' : 'is-dark'}`}
+            data-mode={isHeader05 ? 'light' : 'dark'}
+            aria-checked={isHeader05 ? 'false' : 'true'}
+            title="点击切换深色 / 浅色模式 (Dark / Light)"
+          >
+            <span class="sb-switch-track">
+              <span class="sb-switch-thumb"></span>
+            </span>
+            <span class="sb-switch-text">{isHeader05 ? 'Light' : 'Dark'}</span>
+          </button>
+        </div>
+      ) : null}
+
       <!-- Reload Sandbox Button -->
       <button type="button" class="sb-icon-tool-btn sb-refresh-btn" title="Reload sandbox">
         <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M21.5 2v6h-6M21.34 15.57a10 10 0 1 1-.57-8.38l5.67-5.67"/></svg>
@@ -110,18 +134,18 @@ const previewId = 'sb-preview-' + Math.random().toString(36).substring(2, 9);
     
     <!-- JavaScript Source Panel -->
     <div class="sbdocs-tab-content active" data-panel="js">
-      <pre class="sbdocs-code-pre"><code>{jsCode}</code></pre>
+      <Code code={jsCode} lang="javascript" theme="github-dark" />
     </div>
 
     <!-- HTML Structure Panel -->
     <div class="sbdocs-tab-content" data-panel="html">
-      <pre class="sbdocs-code-pre"><code>{htmlCode}</code></pre>
+      <Code code={htmlCode} lang="html" theme="github-dark" />
     </div>
 
     <!-- CSS / Tailwind Panel -->
     {cssCode ? (
       <div class="sbdocs-tab-content" data-panel="css">
-        <pre class="sbdocs-code-pre"><code>{cssCode}</code></pre>
+        <Code code={cssCode} lang="css" theme="github-dark" />
       </div>
     ) : null}
   </div>
@@ -141,6 +165,23 @@ const previewId = 'sb-preview-' + Math.random().toString(36).substring(2, 9);
     const copyBtn = container.querySelector('.sbdocs-copy-btn');
     const maxWidthSelect = container.querySelector('.sb-max-width-select') as HTMLSelectElement | null;
     const themeSelect = container.querySelector('.sb-theme-select') as HTMLSelectElement | null;
+    const modeSwitch = container.querySelector('.sb-mode-switch') as HTMLButtonElement | null;
+    const modeSwitchText = modeSwitch?.querySelector('.sb-switch-text');
+
+    // Apply header dark/light theme mode into preview iframe
+    const applyMode = (mode: string) => {
+      try {
+        const doc = iframe?.contentDocument || iframe?.contentWindow?.document;
+        if (!doc) return;
+        const headers = Array.from(doc.querySelectorAll('*')).filter(el => el.localName.startsWith('header-') || el.localName === 'header-component');
+        headers.forEach(el => {
+          el.setAttribute('theme', mode);
+          (el as any).theme = mode;
+        });
+      } catch (e) {
+        // cross-origin safe
+      }
+    };
 
     // Apply max width into preview iframe
     const applyMaxWidth = (maxWidth: string) => {
@@ -203,6 +244,28 @@ const previewId = 'sb-preview-' + Math.random().toString(36).substring(2, 9);
       applyTheme(themeSelect.value);
     });
 
+    const updateSwitchUI = (mode: string) => {
+      if (!modeSwitch) return;
+      modeSwitch.setAttribute('data-mode', mode);
+      modeSwitch.setAttribute('aria-checked', mode === 'dark' ? 'true' : 'false');
+      if (mode === 'light') {
+        modeSwitch.classList.add('is-light');
+        modeSwitch.classList.remove('is-dark');
+        if (modeSwitchText) modeSwitchText.textContent = 'Light';
+      } else {
+        modeSwitch.classList.remove('is-light');
+        modeSwitch.classList.add('is-dark');
+        if (modeSwitchText) modeSwitchText.textContent = 'Dark';
+      }
+    };
+
+    modeSwitch?.addEventListener('click', () => {
+      const currentMode = modeSwitch.getAttribute('data-mode') || 'dark';
+      const nextMode = currentMode === 'dark' ? 'light' : 'dark';
+      updateSwitchUI(nextMode);
+      applyMode(nextMode);
+    });
+
     const hideLoading = () => {
       if (loadingOverlay) {
         loadingOverlay.classList.add('is-hidden');
@@ -216,8 +279,20 @@ const previewId = 'sb-preview-' + Math.random().toString(36).substring(2, 9);
     };
 
     iframe?.addEventListener('load', () => {
+      try {
+        const doc = iframe?.contentDocument || iframe?.contentWindow?.document;
+        if (doc) {
+          doc.addEventListener('click', (e: MouseEvent) => {
+            const target = (e.target as HTMLElement)?.closest('a');
+            if (target) {
+              e.preventDefault();
+            }
+          });
+        }
+      } catch (e) {}
       if (maxWidthSelect) applyMaxWidth(maxWidthSelect.value);
       if (themeSelect) applyTheme(themeSelect.value);
+      if (modeSwitch) applyMode(modeSwitch.getAttribute('data-mode') || (isHeader05 ? 'light' : 'dark'));
       hideLoading();
     });
 

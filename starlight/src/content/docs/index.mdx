@@ -23,8 +23,8 @@ import { Card, CardGrid } from '@astrojs/starlight/components';
   <Card title="3-Level Hierarchy" icon="bars">
     Structured into Group (Components / Blocks / Pages), Kind (Header / Card / Footer / Carousel / ProductList), and Component items.
   </Card>
-  <Card title="Storybook 8 Design System" icon="star">
-    Restores Storybook 8 Explorer tree navigation, gray sidebars, active badges, minimalist toolbars, and collapsible code drawers.
+  <Card title="Dedicated LLM Documents" icon="document">
+    Every component has an isolated, non-redundant plain text document under `/llms/` and `/_llms-txt/` for AI coding agents.
   </Card>
   <Card title="Clear Source Code Tabs" icon="open-book">
     Separately displays JavaScript source, HTML markup structure, and CSS / Tailwind styling.
@@ -36,14 +36,35 @@ import { Card, CardGrid } from '@astrojs/starlight/components';
 
 ## Catalog Index
 
-| Group | Kind | Component ID | Component Name | Custom Element Tag | Document Link |
-| --- | --- | --- | --- | --- | --- |
-| **Components** | **Header** | `header-01` | **Header-01** | `<header-component>` | [Open Document](/components/header/header-01/) |
-| **Components** | **Header** | `header-02` | **Header-02** | `<header-component>` | [Open Document](/components/header/header-02/) |
-| **Components** | **Footer** | `footer-01` | **Footer-01** | `<footer-component>` | [Open Document](/components/footer/footer-01/) |
-| **Components** | **Footer** | `footer-02` | **Footer-02** | `<footer-component>` | [Open Document](/components/footer/footer-02/) |
-| **Components** | **Card** | `card-01` | **Card-01** | `<product-card>` | [Open Document](/components/card/card-01/) |
-| **Blocks** | **Carousel** | `carousel-01` | **Carousel-01** | `<hero-carousel>` | [Open Document](/blocks/carousel/carousel-01/) |
-| **Blocks** | **Carousel** | `carousel-03` | **Carousel-03** | `<hero-carousel>` | [Open Document](/blocks/carousel/carousel-03/) |
-| **Blocks** | **ProductList** | `productlist-01` | **ProductList-01** | `<product-list>` | [Open Document](/blocks/productlist/productlist-01/) |
-| **Blocks** | **ProductList** | `productlist-04` | **ProductList-04** | `<product-list>` | [Open Document](/blocks/productlist/productlist-04/) |
+| Group | Kind | Component ID | Component Name | Custom Element Tag | Document Link | Dedicated LLM Doc |
+| --- | --- | --- | --- | --- | --- | --- |
+| **Components** | **Header** | `header-01` | **Header-01** | `<header-01>` | [Open Document](/components/header/header-01/) | [LLM Text](/llms/components/header/header-01.txt) |
+| **Components** | **Header** | `header-02` | **Header-02** | `<header-02>` | [Open Document](/components/header/header-02/) | [LLM Text](/llms/components/header/header-02.txt) |
+| **Components** | **Header** | `header-03` | **Header-03** | `<header-03>` | [Open Document](/components/header/header-03/) | [LLM Text](/llms/components/header/header-03.txt) |
+| **Components** | **Header** | `header-04` | **Header-04** | `<header-04>` | [Open Document](/components/header/header-04/) | [LLM Text](/llms/components/header/header-04.txt) |
+| **Components** | **Header** | `header-05` | **Header-05** | `<header-05>` | [Open Document](/components/header/header-05/) | [LLM Text](/llms/components/header/header-05.txt) |
+| **Components** | **Header** | `header-06` | **Header-06** | `<header-06>` | [Open Document](/components/header/header-06/) | [LLM Text](/llms/components/header/header-06.txt) |
+| **Components** | **Header** | `header-07` | **Header-07** | `<header-07>` | [Open Document](/components/header/header-07/) | [LLM Text](/llms/components/header/header-07.txt) |
+| **Components** | **Header** | `header-08` | **Header-08** | `<header-08>` | [Open Document](/components/header/header-08/) | [LLM Text](/llms/components/header/header-08.txt) |
+| **Components** | **Header** | `header-09` | **Header-09** | `<header-09>` | [Open Document](/components/header/header-09/) | [LLM Text](/llms/components/header/header-09.txt) |
+| **Components** | **Header** | `header-10` | **Header-10** | `<header-10>` | [Open Document](/components/header/header-10/) | [LLM Text](/llms/components/header/header-10.txt) |
+| **Components** | **Footer** | `footer-01` | **Footer-01** | `<footer-01>` | [Open Document](/components/footer/footer-01/) | [LLM Text](/llms/components/footer/footer-01.txt) |
+| **Components** | **Footer** | `footer-02` | **Footer-02** | `<footer-02>` | [Open Document](/components/footer/footer-02/) | [LLM Text](/llms/components/footer/footer-02.txt) |
+| **Components** | **Card** | `card-01` | **Card-01** | `<card-01>` | [Open Document](/components/card/card-01/) | [LLM Text](/llms/components/card/card-01.txt) |
+| **Components** | **Card** | `card-02` | **Card-02** | `<card-02>` | [Open Document](/components/card/card-02/) | [LLM Text](/llms/components/card/card-02.txt) |
+| **Components** | **Card** | `card-07` | **Card-07** | `<card-07>` | [Open Document](/components/card/card-07/) | [LLM Text](/llms/components/card/card-07.txt) |
+| **Components** | **Card** | `card-11` | **Card-11** | `<card-11>` | [Open Document](/components/card/card-11/) | [LLM Text](/llms/components/card/card-11.txt) |
+| **Components** | **Card** | `card-19` | **Card-19** | `<card-19>` | [Open Document](/components/card/card-19/) | [LLM Text](/llms/components/card/card-19.txt) |
+| **Components** | **Card** | `card-23` | **Card-23** | `<card-23>` | [Open Document](/components/card/card-23/) | [LLM Text](/llms/components/card/card-23.txt) |
+| **Blocks** | **Carousel** | `carousel-01` | **Carousel-01** | `<carousel-01>` | [Open Document](/blocks/carousel/carousel-01/) | [LLM Text](/llms/blocks/carousel/carousel-01.txt) |
+| **Blocks** | **Carousel** | `carousel-03` | **Carousel-03** | `<carousel-03>` | [Open Document](/blocks/carousel/carousel-03/) | [LLM Text](/llms/blocks/carousel/carousel-03.txt) |
+| **Blocks** | **ProductList** | `productlist-01` | **ProductList-01** | `<productlist-01>` | [Open Document](/blocks/productlist/productlist-01/) | [LLM Text](/llms/blocks/productlist/productlist-01.txt) |
+| **Blocks** | **ProductList** | `productlist-02` | **ProductList-02** | `<productlist-02>` | [Open Document](/blocks/productlist/productlist-02/) | [LLM Text](/llms/blocks/productlist/productlist-02.txt) |
+| **Blocks** | **ProductList** | `productlist-03` | **ProductList-03** | `<productlist-03>` | [Open Document](/blocks/productlist/productlist-03/) | [LLM Text](/llms/blocks/productlist/productlist-03.txt) |
+| **Blocks** | **ProductList** | `productlist-04` | **ProductList-04** | `<productlist-04>` | [Open Document](/blocks/productlist/productlist-04/) | [LLM Text](/llms/blocks/productlist/productlist-04.txt) |
+| **Pages** | **Shop** | `shop-01` | **Shop-01** | `<shop-01>` | [Open Document](/pages/shop/shop-01/) | [LLM Text](/llms/pages/shop/shop-01.txt) |
+| **Pages** | **Shop** | `shop-02` | **Shop-02** | `<shop-02>` | [Open Document](/pages/shop/shop-02/) | [LLM Text](/llms/pages/shop/shop-02.txt) |
+| **Pages** | **Shop** | `shop-04` | **Shop-04** | `<shop-04>` | [Open Document](/pages/shop/shop-04/) | [LLM Text](/llms/pages/shop/shop-04.txt) |
+| **Pages** | **Shop** | `shop-12` | **Shop-12** | `<shop-12>` | [Open Document](/pages/shop/shop-12/) | [LLM Text](/llms/pages/shop/shop-12.txt) |
+| **Pages** | **Detail** | `detail-01` | **Detail-01** | `<detail-01>` | [Open Document](/pages/detail/detail-01/) | [LLM Text](/llms/pages/detail/detail-01.txt) |
+| **Pages** | **Detail** | `detail-04` | **Detail-04** | `<detail-04>` | [Open Document](/pages/detail/detail-04/) | [LLM Text](/llms/pages/detail/detail-04.txt) |

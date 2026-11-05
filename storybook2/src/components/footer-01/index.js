@@ -32,7 +32,7 @@ export class Footer extends HTMLElement {
 
   render() {
     const focusRing = 'focus-visible:outline-2 focus-visible:outline-offset-4 focus-visible:outline-primary';
-    const navItem = (dest) => `<a href="#${dest}" data-destination="${dest}" class="inline-block rounded-sm py-2 hover:opacity-70 ${focusRing}"><span class="block h-[0.75em] w-24 rounded-sm bg-accent"></span></a>`;
+    const navItem = (dest) => `<div role="button" tabindex="0" data-destination="${dest}" class="inline-block rounded-sm py-2 hover:opacity-70 cursor-pointer ${focusRing}"><span class="block h-[0.75em] w-24 rounded-sm bg-accent"></span></div>`;
 
     this.innerHTML = `
       <footer class="bg-secondary text-on-secondary font-sans">
@@ -69,6 +69,4 @@ export class Footer extends HTMLElement {
       </footer>`;
   }
 }
-
-export { Footer as Footer01 };
 

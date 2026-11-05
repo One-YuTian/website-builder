@@ -1,26 +1,30 @@
 import { Skeleton } from './components/skeleton.js';
-import { Header01 } from './components/header-01/index.js';
-import { Header02 } from './components/header-02/index.js';
-import { Footer01 } from './components/footer-01/index.js';
-import { Footer02 } from './components/footer-02/index.js';
-import { Card01 } from './components/card-01/index.js';
-import { Carousel01 } from './components/carousel-01/index.js';
-import { Carousel03 } from './components/carousel-03/index.js';
-import { Carousel01Mobile } from './components/carousel-01/mobile.js';
-import { Carousel03Mobile } from './components/carousel-03/mobile.js';
-import { ProductList01 } from './components/productlist-01/index.js';
-import { ProductList04 } from './components/productlist-04/index.js';
-export { Header01 } from './components/header-01/index.js';
-export { Header02 } from './components/header-02/index.js';
-export { Footer01 } from './components/footer-01/index.js';
-export { Footer02 } from './components/footer-02/index.js';
-export { Card01 } from './components/card-01/index.js';
-export { Carousel01 } from './components/carousel-01/index.js';
-export { Carousel03 } from './components/carousel-03/index.js';
-export { Carousel01Mobile } from './components/carousel-01/mobile.js';
-export { Carousel03Mobile } from './components/carousel-03/mobile.js';
-export { ProductList01 } from './components/productlist-01/index.js';
-export { ProductList04 } from './components/productlist-04/index.js';
+import { Header as Header01 } from './components/header-01/index.js';
+import { Header as Header02 } from './components/header-02/index.js';
+import { Header as Header03 } from './components/header-03/index.js';
+import { Header as Header04 } from './components/header-04/index.js';
+import { Header as Header05 } from './components/header-05/index.js';
+import { Header as Header06 } from './components/header-06/index.js';
+import { Header as Header07 } from './components/header-07/index.js';
+import { Header as Header08 } from './components/header-08/index.js';
+import { Header as Header09 } from './components/header-09/index.js';
+import { Header as Header10 } from './components/header-10/index.js';
+import { Footer as Footer01 } from './components/footer-01/index.js';
+import { Footer as Footer02 } from './components/footer-02/index.js';
+import { Card as Card01 } from './components/card-01/index.js';
+import { Card as Card02 } from './components/card-02/index.js';
+import { Card as Card07 } from './components/card-07/index.js';
+import { Card as Card11 } from './components/card-11/index.js';
+import { Card as Card19 } from './components/card-19/index.js';
+import { Card as Card23 } from './components/card-23/index.js';
+
+export {
+  Header01, Header02, Header03, Header04, Header05,
+  Header06, Header07, Header08, Header09, Header10,
+  Footer01, Footer02,
+  Card01, Card02,
+  Card07, Card11, Card19, Card23
+};
 export { Skeleton, createSkeleton } from './components/skeleton.js';
 export { initializeResources, loadJQuery } from './runtime/resources.js';
 export { applyTheme } from './runtime/theme.js';
@@ -32,22 +36,25 @@ export function registerComponents(registry = customElements) {
     ['header-component', Header01],
     ['header-01', Header01],
     ['header-02', Header02],
+    ['header-03', Header03],
+    ['header-04', Header04],
+    ['header-05', Header05],
+    ['header-06', Header06],
+    ['header-07', Header07],
+    ['header-08', Header08],
+    ['header-09', Header09],
+    ['header-10', Header10],
     ['footer-component', Footer01],
     ['footer-01', Footer01],
     ['footer-02', Footer02],
     ['product-card', Card01],
     ['card-01', Card01],
-    ['hero-carousel', Carousel01],
-    ['carousel-01', Carousel01],
-    ['carousel-03', Carousel03],
-    ['carousel-01-mobile', Carousel01Mobile],
-    ['carousel-03-mobile', Carousel03Mobile],
-    ['product-list', ProductList01],
-    ['productlist-01', ProductList01],
-    ['productlist-04', ProductList04],
+    ['card-02', Card02],
+    ['card-07', Card07],
+    ['card-11', Card11],
+    ['card-19', Card19],
+    ['card-23', Card23]
   ]) {
-    const existing = registry.get(tag);
-    if (existing && existing !== implementation) throw new Error(`Tag conflict: ${tag}`);
-    if (!existing) registry.define(tag, implementation);
+    if (!registry.get(tag)) registry.define(tag, implementation);
   }
 }

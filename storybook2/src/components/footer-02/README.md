@@ -1,7 +1,23 @@
 # Footer-02
 
-Light-themed three-column footer layout featuring an outline border, quick navigation, policy links, and responsive contact rows.
+浅色边框三列页脚布局组件，包含品牌介绍、服务链接与版权信息。
 
-## Attributes
+### 区域划分
+- `footer-columns`: 核心三列内容区域。
+- `logo-section`: 品牌标志与介绍区域。
+- `bottom-bar`: 底部版权与协议区域。
 
-Inherits global layout and styling defaults. No required attributes.
+### 尺寸与响应式
+- 桌面端：3 列网格排布，遵循全局内容宽度。
+- 移动端：单列纵向流式排布，自适应小屏。
+
+### 属性与接口
+| 属性名 | 属性说明 | 类型 | 默认值 |
+| --- | --- | --- | --- |
+| 无 | 纯标准展示组件，复用全局主题变量 | - | - |
+
+### 事件机制
+- `footer-navigate`: 页脚链接导航点击触发。
+
+### 独立使用说明
+组件具备独立运行能力，复用全局主题变量。
