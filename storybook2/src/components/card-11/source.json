@@ -1,0 +1,32 @@
+{
+  "id": "card-11",
+  "name": "Card-11",
+  "originalId": "card-11",
+  "site": "www.frameloon.com",
+  "page": "index.html",
+  "target": "product-card",
+  "retainedLayout": [
+    "2xl 大圆角边框与 hover 主题色过渡",
+    "1:1 正方形主图",
+    "星级评价与折扣胶囊标签",
+    "双价格与右下角特色圆形加购按钮"
+  ],
+  "retainedInteractions": [
+    "卡片主体跳转与加购操作分流派发",
+    "键盘焦点环与无障碍按钮状态"
+  ],
+  "removed": [
+    "业务文本与硬编码货币符号",
+    "Bootstrap Icons 字体依赖与真实图片资源"
+  ],
+  "acceptance": {
+    "status": "passed",
+    "date": "2026-11-05",
+    "results": [
+      "网格与列表双模式渲染正常",
+      "图片占位符水平垂直居中",
+      "全量静态断言与无业务文案校验通过"
+    ]
+  }
+}
+

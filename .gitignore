@@ -1,24 +1,35 @@
-# User specified
+# User specified reference directories
 website/
 template/
 storybook/
-storybook2/
-edge-profile-test/
-src/
-public/
 
 # Dependencies
 node_modules/
 .pnp
 .pnp.js
 
-# Build and cache outputs
+# Build and cache outputs (产物目录)
 dist/
 build/
 storybook-static/
 .astro/
 .cache/
 .npm-cache/
+edge-profile-test/
+edge-profile*/
+
+# storybook2 generated artifacts (产物目录)
+storybook2/dist/
+storybook2/storybook-static/
+storybook2/src/generated/
+storybook2/public/code/
+storybook2/public/library/
+storybook2/public/playground/
+
+# starlight generated artifacts (产物目录)
+starlight/dist/
+starlight/.astro/
+starlight/public/llms/
 
 # Testing & Reports
 coverage/
@@ -62,4 +73,3 @@ Thumbs.db
 # Temporary files
 *.tmp
 *.temp
-

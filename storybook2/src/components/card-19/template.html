@@ -1,0 +1,35 @@
+<article class="min-w-0 overflow-hidden rounded-md border border-outline/40 bg-surface font-sans text-content shadow-xs">
+  <div class="relative">
+    <button type="button" data-action="open-product" class="block w-full focus-visible:outline-2 focus-visible:outline-offset-4 focus-visible:outline-primary">
+      <span class="relative block w-full aspect-[4/3] overflow-hidden bg-accent">
+        <span class="pointer-events-none absolute inset-0 flex items-center justify-center">
+          <span class="relative block aspect-[6/5] w-1/4 min-w-4 max-w-12 overflow-hidden rounded-sm border border-muted">
+            <span class="absolute right-[15%] top-[15%] size-1/5 rounded-full bg-muted"></span>
+            <span class="absolute -bottom-1/4 left-[5%] size-3/4 rotate-45 border-l border-t border-muted"></span>
+            <span class="absolute -bottom-1/4 right-0 size-1/2 rotate-45 border-l border-t border-muted"></span>
+          </span>
+        </span>
+      </span>
+    </button>
+    <div class="pointer-events-none absolute left-2 top-2 flex size-10 sm:size-11 items-center justify-center rounded-full bg-primary text-xs font-bold text-white shadow-xs">-20%</div>
+    <button type="button" data-action="toggle-wishlist" class="absolute right-2 top-2 flex size-8 items-center justify-center rounded-full bg-surface/80 text-muted hover:text-primary transition-colors focus-visible:outline-2 focus-visible:outline-offset-4 focus-visible:outline-primary">
+      <span class="block size-3.5 rounded-full bg-accent"></span>
+    </button>
+  </div>
+  <div class="p-3 border-t border-outline/30 space-y-2">
+    <button type="button" data-action="open-product" class="block w-full rounded-sm text-left focus-visible:outline-2 focus-visible:outline-offset-4 focus-visible:outline-primary">
+      <span class="block h-[0.75em] w-3/4 rounded-sm bg-accent"></span>
+    </button>
+    <div class="flex items-center gap-1">
+      ${Array.from({ length: 5 }, () => '<span class="block size-2.5 rounded-full bg-accent"></span>').join('')}
+    </div>
+    <div class="flex items-center gap-2 py-0.5">
+      <span class="block h-[0.85em] w-20 rounded-sm bg-accent"></span>
+      <span class="block h-[0.7em] w-12 rounded-sm bg-accent opacity-60"></span>
+    </div>
+    <button type="button" data-action="add-cart" class="w-full bg-primary py-2 px-3 flex items-center justify-center rounded-xs focus-visible:outline-2 focus-visible:outline-offset-4 focus-visible:outline-primary">
+      <span class="block h-[0.75em] w-16 rounded-sm bg-white/90"></span>
+    </button>
+  </div>
+</article>
+

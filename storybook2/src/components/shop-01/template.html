@@ -1,0 +1,37 @@
+<section class="bg-surface font-sans text-content py-6 sm:py-8">
+  <div class="content-container">
+    <div data-region="page-header" class="mb-6 sm:mb-8">
+      <span class="block h-[1em] w-36 sm:w-48 rounded-sm bg-accent text-2xl sm:text-3xl mb-3"></span>
+      <span class="block h-[0.75em] w-full max-w-lg rounded-sm bg-accent"></span>
+    </div>
+
+    <div data-region="toolbar" class="flex flex-col sm:flex-row sm:items-center sm:justify-between mb-6 gap-3 pb-4 border-b border-outline/30">
+      <div class="flex items-center gap-2.5">
+        <span class="block h-[0.75em] w-20 rounded-sm bg-accent"></span>
+        <div class="relative inline-block text-left" data-dropdown="sort">
+          <button type="button" data-dropdown-trigger class="flex items-center justify-between gap-3 border border-outline/60 bg-surface rounded-lg px-3 py-1.5 text-sm text-content hover:border-primary/50 cursor-pointer focus-visible:outline-2 focus-visible:outline-primary shadow-xs">
+            <span class="block h-[0.75em] w-20 rounded-sm bg-accent pointer-events-none" data-dropdown-label></span>
+            <span class="size-1.5 rotate-45 border-r-2 border-b-2 border-content inline-block pointer-events-none"></span>
+          </button>
+          <div class="hidden absolute left-0 mt-1.5 w-36 rounded-lg border border-outline/50 bg-surface shadow-lg z-30 py-1" data-dropdown-menu>
+            <div role="button" tabindex="0" class="flex items-center px-3 py-2 hover:bg-accent/40 cursor-pointer" data-value="default">
+              <span class="block h-[0.75em] w-14 rounded-sm bg-accent pointer-events-none"></span>
+            </div>
+            <div role="button" tabindex="0" class="flex items-center px-3 py-2 hover:bg-accent/40 cursor-pointer" data-value="asc">
+              <span class="block h-[0.75em] w-20 rounded-sm bg-accent pointer-events-none"></span>
+            </div>
+            <div role="button" tabindex="0" class="flex items-center px-3 py-2 hover:bg-accent/40 cursor-pointer" data-value="desc">
+              <span class="block h-[0.75em] w-20 rounded-sm bg-accent pointer-events-none"></span>
+            </div>
+          </div>
+        </div>
+      </div>
+      <div class="flex items-center gap-2 text-sm text-muted">
+        <span id="products-count" class="font-medium text-content">8</span>
+        <span class="block h-[0.75em] w-24 rounded-sm bg-accent"></span>
+      </div>
+    </div>
+
+    <div data-region="products-grid" id="products-grid" class="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-4 gap-4 md:gap-6"></div>
+  </div>
+</section>

@@ -1,0 +1,38 @@
+{
+  "id": "header-04",
+  "name": "Header-04",
+  "originalId": "header-4",
+  "site": "www.cartviba.com",
+  "page": "index.html",
+  "target": "html > body:nth-of-type(1) > header-component:nth-of-type(1)",
+  "implementation": "components/header.js",
+  "retainedLayout": [
+    "顶部彩色公告条",
+    "品牌Logo、圆角搜索条、账户收藏与购物车操作区",
+    "次级分类导航与快捷链接栏",
+    "移动端抽屉与遮罩"
+  ],
+  "retainedInteractions": [
+    "搜索输入提交与建议",
+    "账户菜单下拉浮层与认证切换",
+    "收藏与购物车触发事件",
+    "移动端抽屉开关与遮罩关闭",
+    "键盘焦点循环与恢复"
+  ],
+  "removed": [
+    "原站全局函数、jQuery、图标库及硬编码样式",
+    "重复桌面移动搜索DOM",
+    "原站图片、可见文案与多语言字典",
+    "页面真实跳转改为Header统一事件"
+  ],
+  "acceptance": {
+    "status": "passed",
+    "date": "2026-11-05",
+    "results": [
+      "Header-04 独立组件化重构完成：无外部base.js依赖，挂载于window.$header",
+      "全套属性isLoggedIn/cartCount/wishlistCount与header-*事件统一支持",
+      "无中文及多余HTML属性，遵循全局Tailwind配置与骨架占位"
+    ]
+  }
+}
+

@@ -1,0 +1,32 @@
+{
+  "id": "shop-02",
+  "name": "Shop-02",
+  "originalId": "shopsection-2",
+  "site": "www.bahaynova.net",
+  "page": "shop.html",
+  "target": "html > body:nth-of-type(1) > main:nth-of-type(1) > div:nth-of-type(1)",
+  "retainedLayout": [
+    "桌面端左侧固定侧边栏（分类筛选与价格区间输入）",
+    "右侧顶部工具栏（排序下拉与商品统计计数）",
+    "2列至3列自适应商品网格"
+  ],
+  "retainedInteractions": [
+    "分类与价格区间筛选过滤",
+    "价格升序/降序动态排序",
+    "商品卡片交互派发"
+  ],
+  "removed": [
+    "整站业务硬编码文案与多语言脚本",
+    "全局购物车侧边抽屉"
+  ],
+  "acceptance": {
+    "status": "passed",
+    "date": "2026-11-05",
+    "results": [
+      "侧边栏与主商品区网格排版通过",
+      "价格区间与分类过滤交互有效",
+      "全量静态断言与无业务文案校验通过"
+    ]
+  }
+}
+

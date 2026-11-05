@@ -1,0 +1,33 @@
+{
+  "id": "header-10",
+  "name": "Header-10",
+  "originalId": "header-10",
+  "site": "www.fanminiaphl.com",
+  "page": "index.html",
+  "target": "html > body:nth-of-type(1) > header-component:nth-of-type(1)",
+  "retainedLayout": [
+    "通栏均衡布局：左侧品牌、居中菜单与右侧快捷操作",
+    "移动端折叠抽屉菜单",
+    "用户状态与下拉面板"
+  ],
+  "retainedInteractions": [
+    "登录注册与用户面板切换",
+    "购物车与收藏夹徽标联动",
+    "移动端抽屉开关与链接点击"
+  ],
+  "removed": [
+    "硬编码业务文字与多语言依赖",
+    "第三方图标与页面特定样式",
+    "原页面特定脚本"
+  ],
+  "acceptance": {
+    "status": "passed",
+    "date": "2026-11-05",
+    "results": [
+      "1440/768/390 响应式布局自适应正常",
+      "深浅色主题反转模式切换正常",
+      "全量静态断言与无业务文案校验通过"
+    ]
+  }
+}
+

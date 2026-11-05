@@ -1,0 +1,32 @@
+{
+  "id": "card-23",
+  "name": "Card-23",
+  "originalId": "card-23",
+  "site": "www.telefonhub.net",
+  "page": "index.html",
+  "target": "product-card",
+  "retainedLayout": [
+    "1:1 正方形商品主图",
+    "右上角紧凑折扣角标",
+    "双行标题排版",
+    "突出商品价格与原价对照"
+  ],
+  "retainedInteractions": [
+    "卡片主体点击与商品导航派发",
+    "键盘焦点环与无障碍按钮状态"
+  ],
+  "removed": [
+    "业务文本与硬编码货币符号",
+    "真实图片与 CDN 路径依赖"
+  ],
+  "acceptance": {
+    "status": "passed",
+    "date": "2026-11-05",
+    "results": [
+      "网格与列表双模式渲染正常",
+      "图片占位符水平垂直居中",
+      "全量静态断言与无业务文案校验通过"
+    ]
+  }
+}
+

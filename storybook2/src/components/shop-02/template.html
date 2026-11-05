@@ -1,0 +1,90 @@
+<section class="bg-surface font-sans text-content py-6 sm:py-8">
+  <div class="content-container">
+    <div class="lg:hidden mb-4">
+      <button id="mobile-filters-toggle" type="button" class="w-full flex items-center justify-between bg-surface border border-outline/60 rounded-xl px-4 py-3 cursor-pointer shadow-xs hover:border-primary/50 transition-colors">
+        <div class="flex items-center gap-2.5">
+          <span class="block size-2 rounded-full bg-primary"></span>
+          <span class="block h-[0.75em] w-16 rounded-sm bg-accent"></span>
+        </div>
+        <span class="size-2 rotate-45 border-r-2 border-b-2 border-content inline-block transition-transform duration-200" id="filter-chevron"></span>
+      </button>
+    </div>
+
+    <div class="flex flex-col lg:flex-row gap-6 lg:gap-8">
+      <aside data-region="sidebar" id="filters-sidebar" class="hidden lg:block lg:w-64 lg:shrink-0">
+        <div class="bg-surface rounded-xl border border-outline/60 p-5 sticky top-24 shadow-xs">
+          <div class="mb-5 pb-3 border-b border-outline/30">
+            <span class="block h-[1em] w-24 rounded-sm bg-accent text-lg"></span>
+          </div>
+
+          <div class="mb-5">
+            <span class="block h-[0.75em] w-20 rounded-sm bg-accent mb-2.5"></span>
+            <div class="relative w-full" data-dropdown="category">
+              <button type="button" data-dropdown-trigger class="w-full flex items-center justify-between gap-3 border border-outline/60 bg-surface rounded-lg px-3 py-2 text-sm text-content hover:border-primary/50 cursor-pointer focus-visible:outline-2 focus-visible:outline-primary shadow-xs">
+                <span class="block h-[0.75em] w-24 rounded-sm bg-accent pointer-events-none" data-dropdown-label></span>
+                <span class="size-1.5 rotate-45 border-r-2 border-b-2 border-content inline-block pointer-events-none"></span>
+              </button>
+              <div class="hidden absolute left-0 right-0 mt-1.5 rounded-lg border border-outline/50 bg-surface shadow-lg z-30 py-1" data-dropdown-menu>
+                <div role="button" tabindex="0" class="flex items-center px-3 py-2 hover:bg-accent/40 cursor-pointer" data-value="all">
+                  <span class="block h-[0.75em] w-16 rounded-sm bg-accent pointer-events-none"></span>
+                </div>
+                <div role="button" tabindex="0" class="flex items-center px-3 py-2 hover:bg-accent/40 cursor-pointer" data-value="cat-1">
+                  <span class="block h-[0.75em] w-24 rounded-sm bg-accent pointer-events-none"></span>
+                </div>
+                <div role="button" tabindex="0" class="flex items-center px-3 py-2 hover:bg-accent/40 cursor-pointer" data-value="cat-2">
+                  <span class="block h-[0.75em] w-20 rounded-sm bg-accent pointer-events-none"></span>
+                </div>
+                <div role="button" tabindex="0" class="flex items-center px-3 py-2 hover:bg-accent/40 cursor-pointer" data-value="cat-3">
+                  <span class="block h-[0.75em] w-28 rounded-sm bg-accent pointer-events-none"></span>
+                </div>
+              </div>
+            </div>
+          </div>
+
+          <div class="mb-6">
+            <span class="block h-[0.75em] w-28 rounded-sm bg-accent mb-2.5"></span>
+            <div class="space-y-2">
+              <input type="number" id="price-min" placeholder="Min" class="w-full border border-outline/60 bg-surface rounded-lg px-3 py-2 text-sm text-content focus-visible:outline-2 focus-visible:outline-primary">
+              <input type="number" id="price-max" placeholder="Max" class="w-full border border-outline/60 bg-surface rounded-lg px-3 py-2 text-sm text-content focus-visible:outline-2 focus-visible:outline-primary">
+            </div>
+          </div>
+
+          <button id="apply-filters-btn" type="button" class="w-full bg-primary text-white rounded-lg px-4 py-2 text-sm font-semibold hover:opacity-90 transition-opacity cursor-pointer">
+            <span class="block h-[0.75em] w-20 mx-auto rounded-sm bg-white/40"></span>
+          </button>
+        </div>
+      </aside>
+
+      <div class="flex-1">
+        <div data-region="toolbar" class="flex flex-col sm:flex-row sm:items-center sm:justify-between mb-6 gap-3 pb-4 border-b border-outline/30">
+          <div class="flex items-center gap-2.5">
+            <span class="block h-[0.75em] w-20 rounded-sm bg-accent"></span>
+            <div class="relative inline-block text-left" data-dropdown="sort">
+              <button type="button" data-dropdown-trigger class="flex items-center justify-between gap-3 border border-outline/60 bg-surface rounded-lg px-3 py-1.5 text-sm text-content hover:border-primary/50 cursor-pointer focus-visible:outline-2 focus-visible:outline-primary shadow-xs">
+                <span class="block h-[0.75em] w-20 rounded-sm bg-accent pointer-events-none" data-dropdown-label></span>
+                <span class="size-1.5 rotate-45 border-r-2 border-b-2 border-content inline-block pointer-events-none"></span>
+              </button>
+              <div class="hidden absolute left-0 mt-1.5 w-36 rounded-lg border border-outline/50 bg-surface shadow-lg z-30 py-1" data-dropdown-menu>
+                <div role="button" tabindex="0" class="flex items-center px-3 py-2 hover:bg-accent/40 cursor-pointer" data-value="default">
+                  <span class="block h-[0.75em] w-14 rounded-sm bg-accent pointer-events-none"></span>
+                </div>
+                <div role="button" tabindex="0" class="flex items-center px-3 py-2 hover:bg-accent/40 cursor-pointer" data-value="asc">
+                  <span class="block h-[0.75em] w-20 rounded-sm bg-accent pointer-events-none"></span>
+                </div>
+                <div role="button" tabindex="0" class="flex items-center px-3 py-2 hover:bg-accent/40 cursor-pointer" data-value="desc">
+                  <span class="block h-[0.75em] w-20 rounded-sm bg-accent pointer-events-none"></span>
+                </div>
+              </div>
+            </div>
+          </div>
+          <div class="flex items-center gap-2 text-sm text-muted">
+            <span id="products-count" class="font-medium text-content">6</span>
+            <span class="block h-[0.75em] w-24 rounded-sm bg-accent"></span>
+          </div>
+        </div>
+
+        <div data-region="products-grid" id="products-grid" class="grid grid-cols-2 sm:grid-cols-3 gap-4 md:gap-6"></div>
+      </div>
+    </div>
+  </div>
+</section>

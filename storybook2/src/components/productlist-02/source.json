@@ -1,0 +1,29 @@
+{
+  "id": "productlist-02",
+  "name": "ProductList-02",
+  "originalId": "productlist-2",
+  "site": "www.bahaynova.net",
+  "page": "index.html",
+  "target": "html > body:nth-of-type(1) > main:nth-of-type(1) > section:nth-of-type(3)",
+  "retainedLayout": [
+    "居中大标题",
+    "2/3/4列响应式商品网格",
+    "内嵌Card-01主图、评分、价格与折扣卡片"
+  ],
+  "retainedInteractions": [
+    "内嵌卡片商品导航"
+  ],
+  "removed": [
+    "全站商品数据库、jQuery及swiper依赖",
+    "全站根字号变量",
+    "真实图片、币种、价格及翻译"
+  ],
+  "acceptance": {
+    "status": "passed",
+    "date": "2026-11-05",
+    "results": [
+      "ProductList-02 属于Block板块，纯原生HTML结构内嵌card-01组件",
+      "使用card-01标签，已解决自定义元素未注册问题"
+    ]
+  }
+}

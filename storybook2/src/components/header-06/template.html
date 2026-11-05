@@ -1,0 +1,55 @@
+<header class="w-full">
+  <div data-region="top-bar" class="bg-primary font-sans text-white py-2.5">
+    <div class="content-container flex items-center justify-between gap-4">
+      <div data-region="logo">
+        <div role="button" tabindex="0" class="flex items-center rounded-lg focus-visible:outline-2 focus-visible:outline-offset-4 focus-visible:outline-primary">
+          <span class="relative flex h-10 w-28 items-center justify-center overflow-hidden rounded-xl bg-accent"><span class="select-none text-xs font-semibold tracking-widest text-muted">LOGO</span></span>
+        </div>
+      </div>
+
+      <div data-region="search-bar" class="hidden md:flex flex-1 max-w-md mx-4">
+        <div class="relative w-full">
+          <div class="relative flex items-center rounded-lg bg-surface text-content px-3 py-1.5 focus-within:ring-2 focus-within:ring-white">
+            <span class="pointer-events-none absolute left-3 select-none"><span class="block h-[0.75em] w-28 rounded-sm bg-accent"></span></span>
+            <input type="search" class="w-full bg-transparent text-sm outline-none placeholder:text-transparent" />
+            <button type="button" class="flex size-7 shrink-0 items-center justify-center rounded-md hover:bg-white/10 text-white">
+              <span class="block size-3.5 rounded-full bg-accent"></span>
+            </button>
+          </div>
+        </div>
+      </div>
+
+      <div class="flex items-center gap-1.5 sm:gap-3">
+        <div class="hidden sm:flex items-center gap-2">
+          <span class="block h-[0.75em] w-10 rounded-sm bg-accent"></span>
+          <span class="text-xs opacity-40">|</span>
+          <span class="block h-[0.75em] w-12 rounded-sm bg-accent"></span>
+        </div>
+
+        <button type="button" class="relative flex size-9 items-center justify-center rounded-lg hover:bg-white/10 text-white">
+          <span class="block size-4 rounded-sm bg-accent"></span>
+        </button>
+
+        <button type="button" class="relative flex size-9 items-center justify-center rounded-lg hover:bg-white/10 text-white">
+          <span class="block size-4 rounded-sm bg-accent"></span>
+        </button>
+
+        <button type="button" class="flex size-9 items-center justify-center rounded-lg md:hidden hover:bg-white/10 text-white">
+          <span class="flex flex-col gap-1"><span class="block h-0.5 w-4 bg-accent"></span><span class="block h-0.5 w-4 bg-accent"></span><span class="block h-0.5 w-4 bg-accent"></span></span>
+        </button>
+      </div>
+    </div>
+  </div>
+
+  <div data-region="menu-bar" class="bg-surface text-content shadow-xs border-b border-outline/20 py-2.5 hidden md:block">
+    <div class="content-container">
+      <nav class="flex items-center justify-center gap-8">
+        <span class="block h-[0.75em] w-12 rounded-sm bg-accent"></span>
+        <span class="block h-[0.75em] w-10 rounded-sm bg-accent"></span>
+        <span class="block h-[0.75em] w-12 rounded-sm bg-accent"></span>
+        <span class="block h-[0.75em] w-14 rounded-sm bg-accent"></span>
+      </nav>
+    </div>
+  </div>
+</header>
+

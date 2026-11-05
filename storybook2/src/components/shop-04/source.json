@@ -1,0 +1,32 @@
+{
+  "id": "shop-04",
+  "name": "Shop-04",
+  "originalId": "shopsection-4",
+  "site": "www.cartviba.com",
+  "page": "shop.html",
+  "target": "html > body:nth-of-type(1) > main:nth-of-type(1) > div:nth-of-type(1)",
+  "retainedLayout": [
+    "桌面端左侧单选分类树与价格输入过滤侧边栏",
+    "右侧浅灰圆角工具条与商品统计栏",
+    "2列至4列响应式商品网格"
+  ],
+  "retainedInteractions": [
+    "单选分类列表与价格输入筛选",
+    "价格升序/降序动态排序",
+    "商品卡片交互派发"
+  ],
+  "removed": [
+    "整站业务硬编码文案与多语言脚本",
+    "移动端全屏滤镜抽屉弹层"
+  ],
+  "acceptance": {
+    "status": "passed",
+    "date": "2026-11-05",
+    "results": [
+      "单选分类侧边栏与工具条网格布局通过",
+      "分类单选联动与价格排序正常",
+      "全量静态断言与无业务文案校验通过"
+    ]
+  }
+}
+

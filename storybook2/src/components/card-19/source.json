@@ -1,0 +1,33 @@
+{
+  "id": "card-19",
+  "name": "Card-19",
+  "originalId": "card-19",
+  "site": "www.nusadigital.net",
+  "page": "index.html",
+  "target": "product-card",
+  "retainedLayout": [
+    "4:3 比例商品主图",
+    "左上角大圆形折扣徽章与右上角收藏按钮",
+    "五星评分与价格对照",
+    "底部全宽扁平加购按钮"
+  ],
+  "retainedInteractions": [
+    "卡片主体跳转与加购操作分流派发",
+    "收藏夹状态切换交互",
+    "键盘焦点环与无障碍按钮状态"
+  ],
+  "removed": [
+    "业务文本与硬编码货币符号",
+    "Bootstrap Icons 字体依赖与真实图片资源"
+  ],
+  "acceptance": {
+    "status": "passed",
+    "date": "2026-11-05",
+    "results": [
+      "网格与列表双模式渲染正常",
+      "4:3 比例图片占位符水平垂直居中",
+      "全量静态断言与无业务文案校验通过"
+    ]
+  }
+}
+

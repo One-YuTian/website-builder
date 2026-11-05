@@ -1,0 +1,59 @@
+<header class="bg-gradient-to-r from-secondary via-secondary to-[#1e1b4b] text-on-secondary font-sans">
+  <div data-region="header-content" class="content-container">
+    <div data-region="top-bar" class="hidden items-center justify-center gap-4 py-1 md:flex lg:justify-between border-b border-on-secondary/10">
+      <div data-region="promotion" class="hidden shrink-0 lg:block"><span class="block h-[0.75em] w-56 rounded-sm bg-accent"></span></div>
+      <nav class="flex items-center gap-5 lg:gap-7">
+        <div role="button" tabindex="0" data-destination="home" class="rounded-sm py-2 hover:opacity-75 focus-visible:outline-2 focus-visible:outline-offset-4 focus-visible:outline-primary"><span class="block h-[0.75em] w-10 rounded-sm bg-accent"></span></div>
+        <div role="button" tabindex="0" data-destination="shop" class="rounded-sm py-2 hover:opacity-75 focus-visible:outline-2 focus-visible:outline-offset-4 focus-visible:outline-primary"><span class="block h-[0.75em] w-10 rounded-sm bg-accent"></span></div>
+        <div role="button" tabindex="0" data-destination="about" class="rounded-sm py-2 hover:opacity-75 focus-visible:outline-2 focus-visible:outline-offset-4 focus-visible:outline-primary"><span class="block h-[0.75em] w-10 rounded-sm bg-accent"></span></div>
+        <div role="button" tabindex="0" data-destination="contact" class="rounded-sm py-2 hover:opacity-75 focus-visible:outline-2 focus-visible:outline-offset-4 focus-visible:outline-primary"><span class="block h-[0.75em] w-10 rounded-sm bg-accent"></span></div>
+        <div role="button" tabindex="0" data-destination="wishlist" class="rounded-sm py-2 hover:opacity-75 focus-visible:outline-2 focus-visible:outline-offset-4 focus-visible:outline-primary"><span class="block h-[0.75em] w-10 rounded-sm bg-accent"></span></div>
+        <div role="button" tabindex="0" data-destination="login" class="rounded-sm py-2 hover:opacity-75 focus-visible:outline-2 focus-visible:outline-offset-4 focus-visible:outline-primary"><span class="block h-[0.75em] w-10 rounded-sm bg-accent"></span></div>
+        <div role="button" tabindex="0" data-destination="register" class="rounded-sm py-2 hover:opacity-75 focus-visible:outline-2 focus-visible:outline-offset-4 focus-visible:outline-primary"><span class="block h-[0.75em] w-12 rounded-sm bg-accent"></span></div>
+      </nav>
+    </div>
+    <div class="grid grid-cols-[auto_minmax(0,1fr)] items-center gap-x-4 gap-y-2 pb-3 pt-2 md:grid-cols-[auto_minmax(0,1fr)_auto] md:gap-x-8 md:py-4">
+      <div role="button" tabindex="0" data-destination="home" class="order-1 flex h-14 items-center rounded-sm focus-visible:outline-2 focus-visible:outline-offset-4 focus-visible:outline-primary">
+        <span class="relative flex h-10 w-32 items-center justify-center overflow-hidden rounded-xl bg-accent select-none text-xs font-semibold tracking-widest text-muted">LOGO</span>
+      </div>
+      <form role="search" class="relative order-3 col-span-2 min-w-0 md:order-2 md:col-span-1 md:ml-auto md:w-full md:max-w-2xl">
+        <div class="relative flex h-11 items-center rounded-md bg-surface text-content">
+          <input type="search" name="query" autocomplete="off" class="h-full w-full min-w-0 rounded-md border-0 bg-transparent py-2 pl-4 pr-2 outline-none">
+          <span data-region="search-placeholder" class="pointer-events-none absolute left-4"><span class="block h-[0.75em] w-36 rounded-sm bg-accent"></span></span>
+          <button type="submit" class="mr-1 flex size-10 shrink-0 items-center justify-center rounded-md focus-visible:outline-2 focus-visible:outline-offset-4 focus-visible:outline-primary">
+            <span class="block size-4 rounded-full bg-accent"></span>
+          </button>
+        </div>
+        <ul data-region="search-suggestions" hidden class="absolute inset-x-0 top-full z-20 mt-2 max-h-80 overflow-y-auto rounded-xl border border-outline bg-surface p-2 text-content shadow-xl"></ul>
+      </form>
+      <div class="order-2 flex items-center justify-end gap-1 md:order-3 md:gap-4">
+        <button type="button" data-action="cart" class="relative flex size-10 shrink-0 items-center justify-center rounded-md hover:bg-on-secondary/10 focus-visible:outline-2 focus-visible:outline-offset-4 focus-visible:outline-primary">
+          <span class="block size-5 rounded-full bg-accent"></span>
+        </button>
+        <button type="button" data-action="menu" class="flex md:hidden size-10 shrink-0 items-center justify-center rounded-md hover:bg-on-secondary/10 focus-visible:outline-2 focus-visible:outline-offset-4 focus-visible:outline-primary">
+          <span class="block size-5 rounded-full bg-accent"></span>
+        </button>
+      </div>
+    </div>
+  </div>
+</header>
+<dialog class="fixed inset-y-0 left-0 m-0 h-dvh max-h-none w-80 max-w-[calc(100vw-2rem)] overflow-y-auto overscroll-contain border-0 bg-surface p-6 text-content shadow-xl backdrop:bg-black/50">
+  <div class="mb-6 flex items-center justify-between gap-4">
+    <span class="relative flex h-8 w-28 items-center justify-center overflow-hidden rounded-lg bg-accent select-none text-xs font-semibold tracking-widest text-muted">LOGO</span>
+    <button type="button" autofocus data-action="close-menu" class="flex size-10 items-center justify-center rounded-lg hover:bg-accent/40 focus-visible:outline-2 focus-visible:outline-offset-4 focus-visible:outline-primary">
+      <span class="block size-5 rounded-full bg-accent"></span>
+    </button>
+  </div>
+  <nav class="space-y-3">
+    <div role="button" tabindex="0" data-destination="home" class="block rounded-lg px-2 py-3 hover:bg-accent/40"><span class="block h-[0.75em] w-24 rounded-sm bg-accent"></span></div>
+    <div role="button" tabindex="0" data-destination="shop" class="block rounded-lg px-2 py-3 hover:bg-accent/40"><span class="block h-[0.75em] w-24 rounded-sm bg-accent"></span></div>
+    <div role="button" tabindex="0" data-destination="about" class="block rounded-lg px-2 py-3 hover:bg-accent/40"><span class="block h-[0.75em] w-24 rounded-sm bg-accent"></span></div>
+    <div role="button" tabindex="0" data-destination="contact" class="block rounded-lg px-2 py-3 hover:bg-accent/40"><span class="block h-[0.75em] w-24 rounded-sm bg-accent"></span></div>
+    <div role="button" tabindex="0" data-destination="wishlist" class="block rounded-lg px-2 py-3 hover:bg-accent/40"><span class="block h-[0.75em] w-24 rounded-sm bg-accent"></span></div>
+  </nav>
+  <div class="mt-6 flex flex-col items-start gap-3 border-t border-outline px-2 pt-6">
+    <div role="button" tabindex="0" data-destination="login" class="rounded-sm py-2 hover:opacity-75 focus-visible:outline-2 focus-visible:outline-offset-4 focus-visible:outline-primary"><span class="block h-[0.75em] w-10 rounded-sm bg-accent"></span></div>
+    <div role="button" tabindex="0" data-destination="register" class="rounded-sm py-2 hover:opacity-75 focus-visible:outline-2 focus-visible:outline-offset-4 focus-visible:outline-primary"><span class="block h-[0.75em] w-12 rounded-sm bg-accent"></span></div>
+  </div>
+</dialog>
+

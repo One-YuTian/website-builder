@@ -1,0 +1,31 @@
+{
+  "id": "card-02",
+  "name": "Card-02",
+  "originalId": "card-2",
+  "site": "www.bahaynova.net",
+  "page": "index.html",
+  "target": "product-card",
+  "retainedLayout": [
+    "网格与列表双模式排版",
+    "商品主图、悬浮收藏夹按钮与折扣角标",
+    "双行标题、星级评价、双价格与底部加购按钮"
+  ],
+  "retainedInteractions": [
+    "卡片主体跳转与加购操作分流派发",
+    "键盘焦点环与无障碍按钮状态"
+  ],
+  "removed": [
+    "业务文本与硬编码货币符号",
+    "真实图片与图标依赖，统一适配全局骨架与居中图片图标"
+  ],
+  "acceptance": {
+    "status": "passed",
+    "date": "2026-11-05",
+    "results": [
+      "网格与列表双模式渲染正常",
+      "图片占位符水平垂直死角居中",
+      "全量静态断言与无业务文案校验通过"
+    ]
+  }
+}
+

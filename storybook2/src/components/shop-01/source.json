@@ -1,0 +1,31 @@
+{
+  "id": "shop-01",
+  "name": "Shop-01",
+  "originalId": "shopsection-1",
+  "site": "www.agoian.com",
+  "page": "shop.html",
+  "target": "html > body:nth-of-type(1) > main:nth-of-type(1) > div:nth-of-type(1)",
+  "retainedLayout": [
+    "页面标题与副标题描述区域",
+    "价格排序下拉选择与商品总数统计栏",
+    "2列至4列响应式商品网格"
+  ],
+  "retainedInteractions": [
+    "价格升序/降序动态排序与网格刷新",
+    "商品卡片交互派发"
+  ],
+  "removed": [
+    "整站购物车弹层与多语言业务文案",
+    "硬编码宽度改为全局内容宽度"
+  ],
+  "acceptance": {
+    "status": "passed",
+    "date": "2026-11-05",
+    "results": [
+      "商城页面结构与工具栏渲染正常",
+      "价格排序切换与卡片网格响应式排列通过",
+      "全量静态断言与无业务文案校验通过"
+    ]
+  }
+}
+

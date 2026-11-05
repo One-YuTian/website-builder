@@ -1,0 +1,34 @@
+{
+  "id": "header-06",
+  "name": "Header-06",
+  "originalId": "header-6",
+  "site": "www.chronobra.net",
+  "page": "index.html",
+  "target": "html > body:nth-of-type(1) > header-component:nth-of-type(1)",
+  "retainedLayout": [
+    "双栏式布局：顶部品牌搜索操作栏与下方居中导航栏",
+    "移动端侧边抽屉菜单与全屏遮罩",
+    "用户菜单下拉面板及搜索联想面板"
+  ],
+  "retainedInteractions": [
+    "搜索输入与提交触发事件",
+    "登录注册与用户面板切换",
+    "购物车与收藏夹徽标联动",
+    "移动端抽屉开关与链接点击"
+  ],
+  "removed": [
+    "硬编码业务文字与多语言依赖",
+    "第三方图标库与图片资源依赖，统一替换为骨架占位",
+    "原页面内联样式与定制脚本"
+  ],
+  "acceptance": {
+    "status": "passed",
+    "date": "2026-11-05",
+    "results": [
+      "1440/768/390 响应式布局自适应正常",
+      "深浅色主题反转模式切换正常",
+      "全量静态断言与无业务文案校验通过"
+    ]
+  }
+}
+

@@ -1,0 +1,35 @@
+<article class="min-w-0 overflow-hidden rounded-2xl border border-outline/50 bg-surface font-sans text-content hover:border-primary/50 transition-colors">
+  <div class="relative">
+    <button type="button" data-action="open-product" class="block w-full focus-visible:outline-2 focus-visible:outline-offset-4 focus-visible:outline-primary">
+      <span class="relative block w-full aspect-square overflow-hidden bg-accent rounded-t-2xl">
+        <span class="pointer-events-none absolute inset-0 flex items-center justify-center">
+          <span class="relative block aspect-[6/5] w-1/4 min-w-4 max-w-12 overflow-hidden rounded-sm border border-muted">
+            <span class="absolute right-[15%] top-[15%] size-1/5 rounded-full bg-muted"></span>
+            <span class="absolute -bottom-1/4 left-[5%] size-3/4 rotate-45 border-l border-t border-muted"></span>
+            <span class="absolute -bottom-1/4 right-0 size-1/2 rotate-45 border-l border-t border-muted"></span>
+          </span>
+        </span>
+      </span>
+    </button>
+  </div>
+  <div class="p-3.5 flex flex-col justify-between border-t border-outline/30 space-y-3">
+    <div>
+      <span class="block h-[0.75em] w-full rounded-sm bg-accent mb-1.5"></span>
+      <span class="block h-[0.75em] w-3/4 rounded-sm bg-accent mb-2"></span>
+      <div class="flex items-center gap-2">
+        <span class="flex gap-1">${Array.from({ length: 5 }, () => '<span class="block size-2 rounded-full bg-accent"></span>').join('')}</span>
+        <span class="block h-[0.65em] w-9 rounded-xs bg-primary/20"></span>
+      </div>
+    </div>
+    <div class="flex items-end justify-between pt-1">
+      <div class="flex flex-col gap-1">
+        <span class="block h-[0.85em] w-18 rounded-sm bg-accent"></span>
+        <span class="block h-[0.65em] w-12 rounded-sm bg-accent opacity-50"></span>
+      </div>
+      <button type="button" data-action="add-cart" class="flex size-8 sm:size-9 shrink-0 items-center justify-center rounded-full border border-primary bg-surface text-primary hover:bg-primary hover:text-white transition-colors focus-visible:outline-2 focus-visible:outline-offset-4 focus-visible:outline-primary">
+        <span class="block size-3 rounded-full bg-current"></span>
+      </button>
+    </div>
+  </div>
+</article>
+

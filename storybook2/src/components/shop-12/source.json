@@ -1,0 +1,34 @@
+{
+  "id": "shop-12",
+  "name": "Shop-12",
+  "originalId": "shopsection-12",
+  "site": "www.evercraftnepal.com",
+  "page": "shop.html",
+  "target": "[id=\"main-content\"] > div:nth-of-type(2)",
+  "retainedLayout": [
+    "页面主标题描述区",
+    "桌面端左侧预设价格档位与分类侧边栏",
+    "右侧顶部工具栏（排序下拉与网格/列表视图切换开关）",
+    "自适应网格与列表切换展示容器"
+  ],
+  "retainedInteractions": [
+    "预设价格单选档位与分类联合过滤",
+    "一键重置清空筛选条件",
+    "网格（Grid）与列表（List）双视图模式切换",
+    "商品卡片交互派发"
+  ],
+  "removed": [
+    "整站业务硬编码文案与多语言脚本",
+    "全屏移动端抽屉弹层"
+  ],
+  "acceptance": {
+    "status": "passed",
+    "date": "2026-11-05",
+    "results": [
+      "侧边栏预设档位与工具栏双视图布局通过",
+      "视图模式切换与排序过滤功能完整",
+      "全量静态断言与无业务文案校验通过"
+    ]
+  }
+}
+

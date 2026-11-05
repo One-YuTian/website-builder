@@ -1,0 +1,32 @@
+{
+  "id": "productlist-03",
+  "name": "ProductList-03",
+  "originalId": "productlist-3",
+  "site": "www.bahaynova.net",
+  "page": "index.html",
+  "target": "html > body:nth-of-type(1) > main:nth-of-type(1) > section:nth-of-type(6)",
+  "retainedLayout": [
+    "轮播滑动式商品展示板块",
+    "居中大标题骨架占位",
+    "左右轮播切换箭头导航",
+    "多断点阶梯式列数响应（5/4/3/2）"
+  ],
+  "retainedInteractions": [
+    "Swiper 循环滑动与翻页切换",
+    "商品卡片点击与事件冒泡派发"
+  ],
+  "removed": [
+    "业务文本与真实商品数据",
+    "特定样式与原站点全局依赖"
+  ],
+  "acceptance": {
+    "status": "passed",
+    "date": "2026-11-05",
+    "results": [
+      "1440/768/390 响应式布局自适应正常",
+      "Swiper 轮播轨道及左右切换按钮导航正常",
+      "全量静态断言与无业务文案校验通过"
+    ]
+  }
+}
+

@@ -1,0 +1,38 @@
+{
+  "id": "header-03",
+  "name": "Header-03",
+  "originalId": "header-3",
+  "site": "www.belanjatech.net",
+  "page": "index.html",
+  "target": "html > body:nth-of-type(1) > header-component:nth-of-type(1)",
+  "implementation": "components/header.js",
+  "retainedLayout": [
+    "白色极简吸顶页头",
+    "Logo、居中搜索框、购物车与认证按钮",
+    "底端水平居中主导航栏",
+    "移动端左侧抽屉与遮罩"
+  ],
+  "retainedInteractions": [
+    "搜索输入提交及建议选取",
+    "登录认证状态切换",
+    "购物车入口事件及抽屉触发",
+    "移动端抽屉与遮罩关闭",
+    "键盘焦点循环与恢复"
+  ],
+  "removed": [
+    "原站全局函数、jQuery、图标库及硬编码样式",
+    "重复桌面移动搜索DOM",
+    "原站图片、可见文案与多语言字典",
+    "页面真实跳转改为Header统一事件"
+  ],
+  "acceptance": {
+    "status": "passed",
+    "date": "2026-11-05",
+    "results": [
+      "Header-03 独立组件化重构完成：无外部base.js依赖，挂载于window.$header",
+      "全套属性isLoggedIn/cartCount/wishlistCount与header-*事件统一支持",
+      "无中文及多余HTML属性，遵循全局Tailwind配置与骨架占位"
+    ]
+  }
+}
+

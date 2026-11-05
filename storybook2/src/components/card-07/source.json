@@ -1,0 +1,33 @@
+{
+  "id": "card-07",
+  "name": "Card-07",
+  "originalId": "card-7",
+  "site": "www.clarionhome.net",
+  "page": "index.html",
+  "target": "product-card",
+  "retainedLayout": [
+    "5:4 比例主图与右上浮动收藏夹按钮",
+    "品牌标签与双行商品标题",
+    "现价与原价对照显示",
+    "底部全宽加购按钮"
+  ],
+  "retainedInteractions": [
+    "卡片主体跳转与加购操作分流派发",
+    "收藏夹状态切换交互",
+    "键盘焦点环与无障碍按钮状态"
+  ],
+  "removed": [
+    "业务文本与硬编码货币符号",
+    "FontAwesome 图标依赖与真实图片资源"
+  ],
+  "acceptance": {
+    "status": "passed",
+    "date": "2026-11-05",
+    "results": [
+      "网格与列表双模式渲染正常",
+      "5:4 比例图片占位符水平垂直居中",
+      "全量静态断言与无业务文案校验通过"
+    ]
+  }
+}
+
