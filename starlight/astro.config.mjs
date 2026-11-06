@@ -43,7 +43,7 @@ export default defineConfig({
         starlightLlmsTxt({
           projectName: 'Storybook2 Web Components & Blocks',
           description: 'Production-ready Native Web Components, Tailwind CSS, and Light DOM templates.',
-          details: 'Hierarchy is structured across Groups (Components / Blocks), Kinds (Header, Footer, Card, Carousel, ProductList), and Individual Components. Each component has an isolated LLM document specification.',
+          details: 'Hierarchy is structured across Groups (Components / Blocks / Pages), Kinds (Header, Footer, Card, Carousel, ProductList, Shop, Detail, About, Contact), and Individual Components. Each component has an isolated LLM document specification.',
           customSets: componentCustomSets,
           optionalLinks: dedicatedOptionalLinks,
         }),
@@ -71,6 +71,10 @@ export default defineConfig({
               autogenerate: { directory: 'components/card' },
             },
             {
+              label: 'FlashCard',
+              autogenerate: { directory: 'components/flashcard' },
+            },
+            {
               label: 'Footer',
               autogenerate: { directory: 'components/footer' },
             },
@@ -85,8 +89,24 @@ export default defineConfig({
               autogenerate: { directory: 'blocks/carousel' },
             },
             {
+              label: 'Categories',
+              autogenerate: { directory: 'blocks/categories' },
+            },
+            {
+              label: 'FlashSale',
+              autogenerate: { directory: 'blocks/flashsale' },
+            },
+            {
               label: 'ProductList',
               autogenerate: { directory: 'blocks/productlist' },
+            },
+            {
+              label: 'Promotion',
+              autogenerate: { directory: 'blocks/promotion' },
+            },
+            {
+              label: 'Services',
+              autogenerate: { directory: 'blocks/services' },
             },
           ],
         },
@@ -101,6 +121,14 @@ export default defineConfig({
             {
               label: 'Detail',
               autogenerate: { directory: 'pages/detail' },
+            },
+            {
+              label: 'About',
+              autogenerate: { directory: 'pages/about' },
+            },
+            {
+              label: 'Contact',
+              autogenerate: { directory: 'pages/contact' },
             },
           ],
         },

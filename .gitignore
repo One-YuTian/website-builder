@@ -2,6 +2,7 @@
 website/
 template/
 storybook/
+storybook2/
 
 # Dependencies
 node_modules/

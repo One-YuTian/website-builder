@@ -18,6 +18,9 @@ async function runtimeFor(entry, variant) {
   // Blocks and Pages need card-01 definition for productlist, shop, and detail
   if (entry.id.startsWith('productlist') || entry.id.startsWith('shop') || entry.id.startsWith('detail')) {
     definitions.push(['card-01', 'Card', 'src/components/card-01/index.js']);
+  }
+  if (entry.id.startsWith('flashsale')) {
+    definitions.push(['flashcard-01', 'FlashCard', 'src/components/flashcard-01/index.js']);
   } else if (!isBlock && entry.id !== 'skeleton-placeholder') {
     // Normal WebComponent
     const implName = entry.kind || 'Component';

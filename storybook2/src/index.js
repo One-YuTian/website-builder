@@ -17,13 +17,15 @@ import { Card as Card07 } from './components/card-07/index.js';
 import { Card as Card11 } from './components/card-11/index.js';
 import { Card as Card19 } from './components/card-19/index.js';
 import { Card as Card23 } from './components/card-23/index.js';
+import { FlashCard as FlashCard01 } from './components/flashcard-01/index.js';
 
 export {
   Header01, Header02, Header03, Header04, Header05,
   Header06, Header07, Header08, Header09, Header10,
   Footer01, Footer02,
   Card01, Card02,
-  Card07, Card11, Card19, Card23
+  Card07, Card11, Card19, Card23,
+  FlashCard01
 };
 export { Skeleton, createSkeleton } from './components/skeleton.js';
 export { initializeResources, loadJQuery } from './runtime/resources.js';
@@ -33,7 +35,6 @@ export { themeConfig, themePresets } from './config/theme.js';
 export function registerComponents(registry = customElements) {
   for (const [tag, implementation] of [
     ['skeleton-placeholder', Skeleton],
-    ['header-component', Header01],
     ['header-01', Header01],
     ['header-02', Header02],
     ['header-03', Header03],
@@ -44,16 +45,15 @@ export function registerComponents(registry = customElements) {
     ['header-08', Header08],
     ['header-09', Header09],
     ['header-10', Header10],
-    ['footer-component', Footer01],
     ['footer-01', Footer01],
     ['footer-02', Footer02],
-    ['product-card', Card01],
     ['card-01', Card01],
     ['card-02', Card02],
     ['card-07', Card07],
     ['card-11', Card11],
     ['card-19', Card19],
-    ['card-23', Card23]
+    ['card-23', Card23],
+    ['flashcard-01', FlashCard01]
   ]) {
     if (!registry.get(tag)) registry.define(tag, implementation);
   }

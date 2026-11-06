@@ -17,13 +17,13 @@ const publicLlmsDir = path.join(publicDir, 'llms');
 for (const old of ['card', 'carousel', 'footer', 'header', 'productlist', 'components', 'blocks', 'pages']) {
   const p = path.join(contentDocsDir, old);
   if (fs.existsSync(p)) {
-    fs.rmSync(p, { recursive: true, force: true });
+    fs.rmSync(p, { recursive: true, force: true, maxRetries: 5, retryDelay: 200 });
   }
 }
 
 // Clean up public llms directory
 if (fs.existsSync(publicLlmsDir)) {
-  fs.rmSync(publicLlmsDir, { recursive: true, force: true });
+  fs.rmSync(publicLlmsDir, { recursive: true, force: true, maxRetries: 5, retryDelay: 200 });
 }
 
 // Ensure directories exist
@@ -129,6 +129,8 @@ for (const entry of catalog) {
   else if (entry.id.startsWith('productlist-')) previewHeight = '550px';
   else if (entry.id.startsWith('shop-')) previewHeight = '780px';
   else if (entry.id.startsWith('detail-')) previewHeight = '1200px';
+  else if (entry.id.startsWith('about-')) previewHeight = '850px';
+  else if (entry.id.startsWith('contact-')) previewHeight = '800px';
 
   // --- MDX Document (For humans & interactive preview) ---
   let mdx = `---

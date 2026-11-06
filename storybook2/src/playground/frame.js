@@ -19,9 +19,9 @@ window.addEventListener('message', async event => {
       saved?.node.remove();
       const node = createPreviewItem(item.id, item.props);
       node.dataset.playgroundKey = item.key;
-      if (item.id.startsWith('card-')) {
+      if (item.id.startsWith('card-') || item.id.startsWith('flashcard-')) {
         const frame = document.createElement('div'); frame.className = 'content-container py-6 flex justify-center';
-        node.firstElementChild.classList.add('w-full', item.props.viewMode === 'list' ? 'max-w-3xl' : 'max-w-sm'); frame.append(node.firstElementChild); node.append(frame);
+        node.firstElementChild.classList.add('w-full', item.props?.viewMode === 'list' ? 'max-w-3xl' : 'max-w-sm'); frame.append(node.firstElementChild); node.append(frame);
       }
       node.addEventListener('header-search-input', event => { event.target.searchSuggestions = event.detail.query.length >= 2 ? [{ id: 'demo-product-1' }] : []; });
       saved = { node, id: item.id, signature: JSON.stringify(item.props) }; nodes.set(item.key, saved);
