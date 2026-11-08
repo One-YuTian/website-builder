@@ -1,0 +1,7 @@
+{
+  "name": "codex-website-builder",
+  "version": "0.1.8",
+  "description": "Interactive dot canvas with a global sidebar entrypoint.",
+  "mcpServers": "./mcp.json",
+  "interface": { "displayName": "Website Builder", "shortDescription": "交互式网站设计画布", "capabilities": ["Interactive"] }
+}

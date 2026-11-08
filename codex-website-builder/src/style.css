@@ -1,0 +1,13 @@
+:root { font-family: sans-serif; color-scheme: light; background: #f1f3f3; }
+* { box-sizing: border-box; }
+html, body, #root, main { width: 100%; height: 100%; margin: 0; overflow: hidden; }
+main { position: relative; min-height: 100dvh; background: #f1f3f3; }
+main::after {
+  content: '';
+  position: absolute;
+  inset: 0 0 auto;
+  height: 80px;
+  background: linear-gradient(to bottom, rgba(255, 255, 255, 0.85) 0%, rgba(255, 255, 255, 0.7) 22%, rgba(255, 255, 255, 0.32) 58%, rgba(255, 255, 255, 0) 100%);
+  pointer-events: none;
+}
+canvas { display: block; width: 100%; height: 100%; touch-action: pan-x pan-y; }
