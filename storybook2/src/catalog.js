@@ -72,4 +72,11 @@ export const catalog = [
   { id: 'services-05', name: 'Services-05', tag: 'services-05', group: 'Blocks', kind: 'Services', source: 'src/components/services-05/source.json' },
   { id: 'services-08', name: 'Services-08', tag: 'services-08', group: 'Blocks', kind: 'Services', source: 'src/components/services-08/source.json' },
   { id: 'flashcard-01', name: 'FlashCard-01', tag: 'flashcard-01', group: 'Components', kind: 'FlashCard', source: 'src/components/flashcard-01/source.json' },
+  { id: 'welcomemodal-01', name: 'WelcomeModal-01', tag: 'welcomemodal-01', group: 'Blocks', kind: 'WelcomeModal', source: 'src/components/welcomemodal-01/source.json' },
+  { id: 'cart-01', name: 'Cart-01', tag: 'cart-01', group: 'Components', kind: 'Cart', source: 'src/components/cart-01/source.json' },
+  { id: 'wishlist-01', name: 'Wishlist-01', tag: 'wishlist-01', group: 'Pages', kind: 'Wishlist', source: 'src/components/wishlist-01/source.json' },
+  { id: 'login-01', name: 'Login-01', tag: 'login-01', group: 'Pages', kind: 'Login', source: 'src/components/login-01/source.json' },
+  { id: 'register-01', name: 'Register-01', tag: 'register-01', group: 'Pages', kind: 'Register', source: 'src/components/register-01/source.json' },
+  { id: 'checkout-01', name: 'Checkout-01', tag: 'checkout-01', group: 'Pages', kind: 'Checkout', source: 'src/components/checkout-01/source.json' },
+  { id: 'ordersuccess-01', name: 'OrderSuccess-01', tag: 'ordersuccess-01', group: 'Pages', kind: 'OrderSuccess', source: 'src/components/ordersuccess-01/source.json' },
 ];

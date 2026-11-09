@@ -30,64 +30,23 @@ if (fs.existsSync(publicLlmsDir)) {
 fs.mkdirSync(path.join(contentDocsDir, 'guides'), { recursive: true });
 fs.mkdirSync(publicLlmsDir, { recursive: true });
 
-// Helper: Strip all comments from code for clean display
-function stripComments(code) {
-  return code
-    .replace(/\/\*[\s\S]*?\*\//g, '')
-    .replace(/(^|[^\:\'\"\`])\/\/[^\r\n]*/g, '$1')
-    .split('\n')
-    .map(line => line.trimEnd())
-    .filter((line, idx, arr) => {
-      if (!line.trim() && idx > 0 && !arr[idx - 1].trim()) return false;
-      return true;
-    })
-    .join('\n')
-    .trim();
-}
+// Helper: Extract actual demo code (HTML, JavaScript, CSS) from standalone preview document
+function extractDemoCode(fullHtml) {
+  if (!fullHtml) return { html: '', js: '', css: '' };
 
-// 1. Get component JavaScript source code (Standalone Web Component, no base.js, no comments)
-function getComponentJsCode(entry) {
-  const dir = path.join(storybook2Dir, 'src/components', entry.id);
-  const files = fs.readdirSync(dir).filter(f => f.endsWith('.js') && f !== 'mobile.js');
-  const blocks = [];
+  // 1. Extract body content between <body> and <script>
+  const bodyMatch = fullHtml.match(/<body[^>]*>([\s\S]*?)<script[^>]*>/i);
+  let html = bodyMatch ? bodyMatch[1].trim() : '';
 
-  for (const f of files) {
-    let code = fs.readFileSync(path.join(dir, f), 'utf8');
-    code = stripComments(code);
-    if (code.trim()) {
-      blocks.push(code.trim());
-    }
-  }
+  // 2. Extract script content inside <script>...</script>
+  const scriptMatch = fullHtml.match(/<script[^>]*>([\s\S]*?)<\/script>/i);
+  let js = scriptMatch ? scriptMatch[1].trim() : '';
 
-  return blocks.join('\n\n');
-}
+  // 3. Extract CSS inside <style>...</style> if any
+  const styleMatch = fullHtml.match(/<style[^>]*>([\s\S]*?)<\/style>/i);
+  let css = styleMatch ? styleMatch[1].trim() : '';
 
-// 2. Extract component-specific CSS styles (if any, no comments)
-function getComponentCssCode(entry) {
-  const dir = path.join(storybook2Dir, 'src/components', entry.id);
-  const cssFiles = fs.readdirSync(dir).filter(f => f.endsWith('.css'));
-  if (cssFiles.length === 0) return '';
-  const blocks = [];
-  for (const f of cssFiles) {
-    const code = fs.readFileSync(path.join(dir, f), 'utf8');
-    const cleaned = stripComments(code);
-    if (cleaned.trim()) blocks.push(cleaned.trim());
-  }
-  return blocks.join('\n\n');
-}
-
-// 3. Extract HTML markup fragment (clean semantic HTML, no -01, no test IDs)
-function getComponentHtmlCode(entry) {
-  const templatePath = path.join(storybook2Dir, `src/components/${entry.id}/template.html`);
-  if (fs.existsSync(templatePath)) {
-    return fs.readFileSync(templatePath, 'utf8').trim();
-  }
-
-  const genericTag = (entry.kind || entry.name.split('-')[0]).toLowerCase();
-  if (genericTag === 'card') {
-    return `<card class="block w-full max-w-sm"></card>`;
-  }
-  return `<${genericTag}></${genericTag}>`;
+  return { html, js, css };
 }
 
 // Escape curly braces in Markdown for MDX compatibility
@@ -105,20 +64,23 @@ for (const entry of catalog) {
   fs.mkdirSync(targetDir, { recursive: true });
   fs.mkdirSync(targetLlmsDir, { recursive: true });
 
-  const readmePath = path.join(storybook2Dir, 'src/components', entry.id, 'README.md');
-  const readmeRaw = fs.readFileSync(readmePath, 'utf8');
+  const enReadmePath = path.join(storybook2Dir, 'src/components', entry.id, 'README.en.md');
+  const zhReadmePath = path.join(storybook2Dir, 'src/components', entry.id, 'README.md');
 
-  // Strip leading title
-  const readmeBody = escapeMdxText(readmeRaw.replace(/^#\s+[^\n]+\n+/, ''));
+  const enReadmeRaw = fs.existsSync(enReadmePath) ? fs.readFileSync(enReadmePath, 'utf8').trim() : '';
+  const zhReadmeRaw = fs.existsSync(zhReadmePath) ? fs.readFileSync(zhReadmePath, 'utf8').trim() : '';
+
+  // Strip leading # Title from Chinese doc
+  const zhReadmeBody = zhReadmeRaw.replace(/^#\s+[^\n]+\n+/, '').trim();
 
   const snippet = codeSnippets[entry.id];
   const desktopPreview = snippet?.desktop || '';
   const mobilePreview = snippet?.mobile || '';
   const responsivePreview = snippet?.responsive || '';
+  const activeDemo = responsivePreview || desktopPreview || '';
 
-  const jsCode = getComponentJsCode(entry);
-  const htmlCode = getComponentHtmlCode(entry);
-  const cssCode = getComponentCssCode(entry);
+  // Extract actual demo implementation code
+  const { html: htmlCode, js: jsCode, css: cssCode } = extractDemoCode(activeDemo);
 
   let previewHeight = '420px';
   if (entry.id === 'header-04') previewHeight = '480px';
@@ -132,18 +94,19 @@ for (const entry of catalog) {
   else if (entry.id.startsWith('about-')) previewHeight = '850px';
   else if (entry.id.startsWith('contact-')) previewHeight = '800px';
 
-  // --- MDX Document (For humans & interactive preview) ---
+  // --- MDX Document (Interactive preview + Bilingual English & Chinese tabs + Actual Demo Code) ---
   let mdx = `---
 title: ${entry.name}
 description: ${entry.name} Component specification, interactive sandbox, and source code.
 ---
 
 import ComponentPreview from '../../../../components/ComponentPreview.astro';
+import { Tabs, TabItem } from '@astrojs/starlight/components';
 
 ## Interactive Preview
 
 <ComponentPreview
-  code={${JSON.stringify(responsivePreview || desktopPreview)}}
+  code={${JSON.stringify(activeDemo)}}
   htmlCode={${JSON.stringify(htmlCode)}}
   jsCode={${JSON.stringify(jsCode)}}
   cssCode={${JSON.stringify(cssCode)}}
@@ -151,40 +114,65 @@ import ComponentPreview from '../../../../components/ComponentPreview.astro';
   title="${entry.name} Interactive Preview"
 />
 
-## Overview & Attributes
+## Documentation
 
-${readmeBody}
-`;
+<Tabs>
+<TabItem label="English">
 
-  fs.writeFileSync(path.join(targetDir, `${entry.id}.mdx`), mdx, 'utf8');
+${escapeMdxText(enReadmeRaw)}
 
-  // --- Dedicated LLM Document (For LLM AI Agents & Prompt Context) ---
-  // Pure, clean, hierarchical markdown without UI sandbox iframe wrappers or HTML noise
-  const llmDoc = `# ${entry.name} Component Specification
+</TabItem>
+<TabItem label="中文">
 
-- **Group**: ${entry.group || 'Components'}
-- **Kind**: ${entry.kind || entry.name.split('-')[0]}
-- **Component ID**: ${entry.id}
-- **Document Route**: /${level1}/${level2}/${entry.id}
-- **Global Method/Export**: window.$${level2}
+${escapeMdxText(zhReadmeBody)}
 
-## Overview & Attributes
+</TabItem>
+</Tabs>
 
-${readmeRaw.trim()}
+## Code
 
-## HTML Usage
+### HTML
 
 \`\`\`html
 ${htmlCode.trim()}
 \`\`\`
 
-## JavaScript Implementation (Native Web Component)
+### JavaScript
 
 \`\`\`javascript
 ${jsCode.trim()}
 \`\`\`
 ${cssCode ? `
-## Component Styles (CSS)
+### CSS
+
+\`\`\`css
+${cssCode.trim()}
+\`\`\`
+` : ''}
+`;
+
+  fs.writeFileSync(path.join(targetDir, `${entry.id}.mdx`), mdx, 'utf8');
+
+  // --- Dedicated LLM Document (Clean, Unified Structure, Built in English) ---
+  const llmDoc = `## Overview
+
+${enReadmeRaw}
+
+## Code
+
+### HTML
+
+\`\`\`html
+${htmlCode.trim()}
+\`\`\`
+
+### JavaScript
+
+\`\`\`javascript
+${jsCode.trim()}
+\`\`\`
+${cssCode ? `
+### CSS
 
 \`\`\`css
 ${cssCode.trim()}
@@ -226,10 +214,10 @@ import { Card, CardGrid } from '@astrojs/starlight/components';
   <Card title="Dedicated LLM Documents" icon="document">
     Every component has an isolated, non-redundant plain text document under \`/llms/\` and \`/_llms-txt/\` for AI coding agents.
   </Card>
-  <Card title="Clear Source Code Tabs" icon="open-book">
-    Separately displays JavaScript source, HTML markup structure, and CSS / Tailwind styling.
+  <Card title="Bilingual Documentation" icon="translate">
+    Complete English and Chinese documentation tabs available for all components.
   </Card>
-  <Card title="Interactive Pure-White Sandbox" icon="laptop">
+  <Card title="Interactive Sandbox" icon="laptop">
     Live preview sandbox with instant Desktop (100%), Tablet (768px), and Mobile (390px) viewport switching.
   </Card>
 </CardGrid>
@@ -261,7 +249,7 @@ description: Storybook2 theme configuration, resource links, and foundation skel
 
 ## Global Tailwind Configuration (tailwind.config.js)
 
-Standard Tailwind CSS configuration. Components pull global CSS variables for colors (\`primary\`, \`secondary\`, \`accent\`, \`surface\`, \`content\`, \`muted\`, \`outline\`), border radius (\`sm\`, \`md\`, \`lg\`, \`xl\`), content max width (\`max-w-content\`), and gutters.
+Standard Tailwind CSS configuration using native JavaScript syntax. Components pull global CSS variables for colors (\`primary\`, \`secondary\`, \`accent\`, \`surface\`, \`content\`, \`muted\`, \`outline\`), border radius (\`sm\`, \`md\`, \`lg\`, \`xl\`), content max width (\`max-w-content\`), and gutters.
 
 \`\`\`javascript title="tailwind.config.js"
 ${tailwindJs.trim()}
@@ -301,4 +289,12 @@ ${markupJs.trim()}
 `;
 
 fs.writeFileSync(path.join(contentDocsDir, 'guides/theme.mdx'), themeMdx, 'utf8');
-console.log('All documents and dedicated LLM files generated successfully!');
+
+// 7. Synchronize LLM templates to website-builder skill templates
+const skillTemplatesDir = path.resolve(rootDir, '.agents/skills/website-builder/templates');
+if (fs.existsSync(skillTemplatesDir)) {
+  fs.cpSync(publicLlmsDir, skillTemplatesDir, { recursive: true });
+  console.log('Synchronized LLM templates to .agents/skills/website-builder/templates');
+}
+
+console.log('All documents, dedicated LLM files, and skill templates synchronized successfully with actual demo code!');

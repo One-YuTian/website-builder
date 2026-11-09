@@ -1,0 +1,73 @@
+## Overview
+
+About Us brand introduction and story page, featuring brand Hero banner visual skeleton, core mission & vision statements, service feature highlights grid, and company timeline / team credentials to build customer brand trust.
+
+### Layout & Regions
+- `hero`: Top full-width banner visual skeleton with centered text overlay.
+- `intro`: Centered brand introduction and mission statement text skeleton area.
+- `benefits-grid`: Service guarantee cards (2 cols on tablet, 4 cols on desktop).
+- `milestones`: Brand history timeline or team credentials showcase grid.
+
+### Dimensions & Responsiveness
+- Follows global design system, outer container uses `content-container` with PC max content width 1200px centered.
+- Mobile (under 1024px): Stacks into single-column vertical flow.
+
+### Attributes & Props
+| Attribute | Description | Type | Default |
+| --- | --- | --- | --- |
+| `theme` | Theme styling mode | `'light' \| 'dark'` | `'light'` |
+
+### Events
+- `about-navigate`: Dispatched when clicking action buttons or links within the About section.
+
+## Code
+
+### HTML
+
+```html
+<section class="bg-surface font-sans text-content py-8 sm:py-12 space-y-16 sm:space-y-20">
+  <div class="content-container space-y-16 sm:space-y-20">
+    <div data-region="our-story" class="grid grid-cols-1 lg:grid-cols-2 gap-10 md:gap-12 items-center">
+      <div class="space-y-5">
+        <div class="h-[1.8em] w-36 rounded-sm bg-accent mb-6"></div>
+        <div class="space-y-2.5">
+          <div class="h-[0.8em] w-full rounded-sm bg-accent"></div>
+          <div class="h-[0.8em] w-full rounded-sm bg-accent"></div>
+          <div class="h-[0.8em] w-full rounded-sm bg-accent"></div>
+          <div class="h-[0.8em] w-4/5 rounded-sm bg-accent"></div>
+        </div>
+      </div>
+      <div>
+        <div class="w-full h-[260px] sm:h-[340px] flex items-center justify-center bg-accent rounded-xl overflow-hidden"><span class="relative block aspect-[4/3] w-20 overflow-hidden rounded-sm border border-muted"><span class="absolute right-[15%] top-[15%] size-1/5 rounded-full bg-muted"></span><span class="absolute -bottom-1/4 left-[5%] size-3/4 rotate-45 border-l border-t border-muted"></span><span class="absolute -bottom-1/4 right-0 size-1/2 rotate-45 border-l border-t border-muted"></span></span></div>
+      </div>
+    </div>
+
+    <div data-region="craftsmanship" class="grid grid-cols-1 lg:grid-cols-2 gap-10 md:gap-12 items-center">
+      <div class="order-2 lg:order-1">
+        <div class="w-full h-[260px] sm:h-[340px] flex items-center justify-center bg-accent rounded-xl overflow-hidden"><span class="relative block aspect-[4/3] w-20 overflow-hidden rounded-sm border border-muted"><span class="absolute right-[15%] top-[15%] size-1/5 rounded-full bg-muted"></span><span class="absolute -bottom-1/4 left-[5%] size-3/4 rotate-45 border-l border-t border-muted"></span><span class="absolute -bottom-1/4 right-0 size-1/2 rotate-45 border-l border-t border-muted"></span></span></div>
+      </div>
+      <div class="order-1 lg:order-2 space-y-5">
+        <div class="h-[1.8em] w-52 rounded-sm bg-accent mb-6"></div>
+        <div class="space-y-2.5">
+          <div class="h-[0.8em] w-full rounded-sm bg-accent"></div>
+          <div class="h-[0.8em] w-full rounded-sm bg-accent"></div>
+          <div class="h-[0.8em] w-3/4 rounded-sm bg-accent"></div>
+        </div>
+        <div class="space-y-2.5 pt-2">
+          <div class="h-[0.8em] w-full rounded-sm bg-accent"></div>
+          <div class="h-[0.8em] w-full rounded-sm bg-accent"></div>
+          <div class="h-[0.8em] w-4/5 rounded-sm bg-accent"></div>
+        </div>
+      </div>
+    </div>
+  </div>
+</section>
+```
+
+### JavaScript
+
+```javascript
+$(function() {
+
+});
+```

@@ -16,7 +16,7 @@ async function runtimeFor(entry, variant) {
   const isBlock = entry.group === 'Blocks' || entry.group === 'Pages';
 
   // Blocks and Pages need card-01 definition for productlist, shop, and detail
-  if (entry.id.startsWith('productlist') || entry.id.startsWith('shop') || entry.id.startsWith('detail')) {
+  if (entry.id.startsWith('productlist') || entry.id.startsWith('shop') || entry.id.startsWith('detail') || entry.id.startsWith('wishlist')) {
     definitions.push(['card-01', 'Card', 'src/components/card-01/index.js']);
   }
   if (entry.id.startsWith('flashsale')) {

@@ -18,6 +18,7 @@ import { Card as Card11 } from './components/card-11/index.js';
 import { Card as Card19 } from './components/card-19/index.js';
 import { Card as Card23 } from './components/card-23/index.js';
 import { FlashCard as FlashCard01 } from './components/flashcard-01/index.js';
+import { Cart as Cart01 } from './components/cart-01/index.js';
 
 export {
   Header01, Header02, Header03, Header04, Header05,
@@ -25,7 +26,7 @@ export {
   Footer01, Footer02,
   Card01, Card02,
   Card07, Card11, Card19, Card23,
-  FlashCard01
+  FlashCard01, Cart01
 };
 export { Skeleton, createSkeleton } from './components/skeleton.js';
 export { initializeResources, loadJQuery } from './runtime/resources.js';
@@ -53,7 +54,8 @@ export function registerComponents(registry = customElements) {
     ['card-11', Card11],
     ['card-19', Card19],
     ['card-23', Card23],
-    ['flashcard-01', FlashCard01]
+    ['flashcard-01', FlashCard01],
+    ['cart-01', Cart01]
   ]) {
     if (!registry.get(tag)) registry.define(tag, implementation);
   }

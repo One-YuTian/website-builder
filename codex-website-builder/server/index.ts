@@ -2,21 +2,100 @@ import { readFile } from 'node:fs/promises';
 import { McpServer } from '@modelcontextprotocol/sdk/server/mcp.js';
 import { StdioServerTransport } from '@modelcontextprotocol/sdk/server/stdio.js';
 import { registerAppResource, registerAppTool, RESOURCE_MIME_TYPE } from '@modelcontextprotocol/ext-apps/server';
+import { resolve } from 'node:path';
+import { createPreview } from './preview';
+import { z } from 'zod';
+import { gzipSync } from 'node:zlib';
+import { ProjectStore } from './projects';
+import { compactProject, projectService } from './project-service';
+import { readTemplates } from './templates';
+import { fileURLToPath } from 'node:url';
 
 const uri = 'ui://codex-website-builder/canvas';
 const html = await readFile(new URL('../ui/index.html', import.meta.url), 'utf8');
-const server = new McpServer({ name: 'codex-website-builder', version: '0.1.8' });
-registerAppResource(server, 'canvas', uri, {}, async () => ({
-  contents: [{ uri, mimeType: RESOURCE_MIME_TYPE, text: html, _meta: {
-    ui: { csp: { connectDomains: [], resourceDomains: [] } },
+const projects = new ProjectStore(process.env.WEBSITE_BUILDER_PROJECT_ROOT || resolve('project'));
+const syncProject = projectService(projects);
+const preview = await createPreview(html, process.env.WEBSITE_BUILDER_ROOT || resolve('../website'), 'www.noventrad.com', syncProject);
+const skillRoot = (process.env.WEBSITE_BUILDER_SKILL_ROOT || resolve('skills/website-builder')).replaceAll('${PLUGIN_ROOT}',fileURLToPath(new URL('../../',import.meta.url)));
+const server = new McpServer({ name: 'codex-website-builder', version: '0.5.1' });
+const csp = { connectDomains: [], resourceDomains: ['data:', 'blob:', 'https://cdn.noventrad.com', 'https://fonts.googleapis.com', 'https://fonts.gstatic.com'], frameDomains: ['blob:', 'data:'], baseUriDomains: ['https://website-builder.invalid'] };
+const legacyCsp = { connect_domains: [], resource_domains: csp.resourceDomains, frame_domains: csp.frameDomains, base_uri_domains: csp.baseUriDomains };
+registerAppResource(server, 'canvas', uri, { _meta: { ui: { csp }, 'openai/widgetCSP': legacyCsp } }, async () => ({
+  contents: [{ uri, mimeType: RESOURCE_MIME_TYPE, text: preview.render(), _meta: {
+    ui: { csp },
+    'openai/widgetCSP': legacyCsp,
     'openai/ui': { preferredDisplayMode: 'fullscreen', availableDisplayModes: ['fullscreen'] },
   } }],
 }));
 registerAppTool(server, 'open_canvas', {
   title: 'Website Builder',
-  description: '打开带有鼠标交互点阵背景的网站设计画布。',
+  description: '打开网站生成与实时预览画布。没有打开项目时画布为空。建站、改页或重生成时先使用内置 website-builder SKILL，以 website_project 复用当前会话项目；仅用户明确选择网站目录时展示参考站点。',
   inputSchema: {},
   annotations: { readOnlyHint: true, destructiveHint: false, openWorldHint: false },
   _meta: { ui: { resourceUri: uri }, 'openai/ui': { entrypoints: [{ type: 'global' }] } },
-}, async () => ({ content: [{ type: 'text', text: '画布已打开。' }] }));
-await server.connect(new StdioServerTransport());
+}, async () => ({ content: [{ type: 'text', text: '网站展示画布已打开。' }] }));
+server.registerTool('read_website', {
+  description: '读取配置根目录内的网站页面与内嵌资源，仅供画布 UI 使用。',
+  inputSchema: { directory: z.string().default('www.noventrad.com') },
+  annotations: { readOnlyHint: true, destructiveHint: false, openWorldHint: false },
+  _meta: { ui: { visibility: ['app'] } },
+}, async ({ directory }) => {
+  try { return { content: [{ type: 'text', text: '网站页面已读取。' }], _meta: { website: await preview.readWebsite(directory, false) } }; }
+  catch (error) { return { isError: true, content: [{ type: 'text', text: (error as Error).message }] }; }
+});
+server.registerTool('read_page', {
+  description: '读取单个页面及其内嵌资源，以 gzip 传输给画布，不通过 HTTP 获取本地资源。',
+  inputSchema: { directory: z.string(), path: z.string() },
+  annotations: { readOnlyHint: true, destructiveHint: false, openWorldHint: false },
+  _meta: { ui: { visibility: ['app'] } },
+}, async ({ directory, path }) => {
+  try { return { content: [{ type: 'text', text: '页面预览已读取。' }], _meta: { gzip: gzipSync(await preview.readPage(directory,path)).toString('base64') } }; }
+  catch(error) { return { isError: true, content: [{ type:'text', text:(error as Error).message }] }; }
+});
+const pageSchema=z.object({path:z.string(),title:z.string()});
+server.registerTool('website_project',{
+  title:'Website Builder',
+  description:'Use the bundled website-builder skill. Open/reuse the exact thread project; plan pages before generation, begin before edits, finish only after complete files. New projects require new_project=true.',
+  inputSchema:{action:z.enum(['open','plan','begin','finish','status']).default('open'),thread_id:z.string().min(1),project_id:z.string().optional(),new_project:z.boolean().optional(),name:z.string().optional(),brief:z.string().optional(),language:z.string().optional(),pages:z.array(pageSchema).min(1).optional(),paths:z.array(z.string()).optional()},
+  annotations:{readOnlyHint:false,destructiveHint:false,openWorldHint:false},
+},async input=>{
+  try {
+    let view;
+    if(input.action==='open')view=await projects.open({threadId:input.thread_id,projectId:input.project_id,newProject:input.new_project,name:input.name,brief:input.brief,language:input.language,pages:input.pages});
+    else {
+      const current=await projects.get(input.thread_id);if(!current)throw new Error('请先打开当前会话项目');
+      if(input.project_id&&input.project_id!==current.project.id)throw new Error('会话项目已切换，不能继续修改旧项目');
+      if(input.action==='plan')view=await projects.plan(input.thread_id,input.pages||[]);
+      else if(input.action==='begin')view=await projects.begin(input.thread_id,input.paths||[]);
+      else if(input.action==='finish')view=await projects.finish(input.thread_id,input.paths||[]);
+      else view=current;
+    }
+    return{content:[{type:'text',text:JSON.stringify(compactProject(view))}],_meta:{workspaceThread:input.thread_id}};
+  }catch(error){return{isError:true,content:[{type:'text',text:(error as Error).message}]};}
+});
+server.registerTool('website_write',{
+  description:'Batch-write project files atomically. HTML fragment=true adds shared boilerplate automatically. Affected pages show loading until complete HTML and local JS/CSS dependencies validate. Never use for reference website files.',
+  inputSchema:{thread_id:z.string(),project_id:z.string(),files:z.array(z.object({path:z.string(),content:z.string(),fragment:z.boolean().optional(),title:z.string().optional()})).min(1),finalize_pages:z.array(z.string()).optional()},
+  annotations:{readOnlyHint:false,destructiveHint:false,openWorldHint:false},
+},async input=>{
+  try{const current=await projects.get(input.thread_id);if(current?.project.id!==input.project_id)throw new Error('会话项目不匹配，请重新打开项目');const view=await projects.write(input.thread_id,input.files,input.finalize_pages);return{content:[{type:'text',text:JSON.stringify(compactProject(view))}]};}
+  catch(error){return{isError:true,content:[{type:'text',text:(error as Error).message}]};}
+});
+server.registerTool('website_templates',{
+  description:'Progressive access to the bundled 80 templates. Select returns IDs only; batch code reads only the chosen components. Do not preload the library.',
+  inputSchema:{mode:z.enum(['select','summary','doc','code']).default('select'),ids:z.array(z.string()).max(12).optional(),category:z.string().optional(),brief:z.string().optional(),section:z.enum(['html','js','css','all']).optional()},
+  annotations:{readOnlyHint:true,destructiveHint:false,openWorldHint:false},
+},async input=>{try{return{content:[{type:'text',text:JSON.stringify(await readTemplates(skillRoot,input))}]};}catch(error){return{isError:true,content:[{type:'text',text:(error as Error).message}]};}});
+server.registerTool('project_sync',{
+  description:'UI-only long poll: return project state and changed ready-page payloads; no full-site reload or model context.',
+  inputSchema:{since:z.string().optional(),known:z.record(z.string(),z.number()).optional(),thread_id:z.string().optional(),wait_ms:z.number().int().min(0).max(20000).default(20000)},
+  annotations:{readOnlyHint:true,destructiveHint:false,openWorldHint:false},_meta:{ui:{visibility:['app']}},
+},async input=>{try{return{content:[],_meta:{sync:await syncProject({since:input.since,known:input.known,threadId:input.thread_id,waitMs:input.wait_ms})}};}catch(error){return{isError:true,content:[{type:'text',text:(error as Error).message}]};}});
+if (process.argv.includes('--preview')) {
+  console.log(preview.url);
+} else {
+  const transport = new StdioServerTransport();
+  server.server.onclose = () => { preview.service.closeAllConnections(); preview.service.close(); };
+  await server.connect(transport);
+  process.stdin.once('end', () => { preview.service.closeAllConnections(); preview.service.close(); });
+}

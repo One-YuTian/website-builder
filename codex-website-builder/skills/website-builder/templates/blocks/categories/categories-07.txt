@@ -1,0 +1,100 @@
+## Overview
+
+E-commerce category navigation and product matrix showcase block, featuring circular/square category icon placeholders, category titles, item count tags, and hover transition feedback to guide catalog exploration.
+
+### Layout & Regions
+- `block-header`: Section title skeleton and View All Categories link.
+- `category-grid`: Responsive multi-column grid or smooth horizontal swipe container for category cards.
+- `category-card`: Individual category card with circular/square icon skeleton, title, and count tag.
+
+### Dimensions & Responsiveness
+- Follows global design system, outer container uses `content-container` with PC max content width 1200px centered.
+- Desktop (1024px+): 6~8 columns equal-width grid display.
+- Mobile (under 1024px): Adapts to 2~3 compact grid columns or horizontal scrollable list.
+
+### Attributes & Props
+| Attribute | Description | Type | Default |
+| --- | --- | --- | --- |
+| `columns` | Grid column count configuration | `number` | `6` |
+
+### Events
+- `category-navigate`: Dispatched when clicking a category card.
+
+## Code
+
+### HTML
+
+```html
+<section class="py-4 md:py-8 bg-surface font-sans text-content">
+  <div class="content-container">
+    <div class="grid grid-cols-3 sm:grid-cols-6 gap-2 sm:gap-4 md:gap-6 mx-auto py-2">
+      
+      <div role="button" tabindex="0" class="group flex flex-col items-center text-center cursor-pointer">
+        <div class="w-16 h-16 sm:w-24 sm:h-24 md:w-32 md:h-32 rounded-xl sm:rounded-full flex items-center justify-center bg-accent/50 border border-outline/20 transition-all duration-300 group-hover:scale-105 group-hover:shadow-xs">
+          <span class="relative inline-flex items-center justify-center size-8 sm:size-12 rounded-sm bg-accent/60 text-muted border border-outline/30">
+    <span class="size-1/2 rounded-full border border-muted"></span>
+  </span>
+        </div>
+        <div class="h-3 sm:h-4 w-14 sm:w-20 bg-accent rounded-xs mt-2 md:mt-3"></div>
+      </div>
+      
+      <div role="button" tabindex="0" class="group flex flex-col items-center text-center cursor-pointer">
+        <div class="w-16 h-16 sm:w-24 sm:h-24 md:w-32 md:h-32 rounded-xl sm:rounded-full flex items-center justify-center bg-accent/50 border border-outline/20 transition-all duration-300 group-hover:scale-105 group-hover:shadow-xs">
+          <span class="relative inline-flex items-center justify-center size-8 sm:size-12 rounded-sm bg-accent/60 text-muted border border-outline/30">
+    <span class="size-1/2 rounded-full border border-muted"></span>
+  </span>
+        </div>
+        <div class="h-3 sm:h-4 w-14 sm:w-20 bg-accent rounded-xs mt-2 md:mt-3"></div>
+      </div>
+      
+      <div role="button" tabindex="0" class="group flex flex-col items-center text-center cursor-pointer">
+        <div class="w-16 h-16 sm:w-24 sm:h-24 md:w-32 md:h-32 rounded-xl sm:rounded-full flex items-center justify-center bg-accent/50 border border-outline/20 transition-all duration-300 group-hover:scale-105 group-hover:shadow-xs">
+          <span class="relative inline-flex items-center justify-center size-8 sm:size-12 rounded-sm bg-accent/60 text-muted border border-outline/30">
+    <span class="size-1/2 rounded-full border border-muted"></span>
+  </span>
+        </div>
+        <div class="h-3 sm:h-4 w-14 sm:w-20 bg-accent rounded-xs mt-2 md:mt-3"></div>
+      </div>
+      
+      <div role="button" tabindex="0" class="group flex flex-col items-center text-center cursor-pointer">
+        <div class="w-16 h-16 sm:w-24 sm:h-24 md:w-32 md:h-32 rounded-xl sm:rounded-full flex items-center justify-center bg-accent/50 border border-outline/20 transition-all duration-300 group-hover:scale-105 group-hover:shadow-xs">
+          <span class="relative inline-flex items-center justify-center size-8 sm:size-12 rounded-sm bg-accent/60 text-muted border border-outline/30">
+    <span class="size-1/2 rounded-full border border-muted"></span>
+  </span>
+        </div>
+        <div class="h-3 sm:h-4 w-14 sm:w-20 bg-accent rounded-xs mt-2 md:mt-3"></div>
+      </div>
+      
+      <div role="button" tabindex="0" class="group flex flex-col items-center text-center cursor-pointer">
+        <div class="w-16 h-16 sm:w-24 sm:h-24 md:w-32 md:h-32 rounded-xl sm:rounded-full flex items-center justify-center bg-accent/50 border border-outline/20 transition-all duration-300 group-hover:scale-105 group-hover:shadow-xs">
+          <span class="relative inline-flex items-center justify-center size-8 sm:size-12 rounded-sm bg-accent/60 text-muted border border-outline/30">
+    <span class="size-1/2 rounded-full border border-muted"></span>
+  </span>
+        </div>
+        <div class="h-3 sm:h-4 w-14 sm:w-20 bg-accent rounded-xs mt-2 md:mt-3"></div>
+      </div>
+      
+      <div role="button" tabindex="0" class="group flex flex-col items-center text-center cursor-pointer">
+        <div class="w-16 h-16 sm:w-24 sm:h-24 md:w-32 md:h-32 rounded-xl sm:rounded-full flex items-center justify-center bg-accent/50 border border-outline/20 transition-all duration-300 group-hover:scale-105 group-hover:shadow-xs">
+          <span class="relative inline-flex items-center justify-center size-8 sm:size-12 rounded-sm bg-accent/60 text-muted border border-outline/30">
+    <span class="size-1/2 rounded-full border border-muted"></span>
+  </span>
+        </div>
+        <div class="h-3 sm:h-4 w-14 sm:w-20 bg-accent rounded-xs mt-2 md:mt-3"></div>
+      </div>
+      
+    </div>
+  </div>
+</section>
+```
+
+### JavaScript
+
+```javascript
+$(function() {
+  $('[data-region="brand-grid"]').on('click', '[role="button"]', function(e) {
+    e.preventDefault();
+    $(this).trigger('category-navigate');
+  });
+});
+```

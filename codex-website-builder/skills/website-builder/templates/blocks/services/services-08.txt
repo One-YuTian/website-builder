@@ -1,0 +1,87 @@
+## Overview
+
+Trust endorsement and customer service value proposition block, integrating authentic guarantee, free shipping, secure payment, and easy returns presented as horizontal feature cards.
+
+### Layout & Regions
+- `services-container`: Service card grid container.
+- `service-item`: Individual service item with circular icon skeleton, bold title, and description.
+
+### Dimensions & Responsiveness
+- Follows global design system, outer container uses `content-container` with PC max content width 1200px centered.
+- Desktop (1024px+): 3~4 equal-width columns in a single row without wrapping.
+- Mobile (under 1024px): Adapts to 2x2 grid or smooth horizontal scroll.
+
+### Attributes & Props
+| Attribute | Description | Type | Default |
+| --- | --- | --- | --- |
+| `columns` | Column count configuration | `number` | `4` |
+
+### Events
+- `service-navigate`: Dispatched when clicking a service guarantee item.
+
+## Code
+
+### HTML
+
+```html
+<section class="py-8 md:py-10 bg-surface font-sans text-content">
+  <div class="content-container">
+    <div class="h-8 md:h-9 w-48 bg-accent rounded-sm mx-auto mb-6 md:mb-8"></div>
+    <div class="grid grid-cols-2 md:grid-cols-4 gap-4 md:gap-6">
+      
+      <div class="bg-surface p-4 md:p-6 flex flex-col items-center text-center rounded-xl border border-outline/20 shadow-2xs hover:shadow-xs transition-shadow">
+        <div class="h-20 w-20 md:h-24 md:w-24 bg-accent/60 rounded-xl mb-3 flex items-center justify-center">
+          <span class="relative inline-flex items-center justify-center size-10 md:size-12 rounded-sm bg-accent/60 text-muted border border-outline/30">
+    <span class="size-1/2 rounded-full border border-muted"></span>
+  </span>
+        </div>
+        <div class="h-5 w-32 bg-accent rounded-xs mb-2"></div>
+        <div class="h-3.5 w-44 max-w-full bg-muted/50 rounded-xs mb-1"></div>
+        <div class="h-3.5 w-36 max-w-full bg-muted/50 rounded-xs"></div>
+      </div>
+      
+      <div class="bg-surface p-4 md:p-6 flex flex-col items-center text-center rounded-xl border border-outline/20 shadow-2xs hover:shadow-xs transition-shadow">
+        <div class="h-20 w-20 md:h-24 md:w-24 bg-accent/60 rounded-xl mb-3 flex items-center justify-center">
+          <span class="relative inline-flex items-center justify-center size-10 md:size-12 rounded-sm bg-accent/60 text-muted border border-outline/30">
+    <span class="size-1/2 rounded-full border border-muted"></span>
+  </span>
+        </div>
+        <div class="h-5 w-32 bg-accent rounded-xs mb-2"></div>
+        <div class="h-3.5 w-44 max-w-full bg-muted/50 rounded-xs mb-1"></div>
+        <div class="h-3.5 w-36 max-w-full bg-muted/50 rounded-xs"></div>
+      </div>
+      
+      <div class="bg-surface p-4 md:p-6 flex flex-col items-center text-center rounded-xl border border-outline/20 shadow-2xs hover:shadow-xs transition-shadow">
+        <div class="h-20 w-20 md:h-24 md:w-24 bg-accent/60 rounded-xl mb-3 flex items-center justify-center">
+          <span class="relative inline-flex items-center justify-center size-10 md:size-12 rounded-sm bg-accent/60 text-muted border border-outline/30">
+    <span class="size-1/2 rounded-full border border-muted"></span>
+  </span>
+        </div>
+        <div class="h-5 w-32 bg-accent rounded-xs mb-2"></div>
+        <div class="h-3.5 w-44 max-w-full bg-muted/50 rounded-xs mb-1"></div>
+        <div class="h-3.5 w-36 max-w-full bg-muted/50 rounded-xs"></div>
+      </div>
+      
+      <div class="bg-surface p-4 md:p-6 flex flex-col items-center text-center rounded-xl border border-outline/20 shadow-2xs hover:shadow-xs transition-shadow">
+        <div class="h-20 w-20 md:h-24 md:w-24 bg-accent/60 rounded-xl mb-3 flex items-center justify-center">
+          <span class="relative inline-flex items-center justify-center size-10 md:size-12 rounded-sm bg-accent/60 text-muted border border-outline/30">
+    <span class="size-1/2 rounded-full border border-muted"></span>
+  </span>
+        </div>
+        <div class="h-5 w-32 bg-accent rounded-xs mb-2"></div>
+        <div class="h-3.5 w-44 max-w-full bg-muted/50 rounded-xs mb-1"></div>
+        <div class="h-3.5 w-36 max-w-full bg-muted/50 rounded-xs"></div>
+      </div>
+      
+    </div>
+  </div>
+</section>
+```
+
+### JavaScript
+
+```javascript
+$(function() {
+
+});
+```

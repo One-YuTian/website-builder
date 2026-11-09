@@ -3,9 +3,16 @@ website/
 template/
 storybook/
 storybook2/
+codex-website-builder/dist/
+codex-website-builder/project/
+codex-website-builder/node_modules/
+codex-website-builder/artifacts/
+codex-website-builder/.builder-state/
+.builder-state/
 
 # Dependencies
 node_modules/
+.pnpm-store/
 .pnp
 .pnp.js
 

@@ -71,6 +71,10 @@ export default defineConfig({
               autogenerate: { directory: 'components/card' },
             },
             {
+              label: 'Cart',
+              autogenerate: { directory: 'components/cart' },
+            },
+            {
               label: 'FlashCard',
               autogenerate: { directory: 'components/flashcard' },
             },
@@ -108,6 +112,10 @@ export default defineConfig({
               label: 'Services',
               autogenerate: { directory: 'blocks/services' },
             },
+            {
+              label: 'WelcomeModal',
+              autogenerate: { directory: 'blocks/welcomemodal' },
+            },
           ],
         },
         {
@@ -129,6 +137,26 @@ export default defineConfig({
             {
               label: 'Contact',
               autogenerate: { directory: 'pages/contact' },
+            },
+            {
+              label: 'Wishlist',
+              autogenerate: { directory: 'pages/wishlist' },
+            },
+            {
+              label: 'Login',
+              autogenerate: { directory: 'pages/login' },
+            },
+            {
+              label: 'Register',
+              autogenerate: { directory: 'pages/register' },
+            },
+            {
+              label: 'Checkout',
+              autogenerate: { directory: 'pages/checkout' },
+            },
+            {
+              label: 'OrderSuccess',
+              autogenerate: { directory: 'pages/ordersuccess' },
             },
           ],
         },

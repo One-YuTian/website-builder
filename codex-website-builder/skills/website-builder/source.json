@@ -1,0 +1,23 @@
+{
+  "source": "Q:/Projects/域名DEMO/2026年11月9日_demo1/.agents/skills/website-builder",
+  "templates": 80,
+  "preserved": [
+    "templates/",
+    "scripts/read-template.mjs",
+    "scripts/hook-page.mjs",
+    "references/cdn-links.json",
+    "references/original-skill.md"
+  ],
+  "optimization": [
+    "Compact default instructions",
+    "Batch progressive template access",
+    "Automatic HTML boilerplate",
+    "Thread-project binding",
+    "Atomic per-page commit",
+    "UI-only long poll with changed-page payloads"
+  ],
+  "sourceSkillSha256": "f7c8f5411b89b39fc36f0ae592bc08873899450cee50e6f78c145a42a304119b",
+  "templatesSha256": "9d4bcdd0fdfb5914b1c9b03bf31cb26ce08874b60fc561ea369a8dd907288e01",
+  "defaultSkillBytes": 5230,
+  "originalSkillBytes": 15371
+}

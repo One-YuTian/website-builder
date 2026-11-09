@@ -1,0 +1,52 @@
+## Overview
+
+Promotional banner and coupon campaign showcase block, covering side-by-side grid, cinematic wide banner, coupon vouchers, and special discount highlights to drive marketing conversion.
+
+### Layout & Regions
+- `banner-container`: Main banner visual container with background image skeleton and text overlay.
+- `coupon-group`: Perforated coupon cards with discount amount and Collect buttons.
+- `cta-button`: High-contrast promotional action button.
+
+### Dimensions & Responsiveness
+- Follows global design system, outer container uses `content-container` with PC max content width 1200px centered.
+- Desktop (1024px+): Multi-column side-by-side banners or wide cinematic banner.
+- Mobile (under 1024px): Stacks into single-column vertical flow with full width.
+
+### Attributes & Props
+| Attribute | Description | Type | Default |
+| --- | --- | --- | --- |
+| `layout` | Banner layout mode | `'split' \| 'full'` | `'split'` |
+
+### Events
+- `promotion-navigate`: Dispatched when clicking promotional banner or coupon voucher.
+
+## Code
+
+### HTML
+
+```html
+<section class="w-full py-2 sm:py-4 bg-surface font-sans text-content">
+  <div class="content-container">
+    <div role="button" tabindex="0" class="block w-full overflow-hidden rounded-xl border border-outline/30 bg-accent/40 cursor-pointer shadow-2xs">
+      <div class="w-full aspect-[5/2] sm:aspect-[4/1] lg:aspect-[5/1] flex items-center justify-center relative p-6">
+        <span class="relative block aspect-[6/5] w-1/4 max-w-28 overflow-hidden rounded-sm border border-muted">
+    <span class="absolute right-[15%] top-[15%] size-1/5 rounded-full bg-muted"></span>
+    <span class="absolute -bottom-1/4 left-[5%] size-3/4 rotate-45 border-l border-t border-muted"></span>
+    <span class="absolute -bottom-1/4 right-0 size-1/2 rotate-45 border-l border-t border-muted"></span>
+  </span>
+      </div>
+    </div>
+  </div>
+</section>
+```
+
+### JavaScript
+
+```javascript
+$(function() {
+  $('section').on('click', '[role="button"]', function(e) {
+    e.preventDefault();
+    $(this).trigger('promotion-navigate');
+  });
+});
+```

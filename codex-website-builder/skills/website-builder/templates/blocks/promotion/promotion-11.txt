@@ -1,0 +1,124 @@
+## Overview
+
+Promotional banner and coupon campaign showcase block, covering side-by-side grid, cinematic wide banner, coupon vouchers, and special discount highlights to drive marketing conversion.
+
+### Layout & Regions
+- `banner-container`: Main banner visual container with background image skeleton and text overlay.
+- `coupon-group`: Perforated coupon cards with discount amount and Collect buttons.
+- `cta-button`: High-contrast promotional action button.
+
+### Dimensions & Responsiveness
+- Follows global design system, outer container uses `content-container` with PC max content width 1200px centered.
+- Desktop (1024px+): Multi-column side-by-side banners or wide cinematic banner.
+- Mobile (under 1024px): Stacks into single-column vertical flow with full width.
+
+### Attributes & Props
+| Attribute | Description | Type | Default |
+| --- | --- | --- | --- |
+| `layout` | Banner layout mode | `'split' \| 'full'` | `'split'` |
+
+### Events
+- `promotion-navigate`: Dispatched when clicking promotional banner or coupon voucher.
+
+## Code
+
+### HTML
+
+```html
+<section class="coupon-section w-full py-8 sm:py-12 bg-surface font-sans text-content">
+  <div class="content-container">
+    <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4 lg:gap-6" data-region="coupon-cards">
+      
+      <div class="bg-surface rounded-xl border border-outline/30 flex overflow-hidden shadow-2xs">
+        <!-- Coupon Left -->
+        <div class="w-20 bg-accent/50 flex items-center justify-center border-r border-dashed border-outline/40 relative">
+          <div class="size-8 bg-accent rounded-sm flex items-center justify-center">
+            <span class="relative inline-flex items-center justify-center size-6 rounded-sm bg-accent/60 text-muted border border-outline/30">
+    <span class="size-1/2 rounded-full border border-muted"></span>
+  </span>
+          </div>
+        </div>
+        <!-- Coupon Right -->
+        <div class="flex-1 p-4 flex items-center justify-between gap-3">
+          <div class="flex flex-col gap-1.5">
+            <div class="flex items-baseline gap-1">
+              <span class="text-xs font-bold text-primary">฿</span>
+              <div class="h-5 w-16 bg-primary/80 rounded-xs"></div>
+            </div>
+            <div class="h-3 w-24 bg-muted/60 rounded-xs"></div>
+            <div class="h-2.5 w-16 bg-accent rounded-xs"></div>
+          </div>
+          <div role="button" tabindex="0" class="size-11 rounded-full bg-primary text-white flex flex-col items-center justify-center cursor-pointer shadow-xs hover:opacity-90 transition-opacity">
+            <div class="h-2 w-5 bg-white/90 rounded-xs mb-1"></div>
+            <div class="h-2 w-5 bg-white/90 rounded-xs"></div>
+          </div>
+        </div>
+      </div>
+      
+      <div class="bg-surface rounded-xl border border-outline/30 flex overflow-hidden shadow-2xs">
+        <!-- Coupon Left -->
+        <div class="w-20 bg-accent/50 flex items-center justify-center border-r border-dashed border-outline/40 relative">
+          <div class="size-8 bg-accent rounded-sm flex items-center justify-center">
+            <span class="relative inline-flex items-center justify-center size-6 rounded-sm bg-accent/60 text-muted border border-outline/30">
+    <span class="size-1/2 rounded-full border border-muted"></span>
+  </span>
+          </div>
+        </div>
+        <!-- Coupon Right -->
+        <div class="flex-1 p-4 flex items-center justify-between gap-3">
+          <div class="flex flex-col gap-1.5">
+            <div class="flex items-baseline gap-1">
+              <span class="text-xs font-bold text-primary">฿</span>
+              <div class="h-5 w-16 bg-primary/80 rounded-xs"></div>
+            </div>
+            <div class="h-3 w-24 bg-muted/60 rounded-xs"></div>
+            <div class="h-2.5 w-16 bg-accent rounded-xs"></div>
+          </div>
+          <div role="button" tabindex="0" class="size-11 rounded-full bg-primary text-white flex flex-col items-center justify-center cursor-pointer shadow-xs hover:opacity-90 transition-opacity">
+            <div class="h-2 w-5 bg-white/90 rounded-xs mb-1"></div>
+            <div class="h-2 w-5 bg-white/90 rounded-xs"></div>
+          </div>
+        </div>
+      </div>
+      
+      <div class="bg-surface rounded-xl border border-outline/30 flex overflow-hidden shadow-2xs">
+        <!-- Coupon Left -->
+        <div class="w-20 bg-accent/50 flex items-center justify-center border-r border-dashed border-outline/40 relative">
+          <div class="size-8 bg-accent rounded-sm flex items-center justify-center">
+            <span class="relative inline-flex items-center justify-center size-6 rounded-sm bg-accent/60 text-muted border border-outline/30">
+    <span class="size-1/2 rounded-full border border-muted"></span>
+  </span>
+          </div>
+        </div>
+        <!-- Coupon Right -->
+        <div class="flex-1 p-4 flex items-center justify-between gap-3">
+          <div class="flex flex-col gap-1.5">
+            <div class="flex items-baseline gap-1">
+              <span class="text-xs font-bold text-primary">฿</span>
+              <div class="h-5 w-16 bg-primary/80 rounded-xs"></div>
+            </div>
+            <div class="h-3 w-24 bg-muted/60 rounded-xs"></div>
+            <div class="h-2.5 w-16 bg-accent rounded-xs"></div>
+          </div>
+          <div role="button" tabindex="0" class="size-11 rounded-full bg-primary text-white flex flex-col items-center justify-center cursor-pointer shadow-xs hover:opacity-90 transition-opacity">
+            <div class="h-2 w-5 bg-white/90 rounded-xs mb-1"></div>
+            <div class="h-2 w-5 bg-white/90 rounded-xs"></div>
+          </div>
+        </div>
+      </div>
+      
+    </div>
+  </div>
+</section>
+```
+
+### JavaScript
+
+```javascript
+$(function() {
+  $('[data-region="coupon-cards"]').on('click', '[role="button"]', function(e) {
+    e.preventDefault();
+    $(this).trigger('coupon-claim');
+  });
+});
+```

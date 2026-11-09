@@ -1,0 +1,78 @@
+## Overview
+
+Trust endorsement and customer service value proposition block, integrating authentic guarantee, free shipping, secure payment, and easy returns presented as horizontal feature cards.
+
+### Layout & Regions
+- `services-container`: Service card grid container.
+- `service-item`: Individual service item with circular icon skeleton, bold title, and description.
+
+### Dimensions & Responsiveness
+- Follows global design system, outer container uses `content-container` with PC max content width 1200px centered.
+- Desktop (1024px+): 3~4 equal-width columns in a single row without wrapping.
+- Mobile (under 1024px): Adapts to 2x2 grid or smooth horizontal scroll.
+
+### Attributes & Props
+| Attribute | Description | Type | Default |
+| --- | --- | --- | --- |
+| `columns` | Column count configuration | `number` | `4` |
+
+### Events
+- `service-navigate`: Dispatched when clicking a service guarantee item.
+
+## Code
+
+### HTML
+
+```html
+<section class="w-full py-10 md:py-6 my-6 bg-accent/30 font-sans text-content">
+  <div class="content-container">
+    <div class="grid grid-cols-2 md:grid-cols-4 gap-0 md:gap-6 justify-center items-stretch">
+      
+      <div class="flex flex-col items-center justify-center text-center p-4 border-b md:border-b-0 border-outline/30 odd:border-r md:odd:border-r-0 hover:-translate-y-1 transition-transform duration-300">
+        <div class="h-14 md:h-16 w-16 bg-surface rounded-lg flex items-center justify-center mb-3 border border-outline/20">
+          <span class="relative inline-flex items-center justify-center size-8 md:size-10 rounded-sm bg-accent/60 text-muted border border-outline/30">
+    <span class="size-1/2 rounded-full border border-muted"></span>
+  </span>
+        </div>
+        <div class="h-4 w-28 bg-accent rounded-xs"></div>
+      </div>
+      
+      <div class="flex flex-col items-center justify-center text-center p-4 border-b md:border-b-0 border-outline/30 odd:border-r md:odd:border-r-0 hover:-translate-y-1 transition-transform duration-300">
+        <div class="h-14 md:h-16 w-16 bg-surface rounded-lg flex items-center justify-center mb-3 border border-outline/20">
+          <span class="relative inline-flex items-center justify-center size-8 md:size-10 rounded-sm bg-accent/60 text-muted border border-outline/30">
+    <span class="size-1/2 rounded-full border border-muted"></span>
+  </span>
+        </div>
+        <div class="h-4 w-28 bg-accent rounded-xs"></div>
+      </div>
+      
+      <div class="flex flex-col items-center justify-center text-center p-4 border-b md:border-b-0 border-outline/30 odd:border-r md:odd:border-r-0 hover:-translate-y-1 transition-transform duration-300">
+        <div class="h-14 md:h-16 w-16 bg-surface rounded-lg flex items-center justify-center mb-3 border border-outline/20">
+          <span class="relative inline-flex items-center justify-center size-8 md:size-10 rounded-sm bg-accent/60 text-muted border border-outline/30">
+    <span class="size-1/2 rounded-full border border-muted"></span>
+  </span>
+        </div>
+        <div class="h-4 w-28 bg-accent rounded-xs"></div>
+      </div>
+      
+      <div class="flex flex-col items-center justify-center text-center p-4 border-b md:border-b-0 border-outline/30 odd:border-r md:odd:border-r-0 hover:-translate-y-1 transition-transform duration-300">
+        <div class="h-14 md:h-16 w-16 bg-surface rounded-lg flex items-center justify-center mb-3 border border-outline/20">
+          <span class="relative inline-flex items-center justify-center size-8 md:size-10 rounded-sm bg-accent/60 text-muted border border-outline/30">
+    <span class="size-1/2 rounded-full border border-muted"></span>
+  </span>
+        </div>
+        <div class="h-4 w-28 bg-accent rounded-xs"></div>
+      </div>
+      
+    </div>
+  </div>
+</section>
+```
+
+### JavaScript
+
+```javascript
+$(function() {
+
+});
+```

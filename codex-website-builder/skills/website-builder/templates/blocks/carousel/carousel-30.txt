@@ -1,0 +1,75 @@
+## Overview
+
+Full-width hero visual carousel showcase block, supporting multi-aspect ratio scaling, touch drag gestures, auto-rotation timer, bottom dot pagination indicators, and left/right navigation arrows, with dedicated breakpoint viewport adaptation.
+
+### Layout & Regions
+- `carousel-stage`: Main carousel slide stage embedding large image skeletons and floating text overlay layers.
+- `arrow-controls`: Semi-transparent floating left/right navigation arrow buttons.
+- `pagination`: Centered floating dot pagination indicators highlighting the active slide.
+
+### Dimensions & Responsiveness
+- Follows global design system, outer container uses `content-container` with PC max content width 1200px centered.
+- Desktop (1024px+): Fixed height 500px~550px with stable text overlay alignment.
+- Mobile (under 1024px): Adapts to 16:9 or 50:21 aspect ratio with smooth swipe touch gestures.
+
+### Attributes & Props
+| Attribute | Description | Type | Default |
+| --- | --- | --- | --- |
+| `stageSelector` | Mount container selector | `string` | `'#carousel-stage'` |
+| `interval` | Auto-play interval in milliseconds | `number` | `5000` |
+| `paused` | Whether auto-rotation is paused | `boolean` | `false` |
+
+### Events
+- `carousel-navigate`: Dispatched when clicking a carousel slide banner.
+- `carousel-change`: Dispatched when slide transition finishes, providing current active index.
+
+## Code
+
+### HTML
+
+```html
+<section class="banner-section w-full bg-accent/40 relative p-0 m-0 font-sans">
+  <div class="content-container relative">
+    <div class="swiper banner-swiper w-full aspect-[16/7] min-h-[180px] overflow-hidden relative rounded-xl bg-accent">
+      <div class="swiper-wrapper h-full">
+        <div class="swiper-slide !h-full !flex items-center justify-center overflow-hidden bg-accent">
+          <div class="w-full h-full flex items-center justify-center p-4">
+    <span class="relative block aspect-[16/9] w-36 sm:w-48 md:w-60 overflow-hidden rounded-md border border-muted/80 bg-muted/30 shadow-2xs">
+      <span class="absolute right-[15%] top-[15%] size-1/5 rounded-full bg-muted/80"></span>
+      <span class="absolute -bottom-1/4 left-[5%] size-3/4 rotate-45 border-l border-t border-muted/80"></span>
+      <span class="absolute -bottom-1/4 right-0 size-1/2 rotate-45 border-l border-t border-muted/80"></span>
+    </span>
+  </div>
+        </div>
+        <div class="swiper-slide !h-full !flex items-center justify-center overflow-hidden bg-accent">
+          <div class="w-full h-full flex items-center justify-center p-4">
+    <span class="relative block aspect-[16/9] w-36 sm:w-48 md:w-60 overflow-hidden rounded-md border border-muted/80 bg-muted/30 shadow-2xs">
+      <span class="absolute right-[15%] top-[15%] size-1/5 rounded-full bg-muted/80"></span>
+      <span class="absolute -bottom-1/4 left-[5%] size-3/4 rotate-45 border-l border-t border-muted/80"></span>
+      <span class="absolute -bottom-1/4 right-0 size-1/2 rotate-45 border-l border-t border-muted/80"></span>
+    </span>
+  </div>
+        </div>
+      </div>
+      <div class="swiper-pagination !z-30"></div>
+      <div class="swiper-button-next !text-content/70 !size-8 md:!size-10 after:!text-lg md:after:!text-xl !right-2 md:!right-4"></div>
+      <div class="swiper-button-prev !text-content/70 !size-8 md:!size-10 after:!text-lg md:after:!text-xl !left-2 md:!left-4"></div>
+    </div>
+  </div>
+</section>
+```
+
+### JavaScript
+
+```javascript
+$(function() {
+  if (typeof Swiper !== 'undefined' && $('.banner-swiper').length) {
+    new Swiper('.banner-swiper', {
+      loop: true,
+      autoplay: { delay: 4000, disableOnInteraction: false },
+      pagination: { el: '.banner-swiper .swiper-pagination', clickable: true },
+      navigation: { nextEl: '.banner-swiper .swiper-button-next', prevEl: '.banner-swiper .swiper-button-prev' }
+    });
+  }
+});
+```

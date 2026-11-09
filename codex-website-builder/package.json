@@ -1,21 +1,27 @@
 {
   "name": "codex-website-builder",
-  "version": "0.1.8",
+  "version": "0.5.1",
   "private": true,
   "type": "module",
   "packageManager": "pnpm@10.18.0",
   "scripts": {
     "dev": "vite --host 127.0.0.1",
-    "build": "tsc --noEmit && vite build && tsup",
+    "preview": "node dist/server/index.js --preview",
+    "build": "tsc --noEmit && vite build && tsup && node scripts/copy-vendor.mjs",
     "start": "node dist/server/index.js",
     "test": "node scripts/smoke.mjs",
-    "test:visual": "node scripts/visual.mjs"
+    "test:visual": "node scripts/visual.mjs",
+    "prepare:plugin": "pnpm build && pnpm test && pnpm test:projects",
+    "install:plugin": "powershell -NoProfile -File scripts/install-plugin.ps1",
+    "test:projects": "node scripts/projects.test.mjs"
   },
   "dependencies": {
     "@modelcontextprotocol/ext-apps": "^1.7.5",
     "@modelcontextprotocol/sdk": "^1.21.0",
+    "acorn": "8.19.0",
     "react": "^19.2.0",
-    "react-dom": "^19.2.0"
+    "react-dom": "^19.2.0",
+    "zod": "4.6.7"
   },
   "devDependencies": {
     "@playwright/test": "^1.65.0",

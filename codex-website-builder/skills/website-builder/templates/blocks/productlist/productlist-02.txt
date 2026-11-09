@@ -1,0 +1,68 @@
+## Overview
+
+Core e-commerce catalog shelf block, integrating section title, quick category filter tags, 4~5 column responsive product card matrix, and bottom View All Products action.
+
+### Layout & Regions
+- `block-header`: Main title skeleton and category filter pills.
+- `product-grid`: Multi-column product card matrix container.
+- `product-card`: Standard Card component instances.
+- `block-footer`: Bottom View All Products button.
+
+### Dimensions & Responsiveness
+- Follows global design system, outer container uses `content-container` with PC max content width 1200px centered.
+- Desktop (1024px+): 4~5 columns equal-width grid with 20px gap.
+- Mobile (under 768px): 2 compact columns with 12px gap.
+
+### Attributes & Props
+| Attribute | Description | Type | Default |
+| --- | --- | --- | --- |
+| `columns` | Grid column count | `number` | `4` |
+
+### Events
+- `productlist-filter`: Dispatched when switching category filter pills.
+- `productlist-more`: Dispatched when clicking View All Products.
+
+## Code
+
+### HTML
+
+```html
+<section class="bg-surface py-12 font-sans text-content border-b border-outline/30">
+  <div class="content-container">
+    <div data-region="section-title" class="mb-8 text-center">
+      <span class="block h-[0.75em] w-56 mx-auto rounded-sm bg-accent text-2xl"></span>
+    </div>
+    <div id="product-grid-02" class="grid grid-cols-2 gap-4 sm:grid-cols-3 md:grid-cols-4"></div>
+  </div>
+</section>
+```
+
+### JavaScript
+
+```javascript
+$(function() {
+  const $container = $('#product-grid-02');
+  if (!$container.length) return;
+
+  const products = [
+    { id: 'product-01', discounted: false },
+    { id: 'product-02', discounted: true },
+    { id: 'product-03', discounted: false },
+    { id: 'product-04', discounted: true },
+    { id: 'product-05', discounted: false },
+    { id: 'product-06', discounted: true },
+    { id: 'product-07', discounted: false },
+    { id: 'product-08', discounted: true }
+  ];
+
+  $container.empty();
+  for (let i = 0; i < products.length; i++) {
+    const p = products[i];
+    const $card = $('<card-01></card-01>').attr('product-id', p.id);
+    if (p.discounted) {
+      $card.attr('discounted', '');
+    }
+    $container.append($card);
+  }
+});
+```

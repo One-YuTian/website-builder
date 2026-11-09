@@ -1,38 +1,125 @@
 import { chromium } from '@playwright/test';
-import { pathToFileURL } from 'node:url';
-import { resolve } from 'node:path';
+import { spawn } from 'node:child_process';
+import { readFile, readdir, mkdir, writeFile } from 'node:fs/promises';
+import { createHash } from 'node:crypto';
+import { join } from 'node:path';
 import assert from 'node:assert/strict';
-import { mkdir } from 'node:fs/promises';
-
-const browser = await chromium.launch({ channel: 'chrome', headless: true });
-try {
-  const page = await browser.newPage();
-  const errors = [];
-  page.on('pageerror', e => errors.push(e.message));
-  await mkdir('artifacts', { recursive: true });
-  for (const [width, height] of [[1440, 900], [768, 1024], [375, 812]]) {
-    await page.setViewportSize({ width, height });
-    await page.mouse.move(-10, -10);
-    await page.goto(pathToFileURL(resolve('dist/ui/index.html')).href);
-    await page.locator('canvas').waitFor();
-    await page.mouse.move(-10, -10); await page.waitForTimeout(800);
-    const alpha = () => page.locator('canvas').evaluate(canvas => {
-      const ctx = canvas.getContext('2d');
-      return ctx.getImageData(183, 180, 1, 1).data[3];
-    });
-    const before = await alpha();
-    await page.mouse.move(184, 180);
-    await page.waitForTimeout(700);
-    assert.ok((await alpha()) > before + 50, 'Nearby dots must gain contrast');
-    assert.equal(await page.evaluate(() => document.documentElement.scrollWidth), width);
-    await page.screenshot({ path: `artifacts/canvas-${width}.png` });
-    await page.mouse.move(-10, -10);
-    await page.waitForTimeout(700);
-    console.log({width,before,after:await alpha()});
-    assert.ok((await alpha()) <= before + 3, 'Dots must fade back after pointer leaves');
-  }
-  assert.deepEqual(errors, []);
-  console.log('PASS: hover contrast, leave fade, responsive sizes, browser errors');
-} finally { await browser.close(); }
-
-
+const config = JSON.parse(await readFile('mcp.json','utf8')).mcpServers['website-builder'];
+async function sourceHash(folder){const hash=createHash('sha256');for(const entry of (await readdir(folder,{withFileTypes:true})).sort((a,b)=>a.name.localeCompare(b.name))){hash.update(entry.name);const path=join(folder,entry.name);hash.update(entry.isDirectory()?await sourceHash(path):await readFile(path));}return hash.digest('hex');}
+const sourceRoot=join(config.env.WEBSITE_BUILDER_ROOT,'www.noventrad.com');
+const before=await sourceHash(sourceRoot);
+const child=spawn(process.execPath,['dist/server/index.js','--preview'],{env:{...process.env,...config.env},stdio:['ignore','pipe','pipe']});
+const url=await new Promise((resolve,reject)=>{child.stdout.once('data',data=>resolve(data.toString().trim()));child.once('error',reject);child.once('exit',code=>reject(new Error(`preview exit ${code}`)));});
+const browser=await chromium.launch({channel:'chrome',headless:true});
+try{
+ const context=await browser.newContext({viewport:{width:1816,height:1042}});
+ const page=await context.newPage(), errors=[], externalRequests=[];
+ page.on('pageerror',error=>errors.push(error.message));
+ await context.route('https://example.com/**',route=>{externalRequests.push(route.request().url());return route.abort();});
+ await page.goto(url,{waitUntil:'domcontentloaded'});
+ await page.getByRole('button',{name:'页面目录',exact:true}).click();
+ await page.locator('#site-directory').fill('www.noventrad.com');
+ await page.getByRole('button',{name:'识别网站',exact:true}).click();
+ await page.getByRole('button',{name:'关闭工具面板',exact:true}).click();
+ await page.locator('.page-panel').nth(13).waitFor();
+ await page.waitForFunction(()=>document.querySelectorAll('.page-caption[data-ready="true"]').length===14,{}, {timeout:30000});
+ assert.equal(await page.locator('iframe').count(),14);
+ const positions=await page.locator('.page-panel').evaluateAll(nodes=>nodes.map(node=>{const box=node.getBoundingClientRect();return{x:box.x,y:box.y,width:box.width};}));
+ assert.ok(positions.every(pos=>Math.abs(pos.y-positions[0].y)<1),'pages align along the top');
+ assert.ok(positions.every((pos,i)=>i===0||pos.x>positions[i-1].x+positions[i-1].width),'all pages arranged horizontally');
+ const frame=page.frameLocator('iframe[title="index.html"]');
+ await frame.locator('body').waitFor();
+ assert.equal(await page.locator('.app-header,.site-sidebar,.canvas-toolbar').count(),0);
+ assert.equal(await page.locator('.tool-rail button').count(),8);
+ await page.getByRole('button',{name:'页面宽度',exact:true}).click();
+ await page.getByLabel('统一宽度').selectOption('375');
+ assert.equal(await page.locator('iframe[title="index.html"]').evaluate(el=>el.offsetWidth),375);
+ await page.getByLabel('当前页面宽度').fill('820');
+ assert.equal(await page.locator('iframe[title="index.html"]').evaluate(el=>el.offsetWidth),820);
+ await frame.locator('body').evaluate(body=>{const el=document.createElement('div');el.id='height-test';el.style.height='2000px';body.append(el);});
+ await page.waitForTimeout(600);
+ const grown=await frame.locator('body').evaluate(el=>el.scrollHeight);
+ await frame.locator('#height-test').evaluate(el=>el.remove());
+ await page.waitForTimeout(600);
+ const shrunk=await frame.locator('body').evaluate(el=>el.scrollHeight);
+ assert.ok(grown>shrunk+1500,`height must grow and shrink: ${grown} ${shrunk}`);
+ // Form fields and JS-driven controls remain interactive inside the iframe.
+ await frame.locator('body').evaluate(body=>{const el=document.createElement('div');el.id='interaction-test';el.innerHTML='<input id="interaction-input"><button id="interaction-button" onclick="this.textContent=\'clicked\'">Interact</button>';body.prepend(el);});
+ await frame.locator('#interaction-input').fill('iframe interaction');
+ await frame.locator('#interaction-button').evaluate(el=>el.click());
+ assert.equal(await frame.locator('#interaction-input').inputValue(),'iframe interaction');
+ assert.equal(await frame.locator('#interaction-button').innerText(),'clicked');
+ const testFrame=await (await page.locator('iframe[title="index.html"]').elementHandle()).contentFrame();
+ const frameUrl=testFrame.url();
+ async function assertBlocked(run){await testFrame.waitForSelector('body');await testFrame.evaluate(run);await page.waitForTimeout(3600);await testFrame.waitForURL(frameUrl,{timeout:10000});await testFrame.waitForSelector('body');assert.equal(testFrame.url(),frameUrl);assert.equal(context.pages().length,1);}
+ await assertBlocked(()=>{const a=document.createElement('a');a.href='https://example.com/anchor';a.target='_blank';document.body.append(a);a.click();a.remove();});
+ await assertBlocked(()=>window.open('https://example.com/popup','_blank'));
+ await assertBlocked(()=>{location.href='https://example.com/script';});
+ await assertBlocked(()=>{const form=document.createElement('form');form.action='https://example.com/form';document.body.append(form);form.submit();form.remove();});
+ assert.deepEqual(externalRequests,[],'external navigations must be cancelled before making requests');
+ assert.ok((await page.getByRole('status').innerText()).includes('已'));
+ // Same-site navigation remains operational.
+ await testFrame.evaluate(()=>{const a=document.createElement('a');a.href='about.html';document.body.append(a);a.click();});
+ await page.waitForTimeout(700);
+ assert.equal(testFrame.url(),frameUrl,'internal page links must also be blocked');
+ assert.ok(!(await page.locator('[data-page="index.html"] .page-caption').innerText()).includes('about.html'));
+ await frame.locator('.nov-home12').waitFor();
+ // Force long content and verify device-specific caps and native scrolling.
+ await frame.locator('body').evaluate(body=>{const el=document.createElement('div');el.id='cap-test';el.style.height='50000px';body.append(el);});
+ for(const [width,multiple] of [[1280,2.5],[768,3],[375,5]]){
+   await page.getByLabel('当前页面宽度').fill(String(width));
+   await page.waitForFunction(({width,multiple})=>{const el=document.querySelector('iframe[title="index.html"]');return el.offsetWidth===width&&el.offsetHeight===width*multiple;},{width,multiple});
+   assert.ok(await frame.locator('html').evaluate(el=>el.scrollHeight>innerHeight));
+   assert.equal(await frame.locator('html').evaluate(el=>getComputedStyle(el).overflowY),'auto');
+   await frame.locator('html').evaluate(el=>el.scrollTop=100);
+   assert.ok(await frame.locator('html').evaluate(el=>el.scrollTop>0));
+   await page.waitForTimeout(100);
+   assert.equal(await frame.locator('html').getAttribute('data-wb-scrolling'),'true');
+   await frame.locator('html').evaluate(el=>el.scrollTop=0);
+ }
+ await page.waitForTimeout(1100);
+ assert.equal(await frame.locator('html').getAttribute('data-wb-scrolling'),null,'scrollbar hides when idle');
+ await frame.locator('#cap-test').evaluate(el=>el.remove());
+ const title=page.locator('[data-page="index.html"] .page-title');
+ assert.ok((await title.innerText()).startsWith('index.html - '));
+ assert.equal(await title.evaluate(el=>getComputedStyle(el).textOverflow),'ellipsis');
+ assert.equal(await page.locator('.page-stage').evaluate(el=>getComputedStyle(el).backgroundSize),'10px 10px');
+ assert.ok((await page.locator('.page-stage').evaluate(el=>getComputedStyle(el,'::before').backgroundImage)).includes('linear-gradient'));
+ assert.ok((await page.locator('.frame-glass').first().evaluate(el=>getComputedStyle(el).backdropFilter)).includes('blur'));
+ assert.equal(await page.locator('iframe[title="index.html"]').evaluate(el=>getComputedStyle(el).animationName),'page-reveal');
+ const product=page.frameLocator('iframe[title="shop.html"]').locator('img[src^="https://cdn.noventrad.com/img/product/"]').first();
+ await product.waitFor();
+ await product.evaluate(el=>el.loading='eager');
+ await page.waitForFunction(()=>true);
+ await product.evaluate(el=>new Promise((resolve,reject)=>{if(el.complete&&el.naturalWidth>0)return resolve(true);const timer=setTimeout(()=>reject(new Error('Product image did not load')),20000);el.onload=()=>{clearTimeout(timer);resolve(true);};el.onerror=()=>{clearTimeout(timer);reject(new Error('Product CDN image failed'));};}));
+ assert.ok(await product.evaluate(el=>el.naturalWidth>0));
+ await page.getByRole('button',{name:'关闭提示'}).click();
+ await page.getByRole('button',{name:'页面后移',exact:true}).click();
+ assert.equal(await page.locator('.page-panel').first().getAttribute('data-page'),'shop.html');
+ await page.getByRole('button',{name:'页面前移',exact:true}).click();
+ await page.getByLabel('统一宽度').selectOption('1280');
+ await page.getByRole('button',{name:'重置视图',exact:true}).click();
+ await page.getByRole('button',{name:'关闭工具面板',exact:true}).click();
+ await mkdir('artifacts',{recursive:true});
+ await page.waitForTimeout(500);
+ await page.screenshot({path:'artifacts/website-canvas-1816.png'});
+ const transform=await page.locator('.canvas-world').getAttribute('style');
+ await page.getByRole('button',{name:'画布缩放',exact:true}).click();
+ await page.getByRole('button',{name:'放大画布',exact:true}).click();
+ assert.notEqual(await page.locator('.canvas-world').getAttribute('style'),transform);
+ await page.getByRole('button',{name:'关闭工具面板',exact:true}).click();
+ await page.getByRole('button',{name:'查看全部',exact:true}).click();
+ await page.screenshot({path:'artifacts/website-canvas-all.png'});
+ const zoomed=await page.locator('.canvas-world').getAttribute('style');
+ const bounds=await page.locator('.page-stage').boundingBox();
+ await page.mouse.move(bounds.x+bounds.width-150,bounds.y+bounds.height-100);await page.mouse.down();await page.mouse.move(bounds.x+bounds.width-250,bounds.y+bounds.height-160);await page.mouse.up();
+ assert.notEqual(await page.locator('.canvas-world').getAttribute('style'),zoomed,'blank-area drag must pan the canvas');
+ await page.setViewportSize({width:375,height:812});
+ assert.equal(await page.evaluate(()=>document.documentElement.scrollWidth),375);
+ await page.screenshot({path:'artifacts/website-canvas-375.png'});
+ assert.equal(await page.locator('iframe').count(),14);
+ assert.deepEqual(errors,[]);
+ assert.equal(await sourceHash(sourceRoot),before,'preview must never modify source files');
+ const result={result:'PASS',checks:['14 live frames arranged horizontally and top aligned','global and individual widths','auto height grows and shrinks','form fields and JS interaction','external anchor, window.open, location.href and form.submit blocked without a network request','internal page navigation blocked','PC/tablet/mobile height caps and native scrolling','real product CDN image loaded','filename-prefixed title ellipsis','canvas zoom, fit all and drag pan','page order','responsive viewport','source directory hash unchanged'],positions,errors,externalRequests,sourceHash:before};
+ await writeFile('artifacts/verification.json',JSON.stringify(result,null,2));console.log(JSON.stringify(result,null,2));
+}finally{await browser.close();child.kill();}

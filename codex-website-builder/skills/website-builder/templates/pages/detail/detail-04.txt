@@ -1,0 +1,414 @@
+## Overview
+
+Product Detail Page (PDP), featuring multi-view product gallery skeleton, right-hand purchase action zone (product title, price comparison, color/size variant selectors, quantity stepper, Add to Cart & Buy Now buttons), and specifications accordion.
+
+### Layout & Regions
+- `gallery`: Product image gallery skeleton with main view and thumbnail carousel.
+- `purchase-box`: Right-hand buy box with title, pricing, variant pickers, stepper, and CTA buttons.
+- `specifications`: Product details and specifications accordion panel.
+
+### Dimensions & Responsiveness
+- Follows global design system, outer container uses `content-container` with PC max content width 1200px centered.
+- Desktop (1024px+): 5:4 or 1:1 two-column split layout.
+- Mobile (under 1024px): Single-column vertical stack with horizontal swipe gallery.
+
+### Attributes & Props
+| Attribute | Description | Type | Default |
+| --- | --- | --- | --- |
+| `product-id` | Product identifier | `string` | `'detail-product-1'` |
+
+### Events
+- `detail-add-cart`: Dispatched when clicking Add to Cart.
+- `detail-buy-now`: Dispatched when clicking Buy Now.
+
+## Code
+
+### HTML
+
+```html
+<section class="bg-surface font-sans text-content py-6 sm:py-8">
+  <div class="content-container">
+    <nav data-region="breadcrumb" class="mb-6">
+      <div class="flex items-center gap-2 text-sm text-muted">
+        <span class="block h-[0.75em] w-12 rounded-sm bg-accent"></span>
+        <span>/</span>
+        <span class="block h-[0.75em] w-16 rounded-sm bg-accent"></span>
+        <span>/</span>
+        <span class="block h-[0.75em] w-32 rounded-sm bg-accent"></span>
+      </div>
+    </nav>
+
+    <div data-region="product-details" class="grid grid-cols-1 lg:grid-cols-2 gap-6 md:gap-12 mb-8 md:mb-12">
+      <div data-region="gallery" class="space-y-4 lg:sticky lg:top-24 lg:self-start">
+        <div class="relative aspect-square w-full rounded-2xl bg-accent overflow-hidden flex items-center justify-center border border-outline/40 group">
+          <span class="relative block aspect-[6/5] w-20 overflow-hidden rounded-sm border border-muted" id="main-image-placeholder">
+            <span class="absolute right-[15%] top-[15%] size-1/5 rounded-full bg-muted"></span>
+            <span class="absolute -bottom-1/4 left-[5%] size-3/4 rotate-45 border-l border-t border-muted"></span>
+            <span class="absolute -bottom-1/4 right-0 size-1/2 rotate-45 border-l border-t border-muted"></span>
+          </span>
+
+          <button id="prev-image-btn" type="button" class="absolute left-3 top-1/2 -translate-y-1/2 size-10 rounded-full bg-black/40 hover:bg-black/70 text-white flex items-center justify-center transition-all cursor-pointer shadow-md backdrop-blur-xs">
+            <span class="size-2.5 -rotate-135 border-r-2 border-t-2 border-white inline-block ml-0.5"></span>
+          </button>
+          <button id="next-image-btn" type="button" class="absolute right-3 top-1/2 -translate-y-1/2 size-10 rounded-full bg-black/40 hover:bg-black/70 text-white flex items-center justify-center transition-all cursor-pointer shadow-md backdrop-blur-xs">
+            <span class="size-2.5 rotate-45 border-r-2 border-t-2 border-white inline-block mr-0.5"></span>
+          </button>
+
+          <span id="image-counter-badge" class="absolute bottom-3 right-3 px-3 py-1 rounded-full bg-black/60 text-white text-xs font-semibold tracking-wide backdrop-blur-xs select-none">
+            1 / 8
+          </span>
+        </div>
+
+        <div class="swiper thumbnails-swiper w-full overflow-hidden pb-1">
+          <div class="swiper-wrapper" id="thumbnails-list">
+            <div class="swiper-slide !w-auto">
+              <div role="button" tabindex="0" class="size-16 sm:size-20 rounded-xl border-2 border-primary bg-accent flex items-center justify-center cursor-pointer">
+                <span class="relative block aspect-[6/5] w-7 sm:w-8 overflow-hidden rounded-xs border border-muted">
+                  <span class="absolute right-[15%] top-[15%] size-1/5 rounded-full bg-muted"></span>
+                  <span class="absolute -bottom-1/4 left-[5%] size-3/4 rotate-45 border-l border-t border-muted"></span>
+                </span>
+              </div>
+            </div>
+            <div class="swiper-slide !w-auto">
+              <div role="button" tabindex="0" class="size-16 sm:size-20 rounded-xl border-2 border-transparent hover:border-primary/50 bg-accent flex items-center justify-center cursor-pointer transition-colors">
+                <span class="relative block aspect-[6/5] w-7 sm:w-8 overflow-hidden rounded-xs border border-muted">
+                  <span class="absolute right-[15%] top-[15%] size-1/5 rounded-full bg-muted"></span>
+                  <span class="absolute -bottom-1/4 left-[5%] size-3/4 rotate-45 border-l border-t border-muted"></span>
+                </span>
+              </div>
+            </div>
+            <div class="swiper-slide !w-auto">
+              <div role="button" tabindex="0" class="size-16 sm:size-20 rounded-xl border-2 border-transparent hover:border-primary/50 bg-accent flex items-center justify-center cursor-pointer transition-colors">
+                <span class="relative block aspect-[6/5] w-7 sm:w-8 overflow-hidden rounded-xs border border-muted">
+                  <span class="absolute right-[15%] top-[15%] size-1/5 rounded-full bg-muted"></span>
+                  <span class="absolute -bottom-1/4 left-[5%] size-3/4 rotate-45 border-l border-t border-muted"></span>
+                </span>
+              </div>
+            </div>
+            <div class="swiper-slide !w-auto">
+              <div role="button" tabindex="0" class="size-16 sm:size-20 rounded-xl border-2 border-transparent hover:border-primary/50 bg-accent flex items-center justify-center cursor-pointer transition-colors">
+                <span class="relative block aspect-[6/5] w-7 sm:w-8 overflow-hidden rounded-xs border border-muted">
+                  <span class="absolute right-[15%] top-[15%] size-1/5 rounded-full bg-muted"></span>
+                  <span class="absolute -bottom-1/4 left-[5%] size-3/4 rotate-45 border-l border-t border-muted"></span>
+                </span>
+              </div>
+            </div>
+            <div class="swiper-slide !w-auto">
+              <div role="button" tabindex="0" class="size-16 sm:size-20 rounded-xl border-2 border-transparent hover:border-primary/50 bg-accent flex items-center justify-center cursor-pointer transition-colors">
+                <span class="relative block aspect-[6/5] w-7 sm:w-8 overflow-hidden rounded-xs border border-muted">
+                  <span class="absolute right-[15%] top-[15%] size-1/5 rounded-full bg-muted"></span>
+                  <span class="absolute -bottom-1/4 left-[5%] size-3/4 rotate-45 border-l border-t border-muted"></span>
+                </span>
+              </div>
+            </div>
+            <div class="swiper-slide !w-auto">
+              <div role="button" tabindex="0" class="size-16 sm:size-20 rounded-xl border-2 border-transparent hover:border-primary/50 bg-accent flex items-center justify-center cursor-pointer transition-colors">
+                <span class="relative block aspect-[6/5] w-7 sm:w-8 overflow-hidden rounded-xs border border-muted">
+                  <span class="absolute right-[15%] top-[15%] size-1/5 rounded-full bg-muted"></span>
+                  <span class="absolute -bottom-1/4 left-[5%] size-3/4 rotate-45 border-l border-t border-muted"></span>
+                </span>
+              </div>
+            </div>
+            <div class="swiper-slide !w-auto">
+              <div role="button" tabindex="0" class="size-16 sm:size-20 rounded-xl border-2 border-transparent hover:border-primary/50 bg-accent flex items-center justify-center cursor-pointer transition-colors">
+                <span class="relative block aspect-[6/5] w-7 sm:w-8 overflow-hidden rounded-xs border border-muted">
+                  <span class="absolute right-[15%] top-[15%] size-1/5 rounded-full bg-muted"></span>
+                  <span class="absolute -bottom-1/4 left-[5%] size-3/4 rotate-45 border-l border-t border-muted"></span>
+                </span>
+              </div>
+            </div>
+            <div class="swiper-slide !w-auto">
+              <div role="button" tabindex="0" class="size-16 sm:size-20 rounded-xl border-2 border-transparent hover:border-primary/50 bg-accent flex items-center justify-center cursor-pointer transition-colors">
+                <span class="relative block aspect-[6/5] w-7 sm:w-8 overflow-hidden rounded-xs border border-muted">
+                  <span class="absolute right-[15%] top-[15%] size-1/5 rounded-full bg-muted"></span>
+                  <span class="absolute -bottom-1/4 left-[5%] size-3/4 rotate-45 border-l border-t border-muted"></span>
+                </span>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <div data-region="info" class="space-y-6">
+        <div>
+          <span class="block h-[1.25em] w-3/4 rounded-sm bg-accent text-2xl md:text-3xl mb-3"></span>
+          <div class="flex items-center gap-3">
+            <div class="flex items-center gap-1">
+              <span class="block size-3 rounded-full bg-primary"></span>
+              <span class="block size-3 rounded-full bg-primary"></span>
+              <span class="block size-3 rounded-full bg-primary"></span>
+              <span class="block size-3 rounded-full bg-primary"></span>
+              <span class="block size-3 rounded-full bg-primary"></span>
+            </div>
+            <span class="block h-[0.75em] w-16 rounded-sm bg-accent"></span>
+          </div>
+        </div>
+
+        <div class="flex items-center gap-4 py-2 border-y border-outline/30">
+          <span class="block h-[1em] w-24 rounded-sm bg-accent text-3xl font-bold"></span>
+          <span class="block h-[0.75em] w-16 rounded-sm bg-accent line-through opacity-50"></span>
+          <span class="block h-5 w-12 rounded-full bg-primary/20"></span>
+        </div>
+
+        <div class="flex items-center gap-2 text-sm">
+          <span class="block size-3 rounded-full bg-primary/70"></span>
+          <span class="block h-[0.75em] w-20 rounded-sm bg-accent"></span>
+        </div>
+
+        <div class="space-y-2">
+          <span class="block h-[1em] w-24 rounded-sm bg-accent text-base font-semibold mb-2"></span>
+          <ul class="space-y-2">
+            <li class="flex items-center gap-2.5">
+              <span class="size-1.5 rounded-full bg-primary shrink-0"></span>
+              <span class="block h-[0.75em] w-full max-w-sm rounded-sm bg-accent"></span>
+            </li>
+            <li class="flex items-center gap-2.5">
+              <span class="size-1.5 rounded-full bg-primary shrink-0"></span>
+              <span class="block h-[0.75em] w-full max-w-md rounded-sm bg-accent"></span>
+            </li>
+            <li class="flex items-center gap-2.5">
+              <span class="size-1.5 rounded-full bg-primary shrink-0"></span>
+              <span class="block h-[0.75em] w-full max-w-xs rounded-sm bg-accent"></span>
+            </li>
+          </ul>
+        </div>
+
+        <div class="space-y-4 pt-2">
+          <div class="flex items-center gap-3">
+            <span class="block h-[0.75em] w-14 rounded-sm bg-accent text-sm"></span>
+            <div class="flex items-center border border-outline/60 rounded-lg overflow-hidden">
+              <button id="qty-minus" type="button" class="px-3.5 py-2 bg-surface hover:bg-accent/40 text-content font-bold transition-colors cursor-pointer">-</button>
+              <input id="qty-input" type="number" value="1" min="1" max="99" class="w-14 text-center border-0 text-sm font-semibold bg-surface focus:outline-none">
+              <button id="qty-plus" type="button" class="px-3.5 py-2 bg-surface hover:bg-accent/40 text-content font-bold transition-colors cursor-pointer">+</button>
+            </div>
+          </div>
+
+          <div class="flex flex-col sm:flex-row sm:items-center gap-3 w-full">
+            <div class="flex items-center gap-2.5 flex-1 w-full">
+              <button id="add-to-cart-btn" type="button" class="flex-1 bg-primary text-white py-3 px-4 rounded-lg font-semibold hover:opacity-95 transition-opacity shadow-sm cursor-pointer text-center">
+                <span class="block h-[0.75em] w-24 mx-auto rounded-sm bg-white/40"></span>
+              </button>
+              <button id="buy-now-btn" type="button" class="flex-1 bg-content text-surface py-3 px-4 rounded-lg font-semibold hover:opacity-90 transition-opacity cursor-pointer text-center">
+                <span class="block h-[0.75em] w-20 mx-auto rounded-sm bg-accent"></span>
+              </button>
+            </div>
+            <button id="wishlist-btn" type="button" class="w-full sm:w-auto p-3 border border-outline/60 rounded-lg hover:bg-accent/20 transition-colors flex items-center justify-center cursor-pointer shrink-0" title="Wishlist">
+              <span class="block size-4 rounded-xs border-2 border-content/70 rotate-45"></span>
+            </button>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <div data-region="tabs" class="mb-10 sm:mb-16">
+      <div class="border-b border-outline/40 mb-6">
+        <nav class="flex space-x-6 sm:space-x-8" id="product-tabs-nav">
+          <button type="button" class="tab-btn py-3 px-1 border-b-2 border-primary text-primary font-medium cursor-pointer" data-tab="description">
+            <span class="block h-[0.75em] w-20 rounded-sm bg-accent"></span>
+          </button>
+          <button type="button" class="tab-btn py-3 px-1 border-b-2 border-transparent text-muted hover:text-content font-medium cursor-pointer transition-colors" data-tab="specifications">
+            <span class="block h-[0.75em] w-24 rounded-sm bg-accent"></span>
+          </button>
+          <button type="button" class="tab-btn py-3 px-1 border-b-2 border-transparent text-muted hover:text-content font-medium cursor-pointer transition-colors" data-tab="reviews">
+            <span class="block h-[0.75em] w-16 rounded-sm bg-accent"></span>
+          </button>
+        </nav>
+      </div>
+
+      <div class="tab-content">
+        <div id="description-panel" class="tab-panel">
+          <div class="bg-surface rounded-xl border border-outline/50 p-6 space-y-4">
+            <span class="block h-[1em] w-36 rounded-sm bg-accent text-lg font-bold"></span>
+            <div class="space-y-2">
+              <span class="block h-[0.75em] w-full rounded-sm bg-accent"></span>
+              <span class="block h-[0.75em] w-full rounded-sm bg-accent"></span>
+              <span class="block h-[0.75em] w-4/5 rounded-sm bg-accent"></span>
+            </div>
+            <div class="pt-2 grid grid-cols-1 sm:grid-cols-2 gap-4">
+              <div class="p-4 rounded-lg bg-accent/20 border border-outline/30 space-y-2">
+                <span class="block h-[0.75em] w-24 rounded-sm bg-accent font-semibold"></span>
+                <span class="block h-[0.75em] w-full rounded-sm bg-accent"></span>
+              </div>
+              <div class="p-4 rounded-lg bg-accent/20 border border-outline/30 space-y-2">
+                <span class="block h-[0.75em] w-24 rounded-sm bg-accent font-semibold"></span>
+                <span class="block h-[0.75em] w-full rounded-sm bg-accent"></span>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <div id="specifications-panel" class="tab-panel hidden">
+          <div class="bg-surface rounded-xl border border-outline/50 overflow-hidden shadow-xs">
+            <div class="divide-y divide-outline/30">
+              <div class="grid grid-cols-3 p-4 bg-accent/20">
+                <span class="block h-[0.75em] w-20 rounded-sm bg-accent"></span>
+                <span class="col-span-2 block h-[0.75em] w-36 rounded-sm bg-accent"></span>
+              </div>
+              <div class="grid grid-cols-3 p-4">
+                <span class="block h-[0.75em] w-24 rounded-sm bg-accent"></span>
+                <span class="col-span-2 block h-[0.75em] w-48 rounded-sm bg-accent"></span>
+              </div>
+              <div class="grid grid-cols-3 p-4 bg-accent/20">
+                <span class="block h-[0.75em] w-20 rounded-sm bg-accent"></span>
+                <span class="col-span-2 block h-[0.75em] w-32 rounded-sm bg-accent"></span>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <div id="reviews-panel" class="tab-panel hidden space-y-4">
+          <div class="p-4 sm:p-5 rounded-xl border border-outline/50 bg-surface space-y-3">
+            <div class="flex items-center justify-between">
+              <div class="flex items-center gap-3">
+                <span class="size-9 rounded-full bg-accent block shrink-0"></span>
+                <div class="space-y-1">
+                  <span class="block h-[0.75em] w-20 rounded-sm bg-accent"></span>
+                  <div class="flex items-center gap-1">
+                    <span class="block size-2.5 rounded-full bg-primary"></span>
+                    <span class="block size-2.5 rounded-full bg-primary"></span>
+                    <span class="block size-2.5 rounded-full bg-primary"></span>
+                    <span class="block size-2.5 rounded-full bg-primary"></span>
+                    <span class="block size-2.5 rounded-full bg-primary"></span>
+                  </div>
+                </div>
+              </div>
+              <span class="block h-[0.75em] w-14 rounded-sm bg-accent"></span>
+            </div>
+            <div class="space-y-1.5 pt-1">
+              <span class="block h-[0.75em] w-full rounded-sm bg-accent"></span>
+              <span class="block h-[0.75em] w-4/5 rounded-sm bg-accent"></span>
+            </div>
+
+            <!-- 商家回复 / 评论回复 (Seller Reply) -->
+            <div class="mt-3 ml-4 sm:ml-6 pl-3 sm:pl-4 border-l-2 border-primary/40 space-y-2 bg-accent/10 py-2.5 px-3 rounded-r-lg">
+              <div class="flex items-center justify-between">
+                <span class="block h-4 w-16 rounded-xs bg-primary/20"></span>
+                <span class="block h-[0.65em] w-12 rounded-xs bg-accent"></span>
+              </div>
+              <span class="block h-[0.75em] w-full max-w-md rounded-xs bg-accent"></span>
+              <span class="block h-[0.75em] w-2/3 rounded-xs bg-accent"></span>
+            </div>
+          </div>
+
+          <div class="p-4 sm:p-5 rounded-xl border border-outline/50 bg-surface space-y-3">
+            <div class="flex items-center justify-between">
+              <div class="flex items-center gap-3">
+                <span class="size-9 rounded-full bg-accent block shrink-0"></span>
+                <div class="space-y-1">
+                  <span class="block h-[0.75em] w-24 rounded-sm bg-accent"></span>
+                  <div class="flex items-center gap-1">
+                    <span class="block size-2.5 rounded-full bg-primary"></span>
+                    <span class="block size-2.5 rounded-full bg-primary"></span>
+                    <span class="block size-2.5 rounded-full bg-primary"></span>
+                    <span class="block size-2.5 rounded-full bg-primary"></span>
+                    <span class="block size-2.5 rounded-full bg-muted/40"></span>
+                  </div>
+                </div>
+              </div>
+              <span class="block h-[0.75em] w-14 rounded-sm bg-accent"></span>
+            </div>
+            <div class="space-y-1.5 pt-1">
+              <span class="block h-[0.75em] w-full rounded-sm bg-accent"></span>
+              <span class="block h-[0.75em] w-3/5 rounded-sm bg-accent"></span>
+            </div>
+
+            <!-- 商家回复 / 评论回复 (Seller Reply) -->
+            <div class="mt-3 ml-4 sm:ml-6 pl-3 sm:pl-4 border-l-2 border-primary/40 space-y-2 bg-accent/10 py-2.5 px-3 rounded-r-lg">
+              <div class="flex items-center justify-between">
+                <span class="block h-4 w-16 rounded-xs bg-primary/20"></span>
+                <span class="block h-[0.65em] w-12 rounded-xs bg-accent"></span>
+              </div>
+              <span class="block h-[0.75em] w-full max-w-sm rounded-xs bg-accent"></span>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <div data-region="related-products">
+      <div class="text-center mb-6 sm:mb-8">
+        <span class="block h-[1.25em] w-44 mx-auto rounded-sm bg-accent text-xl sm:text-2xl font-bold mb-2"></span>
+        <span class="block h-[0.75em] w-28 mx-auto rounded-sm bg-accent"></span>
+      </div>
+      <div class="grid grid-cols-2 lg:grid-cols-4 gap-3 sm:gap-4 md:gap-6">
+        <card-01 class="block w-full"></card-01>
+        <card-01 class="block w-full"></card-01>
+        <card-01 class="block w-full"></card-01>
+        <card-01 class="block w-full"></card-01>
+      </div>
+    </div>
+  </div>
+</section>
+```
+
+### JavaScript
+
+```javascript
+$(function() {
+  const $qtyInput = $('#qty-input');
+  if (!$qtyInput.length) return;
+
+  $('#qty-minus').on('click', function() {
+    let val = parseInt($qtyInput.val(), 10) || 1;
+    if (val > 1) $qtyInput.val(val - 1);
+  });
+
+  $('#qty-plus').on('click', function() {
+    let val = parseInt($qtyInput.val(), 10) || 1;
+    if (val < 99) $qtyInput.val(val + 1);
+  });
+
+  let currentImg = 1;
+  const totalImgs = 8;
+
+  let thumbnailsSwiper = null;
+  if (typeof Swiper !== 'undefined' && $('.thumbnails-swiper').length) {
+    thumbnailsSwiper = new Swiper('.thumbnails-swiper', {
+      slidesPerView: 'auto',
+      spaceBetween: 8,
+      freeMode: true,
+      watchSlidesProgress: true
+    });
+  }
+
+  function updateBadge() {
+    $('#image-counter-badge').text(`${currentImg} / ${totalImgs}`);
+    $('[data-region="gallery"] [role="button"]').removeClass('border-2 border-primary').addClass('border-2 border-transparent hover:border-primary/50');
+    $('[data-region="gallery"] [role="button"]').eq(currentImg - 1).removeClass('border-2 border-transparent hover:border-primary/50').addClass('border-2 border-primary');
+    thumbnailsSwiper?.slideTo(currentImg - 1);
+  }
+
+  $('#prev-image-btn').on('click', function() {
+    currentImg = currentImg > 1 ? currentImg - 1 : totalImgs;
+    updateBadge();
+  });
+
+  $('#next-image-btn').on('click', function() {
+    currentImg = currentImg < totalImgs ? currentImg + 1 : 1;
+    updateBadge();
+  });
+
+  $('[data-region="gallery"] [role="button"]').on('click', function() {
+    currentImg = $(this).closest('.swiper-slide').index() + 1;
+    updateBadge();
+  });
+
+  $('#add-to-cart-btn, #buy-now-btn').on('click', function() {
+    const event = new CustomEvent('product-navigate', {
+      bubbles: true,
+      composed: true,
+      detail: { action: $(this).attr('id'), quantity: parseInt($qtyInput.val(), 10) || 1 }
+    });
+    this.dispatchEvent(event);
+  });
+
+  $('#product-tabs-nav .tab-btn').on('click', function() {
+    const tab = $(this).data('tab');
+    $('#product-tabs-nav .tab-btn').removeClass('border-primary text-primary').addClass('border-transparent text-muted');
+    $(this).addClass('border-primary text-primary').removeClass('border-transparent text-muted');
+
+    $('.tab-panel').addClass('hidden');
+    $('#' + tab + '-panel').removeClass('hidden');
+  });
+});
+```

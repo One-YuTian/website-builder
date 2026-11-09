@@ -1,0 +1,68 @@
+## Overview
+
+About Us brand introduction and story page, featuring brand Hero banner visual skeleton, core mission & vision statements, service feature highlights grid, and company timeline / team credentials to build customer brand trust.
+
+### Layout & Regions
+- `hero`: Top full-width banner visual skeleton with centered text overlay.
+- `intro`: Centered brand introduction and mission statement text skeleton area.
+- `benefits-grid`: Service guarantee cards (2 cols on tablet, 4 cols on desktop).
+- `milestones`: Brand history timeline or team credentials showcase grid.
+
+### Dimensions & Responsiveness
+- Follows global design system, outer container uses `content-container` with PC max content width 1200px centered.
+- Mobile (under 1024px): Stacks into single-column vertical flow.
+
+### Attributes & Props
+| Attribute | Description | Type | Default |
+| --- | --- | --- | --- |
+| `theme` | Theme styling mode | `'light' \| 'dark'` | `'light'` |
+
+### Events
+- `about-navigate`: Dispatched when clicking action buttons or links within the About section.
+
+## Code
+
+### HTML
+
+```html
+<section class="bg-surface font-sans text-content py-4 sm:py-6">
+  <div class="content-container space-y-12 sm:space-y-16">
+    <div data-region="hero" class="relative w-full py-16 md:py-24 overflow-hidden rounded-2xl">
+      <div class="absolute inset-0 bg-accent overflow-hidden"><span class="absolute inset-0 flex items-center justify-center"><span class="relative block aspect-[21/9] w-24 sm:w-32 overflow-hidden rounded-sm border border-muted"><span class="absolute right-[15%] top-[15%] size-1/5 rounded-full bg-muted"></span><span class="absolute -bottom-1/4 left-[5%] size-3/4 rotate-45 border-l border-t border-muted"></span><span class="absolute -bottom-1/4 right-0 size-1/2 rotate-45 border-l border-t border-muted"></span></span></span></div>
+      <div class="absolute inset-0 bg-black/50"></div>
+      <div class="relative z-10 max-w-4xl px-4 text-center mx-auto space-y-6">
+        <div class="h-[1.8em] w-48 rounded-sm bg-white/90 mx-auto"></div>
+        <div class="space-y-2.5 max-w-2xl mx-auto">
+          <div class="h-[0.85em] w-full rounded-sm bg-white/80"></div>
+          <div class="h-[0.85em] w-full rounded-sm bg-white/80"></div>
+          <div class="h-[0.85em] w-4/5 rounded-sm bg-white/80 mx-auto"></div>
+        </div>
+      </div>
+    </div>
+
+    <div data-region="quality" class="space-y-8">
+      <div class="h-[1.6em] w-52 rounded-sm bg-accent mx-auto"></div>
+      <div class="grid grid-cols-1 md:grid-cols-2 gap-10 md:gap-12">
+        <div class="space-y-2.5">
+          <div class="h-[0.8em] w-full rounded-sm bg-accent"></div>
+          <div class="h-[0.8em] w-full rounded-sm bg-accent"></div>
+          <div class="h-[0.8em] w-4/5 rounded-sm bg-accent"></div>
+        </div>
+        <div class="space-y-2.5">
+          <div class="h-[0.8em] w-full rounded-sm bg-accent"></div>
+          <div class="h-[0.8em] w-full rounded-sm bg-accent"></div>
+          <div class="h-[0.8em] w-5/6 rounded-sm bg-accent"></div>
+        </div>
+      </div>
+    </div>
+  </div>
+</section>
+```
+
+### JavaScript
+
+```javascript
+$(function() {
+
+});
+```

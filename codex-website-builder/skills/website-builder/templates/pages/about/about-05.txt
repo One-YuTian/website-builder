@@ -1,0 +1,64 @@
+## Overview
+
+About Us brand introduction and story page, featuring brand Hero banner visual skeleton, core mission & vision statements, service feature highlights grid, and company timeline / team credentials to build customer brand trust.
+
+### Layout & Regions
+- `hero`: Top full-width banner visual skeleton with centered text overlay.
+- `intro`: Centered brand introduction and mission statement text skeleton area.
+- `benefits-grid`: Service guarantee cards (2 cols on tablet, 4 cols on desktop).
+- `milestones`: Brand history timeline or team credentials showcase grid.
+
+### Dimensions & Responsiveness
+- Follows global design system, outer container uses `content-container` with PC max content width 1200px centered.
+- Mobile (under 1024px): Stacks into single-column vertical flow.
+
+### Attributes & Props
+| Attribute | Description | Type | Default |
+| --- | --- | --- | --- |
+| `theme` | Theme styling mode | `'light' \| 'dark'` | `'light'` |
+
+### Events
+- `about-navigate`: Dispatched when clicking action buttons or links within the About section.
+
+## Code
+
+### HTML
+
+```html
+<section class="bg-surface font-sans text-content py-12 sm:py-16">
+  <div class="content-container space-y-10">
+    <div data-region="header" class="text-center">
+      <div class="h-[1.8em] w-40 rounded-sm bg-accent mx-auto"></div>
+    </div>
+
+    <div data-region="narrative" class="max-w-4xl mx-auto space-y-6 px-4">
+      <div class="space-y-2.5">
+        <div class="h-[0.8em] w-full rounded-sm bg-accent"></div>
+        <div class="h-[0.8em] w-full rounded-sm bg-accent"></div>
+        <div class="h-[0.8em] w-4/5 rounded-sm bg-accent"></div>
+      </div>
+      <div class="space-y-2.5">
+        <div class="h-[0.8em] w-full rounded-sm bg-accent"></div>
+        <div class="h-[0.8em] w-5/6 rounded-sm bg-accent"></div>
+      </div>
+      <div class="space-y-2.5">
+        <div class="h-[0.8em] w-full rounded-sm bg-accent"></div>
+        <div class="h-[0.8em] w-full rounded-sm bg-accent"></div>
+        <div class="h-[0.8em] w-3/4 rounded-sm bg-accent"></div>
+      </div>
+      <div class="space-y-2.5">
+        <div class="h-[0.8em] w-full rounded-sm bg-accent"></div>
+        <div class="h-[0.8em] w-4/5 rounded-sm bg-accent"></div>
+      </div>
+    </div>
+  </div>
+</section>
+```
+
+### JavaScript
+
+```javascript
+$(function() {
+
+});
+```

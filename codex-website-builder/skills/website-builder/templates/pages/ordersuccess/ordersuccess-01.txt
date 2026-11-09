@@ -1,0 +1,164 @@
+## Overview
+
+Order payment confirmation and success feedback page, containing top green checkmark success badge, order number and status pill, purchased item list, cost breakdown & shipping delivery estimate cards, important notice alert, and View Order / Continue Shopping buttons.
+
+### Layout & Regions
+- `success-header`: Circular checkmark icon, thank you headline, and subtitle.
+- `order-card`: Order number card, thumbnail item list, cost summary, and delivery date.
+- `notice-alert`: Post-order processing instructions and confirmation notification banner.
+- `action-buttons`: View Order History and Continue Shopping dual action buttons.
+
+### Dimensions & Responsiveness
+- Follows global design system, outer container uses `content-container` with PC max content width 1200px centered.
+- Card max width 48rem (768px) centered.
+
+### Attributes & Props
+| Attribute | Description | Type | Default |
+| --- | --- | --- | --- |
+| `order-id` | Unique order confirmation number | `string` | `'ORD-2026-99881'` |
+
+### Events
+- `ordersuccess-navigate`: Dispatched when clicking View Order or Continue Shopping buttons.
+
+## Code
+
+### HTML
+
+```html
+<section class="ordersuccess-section bg-accent/20 font-sans text-content py-10 sm:py-16">
+  <div class="content-container flex justify-center">
+    <div class="w-full max-w-3xl">
+      <!-- Success Header -->
+      <div data-region="success-header" class="text-center mb-8 sm:mb-10 flex flex-col items-center">
+        <div class="size-20 rounded-full bg-emerald-500/15 border border-emerald-500/30 flex items-center justify-center mb-5 text-emerald-600 shadow-xs">
+          <span class="text-4xl font-bold leading-none">✓</span>
+        </div>
+        <div class="h-8 sm:h-9 w-64 sm:w-80 bg-content/85 rounded-xs mb-3"></div>
+        <div class="h-4 w-48 bg-muted/60 rounded-xs"></div>
+      </div>
+
+      <!-- Order Details Card -->
+      <div data-region="order-card" class="bg-surface rounded-2xl shadow-sm border border-outline/30 p-6 sm:p-8 mb-6">
+        <!-- Order Number Badge -->
+        <div class="flex items-center justify-between pb-6 mb-6 border-b border-outline/20">
+          <div>
+            <div class="h-4 w-28 bg-muted/60 rounded-xs mb-1.5"></div>
+            <div class="h-5 w-40 bg-content/85 rounded-xs font-mono"></div>
+          </div>
+          <div class="px-3 py-1 rounded-full bg-emerald-500/10 text-emerald-600 border border-emerald-500/20 text-xs font-medium">
+            <div class="h-3 w-16 bg-emerald-600/70 rounded-xs"></div>
+          </div>
+        </div>
+
+        <!-- Ordered Items -->
+        <div class="space-y-4 mb-6">
+          <div class="h-4 w-20 bg-content/80 rounded-xs"></div>
+
+          <div class="flex items-center gap-3.5 pb-4 border-b border-outline/15">
+            <div class="relative size-14 shrink-0 bg-accent/40 rounded-lg flex items-center justify-center overflow-hidden border border-outline/20">
+              <span class="relative block aspect-[6/5] w-1/2 overflow-hidden rounded-xs border border-muted">
+                <span class="absolute right-[15%] top-[15%] size-1/5 rounded-full bg-muted"></span>
+                <span class="absolute -bottom-1/4 left-[5%] size-3/4 rotate-45 border-l border-t border-muted"></span>
+                <span class="absolute -bottom-1/4 right-0 size-1/2 rotate-45 border-l border-t border-muted"></span>
+              </span>
+            </div>
+            <div class="flex-1 min-w-0">
+              <div class="h-3.5 w-10/12 bg-content/80 rounded-xs mb-1.5"></div>
+              <div class="h-3 w-16 bg-muted/50 rounded-xs"></div>
+            </div>
+            <div class="h-4 w-16 bg-primary/80 rounded-xs"></div>
+          </div>
+
+          <div class="flex items-center gap-3.5 pb-4 border-b border-outline/15">
+            <div class="relative size-14 shrink-0 bg-accent/40 rounded-lg flex items-center justify-center overflow-hidden border border-outline/20">
+              <span class="relative block aspect-[6/5] w-1/2 overflow-hidden rounded-xs border border-muted">
+                <span class="absolute right-[15%] top-[15%] size-1/5 rounded-full bg-muted"></span>
+                <span class="absolute -bottom-1/4 left-[5%] size-3/4 rotate-45 border-l border-t border-muted"></span>
+                <span class="absolute -bottom-1/4 right-0 size-1/2 rotate-45 border-l border-t border-muted"></span>
+              </span>
+            </div>
+            <div class="flex-1 min-w-0">
+              <div class="h-3.5 w-9/12 bg-content/80 rounded-xs mb-1.5"></div>
+              <div class="h-3 w-16 bg-muted/50 rounded-xs"></div>
+            </div>
+            <div class="h-4 w-16 bg-primary/80 rounded-xs"></div>
+          </div>
+        </div>
+
+        <!-- 2-Col Breakdown: Summary & Delivery -->
+        <div class="grid grid-cols-1 md:grid-cols-2 gap-6 pt-2">
+          <!-- Left: Cost Summary -->
+          <div class="space-y-2.5 text-xs text-muted">
+            <div class="h-3.5 w-24 bg-content/80 rounded-xs mb-3"></div>
+            <div class="flex justify-between items-center">
+              <div class="h-3 w-16 bg-muted/60 rounded-xs"></div>
+              <div class="h-3 w-16 bg-content/80 rounded-xs"></div>
+            </div>
+            <div class="flex justify-between items-center">
+              <div class="h-3 w-12 bg-muted/60 rounded-xs"></div>
+              <div class="h-3 w-10 bg-emerald-600 rounded-xs"></div>
+            </div>
+            <div class="flex justify-between items-center pt-2 border-t border-outline/10 text-sm font-semibold text-content">
+              <div class="h-4 w-12 bg-content/85 rounded-xs"></div>
+              <div class="h-5 w-24 bg-primary rounded-xs"></div>
+            </div>
+          </div>
+
+          <!-- Right: Delivery Details -->
+          <div class="space-y-3 text-xs text-muted border-t md:border-t-0 md:border-l md:pl-6 border-outline/20 pt-4 md:pt-0">
+            <div class="h-3.5 w-24 bg-content/80 rounded-xs mb-3"></div>
+            <div class="flex items-center gap-2.5">
+              <span class="size-4 rounded-full bg-accent/60 flex items-center justify-center text-[10px]">⏱</span>
+              <div class="h-3 w-40 bg-content/70 rounded-xs"></div>
+            </div>
+            <div class="flex items-center gap-2.5">
+              <span class="size-4 rounded-full bg-accent/60 flex items-center justify-center text-[10px]">🚚</span>
+              <div class="h-3 w-36 bg-content/70 rounded-xs"></div>
+            </div>
+            <div class="flex items-center gap-2.5">
+              <span class="size-4 rounded-full bg-accent/60 flex items-center justify-center text-[10px]">📅</span>
+              <div class="h-3 w-32 bg-content/70 rounded-xs"></div>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <!-- Important Notice Alert -->
+      <div data-region="notice-alert" class="p-4 sm:p-5 rounded-2xl bg-amber-500/10 border border-amber-500/25 mb-8 flex items-start gap-3">
+        <span class="size-6 rounded-full bg-amber-500/20 text-amber-600 flex items-center justify-center font-bold text-xs shrink-0">!</span>
+        <div class="flex-1">
+          <div class="h-3.5 w-24 bg-amber-800/80 rounded-xs mb-1.5"></div>
+          <div class="h-3 w-11/12 bg-amber-700/60 rounded-xs mb-1"></div>
+          <div class="h-3 w-4/5 bg-amber-700/60 rounded-xs"></div>
+        </div>
+      </div>
+
+      <!-- Action Buttons -->
+      <div data-region="action-buttons" class="flex flex-col sm:flex-row items-center justify-center gap-4">
+        <button type="button" data-action="view-orders" class="w-full sm:w-auto px-8 py-3.5 rounded-xl bg-primary text-white font-medium shadow-sm hover:opacity-90 transition-opacity flex items-center justify-center cursor-pointer">
+          <div class="h-3.5 w-24 bg-white/95 rounded-xs"></div>
+        </button>
+        <button type="button" data-action="continue-shopping" class="w-full sm:w-auto px-8 py-3.5 rounded-xl border border-outline/40 bg-surface text-content font-medium hover:bg-accent/30 transition-colors flex items-center justify-center cursor-pointer">
+          <div class="h-3.5 w-24 bg-content/70 rounded-xs"></div>
+        </button>
+      </div>
+    </div>
+  </div>
+</section>
+```
+
+### JavaScript
+
+```javascript
+$(function() {
+  $('[data-action="view-orders"]').on('click', function(e) {
+    e.preventDefault();
+    $(this).trigger('ordersuccess-navigate', { target: 'orders' });
+  });
+
+  $('[data-action="continue-shopping"]').on('click', function(e) {
+    e.preventDefault();
+    $(this).trigger('ordersuccess-navigate', { target: 'shop' });
+  });
+});
+```

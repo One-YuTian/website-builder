@@ -1,0 +1,101 @@
+## Overview
+
+New customer welcome and exclusive discount marketing modal popup block, featuring brand badge, dual-layer headline, coupon voucher card, 3-point service benefit list, and CTA buttons.
+
+### Layout & Regions
+- `modal-backdrop`: Semi-transparent darkened background overlay.
+- `modal-body`: Centered modal dialog with brand badge, title, coupon card, and benefits.
+- `close-button`: Top-right close icon button.
+
+### Dimensions & Responsiveness
+- Dialog max width 32rem (512px) centered in viewport.
+
+### Attributes & Props
+| Attribute | Description | Type | Default |
+| --- | --- | --- | --- |
+| `open` | Modal visibility state | `boolean` | `true` |
+
+### Events
+- `welcomemodal-close`: Dispatched when closing the welcome modal.
+- `welcomemodal-claim`: Dispatched when claiming the coupon discount.
+
+## Code
+
+### HTML
+
+```html
+<section class="welcomemodal-section w-full py-8 md:py-12 bg-accent/20 font-sans text-content">
+  <div class="content-container flex items-center justify-center">
+    <div data-region="modal-card" class="relative w-full max-w-md bg-surface rounded-2xl shadow-xl border border-outline/30 overflow-hidden p-6 sm:p-8 text-center">
+      <!-- Close Button -->
+      <button type="button" aria-label="关闭" data-action="close" class="absolute top-4 right-4 size-8 rounded-full bg-accent/40 text-muted hover:text-content hover:bg-accent flex items-center justify-center transition-colors cursor-pointer">
+        <span class="text-xl leading-none">&times;</span>
+      </button>
+
+      <!-- Badge / Icon Skeleton -->
+      <div class="mx-auto mb-4 size-14 rounded-full bg-primary/10 border border-primary/20 flex items-center justify-center">
+        <span class="size-7 rounded-sm bg-primary/30 flex items-center justify-center">
+          <span class="size-3.5 rounded-full bg-primary/60"></span>
+        </span>
+      </div>
+
+      <!-- Title & Subtitle Skeleton -->
+      <div data-region="modal-header" class="mb-6 flex flex-col items-center">
+        <div class="h-6 sm:h-7 w-48 sm:w-56 bg-content/85 rounded-xs mb-2.5"></div>
+        <div class="h-3.5 w-64 max-w-full bg-muted/60 rounded-xs mb-1.5"></div>
+        <div class="h-3.5 w-44 bg-muted/40 rounded-xs"></div>
+      </div>
+
+      <!-- Coupon Benefit Card -->
+      <div data-region="coupon-banner" class="mb-6 bg-accent/30 border border-dashed border-primary/40 rounded-xl p-3.5 flex items-center justify-between gap-3">
+        <div class="flex items-center gap-2.5">
+          <span class="size-8 rounded-lg bg-primary/15 flex items-center justify-center text-primary font-bold text-xs">%</span>
+          <div class="flex flex-col text-left">
+            <div class="h-3.5 w-20 bg-primary/80 rounded-xs mb-1"></div>
+            <div class="h-2.5 w-28 bg-muted/60 rounded-xs"></div>
+          </div>
+        </div>
+        <div class="h-3 w-12 bg-primary/60 rounded-xs"></div>
+      </div>
+
+      <!-- Feature Checklist Skeleton -->
+      <div data-region="features-list" class="mb-6 space-y-2.5 text-left border-y border-outline/20 py-4">
+        <div class="flex items-center gap-3">
+          <span class="size-4 rounded-full bg-emerald-500/20 text-emerald-600 flex items-center justify-center text-xs font-bold shrink-0">✓</span>
+          <div class="h-3 w-48 bg-content/70 rounded-xs"></div>
+        </div>
+        <div class="flex items-center gap-3">
+          <span class="size-4 rounded-full bg-emerald-500/20 text-emerald-600 flex items-center justify-center text-xs font-bold shrink-0">✓</span>
+          <div class="h-3 w-40 bg-content/70 rounded-xs"></div>
+        </div>
+        <div class="flex items-center gap-3">
+          <span class="size-4 rounded-full bg-emerald-500/20 text-emerald-600 flex items-center justify-center text-xs font-bold shrink-0">✓</span>
+          <div class="h-3 w-52 bg-content/70 rounded-xs"></div>
+        </div>
+      </div>
+
+      <!-- Action Buttons -->
+      <div data-region="modal-actions" class="space-y-3">
+        <button type="button" data-action="submit" class="w-full py-3 px-6 rounded-xl bg-primary text-white font-medium shadow-sm hover:opacity-90 transition-opacity flex items-center justify-center cursor-pointer">
+          <div class="h-3.5 w-24 bg-white/95 rounded-xs"></div>
+        </button>
+        <button type="button" data-action="skip" class="w-full py-2 px-4 rounded-lg text-xs text-muted hover:text-content transition-colors flex items-center justify-center cursor-pointer">
+          <div class="h-2.5 w-20 bg-muted/60 rounded-xs"></div>
+        </button>
+      </div>
+    </div>
+  </div>
+</section>
+```
+
+### JavaScript
+
+```javascript
+$(function() {
+  $('[data-region="modal-card"]').on('click', '[data-action]', function(e) {
+    e.preventDefault();
+    const action = $(this).data('action');
+    $(this).trigger('welcomemodal-action', { action });
+  });
+});
+```

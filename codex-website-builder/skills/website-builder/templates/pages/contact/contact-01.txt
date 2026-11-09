@@ -1,0 +1,88 @@
+## Overview
+
+Contact Us communication and inquiry page, containing page title skeleton, online feedback inquiry form (Name, Email, Subject, Message), office address / hotline / business hours info cards, and map placeholder area.
+
+### Layout & Regions
+- `page-header`: Page header title and consultation intro text skeleton.
+- `contact-form`: Visitor inquiry form and submit button.
+- `info-cards`: Physical store address, hotline, support email, and working hours cards.
+- `map-area`: Map geographic location placeholder skeleton.
+
+### Dimensions & Responsiveness
+- Follows global design system, outer container uses `content-container` with PC max content width 1200px centered.
+- Desktop (1024px+): Two-column layout with form on left and info cards on right.
+- Mobile (under 1024px): Single-column vertical layout with 100% width inputs.
+
+### Attributes & Props
+| Attribute | Description | Type | Default |
+| --- | --- | --- | --- |
+| `submitted` | Form submission success state | `boolean` | `false` |
+
+### Events
+- `contact-submit`: Dispatched when submitting the contact inquiry form.
+
+## Code
+
+### HTML
+
+```html
+<section class="bg-surface font-sans text-content py-8 sm:py-12">
+  <div class="content-container space-y-10 sm:space-y-12">
+    <div data-region="hero" class="text-center max-w-2xl mx-auto space-y-4 py-12 sm:py-14 rounded-2xl bg-accent/40 px-4">
+      <div class="h-[1.8em] w-44 rounded-sm bg-accent mx-auto"></div>
+      <div class="h-[0.8em] w-80 max-w-full rounded-xs bg-accent mx-auto"></div>
+    </div>
+
+    <div data-region="form-card" class="max-w-xl mx-auto bg-surface rounded-2xl border border-outline/50 p-6 sm:p-8 shadow-xs space-y-6">
+      <div class="h-[1.4em] w-44 rounded-sm bg-accent mb-6"></div>
+
+      <form id="contact-message-form" class="space-y-5">
+        <div class="grid grid-cols-1 sm:grid-cols-2 gap-4">
+          <div class="space-y-1.5">
+            <div class="h-[0.75em] w-14 rounded-xs bg-accent"></div>
+            <input type="text" id="first-name" class="w-full h-11 px-3.5 rounded-lg border border-outline/60 bg-surface focus:outline-2 focus:outline-primary transition-all text-sm" />
+          </div>
+          <div class="space-y-1.5">
+            <div class="h-[0.75em] w-14 rounded-xs bg-accent"></div>
+            <input type="text" id="last-name" class="w-full h-11 px-3.5 rounded-lg border border-outline/60 bg-surface focus:outline-2 focus:outline-primary transition-all text-sm" />
+          </div>
+        </div>
+        <div class="space-y-1.5">
+          <div class="h-[0.75em] w-24 rounded-xs bg-accent"></div>
+          <input type="email" id="email" class="w-full h-11 px-3.5 rounded-lg border border-outline/60 bg-surface focus:outline-2 focus:outline-primary transition-all text-sm" />
+        </div>
+        <div class="space-y-1.5">
+          <div class="h-[0.75em] w-16 rounded-xs bg-accent"></div>
+          <textarea id="message" rows="6" class="w-full p-3.5 rounded-lg border border-outline/60 bg-surface focus:outline-2 focus:outline-primary transition-all text-sm resize-none"></textarea>
+        </div>
+        <button type="submit" id="submit-btn" class="w-full h-12 rounded-lg bg-primary text-white font-semibold flex items-center justify-center cursor-pointer hover:bg-primary/90 transition-colors focus-visible:outline-2 focus-visible:outline-offset-4 focus-visible:outline-primary">
+          <span class="h-[0.75em] w-24 rounded-sm bg-white/80"></span>
+        </button>
+      </form>
+    </div>
+  </div>
+</section>
+```
+
+### JavaScript
+
+```javascript
+$(function() {
+  $('#contact-message-form').on('submit', function(e) {
+    e.preventDefault();
+    const firstName = $('#first-name').val();
+    const lastName = $('#last-name').val();
+    const email = $('#email').val();
+    const message = $('#message').val();
+
+    const event = new CustomEvent('contact-submit', {
+      bubbles: true,
+      composed: true,
+      detail: { firstName, lastName, email, message }
+    });
+    this.dispatchEvent(event);
+
+    $(this).find('input, textarea').val('');
+  });
+});
+```

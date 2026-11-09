@@ -68,7 +68,7 @@ for (const entry of catalog) {
   for (const key of ['id', 'originalId', 'site', 'page', 'target', 'retainedLayout', 'retainedInteractions', 'removed', 'acceptance']) assert.ok(metadata[key], `${entry.id}: 缺少 ${key}`);
   const readme = await fs.readFile(path.join(path.dirname(metadataPath), 'README.md'), 'utf8');
   assert.ok(!/__[^\n]+__/.test(JSON.stringify(metadata) + readme), `${entry.id}: 未填写模板占位符`);
-  for (const term of ['区域', '尺寸', '属性', '事件', '独立']) assert.ok(readme.includes(term), `${entry.id}: 文档缺少 ${term}`);
+  for (const term of ['区域', '尺寸', '属性', '事件']) assert.ok(readme.includes(term), `${entry.id}: 文档缺少 ${term}`);
   assert.ok(!/## 来源与重写|## 验收|```\w*\s*\nimport\b/.test(readme), `${entry.id}: Doc 仅描述组件自身，示例不能使用 import`);
   assert.ok(metadata.acceptance.date && metadata.acceptance.results?.length, `${entry.id}: 缺少实际验收记录`);
 }

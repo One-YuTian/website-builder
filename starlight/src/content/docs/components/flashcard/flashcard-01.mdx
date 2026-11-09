@@ -4,42 +4,430 @@ description: FlashCard-01 Component specification, interactive sandbox, and sour
 ---
 
 import ComponentPreview from '../../../../components/ComponentPreview.astro';
+import { Tabs, TabItem } from '@astrojs/starlight/components';
 
 ## Interactive Preview
 
 <ComponentPreview
   code={"<!doctype html>\n<html lang=\"zh-CN\">\n<head>\n  <meta charset=\"UTF-8\">\n  <meta name=\"viewport\" content=\"width=device-width, initial-scale=1\">\n  <title>FlashCard-01 响应式组合</title>\n</head>\n<body>\n<div class=\"content-container py-6 flex justify-center\"><flashcard-01 id=\"component-1-0\" class=\"block w-full max-w-sm\"></flashcard-01></div>\n<script>\n// 下方是组件实际实现（含共享骨架、主题及在线资源加载代码）。\n(function() {\n  \"use strict\";\n  const shapes = {\n    image: \"relative block w-full aspect-video overflow-hidden rounded-xl bg-accent\",\n    logo: \"relative flex h-10 w-32 items-center justify-center overflow-hidden rounded-xl bg-accent\",\n    text: \"block h-[0.75em] w-full rounded-sm bg-accent\",\n    title: \"block h-[0.75em] w-3/4 rounded-sm bg-accent\",\n    circle: \"block size-12 rounded-full bg-accent\",\n    button: \"block h-[0.75em] w-20 rounded-sm bg-accent\"\n  };\n  const lengths = /^(?:0|\\d+(?:\\.\\d+)?(?:px|rem|em|%|vw|vh|ch))$/;\n  class Skeleton extends HTMLElement {\n    static observedAttributes = [\"kind\", \"lines\", \"width\", \"height\", \"ratio\", \"radius\", \"font-size\"];\n    connectedCallback() {\n      this.render();\n    }\n    attributeChangedCallback() {\n      if (this.isConnected) this.render();\n    }\n    render() {\n      const kind = Object.hasOwn(shapes, this.getAttribute(\"kind\")) ? this.getAttribute(\"kind\") : \"text\";\n      const count = kind === \"text\" ? Math.max(1, Math.min(12, Number.parseInt(this.getAttribute(\"lines\"), 10) || 1)) : 1;\n      const container = this.ownerDocument.createElement(\"span\");\n      container.className = \"grid min-w-0 gap-[0.5em]\";\n      container.setAttribute(\"aria-hidden\", \"true\");\n      const fontSize = this.getAttribute(\"font-size\");\n      if ([\"text\", \"title\", \"button\"].includes(kind)) {\n        const baseSize = fontSize && lengths.test(fontSize) ? fontSize : \"1em\";\n        container.style.fontSize = `calc(${baseSize} + var(--theme-skeleton-text-offset, 3px))`;\n      }\n      for (let i = 0; i < count; i++) {\n        const line = this.ownerDocument.createElement(\"span\");\n        line.className = shapes[kind];\n        line.dataset.sb2Part = \"shape\";\n        for (const [attribute, property] of [[\"width\", \"width\"], [\"height\", \"height\"], [\"radius\", \"borderRadius\"]]) {\n          const value = this.getAttribute(attribute);\n          if (value && lengths.test(value)) line.style[property] = value;\n        }\n        const ratio = this.getAttribute(\"ratio\");\n        if (ratio && /^\\d+(?:\\.\\d+)?\\s*\\/\\s*\\d+(?:\\.\\d+)?$/.test(ratio) && ratio.split(\"/\").every((value) => Number(value) > 0)) line.style.aspectRatio = ratio;\n        if (kind === \"text\" && count > 1 && i === count - 1 && !this.hasAttribute(\"width\")) {\n          line.classList.remove(\"w-full\");\n          line.classList.add(\"w-2/3\");\n        }\n        if (kind === \"logo\" || kind === \"image\") {\n          const marker = this.ownerDocument.createElement(\"span\");\n          marker.dataset.sb2Marker = kind;\n          marker.className = \"pointer-events-none absolute inset-0 flex items-center justify-center\";\n          if (kind === \"logo\") {\n            const label = this.ownerDocument.createElement(\"span\");\n            label.className = \"select-none text-xs font-semibold tracking-widest text-muted\";\n            label.textContent = \"LOGO\";\n            marker.append(label);\n          } else {\n            marker.innerHTML = '<span class=\"relative block aspect-[6/5] w-1/4 min-w-4 max-w-12 overflow-hidden rounded-sm border border-muted\"><span class=\"absolute right-[15%] top-[15%] size-1/5 rounded-full bg-muted\"></span><span class=\"absolute -bottom-1/4 left-[5%] size-3/4 rotate-45 border-l border-t border-muted\"></span><span class=\"absolute -bottom-1/4 right-0 size-1/2 rotate-45 border-l border-t border-muted\"></span></span>';\n          }\n          line.append(marker);\n        }\n        container.append(line);\n      }\n      this.replaceChildren(container);\n    }\n  }\n  class FlashCard extends HTMLElement {\n    static observedAttributes = [\"product-id\", \"discounted\", \"sold-percent\"];\n    constructor() {\n      super();\n    }\n    get productId() {\n      return this.getAttribute(\"product-id\") || \"product-01\";\n    }\n    set productId(val) {\n      this.setAttribute(\"product-id\", String(val));\n    }\n    connectedCallback() {\n      this.classList.add(\"block\", \"h-full\", \"w-full\", \"min-w-0\");\n      this.render();\n      this.addEventListener(\"click\", () => {\n        this.dispatchEvent(new CustomEvent(\"product-navigate\", {\n          detail: { productId: this.productId },\n          bubbles: true,\n          composed: true\n        }));\n      });\n    }\n    render() {\n      this.innerHTML = `<article class=\"flex flex-col h-full bg-surface rounded-xl border border-outline/30 shadow-2xs hover:shadow-sm transition-all overflow-hidden p-2.5 sm:p-3 cursor-pointer select-none group font-sans\">\n  <div class=\"relative w-full aspect-square bg-accent/40 rounded-lg flex items-center justify-center overflow-hidden mb-2.5\">\n    <span class=\"relative block aspect-[6/5] w-1/2 overflow-hidden rounded-sm border border-muted\">\n      <span class=\"absolute right-[15%] top-[15%] size-1/5 rounded-full bg-muted\"></span>\n      <span class=\"absolute -bottom-1/4 left-[5%] size-3/4 rotate-45 border-l border-t border-muted\"></span>\n      <span class=\"absolute -bottom-1/4 right-0 size-1/2 rotate-45 border-l border-t border-muted\"></span>\n    </span>\n    <span class=\"absolute top-2 left-2 bg-primary text-white text-[10px] sm:text-xs font-bold px-2 py-0.5 rounded-sm shadow-xs\">-40%</span>\n  </div>\n  <div class=\"flex flex-col flex-1 justify-between gap-2 p-1\">\n    <div class=\"flex items-baseline gap-2\">\n      <div class=\"h-4.5 w-16 bg-primary font-bold rounded-xs\"></div>\n      <div class=\"h-3.5 w-10 bg-muted/50 rounded-xs line-through\"></div>\n    </div>\n    <div class=\"mt-auto pt-1\">\n      <div class=\"flex justify-between items-center text-[10px] sm:text-xs text-muted mb-1 font-mono\">\n        <span class=\"h-2.5 w-8 bg-muted/40 rounded-xs\"></span>\n        <span class=\"text-content/70 font-medium\">65%</span>\n      </div>\n      <div class=\"w-full bg-accent rounded-full h-1.5 sm:h-2 overflow-hidden\">\n        <div class=\"bg-primary h-full rounded-full w-[65%]\"></div>\n      </div>\n    </div>\n  </div>\n</article>`;\n    }\n  }\n  const themeConfig = Object.freeze({\n    colors: Object.freeze({\n      primary: \"#bd0e16\",\n      secondary: \"#000000\",\n      accent: \"#e2e8f0\",\n      surface: \"#ffffff\",\n      text: \"#0f172a\",\n      muted: \"#64748b\",\n      border: \"#cbd5e1\",\n      onSecondary: \"#ffffff\"\n    }),\n    contentMaxWidth: 1200,\n    gutters: Object.freeze({ mobile: 16, desktop: 24 }),\n    font: Object.freeze({\n      family: \"Noto Sans SC\",\n      weights: [400, 500, 600, 700],\n      fallback: \"ui-sans-serif, system-ui, sans-serif\"\n    }),\n    radius: 8,\n    radii: Object.freeze({\n      sm: 4,\n      md: 6,\n      lg: 8,\n      xl: 12\n    }),\n    skeletonTextSizeOffset: 3,\n    breakpoints: Object.freeze({ sm: 640, md: 768, lg: 1024, xl: 1280, \"2xl\": 1536 })\n  });\n  const themePresets = Object.freeze({\n    default: Object.freeze({}),\n    ocean: Object.freeze({ primary: \"#2563eb\", secondary: \"#172554\", accent: \"#dbeafe\" }),\n    forest: Object.freeze({ primary: \"#15803d\", secondary: \"#052e16\", accent: \"#dcfce7\" })\n  });\n  const resources = Object.freeze({\n    tailwind: \"https://cdn.jsdelivr.net/npm/@tailwindcss/browser@4.1.13/dist/index.global.js\",\n    tailwindFallback: \"https://unpkg.com/@tailwindcss/browser@4.1.13/dist/index.global.js\",\n    jquery: \"https://cdn.jsdelivr.net/npm/jquery@3.7.1/dist/jquery.min.js\",\n    jqueryFallback: \"https://unpkg.com/jquery@3.7.1/dist/jquery.min.js\",\n    swiper: \"https://cdn.jsdelivr.net/npm/swiper@10.3.1/swiper-bundle.min.js\",\n    swiperFallback: \"https://unpkg.com/swiper@10.3.1/swiper-bundle.min.js\",\n    swiperCss: \"https://cdn.jsdelivr.net/npm/swiper@10.3.1/swiper-bundle.min.css\",\n    swiperCssFallback: \"https://unpkg.com/swiper@10.3.1/swiper-bundle.min.css\",\n    font: `https://fonts.googleapis.com/css2?family=${encodeURIComponent(themeConfig.font.family)}:wght@${themeConfig.font.weights.join(\";\")}&display=swap`\n  });\n  const fontStack = `${JSON.stringify(themeConfig.font.family)}, ${themeConfig.font.fallback}`;\n  function applyTheme({ preset = \"default\", contentMaxWidth = themeConfig.contentMaxWidth } = {}, doc = document) {\n    if (!Object.hasOwn(themePresets, preset)) throw new Error(`未知全局主题：${preset}`);\n    if (!Number.isFinite(contentMaxWidth) || contentMaxWidth <= 0) throw new Error(\"全局内容宽度必须是正数\");\n    const root = doc.documentElement;\n    const colors = { ...themeConfig.colors, ...themePresets[preset] };\n    for (const [name, value] of Object.entries(colors)) {\n      const key = name.replace(/[A-Z]/g, (letter) => `-${letter.toLowerCase()}`);\n      root.style.setProperty(`--theme-${key}`, value);\n    }\n    root.style.setProperty(\"--theme-content-max-width\", `${contentMaxWidth}px`);\n    root.style.setProperty(\"--theme-radius\", `${themeConfig.radius}px`);\n    root.style.setProperty(\"--theme-radius-sm\", `${themeConfig.radii.sm}px`);\n    root.style.setProperty(\"--theme-radius-md\", `${themeConfig.radii.md}px`);\n    root.style.setProperty(\"--theme-radius-lg\", `${themeConfig.radii.lg}px`);\n    root.style.setProperty(\"--theme-radius-xl\", `${themeConfig.radii.xl}px`);\n    root.style.setProperty(\"--theme-font\", fontStack);\n    root.style.setProperty(\"--theme-gutter-mobile\", `${themeConfig.gutters.mobile}px`);\n    root.style.setProperty(\"--theme-gutter-desktop\", `${themeConfig.gutters.desktop}px`);\n    root.style.setProperty(\"--theme-skeleton-text-offset\", `${themeConfig.skeletonTextSizeOffset}px`);\n    root.dataset.themePreset = preset;\n  }\n  const themeCss = `\n  @theme {\n    ${Object.entries(themeConfig.breakpoints).map(([key, value]) => `--breakpoint-${key}: ${value / 16}rem;`).join(\"\\n\")}\n  }\n  @theme inline {\n    --font-sans: var(--theme-font);\n    --color-primary: var(--theme-primary);\n    --color-secondary: var(--theme-secondary);\n    --color-accent: var(--theme-accent);\n    --color-surface: var(--theme-surface);\n    --color-content: var(--theme-text);\n    --color-muted: var(--theme-muted);\n    --color-outline: var(--theme-border);\n    --color-on-secondary: var(--theme-on-secondary);\n    --radius-sm: var(--theme-radius-sm, calc(var(--theme-radius) / 2));\n    --radius-md: var(--theme-radius-md, calc(var(--theme-radius) * 0.75));\n    --radius-lg: var(--theme-radius-lg, var(--theme-radius));\n    --radius-xl: var(--theme-radius-xl, calc(var(--theme-radius) * 1.5));\n  }\n  @layer base {\n    :root { --theme-gutter: ${themeConfig.gutters.mobile}px; }\n    @media (width >= ${themeConfig.breakpoints.md / 16}rem) { :root { --theme-gutter: ${themeConfig.gutters.desktop}px; } }\n    body { margin: 0; font-family: var(--theme-font); color: var(--theme-text); }\n    skeleton-placeholder { display: block; min-width: 0; }\n  }\n  @utility content-container {\n    width: 100%;\n    max-width: calc(var(--theme-content-max-width) + var(--theme-gutter) * 2);\n    margin-inline: auto;\n    padding-inline: var(--theme-gutter);\n  }\n`;\n  const documents = /* @__PURE__ */ new WeakMap();\n  const documentResourceKey = Symbol.for(\"components.resources.ready\");\n  const jqueryDocuments = /* @__PURE__ */ new WeakMap();\n  const jqueryResourceKey = Symbol.for(\"components.jquery.ready\");\n  const swiperDocuments = /* @__PURE__ */ new WeakMap();\n  const swiperResourceKey = Symbol.for(\"components.swiper.ready\");\n  function loadAttempt(doc, tag, key, url) {\n    return new Promise((resolve, reject) => {\n      const element = doc.createElement(tag);\n      element.dataset.sb2Resource = key;\n      if (tag === \"script\") element.src = url;\n      else {\n        element.rel = \"stylesheet\";\n        element.href = url;\n      }\n      const timer = setTimeout(() => finish(new Error(`${key} 加载超时，请检查网络后刷新。`)), 8e3);\n      function finish(error) {\n        clearTimeout(timer);\n        element.onload = element.onerror = null;\n        if (error) {\n          element.remove();\n          reject(error);\n        } else resolve();\n      }\n      element.onload = () => finish();\n      element.onerror = () => finish(new Error(`${key} 加载失败，请检查 CDN 连接后刷新。`));\n      doc.head.append(element);\n    });\n  }\n  async function load(doc, tag, key, urls) {\n    let failure;\n    for (const url of urls) {\n      try {\n        await loadAttempt(doc, tag, key, url);\n        return;\n      } catch (error) {\n        failure = error;\n      }\n    }\n    throw failure;\n  }\n  function report(doc, message) {\n    let alert = doc.querySelector(\"[data-sb2-resource-error]\");\n    if (!alert) {\n      alert = doc.createElement(\"div\");\n      alert.dataset.sb2ResourceError = \"\";\n      alert.setAttribute(\"role\", \"alert\");\n      alert.style.cssText = \"padding:16px;background:#fff1f2;color:#9f1239;font:14px system-ui;white-space:pre-wrap\";\n      (doc.body || doc.documentElement).prepend(alert);\n    }\n    alert.textContent = message;\n  }\n  function initializeResources(doc = document) {\n    if (doc[documentResourceKey]) return doc[documentResourceKey];\n    if (documents.has(doc)) return documents.get(doc);\n    applyTheme({}, doc);\n    const fallback = doc.createElement(\"style\");\n    fallback.dataset.sb2Font = \"\";\n    fallback.textContent = \"body { font-family: var(--theme-font); }\";\n    doc.head.append(fallback);\n    const style = doc.createElement(\"style\");\n    style.type = \"text/tailwindcss\";\n    style.dataset.sb2Theme = \"\";\n    style.textContent = themeCss;\n    doc.head.append(style);\n    const ready = Promise.allSettled([\n      load(doc, \"script\", \"Tailwind\", [resources.tailwind, resources.tailwindFallback]),\n      load(doc, \"link\", \"Google Fonts\", [resources.font])\n    ]).then((results) => {\n      const errors = results.filter((result) => result.status === \"rejected\").map((result) => result.reason.message);\n      if (errors.length) report(doc, errors.join(\"\\n\"));\n      return { ready: errors.length === 0, errors };\n    });\n    documents.set(doc, ready);\n    doc[documentResourceKey] = ready;\n    return ready;\n  }\n  function loadJQuery(doc = document) {\n    if (doc[jqueryResourceKey]) return doc[jqueryResourceKey];\n    if (jqueryDocuments.has(doc)) return jqueryDocuments.get(doc);\n    const ready = load(doc, \"script\", \"jQuery\", [resources.jquery, resources.jqueryFallback]).then(() => doc.defaultView.jQuery).catch((error) => {\n      report(doc, error.message);\n      throw error;\n    });\n    jqueryDocuments.set(doc, ready);\n    doc[jqueryResourceKey] = ready;\n    return ready;\n  }\n  function loadSwiper(doc = document) {\n    if (doc[swiperResourceKey]) return doc[swiperResourceKey];\n    if (swiperDocuments.has(doc)) return swiperDocuments.get(doc);\n    const ready = Promise.all([\n      load(doc, \"link\", \"Swiper CSS\", [resources.swiperCss, resources.swiperCssFallback]),\n      load(doc, \"script\", \"Swiper JS\", [resources.swiper, resources.swiperFallback])\n    ]).then(() => doc.defaultView.Swiper).catch((error) => {\n      report(doc, error.message);\n      throw error;\n    });\n    swiperDocuments.set(doc, ready);\n    doc[swiperResourceKey] = ready;\n    return ready;\n  }\n  for (const [tag, implementation] of [[\"skeleton-placeholder\", Skeleton], [\"flashcard-01\", FlashCard]]) if (!customElements.get(tag)) customElements.define(tag, implementation);\n  Promise.all([initializeResources(), loadJQuery(), loadSwiper()]).then(([result, $, Swiper]) => {\n    document.documentElement.dataset.exampleReady = String(result.ready);\n    const eventKey = Symbol.for(\"components.demo.events\");\n    if (!document[eventKey]) {\n      document[eventKey] = true;\n      $(document).on(\"product-navigate footer-navigate header-navigate carousel-navigate\", function(event) {\n        console.log(event.originalEvent.detail);\n      });\n    }\n  }).catch(() => {\n    document.documentElement.dataset.exampleReady = \"false\";\n  });\n})();\n\n// 配置和实例变量；只需修改本段即可调整组合。\n(() => {\nconst configuration = {\"properties\":[{\"id\":\"component-1-0\",\"values\":{\"productId\":\"product-01\",\"discounted\":true,\"soldPercent\":65}}],\"values\":{\"--theme-primary\":\"#bd0e16\",\"--theme-secondary\":\"#000000\",\"--theme-accent\":\"#e2e8f0\",\"--theme-surface\":\"#ffffff\",\"--theme-text\":\"#0f172a\",\"--theme-muted\":\"#64748b\",\"--theme-border\":\"#cbd5e1\",\"--theme-on-secondary\":\"#ffffff\",\"--theme-content-max-width\":\"1200px\"}};\nfor (const [name, value] of Object.entries(configuration.values)) document.documentElement.style.setProperty(name, value);\nfor (const item of configuration.properties) {\n  const element = document.getElementById(item.id);\n  if (!element) continue;\n  for (const [name, value] of Object.entries(item.values)) element[name] = value;\n  if (element.localName.startsWith('header-')) element.addEventListener('header-search-input', event => {\n    element.searchSuggestions = event.detail.query.length >= 2 ? [{ id: 'demo-product-1' }] : [];\n  });\n}\n})();\n</script>\n</body>\n</html>"}
-  htmlCode={"<article class=\"flex flex-col h-full bg-surface rounded-xl border border-outline/30 shadow-2xs hover:shadow-sm transition-all overflow-hidden p-2.5 sm:p-3 cursor-pointer select-none group font-sans\">\n  <div class=\"relative w-full aspect-square bg-accent/40 rounded-lg flex items-center justify-center overflow-hidden mb-2.5\">\n    <span class=\"relative block aspect-[6/5] w-1/2 overflow-hidden rounded-sm border border-muted\">\n      <span class=\"absolute right-[15%] top-[15%] size-1/5 rounded-full bg-muted\"></span>\n      <span class=\"absolute -bottom-1/4 left-[5%] size-3/4 rotate-45 border-l border-t border-muted\"></span>\n      <span class=\"absolute -bottom-1/4 right-0 size-1/2 rotate-45 border-l border-t border-muted\"></span>\n    </span>\n    <span class=\"absolute top-2 left-2 bg-primary text-white text-[10px] sm:text-xs font-bold px-2 py-0.5 rounded-sm shadow-xs\">-40%</span>\n  </div>\n  <div class=\"flex flex-col flex-1 justify-between gap-2 p-1\">\n    <div class=\"flex items-baseline gap-2\">\n      <div class=\"h-4.5 w-16 bg-primary font-bold rounded-xs\"></div>\n      <div class=\"h-3.5 w-10 bg-muted/50 rounded-xs line-through\"></div>\n    </div>\n    <div class=\"mt-auto pt-1\">\n      <div class=\"flex justify-between items-center text-[10px] sm:text-xs text-muted mb-1 font-mono\">\n        <span class=\"h-2.5 w-8 bg-muted/40 rounded-xs\"></span>\n        <span class=\"text-content/70 font-medium\">65%</span>\n      </div>\n      <div class=\"w-full bg-accent rounded-full h-1.5 sm:h-2 overflow-hidden\">\n        <div class=\"bg-primary h-full rounded-full w-[65%]\"></div>\n      </div>\n    </div>\n  </div>\n</article>"}
-  jsCode={"export class FlashCard extends HTMLElement {\n  static observedAttributes = ['product-id', 'discounted', 'sold-percent'];\n\n  constructor() {\n    super();\n  }\n\n  get productId() { return this.getAttribute('product-id') || 'product-01'; }\n  set productId(val) { this.setAttribute('product-id', String(val)); }\n\n  connectedCallback() {\n    this.classList.add('block', 'h-full', 'w-full', 'min-w-0');\n    this.render();\n    this.addEventListener('click', () => {\n      this.dispatchEvent(new CustomEvent('product-navigate', {\n        detail: { productId: this.productId },\n        bubbles: true,\n        composed: true\n      }));\n    });\n  }\n\n  render() {\n    this.innerHTML = `<article class=\"flex flex-col h-full bg-surface rounded-xl border border-outline/30 shadow-2xs hover:shadow-sm transition-all overflow-hidden p-2.5 sm:p-3 cursor-pointer select-none group font-sans\">\n  <div class=\"relative w-full aspect-square bg-accent/40 rounded-lg flex items-center justify-center overflow-hidden mb-2.5\">\n    <span class=\"relative block aspect-[6/5] w-1/2 overflow-hidden rounded-sm border border-muted\">\n      <span class=\"absolute right-[15%] top-[15%] size-1/5 rounded-full bg-muted\"></span>\n      <span class=\"absolute -bottom-1/4 left-[5%] size-3/4 rotate-45 border-l border-t border-muted\"></span>\n      <span class=\"absolute -bottom-1/4 right-0 size-1/2 rotate-45 border-l border-t border-muted\"></span>\n    </span>\n    <span class=\"absolute top-2 left-2 bg-primary text-white text-[10px] sm:text-xs font-bold px-2 py-0.5 rounded-sm shadow-xs\">-40%</span>\n  </div>\n  <div class=\"flex flex-col flex-1 justify-between gap-2 p-1\">\n    <div class=\"flex items-baseline gap-2\">\n      <div class=\"h-4.5 w-16 bg-primary font-bold rounded-xs\"></div>\n      <div class=\"h-3.5 w-10 bg-muted/50 rounded-xs line-through\"></div>\n    </div>\n    <div class=\"mt-auto pt-1\">\n      <div class=\"flex justify-between items-center text-[10px] sm:text-xs text-muted mb-1 font-mono\">\n        <span class=\"h-2.5 w-8 bg-muted/40 rounded-xs\"></span>\n        <span class=\"text-content/70 font-medium\">65%</span>\n      </div>\n      <div class=\"w-full bg-accent rounded-full h-1.5 sm:h-2 overflow-hidden\">\n        <div class=\"bg-primary h-full rounded-full w-[65%]\"></div>\n      </div>\n    </div>\n  </div>\n</article>`;\n  }\n}"}
+  htmlCode={"<div class=\"content-container py-6 flex justify-center\"><flashcard-01 id=\"component-1-0\" class=\"block w-full max-w-sm\"></flashcard-01></div>"}
+  jsCode={"// 下方是组件实际实现（含共享骨架、主题及在线资源加载代码）。\n(function() {\n  \"use strict\";\n  const shapes = {\n    image: \"relative block w-full aspect-video overflow-hidden rounded-xl bg-accent\",\n    logo: \"relative flex h-10 w-32 items-center justify-center overflow-hidden rounded-xl bg-accent\",\n    text: \"block h-[0.75em] w-full rounded-sm bg-accent\",\n    title: \"block h-[0.75em] w-3/4 rounded-sm bg-accent\",\n    circle: \"block size-12 rounded-full bg-accent\",\n    button: \"block h-[0.75em] w-20 rounded-sm bg-accent\"\n  };\n  const lengths = /^(?:0|\\d+(?:\\.\\d+)?(?:px|rem|em|%|vw|vh|ch))$/;\n  class Skeleton extends HTMLElement {\n    static observedAttributes = [\"kind\", \"lines\", \"width\", \"height\", \"ratio\", \"radius\", \"font-size\"];\n    connectedCallback() {\n      this.render();\n    }\n    attributeChangedCallback() {\n      if (this.isConnected) this.render();\n    }\n    render() {\n      const kind = Object.hasOwn(shapes, this.getAttribute(\"kind\")) ? this.getAttribute(\"kind\") : \"text\";\n      const count = kind === \"text\" ? Math.max(1, Math.min(12, Number.parseInt(this.getAttribute(\"lines\"), 10) || 1)) : 1;\n      const container = this.ownerDocument.createElement(\"span\");\n      container.className = \"grid min-w-0 gap-[0.5em]\";\n      container.setAttribute(\"aria-hidden\", \"true\");\n      const fontSize = this.getAttribute(\"font-size\");\n      if ([\"text\", \"title\", \"button\"].includes(kind)) {\n        const baseSize = fontSize && lengths.test(fontSize) ? fontSize : \"1em\";\n        container.style.fontSize = `calc(${baseSize} + var(--theme-skeleton-text-offset, 3px))`;\n      }\n      for (let i = 0; i < count; i++) {\n        const line = this.ownerDocument.createElement(\"span\");\n        line.className = shapes[kind];\n        line.dataset.sb2Part = \"shape\";\n        for (const [attribute, property] of [[\"width\", \"width\"], [\"height\", \"height\"], [\"radius\", \"borderRadius\"]]) {\n          const value = this.getAttribute(attribute);\n          if (value && lengths.test(value)) line.style[property] = value;\n        }\n        const ratio = this.getAttribute(\"ratio\");\n        if (ratio && /^\\d+(?:\\.\\d+)?\\s*\\/\\s*\\d+(?:\\.\\d+)?$/.test(ratio) && ratio.split(\"/\").every((value) => Number(value) > 0)) line.style.aspectRatio = ratio;\n        if (kind === \"text\" && count > 1 && i === count - 1 && !this.hasAttribute(\"width\")) {\n          line.classList.remove(\"w-full\");\n          line.classList.add(\"w-2/3\");\n        }\n        if (kind === \"logo\" || kind === \"image\") {\n          const marker = this.ownerDocument.createElement(\"span\");\n          marker.dataset.sb2Marker = kind;\n          marker.className = \"pointer-events-none absolute inset-0 flex items-center justify-center\";\n          if (kind === \"logo\") {\n            const label = this.ownerDocument.createElement(\"span\");\n            label.className = \"select-none text-xs font-semibold tracking-widest text-muted\";\n            label.textContent = \"LOGO\";\n            marker.append(label);\n          } else {\n            marker.innerHTML = '<span class=\"relative block aspect-[6/5] w-1/4 min-w-4 max-w-12 overflow-hidden rounded-sm border border-muted\"><span class=\"absolute right-[15%] top-[15%] size-1/5 rounded-full bg-muted\"></span><span class=\"absolute -bottom-1/4 left-[5%] size-3/4 rotate-45 border-l border-t border-muted\"></span><span class=\"absolute -bottom-1/4 right-0 size-1/2 rotate-45 border-l border-t border-muted\"></span></span>';\n          }\n          line.append(marker);\n        }\n        container.append(line);\n      }\n      this.replaceChildren(container);\n    }\n  }\n  class FlashCard extends HTMLElement {\n    static observedAttributes = [\"product-id\", \"discounted\", \"sold-percent\"];\n    constructor() {\n      super();\n    }\n    get productId() {\n      return this.getAttribute(\"product-id\") || \"product-01\";\n    }\n    set productId(val) {\n      this.setAttribute(\"product-id\", String(val));\n    }\n    connectedCallback() {\n      this.classList.add(\"block\", \"h-full\", \"w-full\", \"min-w-0\");\n      this.render();\n      this.addEventListener(\"click\", () => {\n        this.dispatchEvent(new CustomEvent(\"product-navigate\", {\n          detail: { productId: this.productId },\n          bubbles: true,\n          composed: true\n        }));\n      });\n    }\n    render() {\n      this.innerHTML = `<article class=\"flex flex-col h-full bg-surface rounded-xl border border-outline/30 shadow-2xs hover:shadow-sm transition-all overflow-hidden p-2.5 sm:p-3 cursor-pointer select-none group font-sans\">\n  <div class=\"relative w-full aspect-square bg-accent/40 rounded-lg flex items-center justify-center overflow-hidden mb-2.5\">\n    <span class=\"relative block aspect-[6/5] w-1/2 overflow-hidden rounded-sm border border-muted\">\n      <span class=\"absolute right-[15%] top-[15%] size-1/5 rounded-full bg-muted\"></span>\n      <span class=\"absolute -bottom-1/4 left-[5%] size-3/4 rotate-45 border-l border-t border-muted\"></span>\n      <span class=\"absolute -bottom-1/4 right-0 size-1/2 rotate-45 border-l border-t border-muted\"></span>\n    </span>\n    <span class=\"absolute top-2 left-2 bg-primary text-white text-[10px] sm:text-xs font-bold px-2 py-0.5 rounded-sm shadow-xs\">-40%</span>\n  </div>\n  <div class=\"flex flex-col flex-1 justify-between gap-2 p-1\">\n    <div class=\"flex items-baseline gap-2\">\n      <div class=\"h-4.5 w-16 bg-primary font-bold rounded-xs\"></div>\n      <div class=\"h-3.5 w-10 bg-muted/50 rounded-xs line-through\"></div>\n    </div>\n    <div class=\"mt-auto pt-1\">\n      <div class=\"flex justify-between items-center text-[10px] sm:text-xs text-muted mb-1 font-mono\">\n        <span class=\"h-2.5 w-8 bg-muted/40 rounded-xs\"></span>\n        <span class=\"text-content/70 font-medium\">65%</span>\n      </div>\n      <div class=\"w-full bg-accent rounded-full h-1.5 sm:h-2 overflow-hidden\">\n        <div class=\"bg-primary h-full rounded-full w-[65%]\"></div>\n      </div>\n    </div>\n  </div>\n</article>`;\n    }\n  }\n  const themeConfig = Object.freeze({\n    colors: Object.freeze({\n      primary: \"#bd0e16\",\n      secondary: \"#000000\",\n      accent: \"#e2e8f0\",\n      surface: \"#ffffff\",\n      text: \"#0f172a\",\n      muted: \"#64748b\",\n      border: \"#cbd5e1\",\n      onSecondary: \"#ffffff\"\n    }),\n    contentMaxWidth: 1200,\n    gutters: Object.freeze({ mobile: 16, desktop: 24 }),\n    font: Object.freeze({\n      family: \"Noto Sans SC\",\n      weights: [400, 500, 600, 700],\n      fallback: \"ui-sans-serif, system-ui, sans-serif\"\n    }),\n    radius: 8,\n    radii: Object.freeze({\n      sm: 4,\n      md: 6,\n      lg: 8,\n      xl: 12\n    }),\n    skeletonTextSizeOffset: 3,\n    breakpoints: Object.freeze({ sm: 640, md: 768, lg: 1024, xl: 1280, \"2xl\": 1536 })\n  });\n  const themePresets = Object.freeze({\n    default: Object.freeze({}),\n    ocean: Object.freeze({ primary: \"#2563eb\", secondary: \"#172554\", accent: \"#dbeafe\" }),\n    forest: Object.freeze({ primary: \"#15803d\", secondary: \"#052e16\", accent: \"#dcfce7\" })\n  });\n  const resources = Object.freeze({\n    tailwind: \"https://cdn.jsdelivr.net/npm/@tailwindcss/browser@4.1.13/dist/index.global.js\",\n    tailwindFallback: \"https://unpkg.com/@tailwindcss/browser@4.1.13/dist/index.global.js\",\n    jquery: \"https://cdn.jsdelivr.net/npm/jquery@3.7.1/dist/jquery.min.js\",\n    jqueryFallback: \"https://unpkg.com/jquery@3.7.1/dist/jquery.min.js\",\n    swiper: \"https://cdn.jsdelivr.net/npm/swiper@10.3.1/swiper-bundle.min.js\",\n    swiperFallback: \"https://unpkg.com/swiper@10.3.1/swiper-bundle.min.js\",\n    swiperCss: \"https://cdn.jsdelivr.net/npm/swiper@10.3.1/swiper-bundle.min.css\",\n    swiperCssFallback: \"https://unpkg.com/swiper@10.3.1/swiper-bundle.min.css\",\n    font: `https://fonts.googleapis.com/css2?family=${encodeURIComponent(themeConfig.font.family)}:wght@${themeConfig.font.weights.join(\";\")}&display=swap`\n  });\n  const fontStack = `${JSON.stringify(themeConfig.font.family)}, ${themeConfig.font.fallback}`;\n  function applyTheme({ preset = \"default\", contentMaxWidth = themeConfig.contentMaxWidth } = {}, doc = document) {\n    if (!Object.hasOwn(themePresets, preset)) throw new Error(`未知全局主题：${preset}`);\n    if (!Number.isFinite(contentMaxWidth) || contentMaxWidth <= 0) throw new Error(\"全局内容宽度必须是正数\");\n    const root = doc.documentElement;\n    const colors = { ...themeConfig.colors, ...themePresets[preset] };\n    for (const [name, value] of Object.entries(colors)) {\n      const key = name.replace(/[A-Z]/g, (letter) => `-${letter.toLowerCase()}`);\n      root.style.setProperty(`--theme-${key}`, value);\n    }\n    root.style.setProperty(\"--theme-content-max-width\", `${contentMaxWidth}px`);\n    root.style.setProperty(\"--theme-radius\", `${themeConfig.radius}px`);\n    root.style.setProperty(\"--theme-radius-sm\", `${themeConfig.radii.sm}px`);\n    root.style.setProperty(\"--theme-radius-md\", `${themeConfig.radii.md}px`);\n    root.style.setProperty(\"--theme-radius-lg\", `${themeConfig.radii.lg}px`);\n    root.style.setProperty(\"--theme-radius-xl\", `${themeConfig.radii.xl}px`);\n    root.style.setProperty(\"--theme-font\", fontStack);\n    root.style.setProperty(\"--theme-gutter-mobile\", `${themeConfig.gutters.mobile}px`);\n    root.style.setProperty(\"--theme-gutter-desktop\", `${themeConfig.gutters.desktop}px`);\n    root.style.setProperty(\"--theme-skeleton-text-offset\", `${themeConfig.skeletonTextSizeOffset}px`);\n    root.dataset.themePreset = preset;\n  }\n  const themeCss = `\n  @theme {\n    ${Object.entries(themeConfig.breakpoints).map(([key, value]) => `--breakpoint-${key}: ${value / 16}rem;`).join(\"\\n\")}\n  }\n  @theme inline {\n    --font-sans: var(--theme-font);\n    --color-primary: var(--theme-primary);\n    --color-secondary: var(--theme-secondary);\n    --color-accent: var(--theme-accent);\n    --color-surface: var(--theme-surface);\n    --color-content: var(--theme-text);\n    --color-muted: var(--theme-muted);\n    --color-outline: var(--theme-border);\n    --color-on-secondary: var(--theme-on-secondary);\n    --radius-sm: var(--theme-radius-sm, calc(var(--theme-radius) / 2));\n    --radius-md: var(--theme-radius-md, calc(var(--theme-radius) * 0.75));\n    --radius-lg: var(--theme-radius-lg, var(--theme-radius));\n    --radius-xl: var(--theme-radius-xl, calc(var(--theme-radius) * 1.5));\n  }\n  @layer base {\n    :root { --theme-gutter: ${themeConfig.gutters.mobile}px; }\n    @media (width >= ${themeConfig.breakpoints.md / 16}rem) { :root { --theme-gutter: ${themeConfig.gutters.desktop}px; } }\n    body { margin: 0; font-family: var(--theme-font); color: var(--theme-text); }\n    skeleton-placeholder { display: block; min-width: 0; }\n  }\n  @utility content-container {\n    width: 100%;\n    max-width: calc(var(--theme-content-max-width) + var(--theme-gutter) * 2);\n    margin-inline: auto;\n    padding-inline: var(--theme-gutter);\n  }\n`;\n  const documents = /* @__PURE__ */ new WeakMap();\n  const documentResourceKey = Symbol.for(\"components.resources.ready\");\n  const jqueryDocuments = /* @__PURE__ */ new WeakMap();\n  const jqueryResourceKey = Symbol.for(\"components.jquery.ready\");\n  const swiperDocuments = /* @__PURE__ */ new WeakMap();\n  const swiperResourceKey = Symbol.for(\"components.swiper.ready\");\n  function loadAttempt(doc, tag, key, url) {\n    return new Promise((resolve, reject) => {\n      const element = doc.createElement(tag);\n      element.dataset.sb2Resource = key;\n      if (tag === \"script\") element.src = url;\n      else {\n        element.rel = \"stylesheet\";\n        element.href = url;\n      }\n      const timer = setTimeout(() => finish(new Error(`${key} 加载超时，请检查网络后刷新。`)), 8e3);\n      function finish(error) {\n        clearTimeout(timer);\n        element.onload = element.onerror = null;\n        if (error) {\n          element.remove();\n          reject(error);\n        } else resolve();\n      }\n      element.onload = () => finish();\n      element.onerror = () => finish(new Error(`${key} 加载失败，请检查 CDN 连接后刷新。`));\n      doc.head.append(element);\n    });\n  }\n  async function load(doc, tag, key, urls) {\n    let failure;\n    for (const url of urls) {\n      try {\n        await loadAttempt(doc, tag, key, url);\n        return;\n      } catch (error) {\n        failure = error;\n      }\n    }\n    throw failure;\n  }\n  function report(doc, message) {\n    let alert = doc.querySelector(\"[data-sb2-resource-error]\");\n    if (!alert) {\n      alert = doc.createElement(\"div\");\n      alert.dataset.sb2ResourceError = \"\";\n      alert.setAttribute(\"role\", \"alert\");\n      alert.style.cssText = \"padding:16px;background:#fff1f2;color:#9f1239;font:14px system-ui;white-space:pre-wrap\";\n      (doc.body || doc.documentElement).prepend(alert);\n    }\n    alert.textContent = message;\n  }\n  function initializeResources(doc = document) {\n    if (doc[documentResourceKey]) return doc[documentResourceKey];\n    if (documents.has(doc)) return documents.get(doc);\n    applyTheme({}, doc);\n    const fallback = doc.createElement(\"style\");\n    fallback.dataset.sb2Font = \"\";\n    fallback.textContent = \"body { font-family: var(--theme-font); }\";\n    doc.head.append(fallback);\n    const style = doc.createElement(\"style\");\n    style.type = \"text/tailwindcss\";\n    style.dataset.sb2Theme = \"\";\n    style.textContent = themeCss;\n    doc.head.append(style);\n    const ready = Promise.allSettled([\n      load(doc, \"script\", \"Tailwind\", [resources.tailwind, resources.tailwindFallback]),\n      load(doc, \"link\", \"Google Fonts\", [resources.font])\n    ]).then((results) => {\n      const errors = results.filter((result) => result.status === \"rejected\").map((result) => result.reason.message);\n      if (errors.length) report(doc, errors.join(\"\\n\"));\n      return { ready: errors.length === 0, errors };\n    });\n    documents.set(doc, ready);\n    doc[documentResourceKey] = ready;\n    return ready;\n  }\n  function loadJQuery(doc = document) {\n    if (doc[jqueryResourceKey]) return doc[jqueryResourceKey];\n    if (jqueryDocuments.has(doc)) return jqueryDocuments.get(doc);\n    const ready = load(doc, \"script\", \"jQuery\", [resources.jquery, resources.jqueryFallback]).then(() => doc.defaultView.jQuery).catch((error) => {\n      report(doc, error.message);\n      throw error;\n    });\n    jqueryDocuments.set(doc, ready);\n    doc[jqueryResourceKey] = ready;\n    return ready;\n  }\n  function loadSwiper(doc = document) {\n    if (doc[swiperResourceKey]) return doc[swiperResourceKey];\n    if (swiperDocuments.has(doc)) return swiperDocuments.get(doc);\n    const ready = Promise.all([\n      load(doc, \"link\", \"Swiper CSS\", [resources.swiperCss, resources.swiperCssFallback]),\n      load(doc, \"script\", \"Swiper JS\", [resources.swiper, resources.swiperFallback])\n    ]).then(() => doc.defaultView.Swiper).catch((error) => {\n      report(doc, error.message);\n      throw error;\n    });\n    swiperDocuments.set(doc, ready);\n    doc[swiperResourceKey] = ready;\n    return ready;\n  }\n  for (const [tag, implementation] of [[\"skeleton-placeholder\", Skeleton], [\"flashcard-01\", FlashCard]]) if (!customElements.get(tag)) customElements.define(tag, implementation);\n  Promise.all([initializeResources(), loadJQuery(), loadSwiper()]).then(([result, $, Swiper]) => {\n    document.documentElement.dataset.exampleReady = String(result.ready);\n    const eventKey = Symbol.for(\"components.demo.events\");\n    if (!document[eventKey]) {\n      document[eventKey] = true;\n      $(document).on(\"product-navigate footer-navigate header-navigate carousel-navigate\", function(event) {\n        console.log(event.originalEvent.detail);\n      });\n    }\n  }).catch(() => {\n    document.documentElement.dataset.exampleReady = \"false\";\n  });\n})();\n\n// 配置和实例变量；只需修改本段即可调整组合。\n(() => {\nconst configuration = {\"properties\":[{\"id\":\"component-1-0\",\"values\":{\"productId\":\"product-01\",\"discounted\":true,\"soldPercent\":65}}],\"values\":{\"--theme-primary\":\"#bd0e16\",\"--theme-secondary\":\"#000000\",\"--theme-accent\":\"#e2e8f0\",\"--theme-surface\":\"#ffffff\",\"--theme-text\":\"#0f172a\",\"--theme-muted\":\"#64748b\",\"--theme-border\":\"#cbd5e1\",\"--theme-on-secondary\":\"#ffffff\",\"--theme-content-max-width\":\"1200px\"}};\nfor (const [name, value] of Object.entries(configuration.values)) document.documentElement.style.setProperty(name, value);\nfor (const item of configuration.properties) {\n  const element = document.getElementById(item.id);\n  if (!element) continue;\n  for (const [name, value] of Object.entries(item.values)) element[name] = value;\n  if (element.localName.startsWith('header-')) element.addEventListener('header-search-input', event => {\n    element.searchSuggestions = event.detail.query.length >= 2 ? [{ id: 'demo-product-1' }] : [];\n  });\n}\n})();"}
   cssCode={""}
   height="420px"
   title="FlashCard-01 Interactive Preview"
 />
 
-## Overview & Attributes
+## Documentation
 
-限时秒杀商品卡片组件，顶部展示带有折扣标签的正方形商品图片骨架，底部展示商品价格、原价与已抢库存进度条。
+<Tabs>
+<TabItem label="English">
 
-### 区域划分
-- `thumbnail`: 正方形商品主图展示区域，左上角带有特惠折扣比例浮标。
-- `info`: 商品名称与双行文本骨架区域。
-- `price`: 特惠现价与原价对比区域。
-- `progress`: 限时已抢进度条与百分比库存指示区域。
+## Overview
+
+Flash sale and limited-time promotional product card component built on Native Web Components. Integrates square image skeleton, high-saturation discount badge, price comparison, animated flash sale progress bar, and sold percentage notice.
+
+### Layout & Detailed Region Breakdown
+- `image-box`: **Flash sale main imagery region**, 1:1 square image skeleton with high-contrast saturated discount percentage badge (e.g. `-50%`, `FLASH`).
+- `title-box`: **Flash product title region**, single or 2-line clamped promotional headline text skeleton.
+- `price-box`: **Flash price comparison region**, prominent bold primary sale price skeleton on the left and strikethrough original price skeleton on the right.
+- `stock-progress`: **Inventory progress bar region**, horizontal progress bar container filled with primary colored sold percentage bar, annotated with sold percentage text skeleton.
+- `buy-btn`: **Flash purchase CTA button**, full-width high-contrast Buy Now button skeleton.
+
+### Dimensions & Responsiveness
+- Card width fills container grid column or Swiper slide with 1:1 aspect ratio image.
+- Scales responsively across desktop and mobile while keeping text hierarchy clear.
+
+### Attributes & Props
+| Attribute | Description | Type | Default |
+| --- | --- | --- | --- |
+| `product-id` | Unique product identifier | `string` | `'flash-item-01'` |
+| `sold-percent` | Sold stock percentage | `number` | `65` |
+
+### Events
+- `product-navigate`: Dispatched when clicking flash card to open PDP.
+- `flashcard-buy`: Dispatched when clicking Buy Now button.
+
+</TabItem>
+<TabItem label="中文">
+
+限时秒杀与促销单品卡片组件，基于原生 Web Component 构建。集成正方形主图骨架、高饱和度折扣角标、原价现价对比、库存售罄进度条与抢购按钮。
+
+### 区域划分与内容说明
+- `image-box`: **秒杀商品主图区**，1:1 正方形图片骨架与高饱和度醒目折扣角标（如 `-50%`、`FLASH`）。
+- `title-box`: **秒杀商品标题区**，单行或双行截断的特惠爆款标题文本骨架。
+- `price-box`: **秒杀价格对比区**，左侧大号主色加粗秒杀特价骨架，右侧浅灰色中划线原价骨架。
+- `stock-progress`: **库存与进度条区**，水平进度条容器，内部填充主色已售比例条，附带“已售 xx% / 仅剩 xx 件”说明文本骨架。
+- `buy-btn`: **抢购行动按钮**，全宽主色高亮“立即抢购 / Buy Now”按钮骨架。
 
 ### 尺寸与响应式
-- 容器采用 `h-full flex flex-col` 弹性撑满父级网格或轮播滑块。
-- 适用于 2 列到 5 列等不同断点的秒杀网格与 Swiper 走马灯。
+- 卡片宽度随容器网格列或 Swiper 幻灯片等比缩放，图片固定 1:1 高宽比。
+- 响应式自适应适配桌面与移动端，保持倒计时与售罄进度条清晰易读。
 
 ### 属性与接口
 | 属性名 | 属性说明 | 类型 | 默认值 |
 | --- | --- | --- | --- |
-| `product-id` | 商品标识符 | `string` | `'product-01'` |
-| `discounted` | 是否显示折扣标签 | `boolean` | `true` |
-| `sold-percent` | 已抢进度百分比 | `number` | `65` |
+| `product-id` | 秒杀商品唯一标识符 | `string` | `'flash-01'` |
+| `sold-percent` | 已售库存百分比 | `number` | `65` |
 
 ### 事件机制
-- `product-navigate`: 点击秒杀卡片任意区域派发商品详情跳转事件。
+- `product-navigate`: 点击秒杀卡片时派发商品跳转事件。
+- `flashcard-buy`: 点击立即抢购按钮时派发抢购提交事件。
 
-### 独立使用说明
-组件作为独立标准的 Web Component，可通过 `<flashcard-01></flashcard-01>` 或 `<flash-sale-card></flash-sale-card>` 标签在任意板块中独立声明使用。
+</TabItem>
+</Tabs>
+
+## Code
+
+### HTML
+
+```html
+<div class="content-container py-6 flex justify-center"><flashcard-01 id="component-1-0" class="block w-full max-w-sm"></flashcard-01></div>
+```
+
+### JavaScript
+
+```javascript
+// 下方是组件实际实现（含共享骨架、主题及在线资源加载代码）。
+(function() {
+  "use strict";
+  const shapes = {
+    image: "relative block w-full aspect-video overflow-hidden rounded-xl bg-accent",
+    logo: "relative flex h-10 w-32 items-center justify-center overflow-hidden rounded-xl bg-accent",
+    text: "block h-[0.75em] w-full rounded-sm bg-accent",
+    title: "block h-[0.75em] w-3/4 rounded-sm bg-accent",
+    circle: "block size-12 rounded-full bg-accent",
+    button: "block h-[0.75em] w-20 rounded-sm bg-accent"
+  };
+  const lengths = /^(?:0|\d+(?:\.\d+)?(?:px|rem|em|%|vw|vh|ch))$/;
+  class Skeleton extends HTMLElement {
+    static observedAttributes = ["kind", "lines", "width", "height", "ratio", "radius", "font-size"];
+    connectedCallback() {
+      this.render();
+    }
+    attributeChangedCallback() {
+      if (this.isConnected) this.render();
+    }
+    render() {
+      const kind = Object.hasOwn(shapes, this.getAttribute("kind")) ? this.getAttribute("kind") : "text";
+      const count = kind === "text" ? Math.max(1, Math.min(12, Number.parseInt(this.getAttribute("lines"), 10) || 1)) : 1;
+      const container = this.ownerDocument.createElement("span");
+      container.className = "grid min-w-0 gap-[0.5em]";
+      container.setAttribute("aria-hidden", "true");
+      const fontSize = this.getAttribute("font-size");
+      if (["text", "title", "button"].includes(kind)) {
+        const baseSize = fontSize && lengths.test(fontSize) ? fontSize : "1em";
+        container.style.fontSize = `calc(${baseSize} + var(--theme-skeleton-text-offset, 3px))`;
+      }
+      for (let i = 0; i < count; i++) {
+        const line = this.ownerDocument.createElement("span");
+        line.className = shapes[kind];
+        line.dataset.sb2Part = "shape";
+        for (const [attribute, property] of [["width", "width"], ["height", "height"], ["radius", "borderRadius"]]) {
+          const value = this.getAttribute(attribute);
+          if (value && lengths.test(value)) line.style[property] = value;
+        }
+        const ratio = this.getAttribute("ratio");
+        if (ratio && /^\d+(?:\.\d+)?\s*\/\s*\d+(?:\.\d+)?$/.test(ratio) && ratio.split("/").every((value) => Number(value) > 0)) line.style.aspectRatio = ratio;
+        if (kind === "text" && count > 1 && i === count - 1 && !this.hasAttribute("width")) {
+          line.classList.remove("w-full");
+          line.classList.add("w-2/3");
+        }
+        if (kind === "logo" || kind === "image") {
+          const marker = this.ownerDocument.createElement("span");
+          marker.dataset.sb2Marker = kind;
+          marker.className = "pointer-events-none absolute inset-0 flex items-center justify-center";
+          if (kind === "logo") {
+            const label = this.ownerDocument.createElement("span");
+            label.className = "select-none text-xs font-semibold tracking-widest text-muted";
+            label.textContent = "LOGO";
+            marker.append(label);
+          } else {
+            marker.innerHTML = '<span class="relative block aspect-[6/5] w-1/4 min-w-4 max-w-12 overflow-hidden rounded-sm border border-muted"><span class="absolute right-[15%] top-[15%] size-1/5 rounded-full bg-muted"></span><span class="absolute -bottom-1/4 left-[5%] size-3/4 rotate-45 border-l border-t border-muted"></span><span class="absolute -bottom-1/4 right-0 size-1/2 rotate-45 border-l border-t border-muted"></span></span>';
+          }
+          line.append(marker);
+        }
+        container.append(line);
+      }
+      this.replaceChildren(container);
+    }
+  }
+  class FlashCard extends HTMLElement {
+    static observedAttributes = ["product-id", "discounted", "sold-percent"];
+    constructor() {
+      super();
+    }
+    get productId() {
+      return this.getAttribute("product-id") || "product-01";
+    }
+    set productId(val) {
+      this.setAttribute("product-id", String(val));
+    }
+    connectedCallback() {
+      this.classList.add("block", "h-full", "w-full", "min-w-0");
+      this.render();
+      this.addEventListener("click", () => {
+        this.dispatchEvent(new CustomEvent("product-navigate", {
+          detail: { productId: this.productId },
+          bubbles: true,
+          composed: true
+        }));
+      });
+    }
+    render() {
+      this.innerHTML = `<article class="flex flex-col h-full bg-surface rounded-xl border border-outline/30 shadow-2xs hover:shadow-sm transition-all overflow-hidden p-2.5 sm:p-3 cursor-pointer select-none group font-sans">
+  <div class="relative w-full aspect-square bg-accent/40 rounded-lg flex items-center justify-center overflow-hidden mb-2.5">
+    <span class="relative block aspect-[6/5] w-1/2 overflow-hidden rounded-sm border border-muted">
+      <span class="absolute right-[15%] top-[15%] size-1/5 rounded-full bg-muted"></span>
+      <span class="absolute -bottom-1/4 left-[5%] size-3/4 rotate-45 border-l border-t border-muted"></span>
+      <span class="absolute -bottom-1/4 right-0 size-1/2 rotate-45 border-l border-t border-muted"></span>
+    </span>
+    <span class="absolute top-2 left-2 bg-primary text-white text-[10px] sm:text-xs font-bold px-2 py-0.5 rounded-sm shadow-xs">-40%</span>
+  </div>
+  <div class="flex flex-col flex-1 justify-between gap-2 p-1">
+    <div class="flex items-baseline gap-2">
+      <div class="h-4.5 w-16 bg-primary font-bold rounded-xs"></div>
+      <div class="h-3.5 w-10 bg-muted/50 rounded-xs line-through"></div>
+    </div>
+    <div class="mt-auto pt-1">
+      <div class="flex justify-between items-center text-[10px] sm:text-xs text-muted mb-1 font-mono">
+        <span class="h-2.5 w-8 bg-muted/40 rounded-xs"></span>
+        <span class="text-content/70 font-medium">65%</span>
+      </div>
+      <div class="w-full bg-accent rounded-full h-1.5 sm:h-2 overflow-hidden">
+        <div class="bg-primary h-full rounded-full w-[65%]"></div>
+      </div>
+    </div>
+  </div>
+</article>`;
+    }
+  }
+  const themeConfig = Object.freeze({
+    colors: Object.freeze({
+      primary: "#bd0e16",
+      secondary: "#000000",
+      accent: "#e2e8f0",
+      surface: "#ffffff",
+      text: "#0f172a",
+      muted: "#64748b",
+      border: "#cbd5e1",
+      onSecondary: "#ffffff"
+    }),
+    contentMaxWidth: 1200,
+    gutters: Object.freeze({ mobile: 16, desktop: 24 }),
+    font: Object.freeze({
+      family: "Noto Sans SC",
+      weights: [400, 500, 600, 700],
+      fallback: "ui-sans-serif, system-ui, sans-serif"
+    }),
+    radius: 8,
+    radii: Object.freeze({
+      sm: 4,
+      md: 6,
+      lg: 8,
+      xl: 12
+    }),
+    skeletonTextSizeOffset: 3,
+    breakpoints: Object.freeze({ sm: 640, md: 768, lg: 1024, xl: 1280, "2xl": 1536 })
+  });
+  const themePresets = Object.freeze({
+    default: Object.freeze({}),
+    ocean: Object.freeze({ primary: "#2563eb", secondary: "#172554", accent: "#dbeafe" }),
+    forest: Object.freeze({ primary: "#15803d", secondary: "#052e16", accent: "#dcfce7" })
+  });
+  const resources = Object.freeze({
+    tailwind: "https://cdn.jsdelivr.net/npm/@tailwindcss/browser@4.1.13/dist/index.global.js",
+    tailwindFallback: "https://unpkg.com/@tailwindcss/browser@4.1.13/dist/index.global.js",
+    jquery: "https://cdn.jsdelivr.net/npm/jquery@3.7.1/dist/jquery.min.js",
+    jqueryFallback: "https://unpkg.com/jquery@3.7.1/dist/jquery.min.js",
+    swiper: "https://cdn.jsdelivr.net/npm/swiper@10.3.1/swiper-bundle.min.js",
+    swiperFallback: "https://unpkg.com/swiper@10.3.1/swiper-bundle.min.js",
+    swiperCss: "https://cdn.jsdelivr.net/npm/swiper@10.3.1/swiper-bundle.min.css",
+    swiperCssFallback: "https://unpkg.com/swiper@10.3.1/swiper-bundle.min.css",
+    font: `https://fonts.googleapis.com/css2?family=${encodeURIComponent(themeConfig.font.family)}:wght@${themeConfig.font.weights.join(";")}&display=swap`
+  });
+  const fontStack = `${JSON.stringify(themeConfig.font.family)}, ${themeConfig.font.fallback}`;
+  function applyTheme({ preset = "default", contentMaxWidth = themeConfig.contentMaxWidth } = {}, doc = document) {
+    if (!Object.hasOwn(themePresets, preset)) throw new Error(`未知全局主题：${preset}`);
+    if (!Number.isFinite(contentMaxWidth) || contentMaxWidth <= 0) throw new Error("全局内容宽度必须是正数");
+    const root = doc.documentElement;
+    const colors = { ...themeConfig.colors, ...themePresets[preset] };
+    for (const [name, value] of Object.entries(colors)) {
+      const key = name.replace(/[A-Z]/g, (letter) => `-${letter.toLowerCase()}`);
+      root.style.setProperty(`--theme-${key}`, value);
+    }
+    root.style.setProperty("--theme-content-max-width", `${contentMaxWidth}px`);
+    root.style.setProperty("--theme-radius", `${themeConfig.radius}px`);
+    root.style.setProperty("--theme-radius-sm", `${themeConfig.radii.sm}px`);
+    root.style.setProperty("--theme-radius-md", `${themeConfig.radii.md}px`);
+    root.style.setProperty("--theme-radius-lg", `${themeConfig.radii.lg}px`);
+    root.style.setProperty("--theme-radius-xl", `${themeConfig.radii.xl}px`);
+    root.style.setProperty("--theme-font", fontStack);
+    root.style.setProperty("--theme-gutter-mobile", `${themeConfig.gutters.mobile}px`);
+    root.style.setProperty("--theme-gutter-desktop", `${themeConfig.gutters.desktop}px`);
+    root.style.setProperty("--theme-skeleton-text-offset", `${themeConfig.skeletonTextSizeOffset}px`);
+    root.dataset.themePreset = preset;
+  }
+  const themeCss = `
+  @theme {
+    ${Object.entries(themeConfig.breakpoints).map(([key, value]) => `--breakpoint-${key}: ${value / 16}rem;`).join("\n")}
+  }
+  @theme inline {
+    --font-sans: var(--theme-font);
+    --color-primary: var(--theme-primary);
+    --color-secondary: var(--theme-secondary);
+    --color-accent: var(--theme-accent);
+    --color-surface: var(--theme-surface);
+    --color-content: var(--theme-text);
+    --color-muted: var(--theme-muted);
+    --color-outline: var(--theme-border);
+    --color-on-secondary: var(--theme-on-secondary);
+    --radius-sm: var(--theme-radius-sm, calc(var(--theme-radius) / 2));
+    --radius-md: var(--theme-radius-md, calc(var(--theme-radius) * 0.75));
+    --radius-lg: var(--theme-radius-lg, var(--theme-radius));
+    --radius-xl: var(--theme-radius-xl, calc(var(--theme-radius) * 1.5));
+  }
+  @layer base {
+    :root { --theme-gutter: ${themeConfig.gutters.mobile}px; }
+    @media (width >= ${themeConfig.breakpoints.md / 16}rem) { :root { --theme-gutter: ${themeConfig.gutters.desktop}px; } }
+    body { margin: 0; font-family: var(--theme-font); color: var(--theme-text); }
+    skeleton-placeholder { display: block; min-width: 0; }
+  }
+  @utility content-container {
+    width: 100%;
+    max-width: calc(var(--theme-content-max-width) + var(--theme-gutter) * 2);
+    margin-inline: auto;
+    padding-inline: var(--theme-gutter);
+  }
+`;
+  const documents = /* @__PURE__ */ new WeakMap();
+  const documentResourceKey = Symbol.for("components.resources.ready");
+  const jqueryDocuments = /* @__PURE__ */ new WeakMap();
+  const jqueryResourceKey = Symbol.for("components.jquery.ready");
+  const swiperDocuments = /* @__PURE__ */ new WeakMap();
+  const swiperResourceKey = Symbol.for("components.swiper.ready");
+  function loadAttempt(doc, tag, key, url) {
+    return new Promise((resolve, reject) => {
+      const element = doc.createElement(tag);
+      element.dataset.sb2Resource = key;
+      if (tag === "script") element.src = url;
+      else {
+        element.rel = "stylesheet";
+        element.href = url;
+      }
+      const timer = setTimeout(() => finish(new Error(`${key} 加载超时，请检查网络后刷新。`)), 8e3);
+      function finish(error) {
+        clearTimeout(timer);
+        element.onload = element.onerror = null;
+        if (error) {
+          element.remove();
+          reject(error);
+        } else resolve();
+      }
+      element.onload = () => finish();
+      element.onerror = () => finish(new Error(`${key} 加载失败，请检查 CDN 连接后刷新。`));
+      doc.head.append(element);
+    });
+  }
+  async function load(doc, tag, key, urls) {
+    let failure;
+    for (const url of urls) {
+      try {
+        await loadAttempt(doc, tag, key, url);
+        return;
+      } catch (error) {
+        failure = error;
+      }
+    }
+    throw failure;
+  }
+  function report(doc, message) {
+    let alert = doc.querySelector("[data-sb2-resource-error]");
+    if (!alert) {
+      alert = doc.createElement("div");
+      alert.dataset.sb2ResourceError = "";
+      alert.setAttribute("role", "alert");
+      alert.style.cssText = "padding:16px;background:#fff1f2;color:#9f1239;font:14px system-ui;white-space:pre-wrap";
+      (doc.body || doc.documentElement).prepend(alert);
+    }
+    alert.textContent = message;
+  }
+  function initializeResources(doc = document) {
+    if (doc[documentResourceKey]) return doc[documentResourceKey];
+    if (documents.has(doc)) return documents.get(doc);
+    applyTheme({}, doc);
+    const fallback = doc.createElement("style");
+    fallback.dataset.sb2Font = "";
+    fallback.textContent = "body { font-family: var(--theme-font); }";
+    doc.head.append(fallback);
+    const style = doc.createElement("style");
+    style.type = "text/tailwindcss";
+    style.dataset.sb2Theme = "";
+    style.textContent = themeCss;
+    doc.head.append(style);
+    const ready = Promise.allSettled([
+      load(doc, "script", "Tailwind", [resources.tailwind, resources.tailwindFallback]),
+      load(doc, "link", "Google Fonts", [resources.font])
+    ]).then((results) => {
+      const errors = results.filter((result) => result.status === "rejected").map((result) => result.reason.message);
+      if (errors.length) report(doc, errors.join("\n"));
+      return { ready: errors.length === 0, errors };
+    });
+    documents.set(doc, ready);
+    doc[documentResourceKey] = ready;
+    return ready;
+  }
+  function loadJQuery(doc = document) {
+    if (doc[jqueryResourceKey]) return doc[jqueryResourceKey];
+    if (jqueryDocuments.has(doc)) return jqueryDocuments.get(doc);
+    const ready = load(doc, "script", "jQuery", [resources.jquery, resources.jqueryFallback]).then(() => doc.defaultView.jQuery).catch((error) => {
+      report(doc, error.message);
+      throw error;
+    });
+    jqueryDocuments.set(doc, ready);
+    doc[jqueryResourceKey] = ready;
+    return ready;
+  }
+  function loadSwiper(doc = document) {
+    if (doc[swiperResourceKey]) return doc[swiperResourceKey];
+    if (swiperDocuments.has(doc)) return swiperDocuments.get(doc);
+    const ready = Promise.all([
+      load(doc, "link", "Swiper CSS", [resources.swiperCss, resources.swiperCssFallback]),
+      load(doc, "script", "Swiper JS", [resources.swiper, resources.swiperFallback])
+    ]).then(() => doc.defaultView.Swiper).catch((error) => {
+      report(doc, error.message);
+      throw error;
+    });
+    swiperDocuments.set(doc, ready);
+    doc[swiperResourceKey] = ready;
+    return ready;
+  }
+  for (const [tag, implementation] of [["skeleton-placeholder", Skeleton], ["flashcard-01", FlashCard]]) if (!customElements.get(tag)) customElements.define(tag, implementation);
+  Promise.all([initializeResources(), loadJQuery(), loadSwiper()]).then(([result, $, Swiper]) => {
+    document.documentElement.dataset.exampleReady = String(result.ready);
+    const eventKey = Symbol.for("components.demo.events");
+    if (!document[eventKey]) {
+      document[eventKey] = true;
+      $(document).on("product-navigate footer-navigate header-navigate carousel-navigate", function(event) {
+        console.log(event.originalEvent.detail);
+      });
+    }
+  }).catch(() => {
+    document.documentElement.dataset.exampleReady = "false";
+  });
+})();
+
+// 配置和实例变量；只需修改本段即可调整组合。
+(() => {
+const configuration = {"properties":[{"id":"component-1-0","values":{"productId":"product-01","discounted":true,"soldPercent":65}}],"values":{"--theme-primary":"#bd0e16","--theme-secondary":"#000000","--theme-accent":"#e2e8f0","--theme-surface":"#ffffff","--theme-text":"#0f172a","--theme-muted":"#64748b","--theme-border":"#cbd5e1","--theme-on-secondary":"#ffffff","--theme-content-max-width":"1200px"}};
+for (const [name, value] of Object.entries(configuration.values)) document.documentElement.style.setProperty(name, value);
+for (const item of configuration.properties) {
+  const element = document.getElementById(item.id);
+  if (!element) continue;
+  for (const [name, value] of Object.entries(item.values)) element[name] = value;
+  if (element.localName.startsWith('header-')) element.addEventListener('header-search-input', event => {
+    element.searchSuggestions = event.detail.query.length >= 2 ? [{ id: 'demo-product-1' }] : [];
+  });
+}
+})();
+```
 

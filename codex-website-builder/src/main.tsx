@@ -1,7 +1,8 @@
 import { StrictMode, useEffect, useRef } from 'react';
 import { createRoot } from 'react-dom/client';
-import { App } from '@modelcontextprotocol/ext-apps';
 import './style.css';
+import { WebsiteCanvas } from './WebsiteCanvas';
+declare global { interface Window { __WEBSITE_BUILDER__?: { api: string; projectApi?:string; origin: string; defaultDirectory: string } } }
 
 function DotCanvas() {
   const ref = useRef<HTMLCanvasElement>(null);
@@ -59,12 +60,7 @@ function DotCanvas() {
       window.removeEventListener('blur', leave);
     };
   }, []);
-  return <main aria-label="网站设计画布"><canvas ref={ref} aria-label="随鼠标位置高亮的点阵背景" /></main>;
+  return <div className="dot-background" aria-hidden="true"><canvas ref={ref} /></div>;
 }
 
-createRoot(document.getElementById('root')!).render(<StrictMode><DotCanvas /></StrictMode>);
-// Standalone Vite preview remains available without an MCP host.
-if (window.parent !== window) {
-  const app = new App({ name: 'codex-website-builder', version: '0.1.8' });
-  app.connect().catch(error => console.error('MCP UI connection failed', error));
-}
+createRoot(document.getElementById('root')!).render(<StrictMode><WebsiteCanvas background={<DotCanvas />} /></StrictMode>);
