@@ -1,6 +1,6 @@
 {
   "name": "codex-website-builder",
-  "version": "0.5.1",
+  "version": "0.5.2",
   "description": "Build ecommerce websites with the bundled skill, reuse thread projects, and preview page generation live.",
   "mcpServers": "./mcp.json",
   "skills": "./skills/",

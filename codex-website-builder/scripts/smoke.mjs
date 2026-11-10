@@ -36,7 +36,7 @@ try {
   assert.ok(!resource.contents[0].text.includes('src="/src/main.tsx"'));
   const bootstrap = JSON.parse(resource.contents[0].text.match(/window\.__WEBSITE_BUILDER__=(.*?);<\/script>/)[1]);
   assert.deepEqual(resource.contents[0]._meta.ui.csp.frameDomains, ['blob:', 'data:']);
-  assert.deepEqual(resource.contents[0]._meta.ui.csp.connectDomains, []);
+  assert.deepEqual(resource.contents[0]._meta.ui.csp.connectDomains, ['data:', 'blob:']);
   const embedded = await client.callTool({ name: 'read_website', arguments: { directory: 'www.noventrad.com' } });
   assert.ok(!embedded.isError);
   assert.equal(embedded._meta.website.pages.length, 14);

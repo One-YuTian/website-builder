@@ -4,6 +4,8 @@ import { basename, extname, isAbsolute, join, relative, resolve, sep } from 'nod
 import { randomBytes } from 'node:crypto';
 import { fileURLToPath } from 'node:url';
 import { snapshotCompiler } from './snapshot';
+import {resourceChunk} from './resource-proxy';
+import {proxyRuntime} from './proxy-runtime';
 
 export interface SitePage { path: string; title: string; url: string; html?: string; status?: 'queued'|'generating'|'ready'|'error'; version?: number; error?: string }
 export interface SiteManifest { directory: string; name: string; pages: SitePage[]; order: string; warnings: string[]; projectId?:string; threadId?:string; revision?:string }
@@ -146,7 +148,7 @@ function instrument(html: string, embedded = false) {
   },{passive:false});
 })();<\/script>`;
   const base = embedded ? '<base href="__WEBSITE_BUILDER_BASE_URL__">' : '';
-  return /<head\b[^>]*>/i.test(html) ? html.replace(/<head\b[^>]*>/i, match => match + base + script) : base + script + html;
+  return /<head\b[^>]*>/i.test(html) ? html.replace(/<head\b[^>]*>/i, match => match + base + script + proxyRuntime) : base + script + proxyRuntime + html;
 }
 
 export async function compileProjectPage(root:string,directory:string,path:string) {
@@ -187,6 +189,10 @@ export async function createPreview(ui: string, configuredRoot: string, defaultD
       res.setHeader('Access-Control-Allow-Origin', '*');
       res.setHeader('X-Content-Type-Options', 'nosniff');
       const route = url.pathname.slice(prefix.length);
+      if(route==='/api/resource'){
+        const resource=await resourceChunk(url.searchParams.get('url')||'',Math.max(0,Number(url.searchParams.get('offset')||0)),url.searchParams.get('raw')==='true');
+        res.setHeader('Content-Type','application/json');res.end(JSON.stringify(resource));return;
+      }
       if (route === '/canvas') { res.setHeader('Content-Type', mime['.html']); res.setHeader('Content-Security-Policy', "frame-src blob: data:; object-src 'none'"); res.end(render()); return; }
       if (route === '/api/site') {
         const directory = url.searchParams.get('directory') || defaultDirectory;
@@ -238,7 +244,7 @@ export async function createPreview(ui: string, configuredRoot: string, defaultD
   const port = (service.address() as import('node:net').AddressInfo).port;
   origin = `http://127.0.0.1:${port}`;
   function render() {
-    const config = JSON.stringify({ api: `${origin}/${token}/api/site`, projectApi: `${origin}/${token}/api/project-sync`, origin, defaultDirectory }).replaceAll('<', '\\u003c');
+    const config = JSON.stringify({ api: `${origin}/${token}/api/site`, projectApi: `${origin}/${token}/api/project-sync`, resourceApi:`${origin}/${token}/api/resource`, origin, defaultDirectory }).replaceAll('<', '\\u003c');
     return ui.replace('</head>', `<script>window.__WEBSITE_BUILDER__=${config};<\/script></head>`);
   }
   // Separate origin prevents website scripts from accessing the standalone canvas.

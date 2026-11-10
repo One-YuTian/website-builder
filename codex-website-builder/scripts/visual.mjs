@@ -1,14 +1,16 @@
 import { chromium } from '@playwright/test';
 import { spawn } from 'node:child_process';
-import { readFile, readdir, mkdir, writeFile } from 'node:fs/promises';
+import { readFile, readdir, mkdir, writeFile, mkdtemp } from 'node:fs/promises';
 import { createHash } from 'node:crypto';
 import { join } from 'node:path';
 import assert from 'node:assert/strict';
+import {tmpdir} from 'node:os';
 const config = JSON.parse(await readFile('mcp.json','utf8')).mcpServers['website-builder'];
 async function sourceHash(folder){const hash=createHash('sha256');for(const entry of (await readdir(folder,{withFileTypes:true})).sort((a,b)=>a.name.localeCompare(b.name))){hash.update(entry.name);const path=join(folder,entry.name);hash.update(entry.isDirectory()?await sourceHash(path):await readFile(path));}return hash.digest('hex');}
 const sourceRoot=join(config.env.WEBSITE_BUILDER_ROOT,'www.noventrad.com');
 const before=await sourceHash(sourceRoot);
-const child=spawn(process.execPath,['dist/server/index.js','--preview'],{env:{...process.env,...config.env},stdio:['ignore','pipe','pipe']});
+const testState=await mkdtemp(join(tmpdir(),'website-visual-'));
+const child=spawn(process.execPath,['dist/server/index.js','--preview'],{env:{...process.env,...config.env,WEBSITE_BUILDER_PROJECT_ROOT:join(testState,'project')},stdio:['ignore','pipe','pipe']});
 const url=await new Promise((resolve,reject)=>{child.stdout.once('data',data=>resolve(data.toString().trim()));child.once('error',reject);child.once('exit',code=>reject(new Error(`preview exit ${code}`)));});
 const browser=await chromium.launch({channel:'chrome',headless:true});
 try{
@@ -21,7 +23,7 @@ try{
  await page.locator('#site-directory').fill('www.noventrad.com');
  await page.getByRole('button',{name:'识别网站',exact:true}).click();
  await page.getByRole('button',{name:'关闭工具面板',exact:true}).click();
- await page.locator('.page-panel').nth(13).waitFor();
+ try{await page.locator('.page-panel').nth(13).waitFor();}catch(error){console.log({body:await page.locator('body').innerText(),errors});throw error;}
  await page.waitForFunction(()=>document.querySelectorAll('.page-caption[data-ready="true"]').length===14,{}, {timeout:30000});
  assert.equal(await page.locator('iframe').count(),14);
  const positions=await page.locator('.page-panel').evaluateAll(nodes=>nodes.map(node=>{const box=node.getBoundingClientRect();return{x:box.x,y:box.y,width:box.width};}));
@@ -87,12 +89,13 @@ try{
  assert.ok((await page.locator('.page-stage').evaluate(el=>getComputedStyle(el,'::before').backgroundImage)).includes('linear-gradient'));
  assert.ok((await page.locator('.frame-glass').first().evaluate(el=>getComputedStyle(el).backdropFilter)).includes('blur'));
  assert.equal(await page.locator('iframe[title="index.html"]').evaluate(el=>getComputedStyle(el).animationName),'page-reveal');
- const product=page.frameLocator('iframe[title="shop.html"]').locator('img[src^="https://cdn.noventrad.com/img/product/"]').first();
+ const product=page.frameLocator('iframe[title="shop.html"]').locator('.product-card img').first();
  await product.waitFor();
  await product.evaluate(el=>el.loading='eager');
  await page.waitForFunction(()=>true);
  await product.evaluate(el=>new Promise((resolve,reject)=>{if(el.complete&&el.naturalWidth>0)return resolve(true);const timer=setTimeout(()=>reject(new Error('Product image did not load')),20000);el.onload=()=>{clearTimeout(timer);resolve(true);};el.onerror=()=>{clearTimeout(timer);reject(new Error('Product CDN image failed'));};}));
  assert.ok(await product.evaluate(el=>el.naturalWidth>0));
+ assert.ok((await product.getAttribute('src')).startsWith('data:'),'product images must arrive through the proxy');
  await page.getByRole('button',{name:'关闭提示'}).click();
  await page.getByRole('button',{name:'页面后移',exact:true}).click();
  assert.equal(await page.locator('.page-panel').first().getAttribute('data-page'),'shop.html');

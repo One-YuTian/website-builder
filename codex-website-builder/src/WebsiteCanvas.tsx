@@ -2,6 +2,7 @@ import { memo, useCallback, useEffect, useRef, useState, type CSSProperties, typ
 import type { SiteManifest, SitePage } from '../server/preview';
 import { hostApp, hostReady } from './bridge';
 import { Icon } from './Icons';
+import {readResource} from './resources';
 
 type View = { x: number; y: number; zoom: number };
 type Wheel = { dx: number; dy: number; zoom: boolean; x: number; y: number };
@@ -37,6 +38,11 @@ const PageFrame = memo(function PageFrame({ page, storage, index, width, selecte
     const receive = (event: MessageEvent) => {
       if (event.source !== iframe.current?.contentWindow || event.origin !== 'null') return;
       const data = event.data;
+      if(data?.type==='website-builder:resource'&&typeof data.url==='string'&&Number.isSafeInteger(data.id)){
+        const source=event.source as Window;
+        void readResource(data.url,!!data.raw).then(value=>source.postMessage({type:'website-builder:resource-result',id:data.id,...value},'*')).catch(error=>source.postMessage({type:'website-builder:resource-result',id:data.id,error:(error as Error).message},'*'));
+      }
+      if(data?.type==='website-builder:resource-error')notify(`资源代理加载失败：${data.error}`);
       if (data?.type === 'website-builder:height' && Number.isFinite(data.height) && data.height > 0) {
         acknowledged.current = true;
         setHeight(Math.max(200, Math.ceil(data.height))); setReady(true);

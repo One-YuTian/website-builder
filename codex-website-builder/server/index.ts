@@ -10,6 +10,7 @@ import { ProjectStore } from './projects';
 import { compactProject, projectService } from './project-service';
 import { readTemplates } from './templates';
 import { fileURLToPath } from 'node:url';
+import {resourceChunk} from './resource-proxy';
 
 const uri = 'ui://codex-website-builder/canvas';
 const html = await readFile(new URL('../ui/index.html', import.meta.url), 'utf8');
@@ -17,9 +18,9 @@ const projects = new ProjectStore(process.env.WEBSITE_BUILDER_PROJECT_ROOT || re
 const syncProject = projectService(projects);
 const preview = await createPreview(html, process.env.WEBSITE_BUILDER_ROOT || resolve('../website'), 'www.noventrad.com', syncProject);
 const skillRoot = (process.env.WEBSITE_BUILDER_SKILL_ROOT || resolve('skills/website-builder')).replaceAll('${PLUGIN_ROOT}',fileURLToPath(new URL('../../',import.meta.url)));
-const server = new McpServer({ name: 'codex-website-builder', version: '0.5.1' });
-const csp = { connectDomains: [], resourceDomains: ['data:', 'blob:', 'https://cdn.noventrad.com', 'https://fonts.googleapis.com', 'https://fonts.gstatic.com'], frameDomains: ['blob:', 'data:'], baseUriDomains: ['https://website-builder.invalid'] };
-const legacyCsp = { connect_domains: [], resource_domains: csp.resourceDomains, frame_domains: csp.frameDomains, base_uri_domains: csp.baseUriDomains };
+const server = new McpServer({ name: 'codex-website-builder', version: '0.5.2' });
+const csp = { connectDomains: ['data:', 'blob:'], resourceDomains: ['data:', 'blob:'], frameDomains: ['blob:', 'data:'], baseUriDomains: ['https://website-builder.invalid'] };
+const legacyCsp = { connect_domains: csp.connectDomains, resource_domains: csp.resourceDomains, frame_domains: csp.frameDomains, base_uri_domains: csp.baseUriDomains };
 registerAppResource(server, 'canvas', uri, { _meta: { ui: { csp }, 'openai/widgetCSP': legacyCsp } }, async () => ({
   contents: [{ uri, mimeType: RESOURCE_MIME_TYPE, text: preview.render(), _meta: {
     ui: { csp },
@@ -43,6 +44,11 @@ server.registerTool('read_website', {
   try { return { content: [{ type: 'text', text: '网站页面已读取。' }], _meta: { website: await preview.readWebsite(directory, false) } }; }
   catch (error) { return { isError: true, content: [{ type: 'text', text: (error as Error).message }] }; }
 });
+server.registerTool('proxy_resource',{
+ description:'UI-only external resource proxy. Backend fetches HTTP(S) resources, resolves CSS/module dependencies and returns bounded binary chunks. Never copy resource payloads into model context.',
+ inputSchema:{url:z.string().url(),offset:z.number().int().min(0).default(0),raw:z.boolean().default(false)},
+ annotations:{readOnlyHint:true,destructiveHint:false,openWorldHint:true},_meta:{ui:{visibility:['app']}},
+},async({url,offset,raw})=>{try{return{content:[],_meta:{resource:await resourceChunk(url,offset,raw)}};}catch(error){return{isError:true,content:[{type:'text',text:(error as Error).message}]};}});
 server.registerTool('read_page', {
   description: '读取单个页面及其内嵌资源，以 gzip 传输给画布，不通过 HTTP 获取本地资源。',
   inputSchema: { directory: z.string(), path: z.string() },

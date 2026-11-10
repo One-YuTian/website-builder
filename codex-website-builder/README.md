@@ -43,7 +43,7 @@ mcp.json 中 WEBSITE_BUILDER_ROOT 指向 `Q:/Projects/DEMO/codex-website-develop
 
 递归识别 HTML/HTM，跳过隐藏目录、依赖目录和符号链接。默认首页优先，再按主导航、页脚和首页链接补充，其余自然排序。若源网站已有 website-builder.order.json 路径数组则优先采用；插件不会创建或修改该文件。
 
-演示商品数据的 /img/product 由原站 https://cdn.noventrad.com 提供；预览保留真实 CDN 图片地址，CSP 仅为该资源来源放行图片加载，不允许其页面导航。
+演示商品数据的 /img/product 由原站 https://cdn.noventrad.com 提供；与其他域名的资源一样，统一由服务端代理获取后返回 data URL，不再放行任何外部 CDN 域名。
 
 ## 构建、测试和安装
 
@@ -88,3 +88,13 @@ MCP 测试覆盖独立无 node_modules 安装、全局入口、14 个压缩页�
 当前会话尚未发现新工具时可使用同包 skills/website-builder/scripts/project.mjs，通过 stdin 接收操作 JSON；CLI 自动使用当前 CODEX_THREAD_ID，并与 MCP 共用持久化项目和 UI 状态，不要求另开聊天。
 
 额外验证：`pnpm test:projects`，覆盖13页装配、80模板访问、会话复用/隔离、显式新建/切换、CLI、并发打开、路径与旧项目写入保护、不完整HTML、跨进程实时显示以及单页重生成时其他 iframe 不变。测试项目位于系统临时目录，不写入用户真实项目目录。
+
+## 外部资源代理（0.5.2）
+
+外部 HTTP(S) 图片、srcset、背景图、第三方脚本、样式和字体统一通过插件服务端获取。页面预览中的脚本/样式在响应阶段处理，CSS 的 @import、url() 及模块静态依赖递归解析；运行时的图片/脚本/样式、fetch、异步 XMLHttpRequest 和动态 import 通过 iframe 消息桥交给 UI-only proxy_resource 工具。网站磁盘文件保持原样，不需要为新资源域名修改 CSP。
+
+代理结果只放在 _meta 中，按 512KB 二进制分片传输，并在服务端和画布内去重缓存；已有 vendor 缓存仍由服务端读取。宿主只放行 data/blob 资源，浏览器不直接请求外部 CDN，也不依赖宿主访问 localhost。独立浏览器测试使用同一资源处理逻辑的带随机令牌 HTTP 接口。
+
+代理只读取公共 HTTP(S) 资源（GET/HEAD），不携带浏览器 Cookie、登录凭据或提交表单。HTTP 错误和超时返回具体错误，不伪装成成功；单资源上限 64MB、缓存有效期 10 分钟。默认拒绝本机/私网地址及重定向，WEBSITE_BUILDER_PROXY_ALLOW_LOCAL=1 仅用于本地测试资源服务器。上游拒绝访问、需要登录、同步 XHR、循环模块依赖或依赖真实服务端状态的第三方服务不能保证可在隔离预览中运行。
+
+`pnpm test:proxy` 验证任意域名/无扩展名资源、嵌套 CSS/字体、动态加载、fetch/XHR/模块、分片缓存、严格 CSP 下无浏览器直连及源文件哈希不变。

@@ -2,7 +2,7 @@ import { StrictMode, useEffect, useRef } from 'react';
 import { createRoot } from 'react-dom/client';
 import './style.css';
 import { WebsiteCanvas } from './WebsiteCanvas';
-declare global { interface Window { __WEBSITE_BUILDER__?: { api: string; projectApi?:string; origin: string; defaultDirectory: string } } }
+declare global { interface Window { __WEBSITE_BUILDER__?: { api: string; projectApi?:string; resourceApi?:string; origin: string; defaultDirectory: string } } }
 
 function DotCanvas() {
   const ref = useRef<HTMLCanvasElement>(null);

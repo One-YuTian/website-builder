@@ -1,6 +1,6 @@
 {
   "name": "codex-website-builder",
-  "version": "0.5.1",
+  "version": "0.5.2",
   "private": true,
   "type": "module",
   "packageManager": "pnpm@10.18.0",
@@ -11,9 +11,10 @@
     "start": "node dist/server/index.js",
     "test": "node scripts/smoke.mjs",
     "test:visual": "node scripts/visual.mjs",
-    "prepare:plugin": "pnpm build && pnpm test && pnpm test:projects",
+    "prepare:plugin": "pnpm build && pnpm test && pnpm test:projects && pnpm test:proxy",
     "install:plugin": "powershell -NoProfile -File scripts/install-plugin.ps1",
-    "test:projects": "node scripts/projects.test.mjs"
+    "test:projects": "node scripts/projects.test.mjs",
+    "test:proxy": "node scripts/proxy.test.mjs"
   },
   "dependencies": {
     "@modelcontextprotocol/ext-apps": "^1.7.5",
