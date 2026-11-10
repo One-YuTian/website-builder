@@ -1,24 +1,22 @@
 ## Overview
 
-Order payment confirmation and success feedback page, containing top green checkmark success badge, order number and status pill, purchased item list, cost breakdown & shipping delivery estimate cards, important notice alert, and View Order / Continue Shopping buttons.
+Order success and receipt confirmation page, integrating green success checkmark skeleton, order ID banner, estimated delivery window, shipping summary, and continue shopping CTAs.
 
-### Layout & Regions
-- `success-header`: Circular checkmark icon, thank you headline, and subtitle.
-- `order-card`: Order number card, thumbnail item list, cost summary, and delivery date.
-- `notice-alert`: Post-order processing instructions and confirmation notification banner.
-- `action-buttons`: View Order History and Continue Shopping dual action buttons.
+### Regions
+Functional regions are annotated directly in the component code implementation via English comments.
+
 
 ### Dimensions & Responsiveness
-- Follows global design system, outer container uses `content-container` with PC max content width 1200px centered.
-- Card max width 48rem (768px) centered.
+- Centered single column card layout, follows `content-container` with max width 680px centered.
+- Mobile: Width calc(100vw - 32px), buttons stacked vertically for easy one-hand tapping.
 
 ### Attributes & Props
 | Attribute | Description | Type | Default |
 | --- | --- | --- | --- |
-| `order-id` | Unique order confirmation number | `string` | `'ORD-2026-99881'` |
+| `orderId` | Order confirmation ID | `string` | `'ORD-2026-9988'` |
 
 ### Events
-- `ordersuccess-navigate`: Dispatched when clicking View Order or Continue Shopping buttons.
+- `order-navigate`: Dispatched when clicking View Order or Continue Shopping.
 
 ## Code
 
@@ -29,6 +27,8 @@ Order payment confirmation and success feedback page, containing top green check
   <div class="content-container flex justify-center">
     <div class="w-full max-w-3xl">
       <!-- Success Header -->
+      <!-- Region: Success Header - Order completion status and checkmark -->
+
       <div data-region="success-header" class="text-center mb-8 sm:mb-10 flex flex-col items-center">
         <div class="size-20 rounded-full bg-emerald-500/15 border border-emerald-500/30 flex items-center justify-center mb-5 text-emerald-600 shadow-xs">
           <span class="text-4xl font-bold leading-none">✓</span>
@@ -38,6 +38,8 @@ Order payment confirmation and success feedback page, containing top green check
       </div>
 
       <!-- Order Details Card -->
+      <!-- Region: Order Card - Order items, order ID, and transaction details -->
+
       <div data-region="order-card" class="bg-surface rounded-2xl shadow-sm border border-outline/30 p-6 sm:p-8 mb-6">
         <!-- Order Number Badge -->
         <div class="flex items-center justify-between pb-6 mb-6 border-b border-outline/20">
@@ -124,6 +126,8 @@ Order payment confirmation and success feedback page, containing top green check
       </div>
 
       <!-- Important Notice Alert -->
+      <!-- Region: Order Notice - Post-purchase order confirmation alert -->
+
       <div data-region="notice-alert" class="p-4 sm:p-5 rounded-2xl bg-amber-500/10 border border-amber-500/25 mb-8 flex items-start gap-3">
         <span class="size-6 rounded-full bg-amber-500/20 text-amber-600 flex items-center justify-center font-bold text-xs shrink-0">!</span>
         <div class="flex-1">
@@ -134,6 +138,8 @@ Order payment confirmation and success feedback page, containing top green check
       </div>
 
       <!-- Action Buttons -->
+      <!-- Region: Action Buttons - Order management and continuation CTAs -->
+
       <div data-region="action-buttons" class="flex flex-col sm:flex-row items-center justify-center gap-4">
         <button type="button" data-action="view-orders" class="w-full sm:w-auto px-8 py-3.5 rounded-xl bg-primary text-white font-medium shadow-sm hover:opacity-90 transition-opacity flex items-center justify-center cursor-pointer">
           <div class="h-3.5 w-24 bg-white/95 rounded-xs"></div>

@@ -7,9 +7,9 @@
  * with the standard HTML boilerplate:
  * - Full <!doctype html> and <html lang="zh-CN">
  * - Standard <head> with Google Fonts, Bootstrap Icons, Swiper CSS, Tailwind CDN, and js/app.js
- * - Global base CSS and .content-container styles
+ * - Tailwind utility classes; content-container keeps source semantics and uses explicit Tailwind utilities
  * - Pre-appended <header-component>
- * - Post-appended <cart-component>, <footer-component>
+ * - Optional cart drawer (--cart=drawer), plus footer
  * - Standard CDN runtime scripts (jQuery, Swiper) and components/data scripts
  *
  * This minimizes LLM output tokens so models only need to return the core <body>/<main> content!
@@ -45,6 +45,9 @@ const lang = getArg('lang', 'en');
 const noHeader = args.includes('--no-header');
 const noFooter = args.includes('--no-footer');
 const noCart = args.includes('--no-cart');
+const cartMode = noCart ? 'none' : getArg('cart', 'page');
+if (!['page', 'drawer', 'none'].includes(cartMode)) throw new Error('--cart must be page, drawer or none');
+const hasCart = cartMode !== 'none' && fs.existsSync(path.resolve(path.dirname(targetFile || inputFile || './index.html'), 'components/cart.js'));
 const enableLan = args.includes('--lan') || args.includes('--i18n');
 
 function assembleHtml(bodyFragment, pageTitle = title) {
@@ -85,43 +88,14 @@ function assembleHtml(bodyFragment, pageTitle = title) {
   <!-- Main Application Script & Tailwind Configuration -->
   <script src="js/app.js"></script>
 
-  <!-- Global Base Styles & Container Layout -->
-  <style>
-    body {
-      font-family: var(--theme-font, 'Noto Sans SC', sans-serif);
-      background-color: var(--theme-surface, #ffffff);
-      color: var(--theme-text, #0f172a);
-      margin: 0;
-      padding: 0;
-    }
-    .content-container {
-      width: 100%;
-      max-width: 1200px;
-      margin-left: auto;
-      margin-right: auto;
-      padding-left: 1rem;
-      padding-right: 1rem;
-    }
-    @media (min-width: 1024px) {
-      .content-container {
-        padding-left: 1.5rem;
-        padding-right: 1.5rem;
-      }
-    }
-    .text-truncate-tooltip {
-      overflow: hidden;
-      text-overflow: ellipsis;
-      white-space: nowrap;
-    }
-  </style>
 </head>
-<body class="bg-surface text-content min-h-screen flex flex-col antialiased">
+<body class="m-0 bg-surface font-sans text-content min-h-screen flex flex-col antialiased">
 
   ${noHeader ? '' : '<!-- Global Header Component -->\n  <header-component></header-component>\n'}
   <!-- Main Page Content Hooked from Model Output -->
   ${cleanBody}
 
-  ${noCart ? '' : '<!-- Global Cart Drawer Component -->\n  <cart-component></cart-component>\n'}
+  ${hasCart && cartMode === 'drawer' && !/<cart-component\b/i.test(cleanBody) ? '<!-- Global Cart Drawer Component -->\n  <cart-component view-mode="drawer"></cart-component>\n' : ''}
   ${noFooter ? '' : '<!-- Global Footer Component -->\n  <footer-component></footer-component>\n'}
   <!-- Runtime Libraries (Cloudflare CDN) -->
   <script src="https://cdnjs.cloudflare.com/ajax/libs/jquery/3.7.1/jquery.min.js"></script>
@@ -134,7 +108,7 @@ function assembleHtml(bodyFragment, pageTitle = title) {
   <!-- Web Components -->
   <script src="components/header.js"></script>
   <script src="components/footer.js"></script>
-  <script src="components/cart.js"></script>
+  ${hasCart ? '<script src="components/cart.js"></script>' : ''}
   <script src="components/card.js"></script>
 
   ${scriptTags.length > 0 ? `<!-- Injected Page Scripts -->\n  ${scriptTags.join('\n  ')}` : ''}

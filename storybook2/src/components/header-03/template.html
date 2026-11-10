@@ -1,4 +1,6 @@
 <header class="bg-secondary text-on-secondary font-sans">
+  <!-- Region: Header Main Bar - Brand logo, search, navigation, and user actions -->
+
   <div data-region="header-content" class="content-container">
     <div class="flex h-16 items-center justify-between gap-4">
       <div class="shrink-0">
@@ -9,11 +11,15 @@
       <form role="search" class="relative hidden flex-1 max-w-2xl mx-6 md:block">
         <div class="relative flex h-10 items-center rounded-lg border border-outline/40 bg-surface text-content focus-within:border-primary focus-within:ring-1 focus-within:ring-primary">
           <input type="search" name="query" autocomplete="off" class="h-full w-full min-w-0 rounded-lg border-0 bg-transparent py-1.5 pl-3 pr-9 text-sm outline-none">
+          <!-- Region: Search Placeholder - Search input prompt -->
+
           <span data-region="search-placeholder" class="pointer-events-none absolute left-3"><span class="block h-[0.75em] w-36 rounded-sm bg-accent"></span></span>
           <button type="submit" class="absolute right-1.5 flex size-7 items-center justify-center rounded-full bg-primary text-on-secondary hover:opacity-90 transition-opacity focus-visible:outline-2 focus-visible:outline-offset-4 focus-visible:outline-primary">
             <span class="block size-3.5 rounded-full bg-accent"></span>
           </button>
         </div>
+        <!-- Region: Search Suggestions - Autocomplete dropdown list -->
+
         <ul data-region="search-suggestions" hidden class="absolute inset-x-0 top-full z-20 mt-2 max-h-80 overflow-y-auto rounded-xl border border-outline bg-surface p-2 text-content shadow-xl"></ul>
       </form>
       <div class="hidden items-center gap-4 md:flex">
@@ -35,6 +41,8 @@
         </button>
       </div>
     </div>
+    <!-- Region: Primary Navigation Menu -->
+
     <nav class="hidden items-center justify-center gap-8 pb-3 md:flex">
       <div role="button" tabindex="0" data-destination="home" class="rounded-sm px-2 py-1 text-xs uppercase tracking-wider hover:opacity-75 transition-colors focus-visible:outline-2 focus-visible:outline-offset-4 focus-visible:outline-primary"><span class="block h-[0.75em] w-12 rounded-sm bg-accent"></span></div>
       <div role="button" tabindex="0" data-destination="shop" class="rounded-sm px-2 py-1 text-xs uppercase tracking-wider hover:opacity-75 transition-colors focus-visible:outline-2 focus-visible:outline-offset-4 focus-visible:outline-primary"><span class="block h-[0.75em] w-12 rounded-sm bg-accent"></span></div>
@@ -44,6 +52,8 @@
     </nav>
   </div>
 </header>
+<!-- Region: Mobile Navigation Drawer -->
+
 <dialog class="fixed inset-y-0 left-0 m-0 h-dvh max-h-none w-80 max-w-[calc(100vw-2rem)] overflow-y-auto overscroll-contain border-0 bg-surface p-6 text-content shadow-xl backdrop:bg-black/50">
   <div class="mb-6 flex items-center justify-between gap-4">
     <span class="relative flex h-8 w-28 items-center justify-center overflow-hidden rounded-lg bg-accent select-none text-xs font-semibold tracking-widest text-muted">LOGO</span>
@@ -63,4 +73,3 @@
     <div role="button" tabindex="0" data-destination="register" class="block rounded-lg px-2 py-3 hover:bg-accent/40"><span class="block h-[0.75em] w-16 rounded-sm bg-accent"></span></div>
   </div>
 </dialog>
-

@@ -11,6 +11,8 @@
     </div>
 
     <div class="flex flex-col lg:flex-row gap-6 lg:gap-8">
+      <!-- Region: Filter Sidebar - Faceted search, categories, and price sliders -->
+
       <aside data-region="sidebar" id="filters-sidebar" class="hidden lg:block lg:w-64 lg:shrink-0">
         <div class="bg-surface rounded-xl border border-outline/60 p-5 sticky top-24 shadow-xs">
           <div class="mb-5 pb-3 border-b border-outline/30">
@@ -56,6 +58,8 @@
       </aside>
 
       <div class="flex-1">
+        <!-- Region: Catalog Toolbar - Item count, sorting dropdown, and view mode toggle -->
+
         <div data-region="toolbar" class="flex flex-col sm:flex-row sm:items-center sm:justify-between mb-6 gap-3 pb-4 border-b border-outline/30">
           <div class="flex items-center gap-2.5">
             <span class="block h-[0.75em] w-20 rounded-sm bg-accent"></span>
@@ -82,6 +86,9 @@
             <span class="block h-[0.75em] w-24 rounded-sm bg-accent"></span>
           </div>
         </div>
+
+        <!-- Region: Products Grid - Responsive product card showcase -->
+
 
         <div data-region="products-grid" id="products-grid" class="grid grid-cols-2 sm:grid-cols-3 gap-4 md:gap-6"></div>
       </div>

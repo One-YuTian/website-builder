@@ -1,26 +1,26 @@
 ## Overview
 
-Core e-commerce catalog shelf block, integrating section title, quick category filter tags, 4~5 column responsive product card matrix, and bottom View All Products action.
+Core e-commerce product shelf grid block, integrating section title, fast category filter tabs, 4~5 column responsive product card matrix, and bottom View All CTA.
 
-### Layout & Regions
-- `block-header`: Main title skeleton and category filter pills.
-- `product-grid`: Multi-column product card matrix container.
-- `product-card`: Standard Card component instances.
-- `block-footer`: Bottom View All Products button.
+### Regions
+Functional regions are annotated directly in the component code implementation via English comments.
+
 
 ### Dimensions & Responsiveness
-- Follows global design system, outer container uses `content-container` with PC max content width 1200px centered.
-- Desktop (1024px+): 4~5 columns equal-width grid with 20px gap.
-- Mobile (under 768px): 2 compact columns with 12px gap.
+- Outer container strictly follows `content-container` with PC max content width 1200px centered.
+- Desktop (1024px+): 4~5 column grid layout with 16px~24px gutters.
+- Tablet (768px~1023px): Adapts to 3-column grid.
+- Mobile (under 768px): Adapts to 2 compact columns with 12px gap.
 
 ### Attributes & Props
 | Attribute | Description | Type | Default |
 | --- | --- | --- | --- |
-| `columns` | Grid column count | `number` | `4` |
+| `containerId` | Mount container selector ID | `string` | `'product-grid-01'` |
+| `limit` | Max product cards rendered | `number` | `8` |
 
 ### Events
-- `productlist-filter`: Dispatched when switching category filter pills.
-- `productlist-more`: Dispatched when clicking View All Products.
+- `product-navigate`: Dispatched when clicking an individual product card to view PDP.
+- `filter-change`: Dispatched when switching category filter tabs.
 
 ## Code
 
@@ -29,6 +29,8 @@ Core e-commerce catalog shelf block, integrating section title, quick category f
 ```html
 <section class="bg-surface py-8 font-sans text-content border-t border-outline/30">
   <div class="content-container">
+    <!-- Region: Section Header - Block title and view-all link -->
+
     <div data-region="section-title" class="mb-6 flex items-center justify-between">
       <span class="block h-[0.75em] w-52 rounded-sm bg-accent text-xl"></span>
       <span class="block h-[0.75em] w-20 rounded-sm bg-accent"></span>

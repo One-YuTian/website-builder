@@ -1,23 +1,23 @@
 ## Overview
 
-Trust endorsement and customer service value proposition block, integrating authentic guarantee, free shipping, secure payment, and easy returns presented as horizontal feature cards.
+E-commerce trust guarantees and customer service highlights section, showcasing official genuine authenticity, free express delivery, hassle-free returns, and 24/7 live support in equal grid columns.
 
-### Layout & Regions
-- `services-container`: Service card grid container.
-- `service-item`: Individual service item with circular icon skeleton, bold title, and description.
+### Regions
+Functional regions are annotated directly in the component code implementation via English comments.
+
 
 ### Dimensions & Responsiveness
-- Follows global design system, outer container uses `content-container` with PC max content width 1200px centered.
-- Desktop (1024px+): 3~4 equal-width columns in a single row without wrapping.
-- Mobile (under 1024px): Adapts to 2x2 grid or smooth horizontal scroll.
+- Follows `content-container` with max content width 1200px centered.
+- Desktop (1024px+): 3~4 equal columns horizontally aligned with generous padding.
+- Mobile (under 768px): Single column vertical stacking or compact 2-column grid.
 
 ### Attributes & Props
 | Attribute | Description | Type | Default |
 | --- | --- | --- | --- |
-| `columns` | Column count configuration | `number` | `4` |
+| `columns` | Number of service feature columns | `number` | `4` |
 
 ### Events
-- `service-navigate`: Dispatched when clicking a service guarantee item.
+- `service-click`: Dispatched when clicking service card to view detailed policy.
 
 ## Code
 
@@ -105,6 +105,8 @@ Trust endorsement and customer service value proposition block, integrating auth
     </div>
     </div>
     <!-- Desktop Grid (Strict single row of 5 columns, NO 2-row wrapping) -->
+    <!-- Region: Service Value Badges Grid -->
+
     <div class="hidden lg:grid lg:grid-cols-5 lg:gap-6 items-center justify-between">
       
       <div class="flex items-center justify-center space-x-3 p-2 rounded-lg whitespace-nowrap">

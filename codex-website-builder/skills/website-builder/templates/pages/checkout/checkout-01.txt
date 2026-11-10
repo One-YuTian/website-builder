@@ -1,24 +1,23 @@
 ## Overview
 
-Order checkout and payment page, featuring breadcrumb navigation, two-column responsive layout (left billing/shipping form and payment method picker, right sticky order summary card, item preview, delivery estimates, and Place Order button).
+Full checkout and order payment page, integrating multi-step progress bar, shipping address entry form, payment method selector, and right-aligned sticky order summary card.
 
-### Layout & Regions
-- `page-header`: Breadcrumb and checkout page title skeleton.
-- `checkout-form`: Multi-step form (billing/shipping fields and payment radio cards).
-- `order-summary`: Right-hand sticky order summary card, cost breakdown, and Place Order CTA.
+### Regions
+Functional regions are annotated directly in the component code implementation via English comments.
+
 
 ### Dimensions & Responsiveness
-- Follows global design system, outer container uses `content-container` with PC max content width 1200px centered.
-- Desktop (1024px+): 2:1 split layout with sticky summary column on right.
-- Tablet & Mobile (under 1024px): Single-column vertical stack with order summary flowing below.
+- Follows `content-container` with PC max content width 1200px centered.
+- Desktop (1024px+): 7:5 asymmetric two-column layout (form on left, sticky summary on right).
+- Mobile (under 1024px): Single vertical column layout.
 
 ### Attributes & Props
 | Attribute | Description | Type | Default |
 | --- | --- | --- | --- |
-| `step` | Current checkout step | `'shipping' \| 'payment' \| 'review'` | `'shipping'` |
+| `step` | Current checkout step (1, 2, 3) | `number` | `1` |
 
 ### Events
-- `checkout-submit`: Dispatched when placing the order.
+- `checkout-submit`: Dispatched when submitting order with shipping & payment info.
 
 ## Code
 
@@ -28,6 +27,8 @@ Order checkout and payment page, featuring breadcrumb navigation, two-column res
 <section class="checkout-section bg-accent/20 font-sans text-content py-8 sm:py-12">
   <div class="content-container">
     <!-- Breadcrumb & Page Title -->
+    <!-- Region: Page Header - Title, subtitle, and breadcrumb -->
+
     <div data-region="page-header" class="mb-8">
       <div class="flex items-center gap-2 text-xs text-muted mb-3">
         <div class="h-2.5 w-12 bg-muted/50 rounded-xs"></div>
@@ -42,6 +43,8 @@ Order checkout and payment page, featuring breadcrumb navigation, two-column res
     <!-- Main 2-Column Grid -->
     <div class="grid grid-cols-1 lg:grid-cols-3 gap-8 items-start">
       <!-- Left: Form Sections (lg:col-span-2) -->
+      <!-- Region: Checkout Form - Shipping address, contact, and payment fields -->
+
       <div data-region="checkout-form" class="lg:col-span-2 space-y-6">
         <!-- Billing & Shipping Info Card -->
         <div class="bg-surface rounded-2xl shadow-sm border border-outline/30 p-6 sm:p-8">
@@ -54,40 +57,40 @@ Order checkout and payment page, featuring breadcrumb navigation, two-column res
             <div class="grid grid-cols-1 sm:grid-cols-2 gap-4">
               <div>
                 <div class="h-3 w-16 bg-content/80 rounded-xs mb-1.5"></div>
-                <input type="text" readonly aria-label="名输入框" class="w-full px-4 py-2.5 bg-surface border border-outline/50 rounded-xl focus:border-primary text-sm shadow-2xs cursor-default">
+                <input type="text" readonly aria-label="First name" class="w-full px-4 py-2.5 bg-surface border border-outline/50 rounded-xl focus:border-primary text-sm shadow-2xs cursor-default">
               </div>
               <div>
                 <div class="h-3 w-16 bg-content/80 rounded-xs mb-1.5"></div>
-                <input type="text" readonly aria-label="姓输入框" class="w-full px-4 py-2.5 bg-surface border border-outline/50 rounded-xl focus:border-primary text-sm shadow-2xs cursor-default">
+                <input type="text" readonly aria-label="Last name" class="w-full px-4 py-2.5 bg-surface border border-outline/50 rounded-xl focus:border-primary text-sm shadow-2xs cursor-default">
               </div>
             </div>
 
             <div>
               <div class="h-3 w-20 bg-content/80 rounded-xs mb-1.5"></div>
-              <input type="text" readonly aria-label="电子邮箱输入框" class="w-full px-4 py-2.5 bg-surface border border-outline/50 rounded-xl focus:border-primary text-sm shadow-2xs cursor-default">
+              <input type="text" readonly aria-label="Email address" class="w-full px-4 py-2.5 bg-surface border border-outline/50 rounded-xl focus:border-primary text-sm shadow-2xs cursor-default">
             </div>
 
             <div>
               <div class="h-3 w-16 bg-content/80 rounded-xs mb-1.5"></div>
               <div class="flex">
                 <span class="inline-flex items-center px-3 rounded-l-xl border border-r-0 border-outline/50 bg-accent/30 text-xs text-muted font-mono">+1</span>
-                <input type="text" readonly aria-label="电话输入框" class="flex-1 px-4 py-2.5 bg-surface border border-outline/50 rounded-r-xl focus:border-primary text-sm shadow-2xs cursor-default">
+                <input type="text" readonly aria-label="Phone number" class="flex-1 px-4 py-2.5 bg-surface border border-outline/50 rounded-r-xl focus:border-primary text-sm shadow-2xs cursor-default">
               </div>
             </div>
 
             <div>
               <div class="h-3 w-24 bg-content/80 rounded-xs mb-1.5"></div>
-              <input type="text" readonly aria-label="收货地址输入框" class="w-full px-4 py-2.5 bg-surface border border-outline/50 rounded-xl focus:border-primary text-sm shadow-2xs cursor-default">
+              <input type="text" readonly aria-label="Shipping address" class="w-full px-4 py-2.5 bg-surface border border-outline/50 rounded-xl focus:border-primary text-sm shadow-2xs cursor-default">
             </div>
 
             <div class="grid grid-cols-1 sm:grid-cols-2 gap-4">
               <div>
                 <div class="h-3 w-16 bg-content/80 rounded-xs mb-1.5"></div>
-                <input type="text" readonly aria-label="城市输入框" class="w-full px-4 py-2.5 bg-surface border border-outline/50 rounded-xl focus:border-primary text-sm shadow-2xs cursor-default">
+                <input type="text" readonly aria-label="City" class="w-full px-4 py-2.5 bg-surface border border-outline/50 rounded-xl focus:border-primary text-sm shadow-2xs cursor-default">
               </div>
               <div>
                 <div class="h-3 w-20 bg-content/80 rounded-xs mb-1.5"></div>
-                <input type="text" readonly aria-label="邮政编码输入框" class="w-full px-4 py-2.5 bg-surface border border-outline/50 rounded-xl focus:border-primary text-sm shadow-2xs cursor-default">
+                <input type="text" readonly aria-label="Postal code" class="w-full px-4 py-2.5 bg-surface border border-outline/50 rounded-xl focus:border-primary text-sm shadow-2xs cursor-default">
               </div>
             </div>
           </form>
@@ -127,6 +130,8 @@ Order checkout and payment page, featuring breadcrumb navigation, two-column res
       </div>
 
       <!-- Right: Sticky Order Summary (lg:col-span-1) -->
+      <!-- Region: Order Summary - Price breakdown, shipping, and total -->
+
       <div data-region="order-summary" class="lg:col-span-1 sticky top-6">
         <div class="bg-surface rounded-2xl shadow-sm border border-outline/30 p-6 sm:p-7">
           <div class="h-5 w-32 bg-content/85 rounded-xs mb-5 pb-2"></div>

@@ -1,26 +1,25 @@
 ## Overview
 
-Main catalog shopping listing page, integrating page title skeleton, price and popularity sorting toolbar, total item count indicator, and multi-column adaptive product card grid.
+Shop catalog page, integrating page title, multi-dimensional filter sidebar, sorting toolbar, item counter, and responsive multi-column product card grid.
 
-### Layout & Regions
-- `page-header`: Breadcrumb and shop page title skeleton.
-- `toolbar`: Sorting dropdown (Price Low-High, High-Low, Newest) and view mode toggle (Grid/List).
-- `product-grid`: Multi-column product card grid.
-- `pagination`: Page number navigation bar.
+### Regions
+Functional regions are annotated directly in the component code implementation via English comments.
+
 
 ### Dimensions & Responsiveness
-- Follows global design system, outer container uses `content-container` with PC max content width 1200px centered.
-- Desktop (1024px+): 4 columns equal-width grid.
+- Follows `content-container` with PC max content width 1200px centered.
+- Desktop (1024px+): 4 equal columns with optional 260px filter sidebar on left.
 - Mobile (under 768px): 2 compact columns with wrapped toolbar.
 
 ### Attributes & Props
 | Attribute | Description | Type | Default |
 | --- | --- | --- | --- |
-| `sort-by` | Current sorting criterion | `'default' \| 'price-asc' \| 'price-desc'` | `'default'` |
+| `defaultSort` | Default sorting rule | `string` | `'default'` |
+| `itemCount` | Initial product count | `number` | `8` |
 
 ### Events
-- `shop-sort`: Dispatched when user changes sorting options.
-- `shop-page`: Dispatched when navigating page numbers.
+- `product-navigate`: Dispatched when clicking product card.
+- `shop-sort`: Dispatched when changing sorting order.
 
 ## Code
 
@@ -29,10 +28,15 @@ Main catalog shopping listing page, integrating page title skeleton, price and p
 ```html
 <section class="bg-surface font-sans text-content py-6 sm:py-8">
   <div class="content-container">
+    <!-- Region: Page Header - Title, subtitle, and breadcrumb -->
+
     <div data-region="page-header" class="mb-6 sm:mb-8">
       <span class="block h-[1em] w-36 sm:w-48 rounded-sm bg-accent text-2xl sm:text-3xl mb-3"></span>
       <span class="block h-[0.75em] w-full max-w-lg rounded-sm bg-accent"></span>
     </div>
+
+    <!-- Region: Catalog Toolbar - Item count, sorting dropdown, and view mode toggle -->
+
 
     <div data-region="toolbar" class="flex flex-col sm:flex-row sm:items-center sm:justify-between mb-6 gap-3 pb-4 border-b border-outline/30">
       <div class="flex items-center gap-2.5">
@@ -60,6 +64,9 @@ Main catalog shopping listing page, integrating page title skeleton, price and p
         <span class="block h-[0.75em] w-24 rounded-sm bg-accent"></span>
       </div>
     </div>
+
+    <!-- Region: Products Grid - Responsive product card showcase -->
+
 
     <div data-region="products-grid" id="products-grid" class="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-4 gap-4 md:gap-6"></div>
   </div>

@@ -1,24 +1,25 @@
 ## Overview
 
-Limited-time flash sale and clearance showcase block, integrating countdown timer (hours/minutes/seconds), flash sale title, Shop More CTA, and responsive product card list.
+Flash sale and limited-time marketing section, integrating animated countdown timer blocks, promotional badges, flash cards with sold percentage progress, and View All CTA.
 
-### Layout & Regions
-- `sale-header`: Flash sale title skeleton, countdown clock badges, and right-aligned View More link.
-- `sale-grid`: Multi-card grid or Swiper slider container.
-- `sale-card`: FlashCard product card embedding discount badge, price comparison, and progress bar.
+### Regions
+Functional regions are annotated directly in the component code implementation via English comments.
+
 
 ### Dimensions & Responsiveness
-- Follows global design system, outer container uses `content-container` with PC max content width 1200px centered.
-- Desktop (1024px+): 4~5 cards per row, height 360px~420px.
-- Mobile (under 768px): 2 cards per row, horizontally scrollable.
+- Follows `content-container` with max content width 1200px centered.
+- Desktop (1024px+): 3~4 flash cards side by side.
+- Mobile (under 768px): 2 compact cards with smooth horizontal swipe.
 
 ### Attributes & Props
 | Attribute | Description | Type | Default |
 | --- | --- | --- | --- |
-| `end-time` | Countdown target timestamp | `string` | `'2026-12-31T23:59:59'` |
+| `limit` | Max items displayed | `number` | `4` |
+| `endTime` | Target end timestamp | `string` | `'2026-12-31'` |
 
 ### Events
-- `flashsale-navigate`: Dispatched when clicking flash sale section or products.
+- `flashsale-navigate`: Dispatched when clicking View All button.
+- `product-navigate`: Dispatched when clicking flash card.
 
 ## Code
 
@@ -33,6 +34,8 @@ Limited-time flash sale and clearance showcase block, integrating countdown time
         <div class="flex items-center gap-2 sm:gap-4 min-w-0">
           <div class="h-4 sm:h-5 w-20 sm:w-28 bg-accent rounded-xs shrink-0"></div>
           <div class="h-3 sm:h-4 w-12 sm:w-16 bg-muted/60 rounded-xs shrink-0 hidden xs:block"></div>
+          <!-- Region: Countdown Timer - Urgent limited-time flash sale timer -->
+
           <div class="flex items-center gap-1 shrink-0" data-region="countdown">
             <span class="bg-primary text-white px-1.5 sm:px-2 py-0.5 sm:py-1 text-[11px] sm:text-xs font-bold rounded-xs min-w-6 sm:min-w-7 text-center">00</span>
             <span class="text-content font-bold text-xs">:</span>

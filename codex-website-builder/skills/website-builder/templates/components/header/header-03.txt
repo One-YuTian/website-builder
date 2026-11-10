@@ -2,17 +2,13 @@
 
 Global sticky top navigation bar component, integrating brand LOGO skeleton, site-wide predictive search bar, user authentication & account portal, wishlist & cart counter badges, and horizontal category navigation menu. Features sticky positioning upon scroll and lightweight slide-out mobile drawer navigation.
 
-### Layout & Regions
-- `header-content`: Main navigation container, centered according to global max content width.
-- `logo-area`: Brand logo display area with neutral `LOGO` placeholder skeleton.
-- `search`: Global search bar skeleton with magnifying glass icon and search suggestion dropdown placeholder.
-- `account-panel`: User login status and account quick actions panel.
-- `action-icons`: Includes wishlist, cart badge counter, and mobile hamburger menu trigger button.
-- `navigation`: Desktop horizontal main category list; automatically collapses into mobile drawer.
+### Regions
+Functional regions are annotated directly in the component code implementation via English comments.
+
 
 ### Dimensions & Responsiveness
-- Desktop (1024px+): Fixed height of 68px~76px, follows global `content-container` with max content width 1200px centered, supports sticky positioning during page scrolling.
-- Tablet & Mobile (under 1024px): Horizontal category list collapses, main bar retains Logo, search, and action icons; hamburger button triggers a 320px smooth slide-out drawer.
+- Desktop (1024px+): Fixed height 68px~76px, follows global `content-container` with max content width 1200px centered, supports sticky positioning during page scrolling.
+- Tablet & Mobile (under 1024px): Horizontal category list collapses, main bar retains Logo, search, and action icons; hamburger button triggers 320px smooth slide-out drawer.
 
 ### Attributes & Props
 | Attribute | Description | Type | Default |
@@ -34,6 +30,8 @@ Global sticky top navigation bar component, integrating brand LOGO skeleton, sit
 
 ```html
 <header class="bg-secondary text-on-secondary font-sans">
+  <!-- Region: Header Main Bar - Brand logo, search, navigation, and user actions -->
+
   <div data-region="header-content" class="content-container">
     <div class="flex h-16 items-center justify-between gap-4">
       <div class="shrink-0">
@@ -44,11 +42,15 @@ Global sticky top navigation bar component, integrating brand LOGO skeleton, sit
       <form role="search" class="relative hidden flex-1 max-w-2xl mx-6 md:block">
         <div class="relative flex h-10 items-center rounded-lg border border-outline/40 bg-surface text-content focus-within:border-primary focus-within:ring-1 focus-within:ring-primary">
           <input type="search" name="query" autocomplete="off" class="h-full w-full min-w-0 rounded-lg border-0 bg-transparent py-1.5 pl-3 pr-9 text-sm outline-none">
+          <!-- Region: Search Placeholder - Search input prompt -->
+
           <span data-region="search-placeholder" class="pointer-events-none absolute left-3"><span class="block h-[0.75em] w-36 rounded-sm bg-accent"></span></span>
           <button type="submit" class="absolute right-1.5 flex size-7 items-center justify-center rounded-full bg-primary text-on-secondary hover:opacity-90 transition-opacity focus-visible:outline-2 focus-visible:outline-offset-4 focus-visible:outline-primary">
             <span class="block size-3.5 rounded-full bg-accent"></span>
           </button>
         </div>
+        <!-- Region: Search Suggestions - Autocomplete dropdown list -->
+
         <ul data-region="search-suggestions" hidden class="absolute inset-x-0 top-full z-20 mt-2 max-h-80 overflow-y-auto rounded-xl border border-outline bg-surface p-2 text-content shadow-xl"></ul>
       </form>
       <div class="hidden items-center gap-4 md:flex">
@@ -70,6 +72,8 @@ Global sticky top navigation bar component, integrating brand LOGO skeleton, sit
         </button>
       </div>
     </div>
+    <!-- Region: Primary Navigation Menu -->
+
     <nav class="hidden items-center justify-center gap-8 pb-3 md:flex">
       <div role="button" tabindex="0" data-destination="home" class="rounded-sm px-2 py-1 text-xs uppercase tracking-wider hover:opacity-75 transition-colors focus-visible:outline-2 focus-visible:outline-offset-4 focus-visible:outline-primary"><span class="block h-[0.75em] w-12 rounded-sm bg-accent"></span></div>
       <div role="button" tabindex="0" data-destination="shop" class="rounded-sm px-2 py-1 text-xs uppercase tracking-wider hover:opacity-75 transition-colors focus-visible:outline-2 focus-visible:outline-offset-4 focus-visible:outline-primary"><span class="block h-[0.75em] w-12 rounded-sm bg-accent"></span></div>
@@ -79,6 +83,8 @@ Global sticky top navigation bar component, integrating brand LOGO skeleton, sit
     </nav>
   </div>
 </header>
+<!-- Region: Mobile Navigation Drawer -->
+
 <dialog class="fixed inset-y-0 left-0 m-0 h-dvh max-h-none w-80 max-w-[calc(100vw-2rem)] overflow-y-auto overscroll-contain border-0 bg-surface p-6 text-content shadow-xl backdrop:bg-black/50">
   <div class="mb-6 flex items-center justify-between gap-4">
     <span class="relative flex h-8 w-28 items-center justify-center overflow-hidden rounded-lg bg-accent select-none text-xs font-semibold tracking-widest text-muted">LOGO</span>
@@ -103,7 +109,7 @@ Global sticky top navigation bar component, integrating brand LOGO skeleton, sit
 ### JavaScript
 
 ```javascript
-export class Header extends HTMLElement {
+class Header extends HTMLElement {
   static observedAttributes = ['is-logged-in', 'cart-count', 'wishlist-count', 'theme'];
 
   constructor() {
@@ -342,5 +348,9 @@ export class Header extends HTMLElement {
         </div>
       </dialog>`;
   }
+}
+
+if (!customElements.get('header-03')) {
+  customElements.define('header-03', Header);
 }
 ```

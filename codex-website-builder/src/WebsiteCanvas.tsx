@@ -105,6 +105,17 @@ export function WebsiteCanvas({ background }: { background: ReactNode }) {
   const [panMode, setPanMode] = useState(false);
   const [dragging, setDragging] = useState(false);
   const stage = useRef<HTMLDivElement>(null);
+  const world = useRef<HTMLDivElement>(null);
+  const [columns, setColumns] = useState(3);
+  useEffect(() => {
+    if (!stage.current) return;
+    const observer = new ResizeObserver(([entry]) => {
+      const widest = Math.max(width, ...Object.values(widths));
+      setColumns(clamp(Math.floor((entry.contentRect.width - 120) / ((widest + 72) * .26)), 1, 3));
+    });
+    observer.observe(stage.current);
+    return () => observer.disconnect();
+  }, [width, widths]);
   const drag = useRef<{ x: number; y: number; view: View } | null>(null);
   const sequence = useRef(0);
   const projectMode=useRef(false);
@@ -197,7 +208,7 @@ export function WebsiteCanvas({ background }: { background: ReactNode }) {
       const bounds = stage.current?.getBoundingClientRect(); if (!bounds) return;
       const x = event.x - bounds.left, y = event.y - bounds.top;
       setView(current => {
-        const zoom = clamp(current.zoom * Math.exp(-event.dy * .002), .04, 1.5);
+        const zoom = clamp(current.zoom * Math.exp(-event.dy * .002), .02, 1.5);
         return { x: x - (x - current.x) * zoom / current.zoom, y: y - (y - current.y) * zoom / current.zoom, zoom };
       });
     } else setView(current => ({ ...current, x: current.x - event.dx, y: current.y - event.dy }));
@@ -215,14 +226,16 @@ export function WebsiteCanvas({ background }: { background: ReactNode }) {
   };
   const focusPage = (path: string) => {
     setSelected(path);
-    let x = 0;
-    for (const page of site?.pages ?? []) { if (page.path === path) break; x += (widths[page.path] ?? width) + 72; }
-    setView(current => ({ ...current, x: 28 - x * current.zoom, y: 30 }));
+    const panel = Array.from(world.current?.children || []).find(element => (element as HTMLElement).dataset.page === path) as HTMLElement | undefined;
+    if (panel) setView(current => ({ ...current, x: 28 - panel.offsetLeft * current.zoom, y: 30 - panel.offsetTop * current.zoom }));
   };
   const fitAll = () => {
     const count = site?.pages.length ?? 0, viewport = stage.current; if (!count || !viewport) return;
-    const total = site!.pages.reduce((sum, page) => sum + (widths[page.path] ?? width), 0) + (count - 1) * 72;
-    setView({ x: 28, y: 30, zoom: clamp((viewport.clientWidth - 56) / total, .04, 1) });
+    if (!world.current) return;
+    const rows = Math.ceil(count / columns), fixedLabels = rows * 52;
+    const scalableHeight = Math.max(1, world.current.offsetHeight - fixedLabels / view.zoom);
+    const zoom = Math.min((viewport.clientWidth - 120) / world.current.offsetWidth, (viewport.clientHeight - 70 - fixedLabels) / scalableHeight);
+    setView({ x: 28, y: 30, zoom: clamp(zoom, .02, 1) });
   };
   const move = (direction: number) => setSite(current => {
     if (!current) return current;
@@ -247,7 +260,7 @@ export function WebsiteCanvas({ background }: { background: ReactNode }) {
           onPointerUp={() => { drag.current = null; setDragging(false); }} onPointerCancel={() => { drag.current = null; setDragging(false); }}>
           {background}
           {!site && loading && <div className="empty-state"><div className="canvas-loader" role="progressbar" aria-label="正在载入网站页面" /></div>}
-          <div className="canvas-world" style={{ transform: `translate(${view.x}px, ${view.y}px) scale(${view.zoom})` }}>
+          <div ref={world} className="canvas-world" data-columns={columns} style={{ gridTemplateColumns: `repeat(${columns}, max-content)`, transform: `translate(${view.x}px, ${view.y}px) scale(${view.zoom})` }}>
             {site?.pages.map((page, index) => <PageFrame key={`${site.directory}/${page.path}`} page={page} storage={storage} index={index} width={widths[page.path] ?? width} selected={selected === page.path} select={setSelected} wheel={wheel} notify={setNotice} />)}
           </div>
           <nav className="tool-rail" aria-label="画布工具栏" onPointerDown={event => event.stopPropagation()}>
@@ -265,7 +278,7 @@ export function WebsiteCanvas({ background }: { background: ReactNode }) {
             <div className="popover-heading"><strong>{popover === 'width' ? '页面宽度' : popover === 'pages' ? `网站页面 · ${site?.pages.length ?? 0}` : '画布缩放'}</strong><button aria-label="关闭工具面板" onClick={() => setPopover(null)}>×</button></div>
             {popover === 'width' && <><label>统一宽度<select aria-label="统一宽度" value={width} onChange={event => { setWidth(Number(event.target.value)); setWidths({}); }}><option value="375">手机 · 375 px</option><option value="768">平板 · 768 px</option><option value="1280">桌面 · 1280 px</option><option value="1440">宽屏 · 1440 px</option></select></label><p className="selected-file">当前：{selected}</p><label>单页宽度<input aria-label="当前页面宽度" type="number" min="320" max="2560" value={widths[selected] ?? width} onChange={event => { const value = event.target.valueAsNumber; if (value >= 320 && value <= 2560) setWidths(current => ({ ...current, [selected]: value })); }} />px</label><div className="order-buttons"><button aria-label="页面前移" onClick={() => move(-1)}>← 前移</button><button aria-label="页面后移" onClick={() => move(1)}>后移 →</button></div></>}
             {popover === 'pages' && <>{site?.projectId?<><label>当前项目<select aria-label="当前项目" value={site.projectId} onChange={event=>void switchProject(event.target.value)}>{projectList.map(project=><option key={project.id} value={project.id}>{project.name}</option>)}</select></label><p className="resource-note">在会话中描述需求即可生成网站；指定页面可单独修改或重新生成。</p></>:<form onSubmit={event => { event.preventDefault(); void load(directory); }}><label htmlFor="site-directory">网站目录</label><input id="site-directory" value={directory} onChange={event => setDirectory(event.target.value)} /><button disabled={loading}>识别网站</button></form>}<div className="page-list">{site?.pages.map((page,index) => <button className={selected === page.path ? 'current' : ''} key={page.path} onClick={() => focusPage(page.path)}>{String(index+1).padStart(2,'0')}<span>{page.path}</span>{page.status&&page.status!=='ready'?<small>{page.status==='queued'?'待生成':page.status==='generating'?'生成中':'失败'}</small>:null}</button>)}</div>{site?.warnings.map(text => <p className="resource-note" key={text}>{text}</p>)}</>}
-            {popover === 'zoom' && <><div className="zoom-row"><button aria-label="缩小画布" onClick={() => changeZoom(clamp(view.zoom / 1.25, .04, 1.5))}>−</button><span>{Math.round(view.zoom*100)}%</span><button aria-label="放大画布" onClick={() => changeZoom(clamp(view.zoom*1.25,.04,1.5))}>+</button></div><input aria-label="缩放比例" type="range" min="4" max="150" value={view.zoom*100} onChange={event => changeZoom(Number(event.target.value)/100)} /><button className="full-button" onClick={fitAll}>所有页面适合画布</button></>}
+            {popover === 'zoom' && <><div className="zoom-row"><button aria-label="缩小画布" onClick={() => changeZoom(clamp(view.zoom / 1.25, .02, 1.5))}>−</button><span>{Math.round(view.zoom*100)}%</span><button aria-label="放大画布" onClick={() => changeZoom(clamp(view.zoom*1.25,.02,1.5))}>+</button></div><input aria-label="缩放比例" type="range" min="2" max="150" value={view.zoom*100} onChange={event => changeZoom(Number(event.target.value)/100)} /><button className="full-button" onClick={fitAll}>所有页面适合画布</button></>}
           </div>}
           <div className="canvas-help">空白处拖动画布 · 滚轮平移 · Ctrl / ⌘ + 滚轮缩放 · 页面内直接交互</div>
         </div>

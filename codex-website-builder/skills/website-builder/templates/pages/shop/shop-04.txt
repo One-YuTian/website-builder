@@ -1,26 +1,25 @@
 ## Overview
 
-Main catalog shopping listing page, integrating page title skeleton, price and popularity sorting toolbar, total item count indicator, and multi-column adaptive product card grid.
+Shop catalog page, integrating page title, multi-dimensional filter sidebar, sorting toolbar, item counter, and responsive multi-column product card grid.
 
-### Layout & Regions
-- `page-header`: Breadcrumb and shop page title skeleton.
-- `toolbar`: Sorting dropdown (Price Low-High, High-Low, Newest) and view mode toggle (Grid/List).
-- `product-grid`: Multi-column product card grid.
-- `pagination`: Page number navigation bar.
+### Regions
+Functional regions are annotated directly in the component code implementation via English comments.
+
 
 ### Dimensions & Responsiveness
-- Follows global design system, outer container uses `content-container` with PC max content width 1200px centered.
-- Desktop (1024px+): 4 columns equal-width grid.
+- Follows `content-container` with PC max content width 1200px centered.
+- Desktop (1024px+): 4 equal columns with optional 260px filter sidebar on left.
 - Mobile (under 768px): 2 compact columns with wrapped toolbar.
 
 ### Attributes & Props
 | Attribute | Description | Type | Default |
 | --- | --- | --- | --- |
-| `sort-by` | Current sorting criterion | `'default' \| 'price-asc' \| 'price-desc'` | `'default'` |
+| `defaultSort` | Default sorting rule | `string` | `'default'` |
+| `itemCount` | Initial product count | `number` | `8` |
 
 ### Events
-- `shop-sort`: Dispatched when user changes sorting options.
-- `shop-page`: Dispatched when navigating page numbers.
+- `product-navigate`: Dispatched when clicking product card.
+- `shop-sort`: Dispatched when changing sorting order.
 
 ## Code
 
@@ -30,6 +29,8 @@ Main catalog shopping listing page, integrating page title skeleton, price and p
 <section class="bg-surface font-sans text-content py-6 sm:py-8">
   <div class="content-container">
     <div class="flex flex-col lg:flex-row gap-6 lg:gap-8">
+      <!-- Region: Filter Sidebar - Faceted search, categories, and price sliders -->
+
       <aside data-region="sidebar" class="hidden lg:block lg:w-64 lg:shrink-0">
         <div class="bg-surface rounded-xl border border-outline/60 p-5 sticky top-24 shadow-xs space-y-6">
           <div>
@@ -71,6 +72,8 @@ Main catalog shopping listing page, integrating page title skeleton, price and p
       </aside>
 
       <div class="flex-1">
+        <!-- Region: Catalog Toolbar - Item count, sorting dropdown, and view mode toggle -->
+
         <div data-region="toolbar" class="flex flex-wrap sm:flex-nowrap items-center justify-between mb-6 p-3 bg-accent/30 rounded-xl border border-outline/40 gap-3">
           <div class="flex items-center justify-between w-full sm:w-auto gap-3">
             <button id="mobile-filter-btn" type="button" class="lg:hidden flex items-center gap-2 border border-outline/60 bg-surface rounded-lg px-3 py-1.5 text-sm text-content hover:border-primary/50 cursor-pointer shadow-xs shrink-0">
@@ -109,6 +112,9 @@ Main catalog shopping listing page, integrating page title skeleton, price and p
             <span id="product-count" class="font-bold text-content ml-1">8</span>
           </div>
         </div>
+
+        <!-- Region: Products Grid - Responsive product card showcase -->
+
 
         <div data-region="products-grid" id="products-grid" class="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-4 gap-4 md:gap-6"></div>
       </div>
@@ -221,6 +227,7 @@ $(function() {
     render(currentList);
   }
 
+  // Mobile / Tablet Drawer Open / Close
   function openDrawer() {
     $('#mobile-filter-drawer').removeClass('hidden');
     $('input[name="mobile-shop-category"][value="' + currentCategory + '"]').prop('checked', true);
@@ -241,6 +248,7 @@ $(function() {
     closeDrawer();
   });
 
+  // Desktop sidebar filters
   $('input[name="shop-category"]').on('change', function() {
     const cat = $(this).val();
     const min = parseFloat($('#shop-price-min').val());
@@ -255,6 +263,7 @@ $(function() {
     applyFilters(cat, min, max);
   });
 
+  // Custom Dropdown Sort
   $('[data-dropdown="sort"] [data-dropdown-trigger]').on('click', function(e) {
     e.stopPropagation();
     const $menu = $(this).siblings('[data-dropdown-menu]');

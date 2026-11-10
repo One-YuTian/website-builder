@@ -6,7 +6,7 @@
  * - Level 1: list       -> Returns catalog list with 1-sentence summaries.
  * - Level 2: doc <id>   -> Returns ## Overview (layout, dimensions, attributes, events).
  * - Level 3: code <id>  -> Returns ## Code (HTML, JavaScript, CSS).
- * - Utility: select     -> Algorithmically selects or randomly samples component combinations for a page.
+ * - Utility: select     -> Lists unranked candidates for Agent-led visual design.
  */
 
 import fs from 'node:fs';
@@ -147,178 +147,15 @@ switch (command) {
   }
 
   case 'select': {
-    const page = (args.find(a => a.startsWith('--page=')) || '').replace('--page=', '') || 'home';
-    const requestedTheme = (args.find(a => a.startsWith('--theme=')) || '').replace('--theme=', '');
-    const requestedLayout = (args.find(a => a.startsWith('--layout=')) || '').replace('--layout=', '');
-    const isRandom = args.includes('--random') || (!args.some(a => a.startsWith('--page=')) && !requestedTheme);
-
-    // Theme Palettes & Design System Presets
-    const themePalettes = {
-      'indigo': {
-        name: 'Modern Tech & SaaS (Indigo)',
-        primary: '#4f46e5',
-        accent: '#eef2ff',
-        surface: '#ffffff',
-        content: '#0f172a',
-        muted: '#64748b',
-        outline: '#e2e8f0',
-        contentMaxWidth: '1280px',
-        radii: { sm: '4px', md: '8px', lg: '12px', xl: '16px' },
-        vibe: 'Sharp, modern, high-tech, crisp'
-      },
-      'emerald': {
-        name: 'Organic & Outdoor (Emerald)',
-        primary: '#059669',
-        accent: '#ecfdf5',
-        surface: '#ffffff',
-        content: '#064e3b',
-        muted: '#6b7280',
-        outline: '#d1fae5',
-        contentMaxWidth: '1200px',
-        radii: { sm: '6px', md: '10px', lg: '16px', xl: '24px' },
-        vibe: 'Warm, natural, eco-friendly, soft'
-      },
-      'mono': {
-        name: 'Editorial Luxury & Minimal (Zinc/Mono)',
-        primary: '#18181b',
-        accent: '#f4f4f5',
-        surface: '#ffffff',
-        content: '#09090b',
-        muted: '#71717a',
-        outline: '#e4e4e7',
-        contentMaxWidth: '1400px',
-        radii: { sm: '0px', md: '2px', lg: '4px', xl: '6px' },
-        vibe: 'High fashion, architectural, sharp geometric'
-      },
-      'rose': {
-        name: 'Glamour & Lifestyle (Rose)',
-        primary: '#e11d48',
-        accent: '#fff1f2',
-        surface: '#ffffff',
-        content: '#1e293b',
-        muted: '#64748b',
-        outline: '#ffe4e6',
-        contentMaxWidth: '1240px',
-        radii: { sm: '8px', md: '12px', lg: '20px', xl: '32px' },
-        vibe: 'Youthful, vibrant, friendly, curved'
-      },
-      'amber': {
-        name: 'Artisan & Vintage (Amber Bronze)',
-        primary: '#d97706',
-        accent: '#fef3c7',
-        surface: '#ffffff',
-        content: '#1c1917',
-        muted: '#78716c',
-        outline: '#e7e5e4',
-        contentMaxWidth: '1200px',
-        radii: { sm: '4px', md: '6px', lg: '10px', xl: '14px' },
-        vibe: 'Handcrafted, classic, heritage, trustworthy'
-      }
-    };
-
-    const themeKeys = Object.keys(themePalettes);
-    const activeThemeKey = requestedTheme && themePalettes[requestedTheme]
-      ? requestedTheme
-      : themeKeys[Math.floor(Math.random() * themeKeys.length)];
-    const activeTheme = themePalettes[activeThemeKey];
-
-    // Homepage Layout Archetypes
-    const homeLayouts = {
-      pulse: {
-        name: 'Pulse & Flash Sale Focus (Fast-paced promotion & countdown)',
-        slots: ['header', 'carousel', 'flashsale', 'productlist', 'categories', 'promotion', 'services', 'footer']
-      },
-      editorial: {
-        name: 'Editorial & Brand Narrative (Magazine style storytelling)',
-        slots: ['header', 'carousel', 'promotion', 'categories', 'productlist', 'services', 'footer']
-      },
-      discovery: {
-        name: 'Catalog & Discovery Matrix (Category tiles upfront)',
-        slots: ['header', 'categories', 'carousel', 'productlist', 'flashsale', 'services', 'footer']
-      },
-      clean: {
-        name: 'Minimalist Boutique (Streamlined hero & curated shelf)',
-        slots: ['header', 'carousel', 'productlist', 'promotion', 'services', 'footer']
-      }
-    };
-
-    const layoutKeys = Object.keys(homeLayouts);
-    const activeLayoutKey = requestedLayout && homeLayouts[requestedLayout]
-      ? requestedLayout
-      : (page === 'home' ? layoutKeys[Math.floor(Math.random() * layoutKeys.length)] : 'default');
-
-    const otherPageSlots = {
-      shop: ['header', 'shop', 'services', 'footer'],
-      product: ['header', 'detail', 'services', 'footer'],
-      cart: ['header', 'cart', 'footer'],
-      wishlist: ['header', 'wishlist', 'footer'],
-      checkout: ['header', 'checkout', 'footer'],
-      login: ['header', 'login', 'footer'],
-      register: ['header', 'register', 'footer'],
-      about: ['header', 'about', 'services', 'footer'],
-      contact: ['header', 'contact', 'footer']
-    };
-
-    const slots = page === 'home' ? homeLayouts[activeLayoutKey].slots : (otherPageSlots[page] || otherPageSlots.shop);
-
-    // Filter and pick diverse non-01 templates
-    const selected = [];
-    for (const cat of slots) {
-      const matches = Array.from(templates.values()).filter(t => t.category === cat);
-      if (matches.length === 0) continue;
-
-      let pick;
-      if (isRandom || matches.length > 1) {
-        // Exclude always picking the 0-th item (-01) when alternatives exist!
-        const nonFirst = matches.slice(1);
-        const pool = nonFirst.length > 0 ? nonFirst : matches;
-        pick = pool[Math.floor(Math.random() * pool.length)];
-      } else {
-        pick = matches[0];
-      }
-      selected.push(pick);
-    }
-
-    console.log(`\n========================================================================`);
-    console.log(`  WEBSITE BUILDER DIVERSE COMPOSITION: ${page.toUpperCase()}`);
-    console.log(`========================================================================\n`);
-
-    console.log(`### 1. Recommended Theme Palette: "${activeTheme.name}"`);
-    console.log(`- Primary Color: ${activeTheme.primary} | Accent: ${activeTheme.accent} | Surface: ${activeTheme.surface}`);
-    console.log(`- Content Max Width: ${activeTheme.contentMaxWidth} | Vibe: ${activeTheme.vibe}`);
-    console.log(`- Radius Scale: sm: ${activeTheme.radii.sm}, md: ${activeTheme.radii.md}, lg: ${activeTheme.radii.lg}, xl: ${activeTheme.radii.xl}\n`);
-
-    if (page === 'home') {
-      console.log(`### 2. Selected Homepage Layout Archetype: "${homeLayouts[activeLayoutKey].name}"\n`);
-    }
-
-    console.log(`### 3. Diverse Template Slots (Strictly Non-Homogeneous):\n`);
-    console.log('| Slot | Template ID | Category | Group | Source Retrieval Command |');
-    console.log('| --- | --- | --- | --- | --- |');
-    selected.forEach((s, idx) => {
-      console.log(`| ${idx + 1}. ${s.category} | \`${s.id}\` | ${s.category} | ${s.group} | \`node scripts/read-template.mjs code ${s.id}\` |`);
-    });
-
-    console.log(`\n### 4. Code Snippet for app.js (Tailwind Config Integration):\n`);
-    console.log('```javascript');
-    console.log(`window.tailwind = window.tailwind || {};`);
-    console.log(`window.tailwind.config = {`);
-    console.log(`  theme: {`);
-    console.log(`    extend: {`);
-    console.log(`      colors: {`);
-    console.log(`        primary: '${activeTheme.primary}',`);
-    console.log(`        accent: '${activeTheme.accent}',`);
-    console.log(`        surface: '${activeTheme.surface}',`);
-    console.log(`        content: '${activeTheme.content}',`);
-    console.log(`        muted: '${activeTheme.muted}',`);
-    console.log(`        outline: '${activeTheme.outline}',`);
-    console.log(`      },`);
-    console.log(`      maxWidth: { content: '${activeTheme.contentMaxWidth}' },`);
-    console.log(`      borderRadius: ${JSON.stringify(activeTheme.radii)}`);
-    console.log(`    }`);
-    console.log(`  }`);
-    console.log(`};`);
-    console.log('```\n');
+    const catalog = JSON.parse(fs.readFileSync(path.resolve(__dirname, '../catalog.json'), 'utf8'));
+    const categories = [...new Set(catalog.map(item => item.category))];
+    console.log(JSON.stringify({
+      selection: 'Unranked candidates. Agent must decide brand palette, light/dark strategy, content widths and compatible layout before choosing templates. Use only needed sections; -01 is valid. No automatic or random theme/layout selection.',
+      categories: categories.map(category => ({
+        category,
+        candidates: catalog.filter(item => item.category === category).map(({ id, summary }) => ({ id, summary }))
+      }))
+    }, null, 2));
     break;
   }
 
@@ -336,8 +173,8 @@ Commands:
   node scripts/read-template.mjs code <id> [html|js|css]
     Level 3: Display raw source code for component (e.g. code header-01 js)
 
-  node scripts/read-template.mjs select --page=home [--random]
-    Algorithmically select component composition for standard website pages
+  node scripts/read-template.mjs select
+    List candidates; Agent decides the visual system and compatible composition
 `);
     break;
 }

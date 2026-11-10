@@ -13,16 +13,23 @@ const contentDocsDir = path.resolve(starlightDir, 'src/content/docs');
 const publicDir = path.resolve(starlightDir, 'public');
 const publicLlmsDir = path.join(publicDir, 'llms');
 
+function assertInside(base, target) {
+  const relative = path.relative(path.resolve(base), path.resolve(target));
+  if (!relative || relative === '..' || relative.startsWith('..' + path.sep) || path.isAbsolute(relative)) throw new Error(`Unsafe generated path: ${target}`);
+}
+
 // Clean up old directories
 for (const old of ['card', 'carousel', 'footer', 'header', 'productlist', 'components', 'blocks', 'pages']) {
   const p = path.join(contentDocsDir, old);
   if (fs.existsSync(p)) {
+    assertInside(contentDocsDir, p);
     fs.rmSync(p, { recursive: true, force: true, maxRetries: 5, retryDelay: 200 });
   }
 }
 
 // Clean up public llms directory
 if (fs.existsSync(publicLlmsDir)) {
+  assertInside(publicDir, publicLlmsDir);
   fs.rmSync(publicLlmsDir, { recursive: true, force: true, maxRetries: 5, retryDelay: 200 });
 }
 
@@ -30,28 +37,76 @@ if (fs.existsSync(publicLlmsDir)) {
 fs.mkdirSync(path.join(contentDocsDir, 'guides'), { recursive: true });
 fs.mkdirSync(publicLlmsDir, { recursive: true });
 
-// Helper: Extract actual demo code (HTML, JavaScript, CSS) from standalone preview document
-function extractDemoCode(fullHtml) {
-  if (!fullHtml) return { html: '', js: '', css: '' };
+// Helper: Extract actual component HTML from demo or source template
+function getComponentHtml(entry, fullHtml) {
+  // If entry has a template.html in its source directory
+  const templatePath = path.join(storybook2Dir, `src/components/${entry.id}/template.html`);
+  if (fs.existsSync(templatePath)) {
+    const raw = fs.readFileSync(templatePath, 'utf8').trim();
+    if (raw) return raw;
+  }
 
-  // 1. Extract body content between <body> and <script>
-  const bodyMatch = fullHtml.match(/<body[^>]*>([\s\S]*?)<script[^>]*>/i);
-  let html = bodyMatch ? bodyMatch[1].trim() : '';
+  // Fallback: extract body content between <body> and <script> from demo HTML
+  if (fullHtml) {
+    const bodyMatch = fullHtml.match(/<body[^>]*>([\s\S]*?)<script[^>]*>/i);
+    if (bodyMatch) return bodyMatch[1].trim();
+  }
 
-  // 2. Extract script content inside <script>...</script>
-  const scriptMatch = fullHtml.match(/<script[^>]*>([\s\S]*?)<\/script>/i);
-  let js = scriptMatch ? scriptMatch[1].trim() : '';
+  return `<${entry.id}></${entry.id}>`;
+}
 
-  // 3. Extract CSS inside <style>...</style> if any
+// Helper: Extract pure component JavaScript (ONLY the component's own code, no sandbox/Skeleton/theme boilerplate)
+function getPureComponentJs(entry) {
+  const compDir = path.join(storybook2Dir, 'src/components', entry.id);
+  const indexPath = path.join(compDir, 'index.js');
+  if (!fs.existsSync(indexPath)) return '';
+
+  let code = fs.readFileSync(indexPath, 'utf8').trim();
+
+  // If it is a Web Component class
+  if (code.includes('extends HTMLElement')) {
+    const classMatch = code.match(/class\s+([A-Za-z0-9_]+)\s+extends\s+HTMLElement/);
+    const className = classMatch ? classMatch[1] : 'Component';
+
+    // Remove 'export '
+    code = code.replace(/export\s+class\s+/, 'class ');
+
+    // Append customElements definition if not already registered
+    if (!code.includes(`customElements.define('${entry.id}'`)) {
+      code += `\n\nif (!customElements.get('${entry.id}')) {\n  customElements.define('${entry.id}', ${className});\n}`;
+    }
+  }
+
+  return code.trim();
+}
+
+// Helper: Extract CSS from demo if any
+function extractDemoCss(fullHtml) {
+  if (!fullHtml) return '';
   const styleMatch = fullHtml.match(/<style[^>]*>([\s\S]*?)<\/style>/i);
-  let css = styleMatch ? styleMatch[1].trim() : '';
-
-  return { html, js, css };
+  return styleMatch ? styleMatch[1].trim() : '';
 }
 
 // Escape curly braces in Markdown for MDX compatibility
 function escapeMdxText(text) {
   return text.replace(/([^\`\n]|^)\{([^}\n]+)\}([^\`\n]|$)/g, '$1`{$2}`$3');
+}
+
+function cleanOverview(text) {
+  return text.replace(/^(?:## Overview|# [^\n]+)\s*/i, '').replace(/^## Overview\s*/i, '')
+    .replace(/### (?:Layout[^\n]*|区域[^\n]*)\n[\s\S]*?(?=\n### |$)/gi, '').trim();
+}
+
+// Card overview helper (Pure English for English tab / LLM doc, clean Chinese for Chinese tab)
+function cardOverview(entry, js, chinese = false) {
+  const attributes = js.match(/observedAttributes\s*=\s*\[([^\]]*)\]/)?.[1]?.match(/['"]([^'"]+)['"]/g)?.map(value => value.slice(1, -1)) || [];
+  const actions = [...new Set([...js.matchAll(/data-action=["']([^"']+)["']/g)].map(match => match[1]))];
+  const events = [...new Set([...js.matchAll(/this\.emit\(['"]([^'"]+)['"]/g)].map(match => match[1]))];
+  const productId = js.match(/get productId\(\)[\s\S]*?\|\|\s*['"]([^'"]+)['"]/)?.[1];
+
+  return chinese
+    ? `${entry.name} 商品卡片实例。以本实例源码与模板为准，各功能区域通过英文注释直接标注于代码中。\n\n### 尺寸与适配\n\n保留实际渲染的图片容器比例、Grid/List 分支、宽度和 Tailwind 断点。\n\n### 属性与操作\n\n- 实际 observedAttributes：${attributes.map(value => `\`${value}\``).join('、') || '无'}。${productId ? `product-id 默认值为 \`${productId}\`。` : ''}\n- 本实例操作：${actions.map(value => `\`${value}\``).join('、') || '见组件事件绑定'}。\n- 组件事件：${events.map(value => `\`${value}\``).join('、') || '见源码事件处理'}。`
+    : `${entry.name} product-card component variant. Regions and interactions are annotated directly within the code implementation via English comments.\n\n### Dimensions & Responsiveness\n\nRetains the actual render image-container aspect ratio, Grid/List branches, widths and Tailwind breakpoints.\n\n### Attributes & Operations\n\n- Actual observedAttributes: ${attributes.map(value => `\`${value}\``).join(', ') || 'none'}.${productId ? ` product-id defaults to \`${productId}\`.` : ''}\n- Implemented actions: ${actions.map(value => `\`${value}\``).join(', ') || 'see event binding'}.\n- Component events: ${events.map(value => `\`${value}\``).join(', ') || 'see source event handling'}.`;
 }
 
 // 4. Generate 3-level component documents AND individual LLM text docs
@@ -79,8 +134,14 @@ for (const entry of catalog) {
   const responsivePreview = snippet?.responsive || '';
   const activeDemo = responsivePreview || desktopPreview || '';
 
-  // Extract actual demo implementation code
-  const { html: htmlCode, js: jsCode, css: cssCode } = extractDemoCode(activeDemo);
+  // Extract pure component implementation code
+  const htmlCode = getComponentHtml(entry, activeDemo);
+  const jsCode = getPureComponentJs(entry);
+  const cssCode = extractDemoCss(activeDemo);
+
+  const isCard = ['card', 'flashcard'].includes(level2);
+  const overview = isCard ? cardOverview(entry, jsCode, false) : cleanOverview(enReadmeRaw);
+  const chineseOverview = isCard ? cardOverview(entry, jsCode, true) : cleanOverview(zhReadmeBody);
 
   let previewHeight = '420px';
   if (entry.id === 'header-04') previewHeight = '480px';
@@ -94,7 +155,7 @@ for (const entry of catalog) {
   else if (entry.id.startsWith('about-')) previewHeight = '850px';
   else if (entry.id.startsWith('contact-')) previewHeight = '800px';
 
-  // --- MDX Document (Interactive preview + Bilingual English & Chinese tabs + Actual Demo Code) ---
+  // --- MDX Document (Interactive preview + Bilingual English & Chinese tabs + Actual Annotated Code) ---
   let mdx = `---
 title: ${entry.name}
 description: ${entry.name} Component specification, interactive sandbox, and source code.
@@ -119,12 +180,12 @@ import { Tabs, TabItem } from '@astrojs/starlight/components';
 <Tabs>
 <TabItem label="English">
 
-${escapeMdxText(enReadmeRaw)}
+${escapeMdxText(overview)}
 
 </TabItem>
 <TabItem label="中文">
 
-${escapeMdxText(zhReadmeBody)}
+${escapeMdxText(chineseOverview)}
 
 </TabItem>
 </Tabs>
@@ -153,10 +214,10 @@ ${cssCode.trim()}
 
   fs.writeFileSync(path.join(targetDir, `${entry.id}.mdx`), mdx, 'utf8');
 
-  // --- Dedicated LLM Document (Clean, Unified Structure, Built in English) ---
+  // --- Dedicated LLM Document (Clean, Unified Structure, 100% Pure English, Zero Chinese) ---
   const llmDoc = `## Overview
 
-${enReadmeRaw}
+${overview}
 
 ## Code
 
@@ -178,6 +239,12 @@ ${cssCode ? `
 ${cssCode.trim()}
 \`\`\`
 ` : ''}`;
+
+  // Strict verification: Zero Chinese characters in LLM doc
+  const chineseInLlm = llmDoc.match(/[\u4e00-\u9fa5]/g);
+  if (chineseInLlm) {
+    throw new Error(`Chinese character found in LLM doc for ${entry.id}: ${chineseInLlm.slice(0, 10).join(', ')}`);
+  }
 
   const llmFilePath = path.join(targetLlmsDir, `${entry.id}.txt`);
   fs.writeFileSync(llmFilePath, llmDoc.trim() + '\n', 'utf8');
@@ -290,11 +357,30 @@ ${markupJs.trim()}
 
 fs.writeFileSync(path.join(contentDocsDir, 'guides/theme.mdx'), themeMdx, 'utf8');
 
-// 7. Synchronize LLM templates to website-builder skill templates
-const skillTemplatesDir = path.resolve(rootDir, '.agents/skills/website-builder/templates');
-if (fs.existsSync(skillTemplatesDir)) {
-  fs.cpSync(publicLlmsDir, skillTemplatesDir, { recursive: true });
-  console.log('Synchronized LLM templates to .agents/skills/website-builder/templates');
+// 7. Synchronize LLM templates to website-builder skill templates across all directories
+const targetSkillDirs = [
+  path.resolve(rootDir, '.agents/skills/website-builder/templates'),
+  path.resolve(rootDir, 'codex-website-builder/skills/website-builder/templates')
+];
+
+for (const targetDir of targetSkillDirs) {
+  if (fs.existsSync(path.dirname(targetDir))) {
+    assertInside(rootDir, targetDir);
+    fs.mkdirSync(targetDir, { recursive: true });
+    fs.cpSync(publicLlmsDir, targetDir, { recursive: true });
+    const index = catalog.map(entry => {
+      const group = entry.group.toLowerCase(), category = entry.kind.toLowerCase();
+      return {
+        id: entry.id,
+        group,
+        category,
+        file: `${group}/${category}/${entry.id}.txt`,
+        summary: `${entry.name}: Native Web Component specification, annotated regions, and responsive template.`
+      };
+    });
+    fs.writeFileSync(path.join(path.dirname(targetDir), 'catalog.json'), JSON.stringify(index, null, 2) + '\n', 'utf8');
+    console.log(`Synchronized LLM templates to ${path.relative(rootDir, targetDir)}`);
+  }
 }
 
-console.log('All documents, dedicated LLM files, and skill templates synchronized successfully with actual demo code!');
+console.log('All documents, dedicated LLM files, and skill templates synchronized successfully with pure English and annotated code regions!');

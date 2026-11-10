@@ -1,25 +1,24 @@
 ## Overview
 
-Product Detail Page (PDP), featuring multi-view product gallery skeleton, right-hand purchase action zone (product title, price comparison, color/size variant selectors, quantity stepper, Add to Cart & Buy Now buttons), and specifications accordion.
+Product Detail Page (PDP), integrating multi-view gallery preview, purchase decision region (title, price comparison, SKU swatches, quantity stepper, Add to Cart/Buy Now), and bottom accordion tabs.
 
-### Layout & Regions
-- `gallery`: Product image gallery skeleton with main view and thumbnail carousel.
-- `purchase-box`: Right-hand buy box with title, pricing, variant pickers, stepper, and CTA buttons.
-- `specifications`: Product details and specifications accordion panel.
+### Regions
+Functional regions are annotated directly in the component code implementation via English comments.
+
 
 ### Dimensions & Responsiveness
-- Follows global design system, outer container uses `content-container` with PC max content width 1200px centered.
-- Desktop (1024px+): 5:4 or 1:1 two-column split layout.
-- Mobile (under 1024px): Single-column vertical stack with horizontal swipe gallery.
+- Follows `content-container` with PC max content width 1200px centered.
+- Desktop (1024px+): 1:1 two-column layout (gallery ~550px, summary ~550px).
+- Mobile (under 1024px): Adapts to single vertical column with swipeable gallery.
 
 ### Attributes & Props
 | Attribute | Description | Type | Default |
 | --- | --- | --- | --- |
-| `product-id` | Product identifier | `string` | `'detail-product-1'` |
+| `productId` | Product ID displayed | `string` | `'product-01'` |
 
 ### Events
-- `detail-add-cart`: Dispatched when clicking Add to Cart.
-- `detail-buy-now`: Dispatched when clicking Buy Now.
+- `product-navigate`: Dispatched when clicking recommended product.
+- `gallery-change`: Dispatched when switching thumbnail view.
 
 ## Code
 
@@ -28,6 +27,8 @@ Product Detail Page (PDP), featuring multi-view product gallery skeleton, right-
 ```html
 <section class="bg-surface font-sans text-content py-6 sm:py-8">
   <div class="content-container">
+    <!-- Region: Breadcrumb Navigation - Page hierarchy and navigation trail -->
+
     <nav data-region="breadcrumb" class="mb-6">
       <div class="flex items-center gap-2 text-sm text-muted">
         <span class="block h-[0.75em] w-12 rounded-sm bg-accent"></span>
@@ -38,7 +39,12 @@ Product Detail Page (PDP), featuring multi-view product gallery skeleton, right-
       </div>
     </nav>
 
+    <!-- Region: Product Details - Media gallery, purchase panel, and specifications -->
+
+
     <div data-region="product-details" class="grid grid-cols-1 lg:grid-cols-5 gap-6 md:gap-12 mb-8 md:mb-12">
+      <!-- Region: Media Gallery - Main product image view and thumbnail carousel -->
+
       <div data-region="gallery" class="lg:col-span-2 lg:sticky lg:top-24 lg:self-start space-y-4">
         <div class="relative aspect-square w-full rounded-2xl bg-accent overflow-hidden flex items-center justify-center border border-outline/40">
           <span class="relative block aspect-[6/5] w-20 overflow-hidden rounded-sm border border-muted">
@@ -129,6 +135,9 @@ Product Detail Page (PDP), featuring multi-view product gallery skeleton, right-
         </div>
       </div>
 
+      <!-- Region: Product Info & Purchase - Title, price, variant options, and buy CTAs -->
+
+
       <div data-region="info" class="lg:col-span-3 space-y-6">
         <div>
           <span class="block h-[1.25em] w-4/5 rounded-sm bg-accent text-2xl md:text-3xl mb-3"></span>
@@ -207,6 +216,9 @@ Product Detail Page (PDP), featuring multi-view product gallery skeleton, right-
       </div>
     </div>
 
+    <!-- Region: Information Tabs - Description, specifications, and customer reviews -->
+
+
     <div data-region="tabs" class="mb-10 sm:mb-16">
       <div class="border-b border-outline/40 mb-6">
         <nav class="flex space-x-6 sm:space-x-8" id="product-tabs-nav">
@@ -266,7 +278,7 @@ Product Detail Page (PDP), featuring multi-view product gallery skeleton, right-
               <span class="block h-[0.75em] w-4/5 rounded-sm bg-accent"></span>
             </div>
 
-            <!-- 商家回复 / 评论回复 (Seller Reply) -->
+            <!-- Seller Reply -->
             <div class="mt-3 ml-4 sm:ml-6 pl-3 sm:pl-4 border-l-2 border-primary/40 space-y-2 bg-accent/10 py-2.5 px-3 rounded-r-lg">
               <div class="flex items-center justify-between">
                 <span class="block h-4 w-16 rounded-xs bg-primary/20"></span>
@@ -299,7 +311,7 @@ Product Detail Page (PDP), featuring multi-view product gallery skeleton, right-
               <span class="block h-[0.75em] w-3/5 rounded-sm bg-accent"></span>
             </div>
 
-            <!-- 商家回复 / 评论回复 (Seller Reply) -->
+            <!-- Seller Reply -->
             <div class="mt-3 ml-4 sm:ml-6 pl-3 sm:pl-4 border-l-2 border-primary/40 space-y-2 bg-accent/10 py-2.5 px-3 rounded-r-lg">
               <div class="flex items-center justify-between">
                 <span class="block h-4 w-16 rounded-xs bg-primary/20"></span>
@@ -311,6 +323,9 @@ Product Detail Page (PDP), featuring multi-view product gallery skeleton, right-
         </div>
       </div>
     </div>
+
+    <!-- Region: Related Recommendations - Cross-sell product cards -->
+
 
     <div data-region="related-products">
       <div class="text-center mb-6 sm:mb-8">
@@ -377,6 +392,7 @@ $(function() {
     this.dispatchEvent(event);
   });
 
+  // Tab switching
   $('#product-tabs-nav .tab-btn').on('click', function() {
     const tab = $(this).data('tab');
     $('#product-tabs-nav .tab-btn').removeClass('border-primary text-primary').addClass('border-transparent text-muted');

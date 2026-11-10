@@ -2,17 +2,13 @@
 
 Global sticky top navigation bar component, integrating brand LOGO skeleton, site-wide predictive search bar, user authentication & account portal, wishlist & cart counter badges, and horizontal category navigation menu. Features sticky positioning upon scroll and lightweight slide-out mobile drawer navigation.
 
-### Layout & Regions
-- `header-content`: Main navigation container, centered according to global max content width.
-- `logo-area`: Brand logo display area with neutral `LOGO` placeholder skeleton.
-- `search`: Global search bar skeleton with magnifying glass icon and search suggestion dropdown placeholder.
-- `account-panel`: User login status and account quick actions panel.
-- `action-icons`: Includes wishlist, cart badge counter, and mobile hamburger menu trigger button.
-- `navigation`: Desktop horizontal main category list; automatically collapses into mobile drawer.
+### Regions
+Functional regions are annotated directly in the component code implementation via English comments.
+
 
 ### Dimensions & Responsiveness
-- Desktop (1024px+): Fixed height of 68px~76px, follows global `content-container` with max content width 1200px centered, supports sticky positioning during page scrolling.
-- Tablet & Mobile (under 1024px): Horizontal category list collapses, main bar retains Logo, search, and action icons; hamburger button triggers a 320px smooth slide-out drawer.
+- Desktop (1024px+): Fixed height 68px~76px, follows global `content-container` with max content width 1200px centered, supports sticky positioning during page scrolling.
+- Tablet & Mobile (under 1024px): Horizontal category list collapses, main bar retains Logo, search, and action icons; hamburger button triggers 320px smooth slide-out drawer.
 
 ### Attributes & Props
 | Attribute | Description | Type | Default |
@@ -35,11 +31,19 @@ Global sticky top navigation bar component, integrating brand LOGO skeleton, sit
 ```html
 <header class="bg-secondary font-sans text-on-secondary py-3 w-full">
   <div class="content-container flex items-center justify-between gap-4">
+    <!-- Region: Desktop Navigation - Main category links -->
+
+    <!-- Region: Primary Navigation Menu -->
+
+
     <nav data-region="desktop-nav" class="hidden md:flex items-center gap-6 flex-1">
       <span class="block h-[0.75em] w-12 rounded-sm bg-accent"></span>
       <span class="block h-[0.75em] w-10 rounded-sm bg-accent"></span>
       <span class="block h-[0.75em] w-12 rounded-sm bg-accent"></span>
     </nav>
+
+    <!-- Region: Brand Identity (Logo) - Neutral LOGO placeholder with link to home -->
+
 
     <div data-region="logo" class="flex-shrink-0 flex items-center justify-center">
       <div role="button" tabindex="0" class="flex items-center rounded-lg focus-visible:outline-2 focus-visible:outline-offset-4 focus-visible:outline-primary">
@@ -71,7 +75,7 @@ Global sticky top navigation bar component, integrating brand LOGO skeleton, sit
 ### JavaScript
 
 ```javascript
-export class Header extends HTMLElement {
+class Header extends HTMLElement {
   static observedAttributes = ['is-logged-in', 'cart-count', 'wishlist-count', 'theme'];
 
   constructor() {
@@ -264,5 +268,9 @@ export class Header extends HTMLElement {
         </dialog>
       </header>`;
   }
+}
+
+if (!customElements.get('header-07')) {
+  customElements.define('header-07', Header);
 }
 ```

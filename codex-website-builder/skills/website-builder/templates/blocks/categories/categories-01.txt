@@ -1,24 +1,23 @@
 ## Overview
 
-E-commerce category navigation and product matrix showcase block, featuring circular/square category icon placeholders, category titles, item count tags, and hover transition feedback to guide catalog exploration.
+Category showcase and navigation block, integrating section title, round/square category thumbnail cards, and item counter badges with smooth hover micro-interactions.
 
-### Layout & Regions
-- `block-header`: Section title skeleton and View All Categories link.
-- `category-grid`: Responsive multi-column grid or smooth horizontal swipe container for category cards.
-- `category-card`: Individual category card with circular/square icon skeleton, title, and count tag.
+### Regions
+Functional regions are annotated directly in the component code implementation via English comments.
+
 
 ### Dimensions & Responsiveness
-- Follows global design system, outer container uses `content-container` with PC max content width 1200px centered.
-- Desktop (1024px+): 6~8 columns equal-width grid display.
-- Mobile (under 1024px): Adapts to 2~3 compact grid columns or horizontal scrollable list.
+- Follows `content-container` with max content width 1200px centered.
+- Desktop (1024px+): 4~6 column circular or square cards evenly distributed.
+- Mobile (under 768px): Adapts to 3 compact columns or horizontal swipe slider.
 
 ### Attributes & Props
 | Attribute | Description | Type | Default |
 | --- | --- | --- | --- |
-| `columns` | Grid column count configuration | `number` | `6` |
+| `limit` | Max categories displayed | `number` | `6` |
 
 ### Events
-- `category-navigate`: Dispatched when clicking a category card.
+- `category-navigate`: Dispatched when clicking a category card, providing category ID.
 
 ## Code
 
@@ -28,6 +27,8 @@ E-commerce category navigation and product matrix showcase block, featuring circ
 <section class="pb-12 md:pb-16 bg-surface font-sans text-content">
   <div class="content-container">
     <div class="h-8 md:h-10 w-44 bg-accent rounded-sm mx-auto mb-8 md:mb-12"></div>
+    <!-- Region: Category Entrance Cards Grid -->
+
     <div class="grid grid-cols-3 gap-2 md:gap-8 mb-2 md:mb-8">
       
       <div role="button" tabindex="0" class="block bg-surface p-0 md:px-6 md:py-4 md:pb-12 border border-outline/20 rounded-xl hover:shadow-xs transition-shadow cursor-pointer">

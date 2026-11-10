@@ -1,26 +1,25 @@
 ## Overview
 
-Main catalog shopping listing page, integrating page title skeleton, price and popularity sorting toolbar, total item count indicator, and multi-column adaptive product card grid.
+Shop catalog page, integrating page title, multi-dimensional filter sidebar, sorting toolbar, item counter, and responsive multi-column product card grid.
 
-### Layout & Regions
-- `page-header`: Breadcrumb and shop page title skeleton.
-- `toolbar`: Sorting dropdown (Price Low-High, High-Low, Newest) and view mode toggle (Grid/List).
-- `product-grid`: Multi-column product card grid.
-- `pagination`: Page number navigation bar.
+### Regions
+Functional regions are annotated directly in the component code implementation via English comments.
+
 
 ### Dimensions & Responsiveness
-- Follows global design system, outer container uses `content-container` with PC max content width 1200px centered.
-- Desktop (1024px+): 4 columns equal-width grid.
+- Follows `content-container` with PC max content width 1200px centered.
+- Desktop (1024px+): 4 equal columns with optional 260px filter sidebar on left.
 - Mobile (under 768px): 2 compact columns with wrapped toolbar.
 
 ### Attributes & Props
 | Attribute | Description | Type | Default |
 | --- | --- | --- | --- |
-| `sort-by` | Current sorting criterion | `'default' \| 'price-asc' \| 'price-desc'` | `'default'` |
+| `defaultSort` | Default sorting rule | `string` | `'default'` |
+| `itemCount` | Initial product count | `number` | `8` |
 
 ### Events
-- `shop-sort`: Dispatched when user changes sorting options.
-- `shop-page`: Dispatched when navigating page numbers.
+- `product-navigate`: Dispatched when clicking product card.
+- `shop-sort`: Dispatched when changing sorting order.
 
 ## Code
 
@@ -29,12 +28,16 @@ Main catalog shopping listing page, integrating page title skeleton, price and p
 ```html
 <section class="bg-surface font-sans text-content py-6 sm:py-8">
   <div class="content-container">
+    <!-- Region: Page Header - Title, subtitle, and breadcrumb -->
+
     <div data-region="page-header" class="mb-6 sm:mb-8">
       <span class="block h-[1em] w-32 rounded-sm bg-accent text-3xl mb-2"></span>
       <span class="block h-[0.75em] w-64 rounded-sm bg-accent"></span>
     </div>
 
     <div class="flex flex-col lg:flex-row gap-6 lg:gap-8">
+      <!-- Region: Filter Sidebar - Faceted search, categories, and price sliders -->
+
       <aside data-region="sidebar" class="hidden lg:block lg:w-64 lg:shrink-0">
         <div class="bg-surface rounded-xl border border-outline/60 p-5 sticky top-24 shadow-xs space-y-6">
           <div>
@@ -84,6 +87,8 @@ Main catalog shopping listing page, integrating page title skeleton, price and p
       </aside>
 
       <div class="flex-1">
+        <!-- Region: Catalog Toolbar - Item count, sorting dropdown, and view mode toggle -->
+
         <div data-region="toolbar" class="bg-surface rounded-xl border border-outline/60 p-3.5 sm:p-4 mb-6 shadow-xs flex flex-col sm:flex-row justify-between items-stretch sm:items-center gap-3 sm:gap-4">
           <div class="flex items-center gap-2 text-sm text-muted">
             <span class="text-content font-medium text-xs sm:text-sm">
@@ -141,6 +146,9 @@ Main catalog shopping listing page, integrating page title skeleton, price and p
             </div>
           </div>
         </div>
+
+        <!-- Region: Products Grid - Responsive product card showcase -->
+
 
         <div data-region="products-grid" id="productsContainer" class="grid grid-cols-2 sm:grid-cols-3 gap-4 md:gap-6"></div>
       </div>
@@ -260,6 +268,7 @@ $(function() {
     render(currentList);
   }
 
+  // Mobile / Tablet Drawer
   function openDrawer() {
     $('#mobileFilterDrawer').removeClass('hidden');
     $('input[name="mobile-shop12-cat"][value="' + currentCategory + '"]').prop('checked', true);
@@ -294,6 +303,7 @@ $(function() {
     closeDrawer();
   });
 
+  // Desktop Filters
   $('input[name="shop12-cat"]').on('change', function() {
     currentCategory = $(this).val();
     applyFilters();
@@ -313,6 +323,7 @@ $(function() {
     applyFilters();
   });
 
+  // Custom Dropdown Sort
   $('[data-dropdown="sort"] [data-dropdown-trigger]').on('click', function(e) {
     e.stopPropagation();
     const $menu = $(this).siblings('[data-dropdown-menu]');
@@ -332,6 +343,7 @@ $(function() {
     }
   });
 
+  // Grid / List View Toggle
   $('#gridView').on('click', function() {
     isGrid = true;
     $(this).addClass('bg-accent/60 text-content').removeClass('bg-surface text-muted');

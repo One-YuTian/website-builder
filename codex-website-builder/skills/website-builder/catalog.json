@@ -1,562 +1,562 @@
 [
   {
-    "id": "carousel-01",
-    "group": "blocks",
-    "category": "carousel",
-    "file": "blocks/carousel/carousel-01.txt",
-    "summary": "Full-width hero visual carousel showcase block, supporting multi-aspect ratio scaling, touch drag ge"
-  },
-  {
-    "id": "carousel-03",
-    "group": "blocks",
-    "category": "carousel",
-    "file": "blocks/carousel/carousel-03.txt",
-    "summary": "Full-width hero visual carousel showcase block, supporting multi-aspect ratio scaling, touch drag ge"
-  },
-  {
-    "id": "carousel-12",
-    "group": "blocks",
-    "category": "carousel",
-    "file": "blocks/carousel/carousel-12.txt",
-    "summary": "Full-width hero visual carousel showcase block, supporting multi-aspect ratio scaling, touch drag ge"
-  },
-  {
-    "id": "carousel-14",
-    "group": "blocks",
-    "category": "carousel",
-    "file": "blocks/carousel/carousel-14.txt",
-    "summary": "Full-width hero visual carousel showcase block, supporting multi-aspect ratio scaling, touch drag ge"
-  },
-  {
-    "id": "carousel-16",
-    "group": "blocks",
-    "category": "carousel",
-    "file": "blocks/carousel/carousel-16.txt",
-    "summary": "Full-width hero visual carousel showcase block, supporting multi-aspect ratio scaling, touch drag ge"
-  },
-  {
-    "id": "carousel-20",
-    "group": "blocks",
-    "category": "carousel",
-    "file": "blocks/carousel/carousel-20.txt",
-    "summary": "Full-width hero visual carousel showcase block, supporting multi-aspect ratio scaling, touch drag ge"
-  },
-  {
-    "id": "carousel-28",
-    "group": "blocks",
-    "category": "carousel",
-    "file": "blocks/carousel/carousel-28.txt",
-    "summary": "Full-width hero visual carousel showcase block, supporting multi-aspect ratio scaling, touch drag ge"
-  },
-  {
-    "id": "carousel-30",
-    "group": "blocks",
-    "category": "carousel",
-    "file": "blocks/carousel/carousel-30.txt",
-    "summary": "Full-width hero visual carousel showcase block, supporting multi-aspect ratio scaling, touch drag ge"
-  },
-  {
-    "id": "categories-01",
-    "group": "blocks",
-    "category": "categories",
-    "file": "blocks/categories/categories-01.txt",
-    "summary": "E-commerce category navigation and product matrix showcase block, featuring circular/square category"
-  },
-  {
-    "id": "categories-02",
-    "group": "blocks",
-    "category": "categories",
-    "file": "blocks/categories/categories-02.txt",
-    "summary": "E-commerce category navigation and product matrix showcase block, featuring circular/square category"
-  },
-  {
-    "id": "categories-03",
-    "group": "blocks",
-    "category": "categories",
-    "file": "blocks/categories/categories-03.txt",
-    "summary": "E-commerce category navigation and product matrix showcase block, featuring circular/square category"
-  },
-  {
-    "id": "categories-04",
-    "group": "blocks",
-    "category": "categories",
-    "file": "blocks/categories/categories-04.txt",
-    "summary": "E-commerce category navigation and product matrix showcase block, featuring circular/square category"
-  },
-  {
-    "id": "categories-05",
-    "group": "blocks",
-    "category": "categories",
-    "file": "blocks/categories/categories-05.txt",
-    "summary": "E-commerce category navigation and product matrix showcase block, featuring circular/square category"
-  },
-  {
-    "id": "categories-06",
-    "group": "blocks",
-    "category": "categories",
-    "file": "blocks/categories/categories-06.txt",
-    "summary": "E-commerce category navigation and product matrix showcase block, featuring circular/square category"
-  },
-  {
-    "id": "categories-07",
-    "group": "blocks",
-    "category": "categories",
-    "file": "blocks/categories/categories-07.txt",
-    "summary": "E-commerce category navigation and product matrix showcase block, featuring circular/square category"
-  },
-  {
-    "id": "flashsale-01",
-    "group": "blocks",
-    "category": "flashsale",
-    "file": "blocks/flashsale/flashsale-01.txt",
-    "summary": "Limited-time flash sale and clearance showcase block, integrating countdown timer (hours/minutes/sec"
-  },
-  {
-    "id": "flashsale-03",
-    "group": "blocks",
-    "category": "flashsale",
-    "file": "blocks/flashsale/flashsale-03.txt",
-    "summary": "Limited-time flash sale and clearance showcase block, integrating countdown timer (hours/minutes/sec"
-  },
-  {
-    "id": "flashsale-07",
-    "group": "blocks",
-    "category": "flashsale",
-    "file": "blocks/flashsale/flashsale-07.txt",
-    "summary": "Limited-time flash sale and clearance showcase block, integrating countdown timer (hours/minutes/sec"
-  },
-  {
-    "id": "flashsale-08",
-    "group": "blocks",
-    "category": "flashsale",
-    "file": "blocks/flashsale/flashsale-08.txt",
-    "summary": "Limited-time flash sale and clearance showcase block, integrating countdown timer (hours/minutes/sec"
-  },
-  {
-    "id": "productlist-01",
-    "group": "blocks",
-    "category": "productlist",
-    "file": "blocks/productlist/productlist-01.txt",
-    "summary": "Core e-commerce catalog shelf block, integrating section title, quick category filter tags, 4~5 colu"
-  },
-  {
-    "id": "productlist-02",
-    "group": "blocks",
-    "category": "productlist",
-    "file": "blocks/productlist/productlist-02.txt",
-    "summary": "Core e-commerce catalog shelf block, integrating section title, quick category filter tags, 4~5 colu"
-  },
-  {
-    "id": "productlist-03",
-    "group": "blocks",
-    "category": "productlist",
-    "file": "blocks/productlist/productlist-03.txt",
-    "summary": "Core e-commerce catalog shelf block, integrating section title, quick category filter tags, 4~5 colu"
-  },
-  {
-    "id": "productlist-04",
-    "group": "blocks",
-    "category": "productlist",
-    "file": "blocks/productlist/productlist-04.txt",
-    "summary": "Core e-commerce catalog shelf block, integrating section title, quick category filter tags, 4~5 colu"
-  },
-  {
-    "id": "promotion-01",
-    "group": "blocks",
-    "category": "promotion",
-    "file": "blocks/promotion/promotion-01.txt",
-    "summary": "Promotional banner and coupon campaign showcase block, covering side-by-side grid, cinematic wide ba"
-  },
-  {
-    "id": "promotion-02",
-    "group": "blocks",
-    "category": "promotion",
-    "file": "blocks/promotion/promotion-02.txt",
-    "summary": "Promotional banner and coupon campaign showcase block, covering side-by-side grid, cinematic wide ba"
-  },
-  {
-    "id": "promotion-03",
-    "group": "blocks",
-    "category": "promotion",
-    "file": "blocks/promotion/promotion-03.txt",
-    "summary": "Promotional banner and coupon campaign showcase block, covering side-by-side grid, cinematic wide ba"
-  },
-  {
-    "id": "promotion-05",
-    "group": "blocks",
-    "category": "promotion",
-    "file": "blocks/promotion/promotion-05.txt",
-    "summary": "Promotional banner and coupon campaign showcase block, covering side-by-side grid, cinematic wide ba"
-  },
-  {
-    "id": "promotion-07",
-    "group": "blocks",
-    "category": "promotion",
-    "file": "blocks/promotion/promotion-07.txt",
-    "summary": "Promotional banner and coupon campaign showcase block, covering side-by-side grid, cinematic wide ba"
-  },
-  {
-    "id": "promotion-09",
-    "group": "blocks",
-    "category": "promotion",
-    "file": "blocks/promotion/promotion-09.txt",
-    "summary": "Promotional banner and coupon campaign showcase block, covering side-by-side grid, cinematic wide ba"
-  },
-  {
-    "id": "promotion-10",
-    "group": "blocks",
-    "category": "promotion",
-    "file": "blocks/promotion/promotion-10.txt",
-    "summary": "Promotional banner and coupon campaign showcase block, covering side-by-side grid, cinematic wide ba"
-  },
-  {
-    "id": "promotion-11",
-    "group": "blocks",
-    "category": "promotion",
-    "file": "blocks/promotion/promotion-11.txt",
-    "summary": "Promotional banner and coupon campaign showcase block, covering side-by-side grid, cinematic wide ba"
-  },
-  {
-    "id": "services-02",
-    "group": "blocks",
-    "category": "services",
-    "file": "blocks/services/services-02.txt",
-    "summary": "Trust endorsement and customer service value proposition block, integrating authentic guarantee, fre"
-  },
-  {
-    "id": "services-03",
-    "group": "blocks",
-    "category": "services",
-    "file": "blocks/services/services-03.txt",
-    "summary": "Trust endorsement and customer service value proposition block, integrating authentic guarantee, fre"
-  },
-  {
-    "id": "services-04",
-    "group": "blocks",
-    "category": "services",
-    "file": "blocks/services/services-04.txt",
-    "summary": "Trust endorsement and customer service value proposition block, integrating authentic guarantee, fre"
-  },
-  {
-    "id": "services-05",
-    "group": "blocks",
-    "category": "services",
-    "file": "blocks/services/services-05.txt",
-    "summary": "Trust endorsement and customer service value proposition block, integrating authentic guarantee, fre"
-  },
-  {
-    "id": "services-08",
-    "group": "blocks",
-    "category": "services",
-    "file": "blocks/services/services-08.txt",
-    "summary": "Trust endorsement and customer service value proposition block, integrating authentic guarantee, fre"
-  },
-  {
-    "id": "welcomemodal-01",
-    "group": "blocks",
-    "category": "welcomemodal",
-    "file": "blocks/welcomemodal/welcomemodal-01.txt",
-    "summary": "New customer welcome and exclusive discount marketing modal popup block, featuring brand badge, dual"
-  },
-  {
-    "id": "card-01",
-    "group": "components",
-    "category": "card",
-    "file": "components/card/card-01.txt",
-    "summary": "Standard e-commerce product card component built on Native Web Components. Supports 1:1 square image"
-  },
-  {
-    "id": "card-02",
-    "group": "components",
-    "category": "card",
-    "file": "components/card/card-02.txt",
-    "summary": "Standard e-commerce product card component built on Native Web Components. Supports 1:1 square image"
-  },
-  {
-    "id": "card-07",
-    "group": "components",
-    "category": "card",
-    "file": "components/card/card-07.txt",
-    "summary": "Standard e-commerce product card component built on Native Web Components. Supports 1:1 square image"
-  },
-  {
-    "id": "card-11",
-    "group": "components",
-    "category": "card",
-    "file": "components/card/card-11.txt",
-    "summary": "Standard e-commerce product card component built on Native Web Components. Supports 1:1 square image"
-  },
-  {
-    "id": "card-19",
-    "group": "components",
-    "category": "card",
-    "file": "components/card/card-19.txt",
-    "summary": "Standard e-commerce product card component built on Native Web Components. Supports 1:1 square image"
-  },
-  {
-    "id": "card-23",
-    "group": "components",
-    "category": "card",
-    "file": "components/card/card-23.txt",
-    "summary": "Standard e-commerce product card component built on Native Web Components. Supports 1:1 square image"
-  },
-  {
-    "id": "cart-01",
-    "group": "components",
-    "category": "cart",
-    "file": "components/cart/cart-01.txt",
-    "summary": "Global e-commerce shopping cart drawer and panel component built on Native Web Components. Integrate"
-  },
-  {
-    "id": "flashcard-01",
-    "group": "components",
-    "category": "flashcard",
-    "file": "components/flashcard/flashcard-01.txt",
-    "summary": "Flash sale and limited-time promotional product card component built on Native Web Components. Integ"
-  },
-  {
-    "id": "footer-01",
-    "group": "components",
-    "category": "footer",
-    "file": "components/footer/footer-01.txt",
-    "summary": "Standard e-commerce site footer component, integrating brand LOGO skeleton, corporate mission statem"
-  },
-  {
-    "id": "footer-02",
-    "group": "components",
-    "category": "footer",
-    "file": "components/footer/footer-02.txt",
-    "summary": "Standard e-commerce site footer component, integrating brand LOGO skeleton, corporate mission statem"
-  },
-  {
     "id": "header-01",
     "group": "components",
     "category": "header",
     "file": "components/header/header-01.txt",
-    "summary": "Global sticky top navigation bar component, integrating brand LOGO skeleton, site-wide predictive se"
+    "summary": "Header-01: Native Web Component specification, annotated regions, and responsive template."
   },
   {
     "id": "header-02",
     "group": "components",
     "category": "header",
     "file": "components/header/header-02.txt",
-    "summary": "Global sticky top navigation bar component, integrating brand LOGO skeleton, site-wide predictive se"
+    "summary": "Header-02: Native Web Component specification, annotated regions, and responsive template."
   },
   {
     "id": "header-03",
     "group": "components",
     "category": "header",
     "file": "components/header/header-03.txt",
-    "summary": "Global sticky top navigation bar component, integrating brand LOGO skeleton, site-wide predictive se"
+    "summary": "Header-03: Native Web Component specification, annotated regions, and responsive template."
   },
   {
     "id": "header-04",
     "group": "components",
     "category": "header",
     "file": "components/header/header-04.txt",
-    "summary": "Global sticky top navigation bar component, integrating brand LOGO skeleton, site-wide predictive se"
+    "summary": "Header-04: Native Web Component specification, annotated regions, and responsive template."
   },
   {
     "id": "header-05",
     "group": "components",
     "category": "header",
     "file": "components/header/header-05.txt",
-    "summary": "Global sticky top navigation bar component, integrating brand LOGO skeleton, site-wide predictive se"
+    "summary": "Header-05: Native Web Component specification, annotated regions, and responsive template."
   },
   {
     "id": "header-06",
     "group": "components",
     "category": "header",
     "file": "components/header/header-06.txt",
-    "summary": "Global sticky top navigation bar component, integrating brand LOGO skeleton, site-wide predictive se"
+    "summary": "Header-06: Native Web Component specification, annotated regions, and responsive template."
   },
   {
     "id": "header-07",
     "group": "components",
     "category": "header",
     "file": "components/header/header-07.txt",
-    "summary": "Global sticky top navigation bar component, integrating brand LOGO skeleton, site-wide predictive se"
+    "summary": "Header-07: Native Web Component specification, annotated regions, and responsive template."
   },
   {
     "id": "header-08",
     "group": "components",
     "category": "header",
     "file": "components/header/header-08.txt",
-    "summary": "Global sticky top navigation bar component, integrating brand LOGO skeleton, site-wide predictive se"
+    "summary": "Header-08: Native Web Component specification, annotated regions, and responsive template."
   },
   {
     "id": "header-09",
     "group": "components",
     "category": "header",
     "file": "components/header/header-09.txt",
-    "summary": "Global sticky top navigation bar component, integrating brand LOGO skeleton, site-wide predictive se"
+    "summary": "Header-09: Native Web Component specification, annotated regions, and responsive template."
   },
   {
     "id": "header-10",
     "group": "components",
     "category": "header",
     "file": "components/header/header-10.txt",
-    "summary": "Global sticky top navigation bar component, integrating brand LOGO skeleton, site-wide predictive se"
+    "summary": "Header-10: Native Web Component specification, annotated regions, and responsive template."
   },
   {
-    "id": "about-01",
-    "group": "pages",
-    "category": "about",
-    "file": "pages/about/about-01.txt",
-    "summary": "About Us brand introduction and story page, featuring brand Hero banner visual skeleton, core missio"
+    "id": "footer-01",
+    "group": "components",
+    "category": "footer",
+    "file": "components/footer/footer-01.txt",
+    "summary": "Footer-01: Native Web Component specification, annotated regions, and responsive template."
   },
   {
-    "id": "about-02",
-    "group": "pages",
-    "category": "about",
-    "file": "pages/about/about-02.txt",
-    "summary": "About Us brand introduction and story page, featuring brand Hero banner visual skeleton, core missio"
+    "id": "footer-02",
+    "group": "components",
+    "category": "footer",
+    "file": "components/footer/footer-02.txt",
+    "summary": "Footer-02: Native Web Component specification, annotated regions, and responsive template."
   },
   {
-    "id": "about-03",
-    "group": "pages",
-    "category": "about",
-    "file": "pages/about/about-03.txt",
-    "summary": "About Us brand introduction and story page, featuring brand Hero banner visual skeleton, core missio"
+    "id": "card-01",
+    "group": "components",
+    "category": "card",
+    "file": "components/card/card-01.txt",
+    "summary": "Card-01: Native Web Component specification, annotated regions, and responsive template."
   },
   {
-    "id": "about-04",
-    "group": "pages",
-    "category": "about",
-    "file": "pages/about/about-04.txt",
-    "summary": "About Us brand introduction and story page, featuring brand Hero banner visual skeleton, core missio"
+    "id": "card-02",
+    "group": "components",
+    "category": "card",
+    "file": "components/card/card-02.txt",
+    "summary": "Card-02: Native Web Component specification, annotated regions, and responsive template."
   },
   {
-    "id": "about-05",
-    "group": "pages",
-    "category": "about",
-    "file": "pages/about/about-05.txt",
-    "summary": "About Us brand introduction and story page, featuring brand Hero banner visual skeleton, core missio"
+    "id": "card-07",
+    "group": "components",
+    "category": "card",
+    "file": "components/card/card-07.txt",
+    "summary": "Card-07: Native Web Component specification, annotated regions, and responsive template."
   },
   {
-    "id": "about-06",
-    "group": "pages",
-    "category": "about",
-    "file": "pages/about/about-06.txt",
-    "summary": "About Us brand introduction and story page, featuring brand Hero banner visual skeleton, core missio"
+    "id": "card-11",
+    "group": "components",
+    "category": "card",
+    "file": "components/card/card-11.txt",
+    "summary": "Card-11: Native Web Component specification, annotated regions, and responsive template."
   },
   {
-    "id": "about-10",
-    "group": "pages",
-    "category": "about",
-    "file": "pages/about/about-10.txt",
-    "summary": "About Us brand introduction and story page, featuring brand Hero banner visual skeleton, core missio"
+    "id": "card-19",
+    "group": "components",
+    "category": "card",
+    "file": "components/card/card-19.txt",
+    "summary": "Card-19: Native Web Component specification, annotated regions, and responsive template."
   },
   {
-    "id": "about-12",
-    "group": "pages",
-    "category": "about",
-    "file": "pages/about/about-12.txt",
-    "summary": "About Us brand introduction and story page, featuring brand Hero banner visual skeleton, core missio"
+    "id": "card-23",
+    "group": "components",
+    "category": "card",
+    "file": "components/card/card-23.txt",
+    "summary": "Card-23: Native Web Component specification, annotated regions, and responsive template."
   },
   {
-    "id": "about-15",
-    "group": "pages",
-    "category": "about",
-    "file": "pages/about/about-15.txt",
-    "summary": "About Us brand introduction and story page, featuring brand Hero banner visual skeleton, core missio"
+    "id": "carousel-01",
+    "group": "blocks",
+    "category": "carousel",
+    "file": "blocks/carousel/carousel-01.txt",
+    "summary": "Carousel-01: Native Web Component specification, annotated regions, and responsive template."
   },
   {
-    "id": "about-21",
-    "group": "pages",
-    "category": "about",
-    "file": "pages/about/about-21.txt",
-    "summary": "About Us brand introduction and story page, featuring brand Hero banner visual skeleton, core missio"
+    "id": "carousel-03",
+    "group": "blocks",
+    "category": "carousel",
+    "file": "blocks/carousel/carousel-03.txt",
+    "summary": "Carousel-03: Native Web Component specification, annotated regions, and responsive template."
   },
   {
-    "id": "about-26",
-    "group": "pages",
-    "category": "about",
-    "file": "pages/about/about-26.txt",
-    "summary": "About Us brand introduction and story page, featuring brand Hero banner visual skeleton, core missio"
+    "id": "carousel-30",
+    "group": "blocks",
+    "category": "carousel",
+    "file": "blocks/carousel/carousel-30.txt",
+    "summary": "Carousel-30: Native Web Component specification, annotated regions, and responsive template."
   },
   {
-    "id": "checkout-01",
-    "group": "pages",
-    "category": "checkout",
-    "file": "pages/checkout/checkout-01.txt",
-    "summary": "Order checkout and payment page, featuring breadcrumb navigation, two-column responsive layout (left"
+    "id": "carousel-28",
+    "group": "blocks",
+    "category": "carousel",
+    "file": "blocks/carousel/carousel-28.txt",
+    "summary": "Carousel-28: Native Web Component specification, annotated regions, and responsive template."
   },
   {
-    "id": "contact-01",
-    "group": "pages",
-    "category": "contact",
-    "file": "pages/contact/contact-01.txt",
-    "summary": "Contact Us communication and inquiry page, containing page title skeleton, online feedback inquiry f"
+    "id": "carousel-20",
+    "group": "blocks",
+    "category": "carousel",
+    "file": "blocks/carousel/carousel-20.txt",
+    "summary": "Carousel-20: Native Web Component specification, annotated regions, and responsive template."
   },
   {
-    "id": "detail-01",
-    "group": "pages",
-    "category": "detail",
-    "file": "pages/detail/detail-01.txt",
-    "summary": "Product Detail Page (PDP), featuring multi-view product gallery skeleton, right-hand purchase action"
+    "id": "carousel-16",
+    "group": "blocks",
+    "category": "carousel",
+    "file": "blocks/carousel/carousel-16.txt",
+    "summary": "Carousel-16: Native Web Component specification, annotated regions, and responsive template."
   },
   {
-    "id": "detail-04",
-    "group": "pages",
-    "category": "detail",
-    "file": "pages/detail/detail-04.txt",
-    "summary": "Product Detail Page (PDP), featuring multi-view product gallery skeleton, right-hand purchase action"
+    "id": "carousel-14",
+    "group": "blocks",
+    "category": "carousel",
+    "file": "blocks/carousel/carousel-14.txt",
+    "summary": "Carousel-14: Native Web Component specification, annotated regions, and responsive template."
   },
   {
-    "id": "login-01",
-    "group": "pages",
-    "category": "login",
-    "file": "pages/login/login-01.txt",
-    "summary": "User account sign-in page, containing centered login card, brand badge skeleton, welcome headline, e"
+    "id": "carousel-12",
+    "group": "blocks",
+    "category": "carousel",
+    "file": "blocks/carousel/carousel-12.txt",
+    "summary": "Carousel-12: Native Web Component specification, annotated regions, and responsive template."
   },
   {
-    "id": "ordersuccess-01",
-    "group": "pages",
-    "category": "ordersuccess",
-    "file": "pages/ordersuccess/ordersuccess-01.txt",
-    "summary": "Order payment confirmation and success feedback page, containing top green checkmark success badge, "
+    "id": "productlist-01",
+    "group": "blocks",
+    "category": "productlist",
+    "file": "blocks/productlist/productlist-01.txt",
+    "summary": "ProductList-01: Native Web Component specification, annotated regions, and responsive template."
   },
   {
-    "id": "register-01",
-    "group": "pages",
-    "category": "register",
-    "file": "pages/register/register-01.txt",
-    "summary": "New user registration page, containing top brand badge, welcome headline skeleton, username field, e"
+    "id": "productlist-02",
+    "group": "blocks",
+    "category": "productlist",
+    "file": "blocks/productlist/productlist-02.txt",
+    "summary": "ProductList-02: Native Web Component specification, annotated regions, and responsive template."
+  },
+  {
+    "id": "productlist-03",
+    "group": "blocks",
+    "category": "productlist",
+    "file": "blocks/productlist/productlist-03.txt",
+    "summary": "ProductList-03: Native Web Component specification, annotated regions, and responsive template."
+  },
+  {
+    "id": "productlist-04",
+    "group": "blocks",
+    "category": "productlist",
+    "file": "blocks/productlist/productlist-04.txt",
+    "summary": "ProductList-04: Native Web Component specification, annotated regions, and responsive template."
   },
   {
     "id": "shop-01",
     "group": "pages",
     "category": "shop",
     "file": "pages/shop/shop-01.txt",
-    "summary": "Main catalog shopping listing page, integrating page title skeleton, price and popularity sorting to"
+    "summary": "Shop-01: Native Web Component specification, annotated regions, and responsive template."
   },
   {
     "id": "shop-02",
     "group": "pages",
     "category": "shop",
     "file": "pages/shop/shop-02.txt",
-    "summary": "Main catalog shopping listing page, integrating page title skeleton, price and popularity sorting to"
+    "summary": "Shop-02: Native Web Component specification, annotated regions, and responsive template."
   },
   {
     "id": "shop-04",
     "group": "pages",
     "category": "shop",
     "file": "pages/shop/shop-04.txt",
-    "summary": "Main catalog shopping listing page, integrating page title skeleton, price and popularity sorting to"
+    "summary": "Shop-04: Native Web Component specification, annotated regions, and responsive template."
   },
   {
     "id": "shop-12",
     "group": "pages",
     "category": "shop",
     "file": "pages/shop/shop-12.txt",
-    "summary": "Main catalog shopping listing page, integrating page title skeleton, price and popularity sorting to"
+    "summary": "Shop-12: Native Web Component specification, annotated regions, and responsive template."
+  },
+  {
+    "id": "detail-01",
+    "group": "pages",
+    "category": "detail",
+    "file": "pages/detail/detail-01.txt",
+    "summary": "Detail-01: Native Web Component specification, annotated regions, and responsive template."
+  },
+  {
+    "id": "detail-04",
+    "group": "pages",
+    "category": "detail",
+    "file": "pages/detail/detail-04.txt",
+    "summary": "Detail-04: Native Web Component specification, annotated regions, and responsive template."
+  },
+  {
+    "id": "about-01",
+    "group": "pages",
+    "category": "about",
+    "file": "pages/about/about-01.txt",
+    "summary": "About-01: Native Web Component specification, annotated regions, and responsive template."
+  },
+  {
+    "id": "about-02",
+    "group": "pages",
+    "category": "about",
+    "file": "pages/about/about-02.txt",
+    "summary": "About-02: Native Web Component specification, annotated regions, and responsive template."
+  },
+  {
+    "id": "about-03",
+    "group": "pages",
+    "category": "about",
+    "file": "pages/about/about-03.txt",
+    "summary": "About-03: Native Web Component specification, annotated regions, and responsive template."
+  },
+  {
+    "id": "about-04",
+    "group": "pages",
+    "category": "about",
+    "file": "pages/about/about-04.txt",
+    "summary": "About-04: Native Web Component specification, annotated regions, and responsive template."
+  },
+  {
+    "id": "about-05",
+    "group": "pages",
+    "category": "about",
+    "file": "pages/about/about-05.txt",
+    "summary": "About-05: Native Web Component specification, annotated regions, and responsive template."
+  },
+  {
+    "id": "about-06",
+    "group": "pages",
+    "category": "about",
+    "file": "pages/about/about-06.txt",
+    "summary": "About-06: Native Web Component specification, annotated regions, and responsive template."
+  },
+  {
+    "id": "about-10",
+    "group": "pages",
+    "category": "about",
+    "file": "pages/about/about-10.txt",
+    "summary": "About-10: Native Web Component specification, annotated regions, and responsive template."
+  },
+  {
+    "id": "about-12",
+    "group": "pages",
+    "category": "about",
+    "file": "pages/about/about-12.txt",
+    "summary": "About-12: Native Web Component specification, annotated regions, and responsive template."
+  },
+  {
+    "id": "about-15",
+    "group": "pages",
+    "category": "about",
+    "file": "pages/about/about-15.txt",
+    "summary": "About-15: Native Web Component specification, annotated regions, and responsive template."
+  },
+  {
+    "id": "about-21",
+    "group": "pages",
+    "category": "about",
+    "file": "pages/about/about-21.txt",
+    "summary": "About-21: Native Web Component specification, annotated regions, and responsive template."
+  },
+  {
+    "id": "about-26",
+    "group": "pages",
+    "category": "about",
+    "file": "pages/about/about-26.txt",
+    "summary": "About-26: Native Web Component specification, annotated regions, and responsive template."
+  },
+  {
+    "id": "contact-01",
+    "group": "pages",
+    "category": "contact",
+    "file": "pages/contact/contact-01.txt",
+    "summary": "Contact-01: Native Web Component specification, annotated regions, and responsive template."
+  },
+  {
+    "id": "categories-01",
+    "group": "blocks",
+    "category": "categories",
+    "file": "blocks/categories/categories-01.txt",
+    "summary": "Categories-01: Native Web Component specification, annotated regions, and responsive template."
+  },
+  {
+    "id": "categories-02",
+    "group": "blocks",
+    "category": "categories",
+    "file": "blocks/categories/categories-02.txt",
+    "summary": "Categories-02: Native Web Component specification, annotated regions, and responsive template."
+  },
+  {
+    "id": "categories-03",
+    "group": "blocks",
+    "category": "categories",
+    "file": "blocks/categories/categories-03.txt",
+    "summary": "Categories-03: Native Web Component specification, annotated regions, and responsive template."
+  },
+  {
+    "id": "categories-04",
+    "group": "blocks",
+    "category": "categories",
+    "file": "blocks/categories/categories-04.txt",
+    "summary": "Categories-04: Native Web Component specification, annotated regions, and responsive template."
+  },
+  {
+    "id": "categories-05",
+    "group": "blocks",
+    "category": "categories",
+    "file": "blocks/categories/categories-05.txt",
+    "summary": "Categories-05: Native Web Component specification, annotated regions, and responsive template."
+  },
+  {
+    "id": "categories-06",
+    "group": "blocks",
+    "category": "categories",
+    "file": "blocks/categories/categories-06.txt",
+    "summary": "Categories-06: Native Web Component specification, annotated regions, and responsive template."
+  },
+  {
+    "id": "categories-07",
+    "group": "blocks",
+    "category": "categories",
+    "file": "blocks/categories/categories-07.txt",
+    "summary": "Categories-07: Native Web Component specification, annotated regions, and responsive template."
+  },
+  {
+    "id": "flashsale-01",
+    "group": "blocks",
+    "category": "flashsale",
+    "file": "blocks/flashsale/flashsale-01.txt",
+    "summary": "FlashSale-01: Native Web Component specification, annotated regions, and responsive template."
+  },
+  {
+    "id": "flashsale-03",
+    "group": "blocks",
+    "category": "flashsale",
+    "file": "blocks/flashsale/flashsale-03.txt",
+    "summary": "FlashSale-03: Native Web Component specification, annotated regions, and responsive template."
+  },
+  {
+    "id": "flashsale-07",
+    "group": "blocks",
+    "category": "flashsale",
+    "file": "blocks/flashsale/flashsale-07.txt",
+    "summary": "FlashSale-07: Native Web Component specification, annotated regions, and responsive template."
+  },
+  {
+    "id": "flashsale-08",
+    "group": "blocks",
+    "category": "flashsale",
+    "file": "blocks/flashsale/flashsale-08.txt",
+    "summary": "FlashSale-08: Native Web Component specification, annotated regions, and responsive template."
+  },
+  {
+    "id": "promotion-01",
+    "group": "blocks",
+    "category": "promotion",
+    "file": "blocks/promotion/promotion-01.txt",
+    "summary": "Promotion-01: Native Web Component specification, annotated regions, and responsive template."
+  },
+  {
+    "id": "promotion-02",
+    "group": "blocks",
+    "category": "promotion",
+    "file": "blocks/promotion/promotion-02.txt",
+    "summary": "Promotion-02: Native Web Component specification, annotated regions, and responsive template."
+  },
+  {
+    "id": "promotion-03",
+    "group": "blocks",
+    "category": "promotion",
+    "file": "blocks/promotion/promotion-03.txt",
+    "summary": "Promotion-03: Native Web Component specification, annotated regions, and responsive template."
+  },
+  {
+    "id": "promotion-05",
+    "group": "blocks",
+    "category": "promotion",
+    "file": "blocks/promotion/promotion-05.txt",
+    "summary": "Promotion-05: Native Web Component specification, annotated regions, and responsive template."
+  },
+  {
+    "id": "promotion-07",
+    "group": "blocks",
+    "category": "promotion",
+    "file": "blocks/promotion/promotion-07.txt",
+    "summary": "Promotion-07: Native Web Component specification, annotated regions, and responsive template."
+  },
+  {
+    "id": "promotion-09",
+    "group": "blocks",
+    "category": "promotion",
+    "file": "blocks/promotion/promotion-09.txt",
+    "summary": "Promotion-09: Native Web Component specification, annotated regions, and responsive template."
+  },
+  {
+    "id": "promotion-10",
+    "group": "blocks",
+    "category": "promotion",
+    "file": "blocks/promotion/promotion-10.txt",
+    "summary": "Promotion-10: Native Web Component specification, annotated regions, and responsive template."
+  },
+  {
+    "id": "promotion-11",
+    "group": "blocks",
+    "category": "promotion",
+    "file": "blocks/promotion/promotion-11.txt",
+    "summary": "Promotion-11: Native Web Component specification, annotated regions, and responsive template."
+  },
+  {
+    "id": "services-02",
+    "group": "blocks",
+    "category": "services",
+    "file": "blocks/services/services-02.txt",
+    "summary": "Services-02: Native Web Component specification, annotated regions, and responsive template."
+  },
+  {
+    "id": "services-03",
+    "group": "blocks",
+    "category": "services",
+    "file": "blocks/services/services-03.txt",
+    "summary": "Services-03: Native Web Component specification, annotated regions, and responsive template."
+  },
+  {
+    "id": "services-04",
+    "group": "blocks",
+    "category": "services",
+    "file": "blocks/services/services-04.txt",
+    "summary": "Services-04: Native Web Component specification, annotated regions, and responsive template."
+  },
+  {
+    "id": "services-05",
+    "group": "blocks",
+    "category": "services",
+    "file": "blocks/services/services-05.txt",
+    "summary": "Services-05: Native Web Component specification, annotated regions, and responsive template."
+  },
+  {
+    "id": "services-08",
+    "group": "blocks",
+    "category": "services",
+    "file": "blocks/services/services-08.txt",
+    "summary": "Services-08: Native Web Component specification, annotated regions, and responsive template."
+  },
+  {
+    "id": "flashcard-01",
+    "group": "components",
+    "category": "flashcard",
+    "file": "components/flashcard/flashcard-01.txt",
+    "summary": "FlashCard-01: Native Web Component specification, annotated regions, and responsive template."
+  },
+  {
+    "id": "welcomemodal-01",
+    "group": "blocks",
+    "category": "welcomemodal",
+    "file": "blocks/welcomemodal/welcomemodal-01.txt",
+    "summary": "WelcomeModal-01: Native Web Component specification, annotated regions, and responsive template."
+  },
+  {
+    "id": "cart-01",
+    "group": "components",
+    "category": "cart",
+    "file": "components/cart/cart-01.txt",
+    "summary": "Cart-01: Native Web Component specification, annotated regions, and responsive template."
   },
   {
     "id": "wishlist-01",
     "group": "pages",
     "category": "wishlist",
     "file": "pages/wishlist/wishlist-01.txt",
-    "summary": "Wishlist and favorites listing page, containing page title skeleton, batch Add All to Cart and Clear"
+    "summary": "Wishlist-01: Native Web Component specification, annotated regions, and responsive template."
+  },
+  {
+    "id": "login-01",
+    "group": "pages",
+    "category": "login",
+    "file": "pages/login/login-01.txt",
+    "summary": "Login-01: Native Web Component specification, annotated regions, and responsive template."
+  },
+  {
+    "id": "register-01",
+    "group": "pages",
+    "category": "register",
+    "file": "pages/register/register-01.txt",
+    "summary": "Register-01: Native Web Component specification, annotated regions, and responsive template."
+  },
+  {
+    "id": "checkout-01",
+    "group": "pages",
+    "category": "checkout",
+    "file": "pages/checkout/checkout-01.txt",
+    "summary": "Checkout-01: Native Web Component specification, annotated regions, and responsive template."
+  },
+  {
+    "id": "ordersuccess-01",
+    "group": "pages",
+    "category": "ordersuccess",
+    "file": "pages/ordersuccess/ordersuccess-01.txt",
+    "summary": "OrderSuccess-01: Native Web Component specification, annotated regions, and responsive template."
   }
 ]

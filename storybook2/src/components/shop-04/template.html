@@ -1,6 +1,8 @@
 <section class="bg-surface font-sans text-content py-6 sm:py-8">
   <div class="content-container">
     <div class="flex flex-col lg:flex-row gap-6 lg:gap-8">
+      <!-- Region: Filter Sidebar - Faceted search, categories, and price sliders -->
+
       <aside data-region="sidebar" class="hidden lg:block lg:w-64 lg:shrink-0">
         <div class="bg-surface rounded-xl border border-outline/60 p-5 sticky top-24 shadow-xs space-y-6">
           <div>
@@ -42,6 +44,8 @@
       </aside>
 
       <div class="flex-1">
+        <!-- Region: Catalog Toolbar - Item count, sorting dropdown, and view mode toggle -->
+
         <div data-region="toolbar" class="flex flex-wrap sm:flex-nowrap items-center justify-between mb-6 p-3 bg-accent/30 rounded-xl border border-outline/40 gap-3">
           <div class="flex items-center justify-between w-full sm:w-auto gap-3">
             <button id="mobile-filter-btn" type="button" class="lg:hidden flex items-center gap-2 border border-outline/60 bg-surface rounded-lg px-3 py-1.5 text-sm text-content hover:border-primary/50 cursor-pointer shadow-xs shrink-0">
@@ -80,6 +84,9 @@
             <span id="product-count" class="font-bold text-content ml-1">8</span>
           </div>
         </div>
+
+        <!-- Region: Products Grid - Responsive product card showcase -->
+
 
         <div data-region="products-grid" id="products-grid" class="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-4 gap-4 md:gap-6"></div>
       </div>

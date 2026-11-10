@@ -11,6 +11,7 @@ import { compactProject, projectService } from './project-service';
 import { readTemplates } from './templates';
 import { fileURLToPath } from 'node:url';
 import {resourceChunk} from './resource-proxy';
+import { prepareCommerce } from './commerce';
 
 const uri = 'ui://codex-website-builder/canvas';
 const html = await readFile(new URL('../ui/index.html', import.meta.url), 'utf8');
@@ -18,7 +19,7 @@ const projects = new ProjectStore(process.env.WEBSITE_BUILDER_PROJECT_ROOT || re
 const syncProject = projectService(projects);
 const preview = await createPreview(html, process.env.WEBSITE_BUILDER_ROOT || resolve('../website'), 'www.noventrad.com', syncProject);
 const skillRoot = (process.env.WEBSITE_BUILDER_SKILL_ROOT || resolve('skills/website-builder')).replaceAll('${PLUGIN_ROOT}',fileURLToPath(new URL('../../',import.meta.url)));
-const server = new McpServer({ name: 'codex-website-builder', version: '0.5.2' });
+const server = new McpServer({ name: 'codex-website-builder', version: '0.6.6' });
 const csp = { connectDomains: ['data:', 'blob:'], resourceDomains: ['data:', 'blob:'], frameDomains: ['blob:', 'data:'], baseUriDomains: ['https://website-builder.invalid'] };
 const legacyCsp = { connect_domains: csp.connectDomains, resource_domains: csp.resourceDomains, frame_domains: csp.frameDomains, base_uri_domains: csp.baseUriDomains };
 registerAppResource(server, 'canvas', uri, { _meta: { ui: { csp }, 'openai/widgetCSP': legacyCsp } }, async () => ({
@@ -80,7 +81,7 @@ server.registerTool('website_project',{
   }catch(error){return{isError:true,content:[{type:'text',text:(error as Error).message}]};}
 });
 server.registerTool('website_write',{
-  description:'Batch-write project files atomically. HTML fragment=true adds shared boilerplate automatically. Affected pages show loading until complete HTML and local JS/CSS dependencies validate. Never use for reference website files.',
+  description:'Batch-write project files atomically, preserving supplied source formatting. HTML fragment=true adds shared boilerplate and detects prepared commerce SDKs. JS/JSON syntax errors do not overwrite existing files. Affected pages show loading until complete HTML and dependencies validate. Never use for reference website files.',
   inputSchema:{thread_id:z.string(),project_id:z.string(),files:z.array(z.object({path:z.string(),content:z.string(),fragment:z.boolean().optional(),title:z.string().optional()})).min(1),finalize_pages:z.array(z.string()).optional()},
   annotations:{readOnlyHint:false,destructiveHint:false,openWorldHint:false},
 },async input=>{
@@ -88,10 +89,40 @@ server.registerTool('website_write',{
   catch(error){return{isError:true,content:[{type:'text',text:(error as Error).message}]};}
 });
 server.registerTool('website_templates',{
-  description:'Progressive access to the bundled 80 templates. Select returns IDs only; batch code reads only the chosen components. Do not preload the library.',
-  inputSchema:{mode:z.enum(['select','summary','doc','code']).default('select'),ids:z.array(z.string()).max(12).optional(),category:z.string().optional(),brief:z.string().optional(),section:z.enum(['html','js','css','all']).optional()},
-  annotations:{readOnlyHint:true,destructiveHint:false,openWorldHint:false},
-},async input=>{try{return{content:[{type:'text',text:JSON.stringify(await readTemplates(skillRoot,input))}]};}catch(error){return{isError:true,content:[{type:'text',text:(error as Error).message}]};}});
+  description:'Plan a coherent site visual system first. Select returns unranked candidates; Agent chooses templates, palette, light/dark strategy and content widths. Code includes Overview/source; optional targets/bind record provenance only. Fidelity is SKILL guidance, never a readiness gate; legacy audit returns source info without scores. New components use unique xxx-component names. Choose direct cart.html or shared drawer, not both. Inspect actual site rendering and interactions.',
+  inputSchema:{mode:z.enum(['select','summary','doc','code','bind','audit']).default('select'),ids:z.array(z.string()).max(12).optional(),category:z.string().optional(),brief:z.string().optional(),section:z.enum(['html','js','css','all']).optional(),
+    thread_id:z.string().optional(),project_id:z.string().optional(),targets:z.array(z.object({file:z.string(),region:z.string(),id:z.string(),baseline:z.enum(['html','render']).optional()})).max(12).optional()},
+  annotations:{readOnlyHint:false,destructiveHint:false,openWorldHint:false},
+},async input=>{try{
+  if(input.mode==='bind'||input.mode==='audit'||input.targets?.length){
+    if(!['code','bind','audit'].includes(input.mode))throw new Error('targets 仅用于 code/bind');
+    if(!input.thread_id||!input.project_id)throw new Error('绑定/验收需要真实 thread_id 和 project_id');
+    const current=await projects.get(input.thread_id);if(!current||current.project.id!==input.project_id)throw new Error('会话项目不匹配');
+    if(input.mode==='audit')return{content:[{type:'text',text:JSON.stringify(await projects.auditTemplates(input.thread_id))}]};
+    if(!input.targets?.length)throw new Error('请提供模板 targets');
+    const binding=await projects.bindTemplates(input.thread_id,input.targets);
+    if(input.mode==='bind')return{content:[{type:'text',text:JSON.stringify(binding)}]};
+    if(input.mode!=='code')throw new Error('targets 仅用于 code/bind');
+    const result=await readTemplates(skillRoot,{...input,mode:'code',ids:[...new Set(input.targets.map(target=>target.id))],section:'all'});
+    return{content:[{type:'text',text:JSON.stringify({templates:result,binding})}]};
+  }
+  return{content:[{type:'text',text:JSON.stringify(await readTemplates(skillRoot,input as Parameters<typeof readTemplates>[1]))}]};
+}catch(error){return{isError:true,content:[{type:'text',text:(error as Error).message}]};}});
+server.registerTool('website_commerce', {
+  description: 'Prepare mock product data and bundled APP/SDK assets once per project, or validate data. New commerce configuration lives in js/app.js; do not create commerce-config.js. Preserve existing data/SDK/config; API sources skip mock generation. Use the website-builder skill data contract.',
+  inputSchema: {
+    action: z.enum(['prepare', 'validate']).default('prepare'),
+    thread_id: z.string().min(1), project_id: z.string(),
+    count: z.number().int().min(1).max(200).optional(), seed: z.string().optional(),
+    currency: z.string().optional(), locale: z.string().optional(),
+    products: z.array(z.record(z.string(), z.unknown())).optional(),
+    api_url: z.string().url().optional(), regenerate: z.boolean().default(false),
+  },
+  annotations: { readOnlyHint: false, destructiveHint: false, openWorldHint: false },
+}, async input => {
+  try { return { content: [{ type: 'text', text: JSON.stringify(await prepareCommerce(projects, skillRoot, input)) }] }; }
+  catch (error) { return { isError: true, content: [{ type: 'text', text: (error as Error).message }] }; }
+});
 server.registerTool('project_sync',{
   description:'UI-only long poll: return project state and changed ready-page payloads; no full-site reload or model context.',
   inputSchema:{since:z.string().optional(),known:z.record(z.string(),z.number()).optional(),thread_id:z.string().optional(),wait_ms:z.number().int().min(0).max(20000).default(20000)},

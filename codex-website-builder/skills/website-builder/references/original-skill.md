@@ -17,7 +17,7 @@ description: Professional website builder skill adhering to strict development, 
 ├── index.html                 // 主页
 ├── shop.html                  // 商店页面
 ├── product.html               // 商品详情页
-├── cart.html                  // 购物车页面
+├── cart.html                  // 购物车页面（非必须）
 ├── wishlist.html              // 心愿单页面
 ├── checkout.html              // 结账页面
 ├── login.html                 // 登录页面
@@ -27,12 +27,14 @@ description: Professional website builder skill adhering to strict development, 
 ├── terms.html                 // 服务条款
 ├── privacy.html               // 隐私政策
 ├── return.html                // 退换货政策
+├── ...                        // 其他页面
 │
-├── components/
-│   ├── header.js              // 页头组件（Native Web Component）
-│   ├── footer.js              // 页脚组件（Native Web Component）
+├── components/                // Native Web Component
+│   ├── header.js              // 页头组件
+│   ├── footer.js              // 页脚组件
 │   ├── cart.js                // 购物车抽屉与弹窗组件
-│   └── card.js                // 商品卡片与通用展示组件
+│   ├── card.js                // 商品卡片与通用展示组件
+│   └── ...                    // 其他组件
 │
 └── js/
     ├── app.js                 // Tailwind 配置、主应用逻辑、移动端 REM 适配、事件委托与状态管理

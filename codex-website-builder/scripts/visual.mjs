@@ -26,9 +26,11 @@ try{
  try{await page.locator('.page-panel').nth(13).waitFor();}catch(error){console.log({body:await page.locator('body').innerText(),errors});throw error;}
  await page.waitForFunction(()=>document.querySelectorAll('.page-caption[data-ready="true"]').length===14,{}, {timeout:30000});
  assert.equal(await page.locator('iframe').count(),14);
- const positions=await page.locator('.page-panel').evaluateAll(nodes=>nodes.map(node=>{const box=node.getBoundingClientRect();return{x:box.x,y:box.y,width:box.width};}));
- assert.ok(positions.every(pos=>Math.abs(pos.y-positions[0].y)<1),'pages align along the top');
- assert.ok(positions.every((pos,i)=>i===0||pos.x>positions[i-1].x+positions[i-1].width),'all pages arranged horizontally');
+ const positions=await page.locator('.page-panel').evaluateAll(nodes=>nodes.map(node=>{const box=node.getBoundingClientRect();return{x:box.x,y:box.y,width:box.width,height:box.height};}));
+ const columns=Number(await page.locator('.canvas-world').getAttribute('data-columns'));
+ assert.ok(columns>=1&&columns<=3);
+ assert.ok(positions[columns].y>positions[0].y+positions[0].height,'pages wrap into multiple rows');
+ for(let i=0;i<positions.length;i++)if(i%columns)assert.ok(Math.abs(positions[i].y-positions[i-1].y)<1&&positions[i].x>positions[i-1].x+positions[i-1].width,'each row is aligned without overlap');
  const frame=page.frameLocator('iframe[title="index.html"]');
  await frame.locator('body').waitFor();
  assert.equal(await page.locator('.app-header,.site-sidebar,.canvas-toolbar').count(),0);
@@ -123,6 +125,6 @@ try{
  assert.equal(await page.locator('iframe').count(),14);
  assert.deepEqual(errors,[]);
  assert.equal(await sourceHash(sourceRoot),before,'preview must never modify source files');
- const result={result:'PASS',checks:['14 live frames arranged horizontally and top aligned','global and individual widths','auto height grows and shrinks','form fields and JS interaction','external anchor, window.open, location.href and form.submit blocked without a network request','internal page navigation blocked','PC/tablet/mobile height caps and native scrolling','real product CDN image loaded','filename-prefixed title ellipsis','canvas zoom, fit all and drag pan','page order','responsive viewport','source directory hash unchanged'],positions,errors,externalRequests,sourceHash:before};
+ const result={result:'PASS',checks:['14 live frames wrap in aligned rows without overlap','global and individual widths','auto height grows and shrinks','form fields and JS interaction','external anchor, window.open, location.href and form.submit blocked without a network request','internal page navigation blocked','PC/tablet/mobile height caps and native scrolling','real product CDN image loaded','filename-prefixed title ellipsis','canvas zoom, fit all and drag pan','page order','responsive viewport','source directory hash unchanged'],columns,positions,errors,externalRequests,sourceHash:before};
  await writeFile('artifacts/verification.json',JSON.stringify(result,null,2));console.log(JSON.stringify(result,null,2));
 }finally{await browser.close();child.kill();}

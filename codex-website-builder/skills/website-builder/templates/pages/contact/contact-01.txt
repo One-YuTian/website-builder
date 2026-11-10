@@ -1,25 +1,23 @@
 ## Overview
 
-Contact Us communication and inquiry page, containing page title skeleton, online feedback inquiry form (Name, Email, Subject, Message), office address / hotline / business hours info cards, and map placeholder area.
+Contact Us customer care and business inquiries page, integrating contact info card matrix (address, phone, email, hours), online feedback form, and full-width interactive map.
 
-### Layout & Regions
-- `page-header`: Page header title and consultation intro text skeleton.
-- `contact-form`: Visitor inquiry form and submit button.
-- `info-cards`: Physical store address, hotline, support email, and working hours cards.
-- `map-area`: Map geographic location placeholder skeleton.
+### Regions
+Functional regions are annotated directly in the component code implementation via English comments.
+
 
 ### Dimensions & Responsiveness
-- Follows global design system, outer container uses `content-container` with PC max content width 1200px centered.
-- Desktop (1024px+): Two-column layout with form on left and info cards on right.
-- Mobile (under 1024px): Single-column vertical layout with 100% width inputs.
+- Follows `content-container` with PC max content width 1200px centered.
+- Desktop (1024px+): 1:1 two-column layout (contact info on left, form on right).
+- Mobile (under 768px): Adapts to single vertical column with full-width submit button.
 
 ### Attributes & Props
 | Attribute | Description | Type | Default |
 | --- | --- | --- | --- |
-| `submitted` | Form submission success state | `boolean` | `false` |
+| `formTitle` | Form headline title | `string` | `'Get in Touch'` |
 
 ### Events
-- `contact-submit`: Dispatched when submitting the contact inquiry form.
+- `contact-submit`: Dispatched when submitting contact form with form payload.
 
 ## Code
 
@@ -28,10 +26,15 @@ Contact Us communication and inquiry page, containing page title skeleton, onlin
 ```html
 <section class="bg-surface font-sans text-content py-8 sm:py-12">
   <div class="content-container space-y-10 sm:space-y-12">
+    <!-- Region: Hero Section - Headline banner and visual introduction -->
+
     <div data-region="hero" class="text-center max-w-2xl mx-auto space-y-4 py-12 sm:py-14 rounded-2xl bg-accent/40 px-4">
       <div class="h-[1.8em] w-44 rounded-sm bg-accent mx-auto"></div>
       <div class="h-[0.8em] w-80 max-w-full rounded-xs bg-accent mx-auto"></div>
     </div>
+
+    <!-- Region: Form Card - Message submission and inquiry form -->
+
 
     <div data-region="form-card" class="max-w-xl mx-auto bg-surface rounded-2xl border border-outline/50 p-6 sm:p-8 shadow-xs space-y-6">
       <div class="h-[1.4em] w-44 rounded-sm bg-accent mb-6"></div>

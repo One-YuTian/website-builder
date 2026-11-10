@@ -1,25 +1,24 @@
 ## Overview
 
-Wishlist and favorites listing page, containing page title skeleton, batch Add All to Cart and Clear action toolbar, responsive product card grid, and empty state feedback.
+Wishlist and saved items catalog page, integrating page headline, item counter, product card grid with fast Move to Cart and item removal operations.
 
-### Layout & Regions
-- `page-header`: Page title skeleton and batch action button toolbar.
-- `wishlist-grid`: 2~4 column product card showcase grid.
-- `empty-state`: Empty illustration and Continue Shopping CTA when list is empty.
+### Regions
+Functional regions are annotated directly in the component code implementation via English comments.
+
 
 ### Dimensions & Responsiveness
-- Follows global design system, outer container uses `content-container` with PC max content width 1200px centered.
-- Desktop (1024px+): 4 equal-width product cards per row.
-- Tablet & Mobile (under 1024px): 2~3 column grid.
+- Follows `content-container` with PC max content width 1200px centered.
+- Desktop (1024px+): 4 equal columns.
+- Mobile (under 768px): 2 compact columns.
 
 ### Attributes & Props
 | Attribute | Description | Type | Default |
 | --- | --- | --- | --- |
-| `item-count` | Wishlist item count | `number` | `4` |
+| `itemCount` | Total items in wishlist | `number` | `4` |
 
 ### Events
-- `wishlist-add-all`: Dispatched when clicking Add All to Cart.
-- `wishlist-clear`: Dispatched when clicking Clear Wishlist.
+- `wishlist-remove`: Dispatched when removing item from wishlist.
+- `wishlist-move-to-cart`: Dispatched when moving item to shopping cart.
 
 ## Code
 
@@ -29,6 +28,8 @@ Wishlist and favorites listing page, containing page title skeleton, batch Add A
 <section class="wishlist-section bg-surface font-sans text-content py-8 sm:py-12">
   <div class="content-container">
     <!-- Page Header -->
+    <!-- Region: Page Header - Title, subtitle, and breadcrumb -->
+
     <div data-region="page-header" class="mb-8">
       <div class="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4 pb-6 border-b border-outline/20">
         <div>
@@ -47,9 +48,13 @@ Wishlist and favorites listing page, containing page title skeleton, batch Add A
     </div>
 
     <!-- Wishlist Grid -->
+    <!-- Region: Wishlist Grid - Saved products collection grid -->
+
     <div data-region="wishlist-grid" id="wishlist-grid" class="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-4 gap-4 md:gap-6"></div>
 
     <!-- Empty Wishlist State -->
+    <!-- Region: Empty State - Feedback when no items are available -->
+
     <div data-region="empty-state" id="wishlist-empty" class="hidden text-center py-16 sm:py-24 border border-dashed border-outline/30 rounded-2xl bg-accent/10">
       <div class="mx-auto size-16 rounded-full bg-accent/40 flex items-center justify-center text-muted mb-4">
         <span class="size-8 rounded-full border-2 border-dashed border-muted/60"></span>

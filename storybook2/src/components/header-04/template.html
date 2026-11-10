@@ -4,6 +4,8 @@
   </div>
 </div>
 <header class="bg-secondary text-on-secondary shadow-md font-sans">
+  <!-- Region: Header Main Bar - Brand logo, search, navigation, and user actions -->
+
   <div data-region="header-content" class="content-container">
     <div class="flex h-16 items-center justify-between gap-4">
       <div class="shrink-0">
@@ -14,11 +16,15 @@
       <form role="search" class="relative hidden flex-1 max-w-md mx-6 md:block">
         <div class="relative flex h-10 items-center rounded-full bg-surface text-content focus-within:ring-2 focus-within:ring-primary">
           <input type="search" name="query" autocomplete="off" class="h-full w-full min-w-0 rounded-full border-0 bg-transparent py-1.5 pl-4 pr-10 text-sm outline-none">
+          <!-- Region: Search Placeholder - Search input prompt -->
+
           <span data-region="search-placeholder" class="pointer-events-none absolute left-4"><span class="block h-[0.75em] w-32 rounded-sm bg-accent"></span></span>
           <button type="submit" class="absolute right-3 flex size-6 items-center justify-center rounded-full text-muted hover:text-content focus-visible:outline-2 focus-visible:outline-offset-4 focus-visible:outline-primary">
             <span class="block size-3.5 rounded-full bg-accent"></span>
           </button>
         </div>
+        <!-- Region: Search Suggestions - Autocomplete dropdown list -->
+
         <ul data-region="search-suggestions" hidden class="absolute inset-x-0 top-full z-20 mt-2 max-h-80 overflow-y-auto rounded-xl border border-outline bg-surface p-2 text-content shadow-xl"></ul>
       </form>
       <div class="hidden items-center gap-6 md:flex">
@@ -52,10 +58,12 @@
           <span class="block h-[0.75em] w-28 rounded-sm bg-accent"></span>
           <span class="block size-2 rounded-full bg-accent/60 transition-transform group-hover/cats:rotate-180"></span>
         </button>
+        <!-- Region: Categories Dropdown - Category links panel -->
+
         <div data-region="categories-panel" class="absolute left-0 right-0 top-full z-50 hidden group-hover/cats:block w-full border-b border-outline/30 bg-surface py-6 text-content shadow-2xl">
           <div class="content-container">
             <div class="grid grid-cols-6 gap-4">
-              <!-- Category 01 (分类图来源：从相应分类的商品数据中随机挑选一个合适的图片作为分类图) -->
+              <!-- Category 01 (Category image: Pick a relevant product image from this category) -->
               <div role="button" tabindex="0" data-category="category-01" class="flex flex-col items-center justify-center p-3 rounded-xl border border-outline/40 hover:border-primary transition-colors text-center group/cat">
                 <div class="size-16 sm:size-20 rounded-full border border-outline/40 bg-accent flex items-center justify-center mb-2 overflow-hidden relative">
                   <span class="relative block aspect-[6/5] w-7 sm:w-9 overflow-hidden rounded-xs border border-muted">
@@ -125,6 +133,8 @@
           </div>
         </div>
       </div>
+      <!-- Region: Primary Navigation Menu -->
+
       <nav class="flex items-center gap-6">
         <div role="button" tabindex="0" data-destination="home" class="text-xs uppercase tracking-wider text-on-secondary/80 hover:text-white focus-visible:outline-2 focus-visible:outline-offset-4 focus-visible:outline-primary"><span class="block h-[0.75em] w-12 rounded-sm bg-accent"></span></div>
         <div role="button" tabindex="0" data-destination="about" class="text-xs uppercase tracking-wider text-on-secondary/80 hover:text-white focus-visible:outline-2 focus-visible:outline-offset-4 focus-visible:outline-primary"><span class="block h-[0.75em] w-12 rounded-sm bg-accent"></span></div>
@@ -137,6 +147,8 @@
     </div>
   </div>
 </header>
+<!-- Region: Mobile Navigation Drawer -->
+
 <dialog class="fixed inset-y-0 left-0 m-0 h-dvh max-h-none w-80 max-w-[calc(100vw-2rem)] overflow-y-auto overscroll-contain border-0 bg-surface p-6 text-content shadow-xl backdrop:bg-black/50">
   <div class="mb-6 flex items-center justify-between gap-4">
     <span class="relative flex h-8 w-28 items-center justify-center overflow-hidden rounded-lg bg-accent select-none text-xs font-semibold tracking-widest text-muted">LOGO</span>
@@ -155,8 +167,12 @@
           <span class="block size-3.5 rounded-full bg-accent"></span>
           <span class="block h-[0.75em] w-28 rounded-sm bg-accent"></span>
         </div>
+        <!-- Region: Category Indicator - Expandable category trigger icon -->
+
         <span data-region="categories-arrow" class="block size-2 rounded-full bg-accent/60 transition-transform"></span>
       </button>
+      <!-- Region: Mobile Categories - Slide-out category drawer -->
+
       <div data-region="mobile-categories" hidden class="grid grid-cols-2 gap-2 pt-3">
         <div role="button" tabindex="0" data-category="category-01" class="flex items-center gap-2 rounded-lg p-2 hover:bg-accent/30"><span class="relative flex size-7 shrink-0 items-center justify-center overflow-hidden rounded-full border border-outline/40 bg-accent"><span class="relative block aspect-[6/5] w-3.5 overflow-hidden rounded-[1px] border border-muted"><span class="absolute right-[15%] top-[15%] size-1/5 rounded-full bg-muted"></span><span class="absolute -bottom-1/4 left-[5%] size-3/4 rotate-45 border-l border-t border-muted"></span><span class="absolute -bottom-1/4 right-0 size-1/2 rotate-45 border-l border-t border-muted"></span></span></span><span class="block h-[0.75em] w-12 rounded-sm bg-accent"></span></div>
         <div role="button" tabindex="0" data-category="category-02" class="flex items-center gap-2 rounded-lg p-2 hover:bg-accent/30"><span class="relative flex size-7 shrink-0 items-center justify-center overflow-hidden rounded-full border border-outline/40 bg-accent"><span class="relative block aspect-[6/5] w-3.5 overflow-hidden rounded-[1px] border border-muted"><span class="absolute right-[15%] top-[15%] size-1/5 rounded-full bg-muted"></span><span class="absolute -bottom-1/4 left-[5%] size-3/4 rotate-45 border-l border-t border-muted"></span><span class="absolute -bottom-1/4 right-0 size-1/2 rotate-45 border-l border-t border-muted"></span></span></span><span class="block h-[0.75em] w-12 rounded-sm bg-accent"></span></div>
@@ -172,4 +188,3 @@
     <div role="button" tabindex="0" data-destination="register" class="rounded-sm py-2 hover:opacity-75 focus-visible:outline-2 focus-visible:outline-offset-4 focus-visible:outline-primary"><span class="block h-[0.75em] w-16 rounded-sm bg-accent"></span></div>
   </div>
 </dialog>
-

@@ -2,10 +2,9 @@
 
 Full-width hero visual carousel showcase block, supporting multi-aspect ratio scaling, touch drag gestures, auto-rotation timer, bottom dot pagination indicators, and left/right navigation arrows, with dedicated breakpoint viewport adaptation.
 
-### Layout & Regions
-- `carousel-stage`: Main carousel slide stage embedding large image skeletons and floating text overlay layers.
-- `arrow-controls`: Semi-transparent floating left/right navigation arrow buttons.
-- `pagination`: Centered floating dot pagination indicators highlighting the active slide.
+### Regions
+Functional regions are annotated directly in the component code implementation via English comments.
+
 
 ### Dimensions & Responsiveness
 - Follows global design system, outer container uses `content-container` with PC max content width 1200px centered.
@@ -32,6 +31,8 @@ Full-width hero visual carousel showcase block, supporting multi-aspect ratio sc
   <div class="content-container">
     <!-- Desktop: Two-Column Side-by-Side Banners -->
     <div class="hidden md:grid grid-cols-2 gap-6">
+      <!-- Region: Primary Promotional Banner - Featured hero showcase -->
+
       <div data-region="banner-card-1" role="button" tabindex="0" class="relative h-64 lg:h-96 rounded-xl overflow-hidden bg-accent group cursor-pointer border border-outline/30 focus:outline-none focus:ring-2 focus:ring-primary">
         <div class="absolute inset-0 flex items-center justify-center bg-accent">
           <span class="relative block aspect-[6/5] w-16 lg:w-20 overflow-hidden rounded-sm border border-muted">
@@ -47,6 +48,8 @@ Full-width hero visual carousel showcase block, supporting multi-aspect ratio sc
           </div>
         </div>
       </div>
+      <!-- Region: Secondary Promotional Banner - Supporting campaign offer -->
+
       <div data-region="banner-card-2" role="button" tabindex="0" class="relative h-64 lg:h-96 rounded-xl overflow-hidden bg-accent group cursor-pointer border border-outline/30 focus:outline-none focus:ring-2 focus:ring-primary">
         <div class="absolute inset-0 flex items-center justify-center bg-accent">
           <span class="relative block aspect-[6/5] w-16 lg:w-20 overflow-hidden rounded-sm border border-muted">

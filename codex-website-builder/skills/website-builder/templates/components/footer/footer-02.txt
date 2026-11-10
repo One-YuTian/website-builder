@@ -2,20 +2,19 @@
 
 Standard e-commerce site footer component, integrating brand LOGO skeleton, corporate mission statement, multi-column category navigation matrix, social media icons, security trust badges, and copyright/compliance bar with adaptive responsive grid layout.
 
-### Layout & Regions
-- `footer-columns`: Core multi-column information matrix container in equal-width grid.
-- `logo-section`: Brand LOGO skeleton, brief company description, and circular social media icon group.
-- `nav-columns`: 3~4 categorized link columns (Shopping Guide, Customer Care, About Us, Policies & Compliance).
-- `bottom-bar`: Bottom copyright information skeleton, registration number, and payment trust badges.
+### Regions
+Functional regions are annotated directly in the component code implementation via English comments.
+
 
 ### Dimensions & Responsiveness
 - Follows global design system, outer container uses `content-container` with PC max content width 1200px centered.
+- Desktop (1024px+): 3 to 4 column grid layout side by side with 32px~48px gutter spacing.
 - Mobile (under 1024px): Adapts to single-column vertical flow with generous spacing between columns, ensuring touch targets are at least 44px high.
 
 ### Attributes & Props
 | Attribute | Description | Type | Default |
 | --- | --- | --- | --- |
-| `theme` | Theme styling mode | `'dark' \| 'light'` | `'dark'` |
+| `columns` | Number of columns in main footer layout | `number` | `3` |
 
 ### Events
 - `footer-navigate`: Dispatched when user clicks any footer navigation link or social icon.
@@ -27,6 +26,8 @@ Standard e-commerce site footer component, integrating brand LOGO skeleton, corp
 ```html
 <footer class="border-t border-outline bg-surface text-content font-sans">
   <div class="content-container pb-4 pt-8">
+    <!-- Region: Footer Columns - Navigation links, customer service, and company info -->
+
     <div data-region="footer-columns" class="grid grid-cols-1 gap-8 pb-8 md:grid-cols-3">
       <div class="min-w-0 space-y-5">
         <span class="relative flex h-10 w-36 items-center justify-center overflow-hidden rounded-xl bg-accent select-none text-xs font-semibold tracking-widest text-muted">LOGO</span>
@@ -73,7 +74,7 @@ Standard e-commerce site footer component, integrating brand LOGO skeleton, corp
 ### JavaScript
 
 ```javascript
-export class Footer extends HTMLElement {
+class Footer extends HTMLElement {
   constructor() {
     super();
     window.$footer = this;
@@ -143,5 +144,9 @@ export class Footer extends HTMLElement {
         </div>
       </footer>`;
   }
+}
+
+if (!customElements.get('footer-02')) {
+  customElements.define('footer-02', Footer);
 }
 ```

@@ -1,24 +1,23 @@
 ## Overview
 
-New user registration page, containing top brand badge, welcome headline skeleton, username field, email field, phone field with country dial code prefix, dual password verification fields, terms checkbox, register button, and link to login.
+User registration and account creation page, containing full name, email, password strength meter, confirm password, terms agreement checkbox, and sign in link.
 
-### Layout & Regions
-- `card-header`: Brand icon placeholder, main title, and subtitle text.
-- `register-form`: User details form, dial code selector, password visibility, and terms agreement.
-- `card-footer`: Divider and switch-to-login navigation link.
+### Regions
+Functional regions are annotated directly in the component code implementation via English comments.
+
 
 ### Dimensions & Responsiveness
-- Follows global design system, outer container uses `content-container` with PC max content width 1200px centered.
-- Card max width 28rem (448px) centered, full width on mobile.
+- Centered card max width 480px, vertically centered on screen.
+- Mobile: Width calc(100vw - 32px) with comfortable touch targets.
 
 ### Attributes & Props
 | Attribute | Description | Type | Default |
 | --- | --- | --- | --- |
-| `is-submitting` | Registration submission state | `boolean` | `false` |
+| `title` | Registration headline | `string` | `'Create Account'` |
 
 ### Events
-- `auth-navigate`: Dispatched when clicking Sign In link.
-- `auth-register`: Dispatched when submitting new account registration.
+- `auth-register`: Dispatched when submitting registration form.
+- `auth-navigate`: Dispatched when clicking sign-in link.
 
 ## Code
 
@@ -27,8 +26,12 @@ New user registration page, containing top brand badge, welcome headline skeleto
 ```html
 <section class="register-section bg-accent/20 font-sans text-content py-12 sm:py-20 min-h-[640px] flex items-center">
   <div class="content-container flex justify-center">
+    <!-- Region: Authentication Card - User credentials and submission form -->
+
     <div data-region="auth-card" class="w-full max-w-md bg-surface rounded-2xl shadow-lg border border-outline/30 p-6 sm:p-10">
       <!-- Header -->
+      <!-- Region: Card Header - Welcome heading and brand logo -->
+
       <div data-region="card-header" class="text-center mb-8 flex flex-col items-center">
         <!-- Logo / Icon Skeleton -->
         <div class="size-12 rounded-xl bg-primary/10 border border-primary/20 flex items-center justify-center mb-4">
@@ -41,12 +44,14 @@ New user registration page, containing top brand badge, welcome headline skeleto
       </div>
 
       <!-- Form -->
+      <!-- Region: Registration Form - Account creation input fields -->
+
       <form id="register-form" data-region="register-form" class="space-y-4" onsubmit="return false;">
         <!-- Username Field -->
         <div>
           <div class="h-3 w-16 bg-content/80 rounded-xs mb-1.5"></div>
           <div class="relative">
-            <input type="text" readonly placeholder="" aria-label="用户名输入框" class="w-full px-4 py-2.5 bg-surface border border-outline/50 rounded-xl focus:border-primary text-sm shadow-2xs cursor-default">
+            <input type="text" readonly placeholder="" aria-label="Username" class="w-full px-4 py-2.5 bg-surface border border-outline/50 rounded-xl focus:border-primary text-sm shadow-2xs cursor-default">
             <div class="absolute inset-y-0 left-4 flex items-center pointer-events-none">
               <div class="h-3 w-28 bg-muted/40 rounded-xs"></div>
             </div>
@@ -57,7 +62,7 @@ New user registration page, containing top brand badge, welcome headline skeleto
         <div>
           <div class="h-3 w-20 bg-content/80 rounded-xs mb-1.5"></div>
           <div class="relative">
-            <input type="text" readonly placeholder="" aria-label="电子邮箱输入框" class="w-full px-4 py-2.5 bg-surface border border-outline/50 rounded-xl focus:border-primary text-sm shadow-2xs cursor-default">
+            <input type="text" readonly placeholder="" aria-label="Email address" class="w-full px-4 py-2.5 bg-surface border border-outline/50 rounded-xl focus:border-primary text-sm shadow-2xs cursor-default">
             <div class="absolute inset-y-0 left-4 flex items-center pointer-events-none">
               <div class="h-3 w-36 bg-muted/40 rounded-xs"></div>
             </div>
@@ -69,7 +74,7 @@ New user registration page, containing top brand badge, welcome headline skeleto
           <div class="h-3 w-16 bg-content/80 rounded-xs mb-1.5"></div>
           <div class="flex">
             <span class="inline-flex items-center px-3 rounded-l-xl border border-r-0 border-outline/50 bg-accent/30 text-xs text-muted font-mono">+1</span>
-            <input type="text" readonly placeholder="" aria-label="电话号码输入框" class="flex-1 px-4 py-2.5 bg-surface border border-outline/50 rounded-r-xl focus:border-primary text-sm shadow-2xs cursor-default">
+            <input type="text" readonly placeholder="" aria-label="Phone number" class="flex-1 px-4 py-2.5 bg-surface border border-outline/50 rounded-r-xl focus:border-primary text-sm shadow-2xs cursor-default">
           </div>
         </div>
 
@@ -77,11 +82,11 @@ New user registration page, containing top brand badge, welcome headline skeleto
         <div>
           <div class="h-3 w-16 bg-content/80 rounded-xs mb-1.5"></div>
           <div class="relative">
-            <input type="password" readonly placeholder="" aria-label="设置密码输入框" class="w-full px-4 py-2.5 bg-surface border border-outline/50 rounded-xl focus:border-primary text-sm pr-11 shadow-2xs cursor-default">
+            <input type="password" readonly placeholder="" aria-label="Password" class="w-full px-4 py-2.5 bg-surface border border-outline/50 rounded-xl focus:border-primary text-sm pr-11 shadow-2xs cursor-default">
             <div class="absolute inset-y-0 left-4 flex items-center pointer-events-none">
               <div class="h-3 w-28 bg-muted/40 rounded-xs"></div>
             </div>
-            <button type="button" aria-label="切换密码可见性" data-action="toggle-pwd" class="absolute right-3 top-1/2 -translate-y-1/2 text-muted hover:text-content cursor-pointer p-1">
+            <button type="button" aria-label="Toggle password visibility" data-action="toggle-pwd" class="absolute right-3 top-1/2 -translate-y-1/2 text-muted hover:text-content cursor-pointer p-1">
               <span class="inline-block size-4 rounded-full border border-muted/70"></span>
             </button>
           </div>
@@ -91,7 +96,7 @@ New user registration page, containing top brand badge, welcome headline skeleto
         <div>
           <div class="h-3 w-24 bg-content/80 rounded-xs mb-1.5"></div>
           <div class="relative">
-            <input type="password" readonly placeholder="" aria-label="确认密码输入框" class="w-full px-4 py-2.5 bg-surface border border-outline/50 rounded-xl focus:border-primary text-sm pr-11 shadow-2xs cursor-default">
+            <input type="password" readonly placeholder="" aria-label="Confirm password" class="w-full px-4 py-2.5 bg-surface border border-outline/50 rounded-xl focus:border-primary text-sm pr-11 shadow-2xs cursor-default">
             <div class="absolute inset-y-0 left-4 flex items-center pointer-events-none">
               <div class="h-3 w-28 bg-muted/40 rounded-xs"></div>
             </div>
@@ -113,6 +118,8 @@ New user registration page, containing top brand badge, welcome headline skeleto
       </form>
 
       <!-- Switch to Login Divider -->
+      <!-- Region: Card Footer - Alternate auth links and secondary actions -->
+
       <div data-region="card-footer" class="mt-8 pt-6 border-t border-outline/20 text-center">
         <div class="flex items-center justify-center gap-2">
           <div class="h-3 w-32 bg-muted/60 rounded-xs"></div>

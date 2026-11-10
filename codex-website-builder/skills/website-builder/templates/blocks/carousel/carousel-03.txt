@@ -2,10 +2,9 @@
 
 Full-width hero visual carousel showcase block, supporting multi-aspect ratio scaling, touch drag gestures, auto-rotation timer, bottom dot pagination indicators, and left/right navigation arrows, with dedicated breakpoint viewport adaptation.
 
-### Layout & Regions
-- `carousel-stage`: Main carousel slide stage embedding large image skeletons and floating text overlay layers.
-- `arrow-controls`: Semi-transparent floating left/right navigation arrow buttons.
-- `pagination`: Centered floating dot pagination indicators highlighting the active slide.
+### Regions
+Functional regions are annotated directly in the component code implementation via English comments.
+
 
 ### Dimensions & Responsiveness
 - Follows global design system, outer container uses `content-container` with PC max content width 1200px centered.
@@ -56,6 +55,8 @@ Full-width hero visual carousel showcase block, supporting multi-aspect ratio sc
           <div class="swiper-pagination !z-30"></div>
         </div>
       </div>
+      <!-- Region: Side Banners - Supporting side marketing banners -->
+
       <div data-region="side-banners" class="flex flex-col gap-3 h-full">
         <div class="flex-1 bg-accent rounded-xl flex items-center justify-center overflow-hidden">
           <span class="relative block aspect-[6/5] w-12 overflow-hidden rounded-sm border border-muted">
@@ -101,6 +102,9 @@ Full-width hero visual carousel showcase block, supporting multi-aspect ratio sc
         </div>
       </div>
     </div>
+
+    <!-- Region: Categories Grid - Category browsing entrance cards -->
+
 
     <nav data-region="categories-grid" class="hidden sm:grid mt-4 sm:mt-6 grid-cols-6 gap-2.5 sm:gap-3 w-full">
       <div role="button" tabindex="0" class="flex flex-col sm:flex-row items-center justify-center sm:justify-start gap-2 sm:gap-2.5 rounded-lg border border-outline/60 bg-surface p-2 sm:p-2.5 hover:border-primary/50 transition-colors cursor-pointer w-full focus-visible:outline-2 focus-visible:outline-offset-4 focus-visible:outline-primary">

@@ -10,8 +10,8 @@ import { Tabs, TabItem } from '@astrojs/starlight/components';
 
 <ComponentPreview
   code={"<!doctype html>\n<html lang=\"zh-CN\">\n<head>\n  <meta charset=\"UTF-8\">\n  <meta name=\"viewport\" content=\"width=device-width, initial-scale=1\">\n  <title>Header-08 响应式组合</title>\n</head>\n<body>\n<header-08 id=\"component-1-0\"></header-08>\n<script>\n// 下方是组件实际实现（含共享骨架、主题及在线资源加载代码）。\n(function() {\n  \"use strict\";\n  const shapes = {\n    image: \"relative block w-full aspect-video overflow-hidden rounded-xl bg-accent\",\n    logo: \"relative flex h-10 w-32 items-center justify-center overflow-hidden rounded-xl bg-accent\",\n    text: \"block h-[0.75em] w-full rounded-sm bg-accent\",\n    title: \"block h-[0.75em] w-3/4 rounded-sm bg-accent\",\n    circle: \"block size-12 rounded-full bg-accent\",\n    button: \"block h-[0.75em] w-20 rounded-sm bg-accent\"\n  };\n  const lengths = /^(?:0|\\d+(?:\\.\\d+)?(?:px|rem|em|%|vw|vh|ch))$/;\n  class Skeleton extends HTMLElement {\n    static observedAttributes = [\"kind\", \"lines\", \"width\", \"height\", \"ratio\", \"radius\", \"font-size\"];\n    connectedCallback() {\n      this.render();\n    }\n    attributeChangedCallback() {\n      if (this.isConnected) this.render();\n    }\n    render() {\n      const kind = Object.hasOwn(shapes, this.getAttribute(\"kind\")) ? this.getAttribute(\"kind\") : \"text\";\n      const count = kind === \"text\" ? Math.max(1, Math.min(12, Number.parseInt(this.getAttribute(\"lines\"), 10) || 1)) : 1;\n      const container = this.ownerDocument.createElement(\"span\");\n      container.className = \"grid min-w-0 gap-[0.5em]\";\n      container.setAttribute(\"aria-hidden\", \"true\");\n      const fontSize = this.getAttribute(\"font-size\");\n      if ([\"text\", \"title\", \"button\"].includes(kind)) {\n        const baseSize = fontSize && lengths.test(fontSize) ? fontSize : \"1em\";\n        container.style.fontSize = `calc(${baseSize} + var(--theme-skeleton-text-offset, 3px))`;\n      }\n      for (let i = 0; i < count; i++) {\n        const line = this.ownerDocument.createElement(\"span\");\n        line.className = shapes[kind];\n        line.dataset.sb2Part = \"shape\";\n        for (const [attribute, property] of [[\"width\", \"width\"], [\"height\", \"height\"], [\"radius\", \"borderRadius\"]]) {\n          const value = this.getAttribute(attribute);\n          if (value && lengths.test(value)) line.style[property] = value;\n        }\n        const ratio = this.getAttribute(\"ratio\");\n        if (ratio && /^\\d+(?:\\.\\d+)?\\s*\\/\\s*\\d+(?:\\.\\d+)?$/.test(ratio) && ratio.split(\"/\").every((value) => Number(value) > 0)) line.style.aspectRatio = ratio;\n        if (kind === \"text\" && count > 1 && i === count - 1 && !this.hasAttribute(\"width\")) {\n          line.classList.remove(\"w-full\");\n          line.classList.add(\"w-2/3\");\n        }\n        if (kind === \"logo\" || kind === \"image\") {\n          const marker = this.ownerDocument.createElement(\"span\");\n          marker.dataset.sb2Marker = kind;\n          marker.className = \"pointer-events-none absolute inset-0 flex items-center justify-center\";\n          if (kind === \"logo\") {\n            const label = this.ownerDocument.createElement(\"span\");\n            label.className = \"select-none text-xs font-semibold tracking-widest text-muted\";\n            label.textContent = \"LOGO\";\n            marker.append(label);\n          } else {\n            marker.innerHTML = '<span class=\"relative block aspect-[6/5] w-1/4 min-w-4 max-w-12 overflow-hidden rounded-sm border border-muted\"><span class=\"absolute right-[15%] top-[15%] size-1/5 rounded-full bg-muted\"></span><span class=\"absolute -bottom-1/4 left-[5%] size-3/4 rotate-45 border-l border-t border-muted\"></span><span class=\"absolute -bottom-1/4 right-0 size-1/2 rotate-45 border-l border-t border-muted\"></span></span>';\n          }\n          line.append(marker);\n        }\n        container.append(line);\n      }\n      this.replaceChildren(container);\n    }\n  }\n  class Header extends HTMLElement {\n    static observedAttributes = [\"is-logged-in\", \"cart-count\", \"wishlist-count\", \"theme\"];\n    constructor() {\n      super();\n      this._uid = \"header-08-\" + Math.random().toString(36).substring(2, 8);\n      this._searchSuggestions = [];\n      window.$header = this;\n    }\n    get isLoggedIn() {\n      return this.hasAttribute(\"is-logged-in\");\n    }\n    set isLoggedIn(val) {\n      this.toggleAttribute(\"is-logged-in\", Boolean(val));\n    }\n    get cartCount() {\n      return Number(this.getAttribute(\"cart-count\")) || 0;\n    }\n    set cartCount(val) {\n      this.setAttribute(\"cart-count\", String(Math.max(0, Math.floor(Number(val) || 0))));\n    }\n    get wishlistCount() {\n      return Number(this.getAttribute(\"wishlist-count\")) || 0;\n    }\n    set wishlistCount(val) {\n      this.setAttribute(\"wishlist-count\", String(Math.max(0, Math.floor(Number(val) || 0))));\n    }\n    get theme() {\n      return this.getAttribute(\"theme\") || \"dark\";\n    }\n    set theme(val) {\n      this.setAttribute(\"theme\", String(val));\n    }\n    get searchSuggestions() {\n      return [...this._searchSuggestions];\n    }\n    set searchSuggestions(list) {\n      this._searchSuggestions = Array.isArray(list) ? list.slice(0, 6) : [];\n    }\n    toggleMobileMenu(force) {\n      const dialog = this.querySelector(\"dialog\");\n      if (!dialog) return;\n      if (typeof force === \"boolean\") {\n        if (force && !dialog.open) dialog.showModal();\n        else if (!force && dialog.open) dialog.close();\n      } else {\n        if (dialog.open) dialog.close();\n        else dialog.showModal();\n      }\n    }\n    toggleAccountDropdown() {\n      const panel = this.querySelector('[data-region=\"account-panel\"]');\n      if (panel) panel.hidden = !panel.hidden;\n    }\n    updateCart(count) {\n      this.cartCount = count;\n    }\n    updateWishlist(count) {\n      this.wishlistCount = count;\n    }\n    connectedCallback() {\n      this.classList.add(\"block\", \"sticky\", \"top-0\", \"z-40\");\n      this.render();\n      this.bindEvents();\n    }\n    disconnectedCallback() {\n      this._controller?.abort();\n      if (window.$header === this) delete window.$header;\n    }\n    attributeChangedCallback() {\n      if (this.isConnected) this.render();\n    }\n    bindEvents() {\n      this._controller?.abort();\n      this._controller = new AbortController();\n      const { signal } = this._controller;\n      this.addEventListener(\"click\", (e) => {\n        const target = e.target;\n        const actionEl = target.closest(\"[data-action]\");\n        if (!actionEl) return;\n        const action = actionEl.dataset.action;\n        if (action === \"menu\") {\n          this.toggleMobileMenu();\n        } else if (action === \"close-menu\") {\n          this.toggleMobileMenu(false);\n        } else if (action === \"account\") {\n          this.toggleAccountDropdown();\n        } else if (action === \"cart\") {\n          this.emit(\"header-navigate\", { destination: \"cart\" });\n        } else if (action === \"wishlist\") {\n          this.emit(\"header-navigate\", { destination: \"wishlist\" });\n        } else if (action === \"login\") {\n          this.emit(\"header-navigate\", { destination: \"login\" });\n        } else if (action === \"register\") {\n          this.emit(\"header-navigate\", { destination: \"register\" });\n        } else if (action === \"nav\") {\n          const id = actionEl.dataset.navId;\n          this.emit(\"header-navigate\", { destination: \"category\", id });\n          this.toggleMobileMenu(false);\n        }\n      }, { signal });\n      document.addEventListener(\"pointerdown\", (e) => {\n        const panel = this.querySelector('[data-region=\"account-panel\"]');\n        const trigger = this.querySelector('[data-action=\"account\"]');\n        if (panel && !panel.contains(e.target) && !trigger?.contains(e.target)) {\n          panel.hidden = true;\n        }\n      }, { signal });\n    }\n    emit(name, detail = {}) {\n      this.dispatchEvent(new CustomEvent(name, { detail, bubbles: true, composed: true }));\n    }\n    render() {\n      const isLight = this.theme === \"light\";\n      const focusRing = \"focus-visible:outline-2 focus-visible:outline-offset-4 focus-visible:outline-primary\";\n      const headerCls = isLight ? \"bg-surface font-sans text-content border-b border-outline/30 shadow-xs\" : \"bg-secondary font-sans text-on-secondary\";\n      const actionBtnCls = isLight ? \"hover:bg-accent/40 text-content\" : \"hover:bg-on-secondary/10 text-on-secondary\";\n      const navLinkCls = isLight ? \"text-content/80 hover:text-primary\" : \"text-on-secondary/90 hover:opacity-75\";\n      const authSection = this.isLoggedIn ? `<div class=\"relative\">\n          <button type=\"button\" data-action=\"account\" class=\"flex size-9 items-center justify-center rounded-lg ${actionBtnCls} ${focusRing}\">\n            <span class=\"block size-6 rounded-full bg-accent\"></span>\n          </button>\n          <div data-region=\"account-panel\" hidden class=\"absolute right-0 top-full mt-2 w-48 rounded-xl border border-outline/60 bg-surface p-2 shadow-xl z-50 text-content\">\n            <button type=\"button\" data-action=\"account-orders\" class=\"w-full rounded-lg p-2 text-left hover:bg-accent/40 text-sm\"><span class=\"block h-[0.75em] w-20 rounded-sm bg-accent\"></span></button>\n            <button type=\"button\" data-action=\"account-wishlist\" class=\"w-full rounded-lg p-2 text-left hover:bg-accent/40 text-sm\"><span class=\"block h-[0.75em] w-16 rounded-sm bg-accent\"></span></button>\n            <button type=\"button\" data-action=\"logout\" class=\"w-full rounded-lg p-2 text-left hover:bg-accent/40 text-sm\"><span class=\"block h-[0.75em] w-14 rounded-sm bg-accent\"></span></button>\n          </div>\n        </div>` : `<div class=\"relative\">\n          <button type=\"button\" data-action=\"account\" class=\"flex size-9 items-center justify-center rounded-lg ${actionBtnCls} ${focusRing}\">\n            <span class=\"block size-4 rounded-full bg-accent\"></span>\n          </button>\n          <div data-region=\"account-panel\" hidden class=\"absolute right-0 top-full mt-2 w-40 rounded-xl border border-outline/60 bg-surface p-2 shadow-xl z-50 text-content\">\n            <button type=\"button\" data-action=\"login\" class=\"w-full rounded-lg p-2 text-left hover:bg-accent/40 text-sm font-medium\"><span class=\"block h-[0.75em] w-12 rounded-sm bg-accent\"></span></button>\n            <button type=\"button\" data-action=\"register\" class=\"w-full rounded-lg p-2 text-left hover:bg-accent/40 text-sm font-medium\"><span class=\"block h-[0.75em] w-16 rounded-sm bg-accent\"></span></button>\n          </div>\n        </div>`;\n      this.innerHTML = `\n      <header class=\"${headerCls} py-3\">\n        <div class=\"content-container flex items-center justify-between gap-6\">\n          <div class=\"flex items-center gap-8\">\n            <div data-region=\"logo\" class=\"flex-shrink-0\">\n              <div role=\"button\" tabindex=\"0\" data-action=\"nav\" data-nav-id=\"home\" class=\"flex items-center rounded-lg ${focusRing}\">\n                <span class=\"relative flex h-10 w-28 items-center justify-center overflow-hidden rounded-xl bg-accent\"><span class=\"select-none text-xs font-semibold tracking-widest text-muted\">LOGO</span></span>\n              </div>\n            </div>\n\n            <nav data-region=\"desktop-nav\" class=\"hidden md:flex items-center gap-6\">\n              <div role=\"button\" tabindex=\"0\" data-action=\"nav\" data-nav-id=\"home\" class=\"py-1 font-medium transition-colors ${navLinkCls} ${focusRing}\"><span class=\"block h-[0.75em] w-12 rounded-sm bg-accent\"></span></div>\n              <div role=\"button\" tabindex=\"0\" data-action=\"nav\" data-nav-id=\"shop\" class=\"py-1 font-medium transition-colors ${navLinkCls} ${focusRing}\"><span class=\"block h-[0.75em] w-10 rounded-sm bg-accent\"></span></div>\n              <div role=\"button\" tabindex=\"0\" data-action=\"nav\" data-nav-id=\"about\" class=\"py-1 font-medium transition-colors ${navLinkCls} ${focusRing}\"><span class=\"block h-[0.75em] w-12 rounded-sm bg-accent\"></span></div>\n            </nav>\n          </div>\n\n          <div class=\"flex items-center justify-end gap-1.5 sm:gap-3\">\n            <div data-region=\"auth\">${authSection}</div>\n\n            <button type=\"button\" data-action=\"wishlist\" class=\"relative flex size-9 items-center justify-center rounded-lg ${actionBtnCls} ${focusRing}\">\n              <span class=\"block size-4 rounded-sm bg-accent\"></span>\n              <span data-region=\"wishlist-badge\" class=\"${this.wishlistCount > 0 ? \"\" : \"hidden\"} absolute -right-1 -top-1 flex size-4 items-center justify-center rounded-full bg-primary text-on-secondary text-[10px] font-bold shadow-xs\">${this.wishlistCount}</span>\n            </button>\n\n            <button type=\"button\" data-action=\"cart\" class=\"relative flex size-9 items-center justify-center rounded-lg ${actionBtnCls} ${focusRing}\">\n              <span class=\"block size-4 rounded-sm bg-accent\"></span>\n              <span data-region=\"cart-badge\" class=\"${this.cartCount > 0 ? \"\" : \"hidden\"} absolute -right-1 -top-1 flex size-4 items-center justify-center rounded-full bg-primary text-on-secondary text-[10px] font-bold shadow-xs\">${this.cartCount}</span>\n            </button>\n\n            <button type=\"button\" data-action=\"menu\" class=\"flex size-9 items-center justify-center rounded-lg md:hidden ${actionBtnCls} ${focusRing}\">\n              <span class=\"flex flex-col gap-1\"><span class=\"block h-0.5 w-4 bg-accent\"></span><span class=\"block h-0.5 w-4 bg-accent\"></span><span class=\"block h-0.5 w-4 bg-accent\"></span></span>\n            </button>\n          </div>\n        </div>\n\n        <dialog data-region=\"mobile-drawer\" class=\"fixed inset-0 m-0 h-full max-h-none w-72 max-w-[85vw] border-r border-outline/40 bg-surface p-0 shadow-2xl backdrop:bg-black/40\">\n          <div class=\"flex h-full flex-col p-4 text-content\">\n            <div class=\"flex items-center justify-between border-b border-outline/30 pb-4\">\n              <span class=\"relative flex h-8 w-24 items-center justify-center overflow-hidden rounded-lg bg-accent\"><span class=\"select-none text-xs font-semibold tracking-widest text-muted\">LOGO</span></span>\n              <button type=\"button\" data-action=\"close-menu\" class=\"flex size-8 items-center justify-center rounded-lg hover:bg-accent/40 ${focusRing}\"><span class=\"block size-4 rounded-full bg-accent\"></span></button>\n            </div>\n            <nav class=\"flex flex-col gap-2 py-4\">\n              <div role=\"button\" tabindex=\"0\" data-action=\"nav\" data-nav-id=\"home\" class=\"rounded-lg p-2.5 font-medium hover:bg-accent/40\"><span class=\"block h-[0.75em] w-16 rounded-sm bg-accent\"></span></div>\n              <div role=\"button\" tabindex=\"0\" data-action=\"nav\" data-nav-id=\"shop\" class=\"rounded-lg p-2.5 font-medium hover:bg-accent/40\"><span class=\"block h-[0.75em] w-14 rounded-sm bg-accent\"></span></div>\n              <div role=\"button\" tabindex=\"0\" data-action=\"nav\" data-nav-id=\"about\" class=\"rounded-lg p-2.5 font-medium hover:bg-accent/40\"><span class=\"block h-[0.75em] w-16 rounded-sm bg-accent\"></span></div>\n            </nav>\n            <div class=\"mt-auto border-t border-outline/30 pt-4 flex flex-col gap-2\">\n              <button type=\"button\" data-action=\"login\" class=\"w-full rounded-lg p-2 text-left hover:bg-accent/40 font-medium\"><span class=\"block h-[0.75em] w-16 rounded-sm bg-accent\"></span></button>\n              <button type=\"button\" data-action=\"register\" class=\"w-full rounded-lg p-2 text-left hover:bg-accent/40 font-medium\"><span class=\"block h-[0.75em] w-20 rounded-sm bg-accent\"></span></button>\n            </div>\n          </div>\n        </dialog>\n      </header>`;\n    }\n  }\n  const themeConfig = Object.freeze({\n    colors: Object.freeze({\n      primary: \"#bd0e16\",\n      secondary: \"#000000\",\n      accent: \"#e2e8f0\",\n      surface: \"#ffffff\",\n      text: \"#0f172a\",\n      muted: \"#64748b\",\n      border: \"#cbd5e1\",\n      onSecondary: \"#ffffff\"\n    }),\n    contentMaxWidth: 1200,\n    gutters: Object.freeze({ mobile: 16, desktop: 24 }),\n    font: Object.freeze({\n      family: \"Noto Sans SC\",\n      weights: [400, 500, 600, 700],\n      fallback: \"ui-sans-serif, system-ui, sans-serif\"\n    }),\n    radius: 8,\n    radii: Object.freeze({\n      sm: 4,\n      md: 6,\n      lg: 8,\n      xl: 12\n    }),\n    skeletonTextSizeOffset: 3,\n    breakpoints: Object.freeze({ sm: 640, md: 768, lg: 1024, xl: 1280, \"2xl\": 1536 })\n  });\n  const themePresets = Object.freeze({\n    default: Object.freeze({}),\n    ocean: Object.freeze({ primary: \"#2563eb\", secondary: \"#172554\", accent: \"#dbeafe\" }),\n    forest: Object.freeze({ primary: \"#15803d\", secondary: \"#052e16\", accent: \"#dcfce7\" })\n  });\n  const resources = Object.freeze({\n    tailwind: \"https://cdn.jsdelivr.net/npm/@tailwindcss/browser@4.1.13/dist/index.global.js\",\n    tailwindFallback: \"https://unpkg.com/@tailwindcss/browser@4.1.13/dist/index.global.js\",\n    jquery: \"https://cdn.jsdelivr.net/npm/jquery@3.7.1/dist/jquery.min.js\",\n    jqueryFallback: \"https://unpkg.com/jquery@3.7.1/dist/jquery.min.js\",\n    swiper: \"https://cdn.jsdelivr.net/npm/swiper@10.3.1/swiper-bundle.min.js\",\n    swiperFallback: \"https://unpkg.com/swiper@10.3.1/swiper-bundle.min.js\",\n    swiperCss: \"https://cdn.jsdelivr.net/npm/swiper@10.3.1/swiper-bundle.min.css\",\n    swiperCssFallback: \"https://unpkg.com/swiper@10.3.1/swiper-bundle.min.css\",\n    font: `https://fonts.googleapis.com/css2?family=${encodeURIComponent(themeConfig.font.family)}:wght@${themeConfig.font.weights.join(\";\")}&display=swap`\n  });\n  const fontStack = `${JSON.stringify(themeConfig.font.family)}, ${themeConfig.font.fallback}`;\n  function applyTheme({ preset = \"default\", contentMaxWidth = themeConfig.contentMaxWidth } = {}, doc = document) {\n    if (!Object.hasOwn(themePresets, preset)) throw new Error(`未知全局主题：${preset}`);\n    if (!Number.isFinite(contentMaxWidth) || contentMaxWidth <= 0) throw new Error(\"全局内容宽度必须是正数\");\n    const root = doc.documentElement;\n    const colors = { ...themeConfig.colors, ...themePresets[preset] };\n    for (const [name, value] of Object.entries(colors)) {\n      const key = name.replace(/[A-Z]/g, (letter) => `-${letter.toLowerCase()}`);\n      root.style.setProperty(`--theme-${key}`, value);\n    }\n    root.style.setProperty(\"--theme-content-max-width\", `${contentMaxWidth}px`);\n    root.style.setProperty(\"--theme-radius\", `${themeConfig.radius}px`);\n    root.style.setProperty(\"--theme-radius-sm\", `${themeConfig.radii.sm}px`);\n    root.style.setProperty(\"--theme-radius-md\", `${themeConfig.radii.md}px`);\n    root.style.setProperty(\"--theme-radius-lg\", `${themeConfig.radii.lg}px`);\n    root.style.setProperty(\"--theme-radius-xl\", `${themeConfig.radii.xl}px`);\n    root.style.setProperty(\"--theme-font\", fontStack);\n    root.style.setProperty(\"--theme-gutter-mobile\", `${themeConfig.gutters.mobile}px`);\n    root.style.setProperty(\"--theme-gutter-desktop\", `${themeConfig.gutters.desktop}px`);\n    root.style.setProperty(\"--theme-skeleton-text-offset\", `${themeConfig.skeletonTextSizeOffset}px`);\n    root.dataset.themePreset = preset;\n  }\n  const themeCss = `\n  @theme {\n    ${Object.entries(themeConfig.breakpoints).map(([key, value]) => `--breakpoint-${key}: ${value / 16}rem;`).join(\"\\n\")}\n  }\n  @theme inline {\n    --font-sans: var(--theme-font);\n    --color-primary: var(--theme-primary);\n    --color-secondary: var(--theme-secondary);\n    --color-accent: var(--theme-accent);\n    --color-surface: var(--theme-surface);\n    --color-content: var(--theme-text);\n    --color-muted: var(--theme-muted);\n    --color-outline: var(--theme-border);\n    --color-on-secondary: var(--theme-on-secondary);\n    --radius-sm: var(--theme-radius-sm, calc(var(--theme-radius) / 2));\n    --radius-md: var(--theme-radius-md, calc(var(--theme-radius) * 0.75));\n    --radius-lg: var(--theme-radius-lg, var(--theme-radius));\n    --radius-xl: var(--theme-radius-xl, calc(var(--theme-radius) * 1.5));\n  }\n  @layer base {\n    :root { --theme-gutter: ${themeConfig.gutters.mobile}px; }\n    @media (width >= ${themeConfig.breakpoints.md / 16}rem) { :root { --theme-gutter: ${themeConfig.gutters.desktop}px; } }\n    body { margin: 0; font-family: var(--theme-font); color: var(--theme-text); }\n    skeleton-placeholder { display: block; min-width: 0; }\n  }\n  @utility content-container {\n    width: 100%;\n    max-width: calc(var(--theme-content-max-width) + var(--theme-gutter) * 2);\n    margin-inline: auto;\n    padding-inline: var(--theme-gutter);\n  }\n`;\n  const documents = /* @__PURE__ */ new WeakMap();\n  const documentResourceKey = Symbol.for(\"components.resources.ready\");\n  const jqueryDocuments = /* @__PURE__ */ new WeakMap();\n  const jqueryResourceKey = Symbol.for(\"components.jquery.ready\");\n  const swiperDocuments = /* @__PURE__ */ new WeakMap();\n  const swiperResourceKey = Symbol.for(\"components.swiper.ready\");\n  function loadAttempt(doc, tag, key, url) {\n    return new Promise((resolve, reject) => {\n      const element = doc.createElement(tag);\n      element.dataset.sb2Resource = key;\n      if (tag === \"script\") element.src = url;\n      else {\n        element.rel = \"stylesheet\";\n        element.href = url;\n      }\n      const timer = setTimeout(() => finish(new Error(`${key} 加载超时，请检查网络后刷新。`)), 8e3);\n      function finish(error) {\n        clearTimeout(timer);\n        element.onload = element.onerror = null;\n        if (error) {\n          element.remove();\n          reject(error);\n        } else resolve();\n      }\n      element.onload = () => finish();\n      element.onerror = () => finish(new Error(`${key} 加载失败，请检查 CDN 连接后刷新。`));\n      doc.head.append(element);\n    });\n  }\n  async function load(doc, tag, key, urls) {\n    let failure;\n    for (const url of urls) {\n      try {\n        await loadAttempt(doc, tag, key, url);\n        return;\n      } catch (error) {\n        failure = error;\n      }\n    }\n    throw failure;\n  }\n  function report(doc, message) {\n    let alert = doc.querySelector(\"[data-sb2-resource-error]\");\n    if (!alert) {\n      alert = doc.createElement(\"div\");\n      alert.dataset.sb2ResourceError = \"\";\n      alert.setAttribute(\"role\", \"alert\");\n      alert.style.cssText = \"padding:16px;background:#fff1f2;color:#9f1239;font:14px system-ui;white-space:pre-wrap\";\n      (doc.body || doc.documentElement).prepend(alert);\n    }\n    alert.textContent = message;\n  }\n  function initializeResources(doc = document) {\n    if (doc[documentResourceKey]) return doc[documentResourceKey];\n    if (documents.has(doc)) return documents.get(doc);\n    applyTheme({}, doc);\n    const fallback = doc.createElement(\"style\");\n    fallback.dataset.sb2Font = \"\";\n    fallback.textContent = \"body { font-family: var(--theme-font); }\";\n    doc.head.append(fallback);\n    const style = doc.createElement(\"style\");\n    style.type = \"text/tailwindcss\";\n    style.dataset.sb2Theme = \"\";\n    style.textContent = themeCss;\n    doc.head.append(style);\n    const ready = Promise.allSettled([\n      load(doc, \"script\", \"Tailwind\", [resources.tailwind, resources.tailwindFallback]),\n      load(doc, \"link\", \"Google Fonts\", [resources.font])\n    ]).then((results) => {\n      const errors = results.filter((result) => result.status === \"rejected\").map((result) => result.reason.message);\n      if (errors.length) report(doc, errors.join(\"\\n\"));\n      return { ready: errors.length === 0, errors };\n    });\n    documents.set(doc, ready);\n    doc[documentResourceKey] = ready;\n    return ready;\n  }\n  function loadJQuery(doc = document) {\n    if (doc[jqueryResourceKey]) return doc[jqueryResourceKey];\n    if (jqueryDocuments.has(doc)) return jqueryDocuments.get(doc);\n    const ready = load(doc, \"script\", \"jQuery\", [resources.jquery, resources.jqueryFallback]).then(() => doc.defaultView.jQuery).catch((error) => {\n      report(doc, error.message);\n      throw error;\n    });\n    jqueryDocuments.set(doc, ready);\n    doc[jqueryResourceKey] = ready;\n    return ready;\n  }\n  function loadSwiper(doc = document) {\n    if (doc[swiperResourceKey]) return doc[swiperResourceKey];\n    if (swiperDocuments.has(doc)) return swiperDocuments.get(doc);\n    const ready = Promise.all([\n      load(doc, \"link\", \"Swiper CSS\", [resources.swiperCss, resources.swiperCssFallback]),\n      load(doc, \"script\", \"Swiper JS\", [resources.swiper, resources.swiperFallback])\n    ]).then(() => doc.defaultView.Swiper).catch((error) => {\n      report(doc, error.message);\n      throw error;\n    });\n    swiperDocuments.set(doc, ready);\n    doc[swiperResourceKey] = ready;\n    return ready;\n  }\n  for (const [tag, implementation] of [[\"skeleton-placeholder\", Skeleton], [\"header-08\", Header]]) if (!customElements.get(tag)) customElements.define(tag, implementation);\n  Promise.all([initializeResources(), loadJQuery(), loadSwiper()]).then(([result, $, Swiper]) => {\n    document.documentElement.dataset.exampleReady = String(result.ready);\n    const eventKey = Symbol.for(\"components.demo.events\");\n    if (!document[eventKey]) {\n      document[eventKey] = true;\n      $(document).on(\"product-navigate footer-navigate header-navigate carousel-navigate\", function(event) {\n        console.log(event.originalEvent.detail);\n      });\n    }\n  }).catch(() => {\n    document.documentElement.dataset.exampleReady = \"false\";\n  });\n})();\n\n// 配置和实例变量；只需修改本段即可调整组合。\n(() => {\nconst configuration = {\"properties\":[{\"id\":\"component-1-0\",\"values\":{\"isLoggedIn\":false,\"cartCount\":3,\"wishlistCount\":2,\"theme\":\"dark\"}}],\"values\":{\"--theme-primary\":\"#bd0e16\",\"--theme-secondary\":\"#000000\",\"--theme-accent\":\"#e2e8f0\",\"--theme-surface\":\"#ffffff\",\"--theme-text\":\"#0f172a\",\"--theme-muted\":\"#64748b\",\"--theme-border\":\"#cbd5e1\",\"--theme-on-secondary\":\"#ffffff\",\"--theme-content-max-width\":\"1200px\"}};\nfor (const [name, value] of Object.entries(configuration.values)) document.documentElement.style.setProperty(name, value);\nfor (const item of configuration.properties) {\n  const element = document.getElementById(item.id);\n  if (!element) continue;\n  for (const [name, value] of Object.entries(item.values)) element[name] = value;\n  if (element.localName.startsWith('header-')) element.addEventListener('header-search-input', event => {\n    element.searchSuggestions = event.detail.query.length >= 2 ? [{ id: 'demo-product-1' }] : [];\n  });\n}\n})();\n</script>\n</body>\n</html>"}
-  htmlCode={"<header-08 id=\"component-1-0\"></header-08>"}
-  jsCode={"// 下方是组件实际实现（含共享骨架、主题及在线资源加载代码）。\n(function() {\n  \"use strict\";\n  const shapes = {\n    image: \"relative block w-full aspect-video overflow-hidden rounded-xl bg-accent\",\n    logo: \"relative flex h-10 w-32 items-center justify-center overflow-hidden rounded-xl bg-accent\",\n    text: \"block h-[0.75em] w-full rounded-sm bg-accent\",\n    title: \"block h-[0.75em] w-3/4 rounded-sm bg-accent\",\n    circle: \"block size-12 rounded-full bg-accent\",\n    button: \"block h-[0.75em] w-20 rounded-sm bg-accent\"\n  };\n  const lengths = /^(?:0|\\d+(?:\\.\\d+)?(?:px|rem|em|%|vw|vh|ch))$/;\n  class Skeleton extends HTMLElement {\n    static observedAttributes = [\"kind\", \"lines\", \"width\", \"height\", \"ratio\", \"radius\", \"font-size\"];\n    connectedCallback() {\n      this.render();\n    }\n    attributeChangedCallback() {\n      if (this.isConnected) this.render();\n    }\n    render() {\n      const kind = Object.hasOwn(shapes, this.getAttribute(\"kind\")) ? this.getAttribute(\"kind\") : \"text\";\n      const count = kind === \"text\" ? Math.max(1, Math.min(12, Number.parseInt(this.getAttribute(\"lines\"), 10) || 1)) : 1;\n      const container = this.ownerDocument.createElement(\"span\");\n      container.className = \"grid min-w-0 gap-[0.5em]\";\n      container.setAttribute(\"aria-hidden\", \"true\");\n      const fontSize = this.getAttribute(\"font-size\");\n      if ([\"text\", \"title\", \"button\"].includes(kind)) {\n        const baseSize = fontSize && lengths.test(fontSize) ? fontSize : \"1em\";\n        container.style.fontSize = `calc(${baseSize} + var(--theme-skeleton-text-offset, 3px))`;\n      }\n      for (let i = 0; i < count; i++) {\n        const line = this.ownerDocument.createElement(\"span\");\n        line.className = shapes[kind];\n        line.dataset.sb2Part = \"shape\";\n        for (const [attribute, property] of [[\"width\", \"width\"], [\"height\", \"height\"], [\"radius\", \"borderRadius\"]]) {\n          const value = this.getAttribute(attribute);\n          if (value && lengths.test(value)) line.style[property] = value;\n        }\n        const ratio = this.getAttribute(\"ratio\");\n        if (ratio && /^\\d+(?:\\.\\d+)?\\s*\\/\\s*\\d+(?:\\.\\d+)?$/.test(ratio) && ratio.split(\"/\").every((value) => Number(value) > 0)) line.style.aspectRatio = ratio;\n        if (kind === \"text\" && count > 1 && i === count - 1 && !this.hasAttribute(\"width\")) {\n          line.classList.remove(\"w-full\");\n          line.classList.add(\"w-2/3\");\n        }\n        if (kind === \"logo\" || kind === \"image\") {\n          const marker = this.ownerDocument.createElement(\"span\");\n          marker.dataset.sb2Marker = kind;\n          marker.className = \"pointer-events-none absolute inset-0 flex items-center justify-center\";\n          if (kind === \"logo\") {\n            const label = this.ownerDocument.createElement(\"span\");\n            label.className = \"select-none text-xs font-semibold tracking-widest text-muted\";\n            label.textContent = \"LOGO\";\n            marker.append(label);\n          } else {\n            marker.innerHTML = '<span class=\"relative block aspect-[6/5] w-1/4 min-w-4 max-w-12 overflow-hidden rounded-sm border border-muted\"><span class=\"absolute right-[15%] top-[15%] size-1/5 rounded-full bg-muted\"></span><span class=\"absolute -bottom-1/4 left-[5%] size-3/4 rotate-45 border-l border-t border-muted\"></span><span class=\"absolute -bottom-1/4 right-0 size-1/2 rotate-45 border-l border-t border-muted\"></span></span>';\n          }\n          line.append(marker);\n        }\n        container.append(line);\n      }\n      this.replaceChildren(container);\n    }\n  }\n  class Header extends HTMLElement {\n    static observedAttributes = [\"is-logged-in\", \"cart-count\", \"wishlist-count\", \"theme\"];\n    constructor() {\n      super();\n      this._uid = \"header-08-\" + Math.random().toString(36).substring(2, 8);\n      this._searchSuggestions = [];\n      window.$header = this;\n    }\n    get isLoggedIn() {\n      return this.hasAttribute(\"is-logged-in\");\n    }\n    set isLoggedIn(val) {\n      this.toggleAttribute(\"is-logged-in\", Boolean(val));\n    }\n    get cartCount() {\n      return Number(this.getAttribute(\"cart-count\")) || 0;\n    }\n    set cartCount(val) {\n      this.setAttribute(\"cart-count\", String(Math.max(0, Math.floor(Number(val) || 0))));\n    }\n    get wishlistCount() {\n      return Number(this.getAttribute(\"wishlist-count\")) || 0;\n    }\n    set wishlistCount(val) {\n      this.setAttribute(\"wishlist-count\", String(Math.max(0, Math.floor(Number(val) || 0))));\n    }\n    get theme() {\n      return this.getAttribute(\"theme\") || \"dark\";\n    }\n    set theme(val) {\n      this.setAttribute(\"theme\", String(val));\n    }\n    get searchSuggestions() {\n      return [...this._searchSuggestions];\n    }\n    set searchSuggestions(list) {\n      this._searchSuggestions = Array.isArray(list) ? list.slice(0, 6) : [];\n    }\n    toggleMobileMenu(force) {\n      const dialog = this.querySelector(\"dialog\");\n      if (!dialog) return;\n      if (typeof force === \"boolean\") {\n        if (force && !dialog.open) dialog.showModal();\n        else if (!force && dialog.open) dialog.close();\n      } else {\n        if (dialog.open) dialog.close();\n        else dialog.showModal();\n      }\n    }\n    toggleAccountDropdown() {\n      const panel = this.querySelector('[data-region=\"account-panel\"]');\n      if (panel) panel.hidden = !panel.hidden;\n    }\n    updateCart(count) {\n      this.cartCount = count;\n    }\n    updateWishlist(count) {\n      this.wishlistCount = count;\n    }\n    connectedCallback() {\n      this.classList.add(\"block\", \"sticky\", \"top-0\", \"z-40\");\n      this.render();\n      this.bindEvents();\n    }\n    disconnectedCallback() {\n      this._controller?.abort();\n      if (window.$header === this) delete window.$header;\n    }\n    attributeChangedCallback() {\n      if (this.isConnected) this.render();\n    }\n    bindEvents() {\n      this._controller?.abort();\n      this._controller = new AbortController();\n      const { signal } = this._controller;\n      this.addEventListener(\"click\", (e) => {\n        const target = e.target;\n        const actionEl = target.closest(\"[data-action]\");\n        if (!actionEl) return;\n        const action = actionEl.dataset.action;\n        if (action === \"menu\") {\n          this.toggleMobileMenu();\n        } else if (action === \"close-menu\") {\n          this.toggleMobileMenu(false);\n        } else if (action === \"account\") {\n          this.toggleAccountDropdown();\n        } else if (action === \"cart\") {\n          this.emit(\"header-navigate\", { destination: \"cart\" });\n        } else if (action === \"wishlist\") {\n          this.emit(\"header-navigate\", { destination: \"wishlist\" });\n        } else if (action === \"login\") {\n          this.emit(\"header-navigate\", { destination: \"login\" });\n        } else if (action === \"register\") {\n          this.emit(\"header-navigate\", { destination: \"register\" });\n        } else if (action === \"nav\") {\n          const id = actionEl.dataset.navId;\n          this.emit(\"header-navigate\", { destination: \"category\", id });\n          this.toggleMobileMenu(false);\n        }\n      }, { signal });\n      document.addEventListener(\"pointerdown\", (e) => {\n        const panel = this.querySelector('[data-region=\"account-panel\"]');\n        const trigger = this.querySelector('[data-action=\"account\"]');\n        if (panel && !panel.contains(e.target) && !trigger?.contains(e.target)) {\n          panel.hidden = true;\n        }\n      }, { signal });\n    }\n    emit(name, detail = {}) {\n      this.dispatchEvent(new CustomEvent(name, { detail, bubbles: true, composed: true }));\n    }\n    render() {\n      const isLight = this.theme === \"light\";\n      const focusRing = \"focus-visible:outline-2 focus-visible:outline-offset-4 focus-visible:outline-primary\";\n      const headerCls = isLight ? \"bg-surface font-sans text-content border-b border-outline/30 shadow-xs\" : \"bg-secondary font-sans text-on-secondary\";\n      const actionBtnCls = isLight ? \"hover:bg-accent/40 text-content\" : \"hover:bg-on-secondary/10 text-on-secondary\";\n      const navLinkCls = isLight ? \"text-content/80 hover:text-primary\" : \"text-on-secondary/90 hover:opacity-75\";\n      const authSection = this.isLoggedIn ? `<div class=\"relative\">\n          <button type=\"button\" data-action=\"account\" class=\"flex size-9 items-center justify-center rounded-lg ${actionBtnCls} ${focusRing}\">\n            <span class=\"block size-6 rounded-full bg-accent\"></span>\n          </button>\n          <div data-region=\"account-panel\" hidden class=\"absolute right-0 top-full mt-2 w-48 rounded-xl border border-outline/60 bg-surface p-2 shadow-xl z-50 text-content\">\n            <button type=\"button\" data-action=\"account-orders\" class=\"w-full rounded-lg p-2 text-left hover:bg-accent/40 text-sm\"><span class=\"block h-[0.75em] w-20 rounded-sm bg-accent\"></span></button>\n            <button type=\"button\" data-action=\"account-wishlist\" class=\"w-full rounded-lg p-2 text-left hover:bg-accent/40 text-sm\"><span class=\"block h-[0.75em] w-16 rounded-sm bg-accent\"></span></button>\n            <button type=\"button\" data-action=\"logout\" class=\"w-full rounded-lg p-2 text-left hover:bg-accent/40 text-sm\"><span class=\"block h-[0.75em] w-14 rounded-sm bg-accent\"></span></button>\n          </div>\n        </div>` : `<div class=\"relative\">\n          <button type=\"button\" data-action=\"account\" class=\"flex size-9 items-center justify-center rounded-lg ${actionBtnCls} ${focusRing}\">\n            <span class=\"block size-4 rounded-full bg-accent\"></span>\n          </button>\n          <div data-region=\"account-panel\" hidden class=\"absolute right-0 top-full mt-2 w-40 rounded-xl border border-outline/60 bg-surface p-2 shadow-xl z-50 text-content\">\n            <button type=\"button\" data-action=\"login\" class=\"w-full rounded-lg p-2 text-left hover:bg-accent/40 text-sm font-medium\"><span class=\"block h-[0.75em] w-12 rounded-sm bg-accent\"></span></button>\n            <button type=\"button\" data-action=\"register\" class=\"w-full rounded-lg p-2 text-left hover:bg-accent/40 text-sm font-medium\"><span class=\"block h-[0.75em] w-16 rounded-sm bg-accent\"></span></button>\n          </div>\n        </div>`;\n      this.innerHTML = `\n      <header class=\"${headerCls} py-3\">\n        <div class=\"content-container flex items-center justify-between gap-6\">\n          <div class=\"flex items-center gap-8\">\n            <div data-region=\"logo\" class=\"flex-shrink-0\">\n              <div role=\"button\" tabindex=\"0\" data-action=\"nav\" data-nav-id=\"home\" class=\"flex items-center rounded-lg ${focusRing}\">\n                <span class=\"relative flex h-10 w-28 items-center justify-center overflow-hidden rounded-xl bg-accent\"><span class=\"select-none text-xs font-semibold tracking-widest text-muted\">LOGO</span></span>\n              </div>\n            </div>\n\n            <nav data-region=\"desktop-nav\" class=\"hidden md:flex items-center gap-6\">\n              <div role=\"button\" tabindex=\"0\" data-action=\"nav\" data-nav-id=\"home\" class=\"py-1 font-medium transition-colors ${navLinkCls} ${focusRing}\"><span class=\"block h-[0.75em] w-12 rounded-sm bg-accent\"></span></div>\n              <div role=\"button\" tabindex=\"0\" data-action=\"nav\" data-nav-id=\"shop\" class=\"py-1 font-medium transition-colors ${navLinkCls} ${focusRing}\"><span class=\"block h-[0.75em] w-10 rounded-sm bg-accent\"></span></div>\n              <div role=\"button\" tabindex=\"0\" data-action=\"nav\" data-nav-id=\"about\" class=\"py-1 font-medium transition-colors ${navLinkCls} ${focusRing}\"><span class=\"block h-[0.75em] w-12 rounded-sm bg-accent\"></span></div>\n            </nav>\n          </div>\n\n          <div class=\"flex items-center justify-end gap-1.5 sm:gap-3\">\n            <div data-region=\"auth\">${authSection}</div>\n\n            <button type=\"button\" data-action=\"wishlist\" class=\"relative flex size-9 items-center justify-center rounded-lg ${actionBtnCls} ${focusRing}\">\n              <span class=\"block size-4 rounded-sm bg-accent\"></span>\n              <span data-region=\"wishlist-badge\" class=\"${this.wishlistCount > 0 ? \"\" : \"hidden\"} absolute -right-1 -top-1 flex size-4 items-center justify-center rounded-full bg-primary text-on-secondary text-[10px] font-bold shadow-xs\">${this.wishlistCount}</span>\n            </button>\n\n            <button type=\"button\" data-action=\"cart\" class=\"relative flex size-9 items-center justify-center rounded-lg ${actionBtnCls} ${focusRing}\">\n              <span class=\"block size-4 rounded-sm bg-accent\"></span>\n              <span data-region=\"cart-badge\" class=\"${this.cartCount > 0 ? \"\" : \"hidden\"} absolute -right-1 -top-1 flex size-4 items-center justify-center rounded-full bg-primary text-on-secondary text-[10px] font-bold shadow-xs\">${this.cartCount}</span>\n            </button>\n\n            <button type=\"button\" data-action=\"menu\" class=\"flex size-9 items-center justify-center rounded-lg md:hidden ${actionBtnCls} ${focusRing}\">\n              <span class=\"flex flex-col gap-1\"><span class=\"block h-0.5 w-4 bg-accent\"></span><span class=\"block h-0.5 w-4 bg-accent\"></span><span class=\"block h-0.5 w-4 bg-accent\"></span></span>\n            </button>\n          </div>\n        </div>\n\n        <dialog data-region=\"mobile-drawer\" class=\"fixed inset-0 m-0 h-full max-h-none w-72 max-w-[85vw] border-r border-outline/40 bg-surface p-0 shadow-2xl backdrop:bg-black/40\">\n          <div class=\"flex h-full flex-col p-4 text-content\">\n            <div class=\"flex items-center justify-between border-b border-outline/30 pb-4\">\n              <span class=\"relative flex h-8 w-24 items-center justify-center overflow-hidden rounded-lg bg-accent\"><span class=\"select-none text-xs font-semibold tracking-widest text-muted\">LOGO</span></span>\n              <button type=\"button\" data-action=\"close-menu\" class=\"flex size-8 items-center justify-center rounded-lg hover:bg-accent/40 ${focusRing}\"><span class=\"block size-4 rounded-full bg-accent\"></span></button>\n            </div>\n            <nav class=\"flex flex-col gap-2 py-4\">\n              <div role=\"button\" tabindex=\"0\" data-action=\"nav\" data-nav-id=\"home\" class=\"rounded-lg p-2.5 font-medium hover:bg-accent/40\"><span class=\"block h-[0.75em] w-16 rounded-sm bg-accent\"></span></div>\n              <div role=\"button\" tabindex=\"0\" data-action=\"nav\" data-nav-id=\"shop\" class=\"rounded-lg p-2.5 font-medium hover:bg-accent/40\"><span class=\"block h-[0.75em] w-14 rounded-sm bg-accent\"></span></div>\n              <div role=\"button\" tabindex=\"0\" data-action=\"nav\" data-nav-id=\"about\" class=\"rounded-lg p-2.5 font-medium hover:bg-accent/40\"><span class=\"block h-[0.75em] w-16 rounded-sm bg-accent\"></span></div>\n            </nav>\n            <div class=\"mt-auto border-t border-outline/30 pt-4 flex flex-col gap-2\">\n              <button type=\"button\" data-action=\"login\" class=\"w-full rounded-lg p-2 text-left hover:bg-accent/40 font-medium\"><span class=\"block h-[0.75em] w-16 rounded-sm bg-accent\"></span></button>\n              <button type=\"button\" data-action=\"register\" class=\"w-full rounded-lg p-2 text-left hover:bg-accent/40 font-medium\"><span class=\"block h-[0.75em] w-20 rounded-sm bg-accent\"></span></button>\n            </div>\n          </div>\n        </dialog>\n      </header>`;\n    }\n  }\n  const themeConfig = Object.freeze({\n    colors: Object.freeze({\n      primary: \"#bd0e16\",\n      secondary: \"#000000\",\n      accent: \"#e2e8f0\",\n      surface: \"#ffffff\",\n      text: \"#0f172a\",\n      muted: \"#64748b\",\n      border: \"#cbd5e1\",\n      onSecondary: \"#ffffff\"\n    }),\n    contentMaxWidth: 1200,\n    gutters: Object.freeze({ mobile: 16, desktop: 24 }),\n    font: Object.freeze({\n      family: \"Noto Sans SC\",\n      weights: [400, 500, 600, 700],\n      fallback: \"ui-sans-serif, system-ui, sans-serif\"\n    }),\n    radius: 8,\n    radii: Object.freeze({\n      sm: 4,\n      md: 6,\n      lg: 8,\n      xl: 12\n    }),\n    skeletonTextSizeOffset: 3,\n    breakpoints: Object.freeze({ sm: 640, md: 768, lg: 1024, xl: 1280, \"2xl\": 1536 })\n  });\n  const themePresets = Object.freeze({\n    default: Object.freeze({}),\n    ocean: Object.freeze({ primary: \"#2563eb\", secondary: \"#172554\", accent: \"#dbeafe\" }),\n    forest: Object.freeze({ primary: \"#15803d\", secondary: \"#052e16\", accent: \"#dcfce7\" })\n  });\n  const resources = Object.freeze({\n    tailwind: \"https://cdn.jsdelivr.net/npm/@tailwindcss/browser@4.1.13/dist/index.global.js\",\n    tailwindFallback: \"https://unpkg.com/@tailwindcss/browser@4.1.13/dist/index.global.js\",\n    jquery: \"https://cdn.jsdelivr.net/npm/jquery@3.7.1/dist/jquery.min.js\",\n    jqueryFallback: \"https://unpkg.com/jquery@3.7.1/dist/jquery.min.js\",\n    swiper: \"https://cdn.jsdelivr.net/npm/swiper@10.3.1/swiper-bundle.min.js\",\n    swiperFallback: \"https://unpkg.com/swiper@10.3.1/swiper-bundle.min.js\",\n    swiperCss: \"https://cdn.jsdelivr.net/npm/swiper@10.3.1/swiper-bundle.min.css\",\n    swiperCssFallback: \"https://unpkg.com/swiper@10.3.1/swiper-bundle.min.css\",\n    font: `https://fonts.googleapis.com/css2?family=${encodeURIComponent(themeConfig.font.family)}:wght@${themeConfig.font.weights.join(\";\")}&display=swap`\n  });\n  const fontStack = `${JSON.stringify(themeConfig.font.family)}, ${themeConfig.font.fallback}`;\n  function applyTheme({ preset = \"default\", contentMaxWidth = themeConfig.contentMaxWidth } = {}, doc = document) {\n    if (!Object.hasOwn(themePresets, preset)) throw new Error(`未知全局主题：${preset}`);\n    if (!Number.isFinite(contentMaxWidth) || contentMaxWidth <= 0) throw new Error(\"全局内容宽度必须是正数\");\n    const root = doc.documentElement;\n    const colors = { ...themeConfig.colors, ...themePresets[preset] };\n    for (const [name, value] of Object.entries(colors)) {\n      const key = name.replace(/[A-Z]/g, (letter) => `-${letter.toLowerCase()}`);\n      root.style.setProperty(`--theme-${key}`, value);\n    }\n    root.style.setProperty(\"--theme-content-max-width\", `${contentMaxWidth}px`);\n    root.style.setProperty(\"--theme-radius\", `${themeConfig.radius}px`);\n    root.style.setProperty(\"--theme-radius-sm\", `${themeConfig.radii.sm}px`);\n    root.style.setProperty(\"--theme-radius-md\", `${themeConfig.radii.md}px`);\n    root.style.setProperty(\"--theme-radius-lg\", `${themeConfig.radii.lg}px`);\n    root.style.setProperty(\"--theme-radius-xl\", `${themeConfig.radii.xl}px`);\n    root.style.setProperty(\"--theme-font\", fontStack);\n    root.style.setProperty(\"--theme-gutter-mobile\", `${themeConfig.gutters.mobile}px`);\n    root.style.setProperty(\"--theme-gutter-desktop\", `${themeConfig.gutters.desktop}px`);\n    root.style.setProperty(\"--theme-skeleton-text-offset\", `${themeConfig.skeletonTextSizeOffset}px`);\n    root.dataset.themePreset = preset;\n  }\n  const themeCss = `\n  @theme {\n    ${Object.entries(themeConfig.breakpoints).map(([key, value]) => `--breakpoint-${key}: ${value / 16}rem;`).join(\"\\n\")}\n  }\n  @theme inline {\n    --font-sans: var(--theme-font);\n    --color-primary: var(--theme-primary);\n    --color-secondary: var(--theme-secondary);\n    --color-accent: var(--theme-accent);\n    --color-surface: var(--theme-surface);\n    --color-content: var(--theme-text);\n    --color-muted: var(--theme-muted);\n    --color-outline: var(--theme-border);\n    --color-on-secondary: var(--theme-on-secondary);\n    --radius-sm: var(--theme-radius-sm, calc(var(--theme-radius) / 2));\n    --radius-md: var(--theme-radius-md, calc(var(--theme-radius) * 0.75));\n    --radius-lg: var(--theme-radius-lg, var(--theme-radius));\n    --radius-xl: var(--theme-radius-xl, calc(var(--theme-radius) * 1.5));\n  }\n  @layer base {\n    :root { --theme-gutter: ${themeConfig.gutters.mobile}px; }\n    @media (width >= ${themeConfig.breakpoints.md / 16}rem) { :root { --theme-gutter: ${themeConfig.gutters.desktop}px; } }\n    body { margin: 0; font-family: var(--theme-font); color: var(--theme-text); }\n    skeleton-placeholder { display: block; min-width: 0; }\n  }\n  @utility content-container {\n    width: 100%;\n    max-width: calc(var(--theme-content-max-width) + var(--theme-gutter) * 2);\n    margin-inline: auto;\n    padding-inline: var(--theme-gutter);\n  }\n`;\n  const documents = /* @__PURE__ */ new WeakMap();\n  const documentResourceKey = Symbol.for(\"components.resources.ready\");\n  const jqueryDocuments = /* @__PURE__ */ new WeakMap();\n  const jqueryResourceKey = Symbol.for(\"components.jquery.ready\");\n  const swiperDocuments = /* @__PURE__ */ new WeakMap();\n  const swiperResourceKey = Symbol.for(\"components.swiper.ready\");\n  function loadAttempt(doc, tag, key, url) {\n    return new Promise((resolve, reject) => {\n      const element = doc.createElement(tag);\n      element.dataset.sb2Resource = key;\n      if (tag === \"script\") element.src = url;\n      else {\n        element.rel = \"stylesheet\";\n        element.href = url;\n      }\n      const timer = setTimeout(() => finish(new Error(`${key} 加载超时，请检查网络后刷新。`)), 8e3);\n      function finish(error) {\n        clearTimeout(timer);\n        element.onload = element.onerror = null;\n        if (error) {\n          element.remove();\n          reject(error);\n        } else resolve();\n      }\n      element.onload = () => finish();\n      element.onerror = () => finish(new Error(`${key} 加载失败，请检查 CDN 连接后刷新。`));\n      doc.head.append(element);\n    });\n  }\n  async function load(doc, tag, key, urls) {\n    let failure;\n    for (const url of urls) {\n      try {\n        await loadAttempt(doc, tag, key, url);\n        return;\n      } catch (error) {\n        failure = error;\n      }\n    }\n    throw failure;\n  }\n  function report(doc, message) {\n    let alert = doc.querySelector(\"[data-sb2-resource-error]\");\n    if (!alert) {\n      alert = doc.createElement(\"div\");\n      alert.dataset.sb2ResourceError = \"\";\n      alert.setAttribute(\"role\", \"alert\");\n      alert.style.cssText = \"padding:16px;background:#fff1f2;color:#9f1239;font:14px system-ui;white-space:pre-wrap\";\n      (doc.body || doc.documentElement).prepend(alert);\n    }\n    alert.textContent = message;\n  }\n  function initializeResources(doc = document) {\n    if (doc[documentResourceKey]) return doc[documentResourceKey];\n    if (documents.has(doc)) return documents.get(doc);\n    applyTheme({}, doc);\n    const fallback = doc.createElement(\"style\");\n    fallback.dataset.sb2Font = \"\";\n    fallback.textContent = \"body { font-family: var(--theme-font); }\";\n    doc.head.append(fallback);\n    const style = doc.createElement(\"style\");\n    style.type = \"text/tailwindcss\";\n    style.dataset.sb2Theme = \"\";\n    style.textContent = themeCss;\n    doc.head.append(style);\n    const ready = Promise.allSettled([\n      load(doc, \"script\", \"Tailwind\", [resources.tailwind, resources.tailwindFallback]),\n      load(doc, \"link\", \"Google Fonts\", [resources.font])\n    ]).then((results) => {\n      const errors = results.filter((result) => result.status === \"rejected\").map((result) => result.reason.message);\n      if (errors.length) report(doc, errors.join(\"\\n\"));\n      return { ready: errors.length === 0, errors };\n    });\n    documents.set(doc, ready);\n    doc[documentResourceKey] = ready;\n    return ready;\n  }\n  function loadJQuery(doc = document) {\n    if (doc[jqueryResourceKey]) return doc[jqueryResourceKey];\n    if (jqueryDocuments.has(doc)) return jqueryDocuments.get(doc);\n    const ready = load(doc, \"script\", \"jQuery\", [resources.jquery, resources.jqueryFallback]).then(() => doc.defaultView.jQuery).catch((error) => {\n      report(doc, error.message);\n      throw error;\n    });\n    jqueryDocuments.set(doc, ready);\n    doc[jqueryResourceKey] = ready;\n    return ready;\n  }\n  function loadSwiper(doc = document) {\n    if (doc[swiperResourceKey]) return doc[swiperResourceKey];\n    if (swiperDocuments.has(doc)) return swiperDocuments.get(doc);\n    const ready = Promise.all([\n      load(doc, \"link\", \"Swiper CSS\", [resources.swiperCss, resources.swiperCssFallback]),\n      load(doc, \"script\", \"Swiper JS\", [resources.swiper, resources.swiperFallback])\n    ]).then(() => doc.defaultView.Swiper).catch((error) => {\n      report(doc, error.message);\n      throw error;\n    });\n    swiperDocuments.set(doc, ready);\n    doc[swiperResourceKey] = ready;\n    return ready;\n  }\n  for (const [tag, implementation] of [[\"skeleton-placeholder\", Skeleton], [\"header-08\", Header]]) if (!customElements.get(tag)) customElements.define(tag, implementation);\n  Promise.all([initializeResources(), loadJQuery(), loadSwiper()]).then(([result, $, Swiper]) => {\n    document.documentElement.dataset.exampleReady = String(result.ready);\n    const eventKey = Symbol.for(\"components.demo.events\");\n    if (!document[eventKey]) {\n      document[eventKey] = true;\n      $(document).on(\"product-navigate footer-navigate header-navigate carousel-navigate\", function(event) {\n        console.log(event.originalEvent.detail);\n      });\n    }\n  }).catch(() => {\n    document.documentElement.dataset.exampleReady = \"false\";\n  });\n})();\n\n// 配置和实例变量；只需修改本段即可调整组合。\n(() => {\nconst configuration = {\"properties\":[{\"id\":\"component-1-0\",\"values\":{\"isLoggedIn\":false,\"cartCount\":3,\"wishlistCount\":2,\"theme\":\"dark\"}}],\"values\":{\"--theme-primary\":\"#bd0e16\",\"--theme-secondary\":\"#000000\",\"--theme-accent\":\"#e2e8f0\",\"--theme-surface\":\"#ffffff\",\"--theme-text\":\"#0f172a\",\"--theme-muted\":\"#64748b\",\"--theme-border\":\"#cbd5e1\",\"--theme-on-secondary\":\"#ffffff\",\"--theme-content-max-width\":\"1200px\"}};\nfor (const [name, value] of Object.entries(configuration.values)) document.documentElement.style.setProperty(name, value);\nfor (const item of configuration.properties) {\n  const element = document.getElementById(item.id);\n  if (!element) continue;\n  for (const [name, value] of Object.entries(item.values)) element[name] = value;\n  if (element.localName.startsWith('header-')) element.addEventListener('header-search-input', event => {\n    element.searchSuggestions = event.detail.query.length >= 2 ? [{ id: 'demo-product-1' }] : [];\n  });\n}\n})();"}
+  htmlCode={"<header class=\"bg-secondary font-sans text-on-secondary py-3 w-full\">\n  <div class=\"content-container flex items-center justify-between gap-6\">\n    <div class=\"flex items-center gap-8\">\n      <!-- Region: Brand Identity (Logo) - Neutral LOGO placeholder with link to home -->\n\n      <div data-region=\"logo\" class=\"flex-shrink-0\">\n        <div role=\"button\" tabindex=\"0\" class=\"flex items-center rounded-lg focus-visible:outline-2 focus-visible:outline-offset-4 focus-visible:outline-primary\">\n          <span class=\"relative flex h-10 w-28 items-center justify-center overflow-hidden rounded-xl bg-accent\"><span class=\"select-none text-xs font-semibold tracking-widest text-muted\">LOGO</span></span>\n        </div>\n      </div>\n\n      <!-- Region: Desktop Navigation - Main category links -->\n\n\n      <!-- Region: Primary Navigation Menu -->\n\n\n\n      <nav data-region=\"desktop-nav\" class=\"hidden md:flex items-center gap-6\">\n        <span class=\"block h-[0.75em] w-12 rounded-sm bg-accent\"></span>\n        <span class=\"block h-[0.75em] w-10 rounded-sm bg-accent\"></span>\n        <span class=\"block h-[0.75em] w-12 rounded-sm bg-accent\"></span>\n      </nav>\n    </div>\n\n    <div class=\"flex items-center justify-end gap-1.5 sm:gap-3\">\n      <button type=\"button\" class=\"flex size-9 items-center justify-center rounded-lg hover:bg-on-secondary/10 text-on-secondary\">\n        <span class=\"block size-4 rounded-full bg-accent\"></span>\n      </button>\n\n      <button type=\"button\" class=\"relative flex size-9 items-center justify-center rounded-lg hover:bg-on-secondary/10 text-on-secondary\">\n        <span class=\"block size-4 rounded-sm bg-accent\"></span>\n      </button>\n\n      <button type=\"button\" class=\"relative flex size-9 items-center justify-center rounded-lg hover:bg-on-secondary/10 text-on-secondary\">\n        <span class=\"block size-4 rounded-sm bg-accent\"></span>\n      </button>\n\n      <button type=\"button\" class=\"flex size-9 items-center justify-center rounded-lg md:hidden hover:bg-on-secondary/10 text-on-secondary\">\n        <span class=\"flex flex-col gap-1\"><span class=\"block h-0.5 w-4 bg-accent\"></span><span class=\"block h-0.5 w-4 bg-accent\"></span><span class=\"block h-0.5 w-4 bg-accent\"></span></span>\n      </button>\n    </div>\n  </div>\n</header>"}
+  jsCode={"class Header extends HTMLElement {\n  static observedAttributes = ['is-logged-in', 'cart-count', 'wishlist-count', 'theme'];\n\n  constructor() {\n    super();\n    this._uid = 'header-08-' + Math.random().toString(36).substring(2, 8);\n    this._searchSuggestions = [];\n    window.$header = this;\n  }\n\n  get isLoggedIn() { return this.hasAttribute('is-logged-in'); }\n  set isLoggedIn(val) { this.toggleAttribute('is-logged-in', Boolean(val)); }\n\n  get cartCount() { return Number(this.getAttribute('cart-count')) || 0; }\n  set cartCount(val) { this.setAttribute('cart-count', String(Math.max(0, Math.floor(Number(val) || 0)))); }\n\n  get wishlistCount() { return Number(this.getAttribute('wishlist-count')) || 0; }\n  set wishlistCount(val) { this.setAttribute('wishlist-count', String(Math.max(0, Math.floor(Number(val) || 0)))); }\n\n  get theme() { return this.getAttribute('theme') || 'dark'; }\n  set theme(val) { this.setAttribute('theme', String(val)); }\n\n  get searchSuggestions() { return [...this._searchSuggestions]; }\n  set searchSuggestions(list) {\n    this._searchSuggestions = Array.isArray(list) ? list.slice(0, 6) : [];\n  }\n\n  toggleMobileMenu(force) {\n    const dialog = this.querySelector('dialog');\n    if (!dialog) return;\n    if (typeof force === 'boolean') {\n      if (force && !dialog.open) dialog.showModal();\n      else if (!force && dialog.open) dialog.close();\n    } else {\n      if (dialog.open) dialog.close();\n      else dialog.showModal();\n    }\n  }\n\n  toggleAccountDropdown() {\n    const panel = this.querySelector('[data-region=\"account-panel\"]');\n    if (panel) panel.hidden = !panel.hidden;\n  }\n\n  updateCart(count) {\n    this.cartCount = count;\n  }\n\n  updateWishlist(count) {\n    this.wishlistCount = count;\n  }\n\n  connectedCallback() {\n    this.classList.add('block', 'sticky', 'top-0', 'z-40');\n    this.render();\n    this.bindEvents();\n  }\n\n  disconnectedCallback() {\n    this._controller?.abort();\n    if (window.$header === this) delete window.$header;\n  }\n\n  attributeChangedCallback() {\n    if (this.isConnected) this.render();\n  }\n\n  bindEvents() {\n    this._controller?.abort();\n    this._controller = new AbortController();\n    const { signal } = this._controller;\n\n    this.addEventListener('click', (e) => {\n      const target = e.target;\n      const actionEl = target.closest('[data-action]');\n      if (!actionEl) return;\n\n      const action = actionEl.dataset.action;\n      if (action === 'menu') {\n        this.toggleMobileMenu();\n      } else if (action === 'close-menu') {\n        this.toggleMobileMenu(false);\n      } else if (action === 'account') {\n        this.toggleAccountDropdown();\n      } else if (action === 'cart') {\n        this.emit('header-navigate', { destination: 'cart' });\n      } else if (action === 'wishlist') {\n        this.emit('header-navigate', { destination: 'wishlist' });\n      } else if (action === 'login') {\n        this.emit('header-navigate', { destination: 'login' });\n      } else if (action === 'register') {\n        this.emit('header-navigate', { destination: 'register' });\n      } else if (action === 'nav') {\n        const id = actionEl.dataset.navId;\n        this.emit('header-navigate', { destination: 'category', id });\n        this.toggleMobileMenu(false);\n      }\n    }, { signal });\n\n    document.addEventListener('pointerdown', (e) => {\n      const panel = this.querySelector('[data-region=\"account-panel\"]');\n      const trigger = this.querySelector('[data-action=\"account\"]');\n      if (panel && !panel.contains(e.target) && !trigger?.contains(e.target)) {\n        panel.hidden = true;\n      }\n    }, { signal });\n  }\n\n  emit(name, detail = {}) {\n    this.dispatchEvent(new CustomEvent(name, { detail, bubbles: true, composed: true }));\n  }\n\n  render() {\n    const isLight = this.theme === 'light';\n    const focusRing = 'focus-visible:outline-2 focus-visible:outline-offset-4 focus-visible:outline-primary';\n    const headerCls = isLight ? 'bg-surface font-sans text-content border-b border-outline/30 shadow-xs' : 'bg-secondary font-sans text-on-secondary';\n    const actionBtnCls = isLight ? 'hover:bg-accent/40 text-content' : 'hover:bg-on-secondary/10 text-on-secondary';\n    const navLinkCls = isLight ? 'text-content/80 hover:text-primary' : 'text-on-secondary/90 hover:opacity-75';\n\n    const authSection = this.isLoggedIn\n      ? `<div class=\"relative\">\n          <button type=\"button\" data-action=\"account\" class=\"flex size-9 items-center justify-center rounded-lg ${actionBtnCls} ${focusRing}\">\n            <span class=\"block size-6 rounded-full bg-accent\"></span>\n          </button>\n          <div data-region=\"account-panel\" hidden class=\"absolute right-0 top-full mt-2 w-48 rounded-xl border border-outline/60 bg-surface p-2 shadow-xl z-50 text-content\">\n            <button type=\"button\" data-action=\"account-orders\" class=\"w-full rounded-lg p-2 text-left hover:bg-accent/40 text-sm\"><span class=\"block h-[0.75em] w-20 rounded-sm bg-accent\"></span></button>\n            <button type=\"button\" data-action=\"account-wishlist\" class=\"w-full rounded-lg p-2 text-left hover:bg-accent/40 text-sm\"><span class=\"block h-[0.75em] w-16 rounded-sm bg-accent\"></span></button>\n            <button type=\"button\" data-action=\"logout\" class=\"w-full rounded-lg p-2 text-left hover:bg-accent/40 text-sm\"><span class=\"block h-[0.75em] w-14 rounded-sm bg-accent\"></span></button>\n          </div>\n        </div>`\n      : `<div class=\"relative\">\n          <button type=\"button\" data-action=\"account\" class=\"flex size-9 items-center justify-center rounded-lg ${actionBtnCls} ${focusRing}\">\n            <span class=\"block size-4 rounded-full bg-accent\"></span>\n          </button>\n          <div data-region=\"account-panel\" hidden class=\"absolute right-0 top-full mt-2 w-40 rounded-xl border border-outline/60 bg-surface p-2 shadow-xl z-50 text-content\">\n            <button type=\"button\" data-action=\"login\" class=\"w-full rounded-lg p-2 text-left hover:bg-accent/40 text-sm font-medium\"><span class=\"block h-[0.75em] w-12 rounded-sm bg-accent\"></span></button>\n            <button type=\"button\" data-action=\"register\" class=\"w-full rounded-lg p-2 text-left hover:bg-accent/40 text-sm font-medium\"><span class=\"block h-[0.75em] w-16 rounded-sm bg-accent\"></span></button>\n          </div>\n        </div>`;\n\n    this.innerHTML = `\n      <header class=\"${headerCls} py-3\">\n        <div class=\"content-container flex items-center justify-between gap-6\">\n          <div class=\"flex items-center gap-8\">\n            <div data-region=\"logo\" class=\"flex-shrink-0\">\n              <div role=\"button\" tabindex=\"0\" data-action=\"nav\" data-nav-id=\"home\" class=\"flex items-center rounded-lg ${focusRing}\">\n                <span class=\"relative flex h-10 w-28 items-center justify-center overflow-hidden rounded-xl bg-accent\"><span class=\"select-none text-xs font-semibold tracking-widest text-muted\">LOGO</span></span>\n              </div>\n            </div>\n\n            <nav data-region=\"desktop-nav\" class=\"hidden md:flex items-center gap-6\">\n              <div role=\"button\" tabindex=\"0\" data-action=\"nav\" data-nav-id=\"home\" class=\"py-1 font-medium transition-colors ${navLinkCls} ${focusRing}\"><span class=\"block h-[0.75em] w-12 rounded-sm bg-accent\"></span></div>\n              <div role=\"button\" tabindex=\"0\" data-action=\"nav\" data-nav-id=\"shop\" class=\"py-1 font-medium transition-colors ${navLinkCls} ${focusRing}\"><span class=\"block h-[0.75em] w-10 rounded-sm bg-accent\"></span></div>\n              <div role=\"button\" tabindex=\"0\" data-action=\"nav\" data-nav-id=\"about\" class=\"py-1 font-medium transition-colors ${navLinkCls} ${focusRing}\"><span class=\"block h-[0.75em] w-12 rounded-sm bg-accent\"></span></div>\n            </nav>\n          </div>\n\n          <div class=\"flex items-center justify-end gap-1.5 sm:gap-3\">\n            <div data-region=\"auth\">${authSection}</div>\n\n            <button type=\"button\" data-action=\"wishlist\" class=\"relative flex size-9 items-center justify-center rounded-lg ${actionBtnCls} ${focusRing}\">\n              <span class=\"block size-4 rounded-sm bg-accent\"></span>\n              <span data-region=\"wishlist-badge\" class=\"${this.wishlistCount > 0 ? '' : 'hidden'} absolute -right-1 -top-1 flex size-4 items-center justify-center rounded-full bg-primary text-on-secondary text-[10px] font-bold shadow-xs\">${this.wishlistCount}</span>\n            </button>\n\n            <button type=\"button\" data-action=\"cart\" class=\"relative flex size-9 items-center justify-center rounded-lg ${actionBtnCls} ${focusRing}\">\n              <span class=\"block size-4 rounded-sm bg-accent\"></span>\n              <span data-region=\"cart-badge\" class=\"${this.cartCount > 0 ? '' : 'hidden'} absolute -right-1 -top-1 flex size-4 items-center justify-center rounded-full bg-primary text-on-secondary text-[10px] font-bold shadow-xs\">${this.cartCount}</span>\n            </button>\n\n            <button type=\"button\" data-action=\"menu\" class=\"flex size-9 items-center justify-center rounded-lg md:hidden ${actionBtnCls} ${focusRing}\">\n              <span class=\"flex flex-col gap-1\"><span class=\"block h-0.5 w-4 bg-accent\"></span><span class=\"block h-0.5 w-4 bg-accent\"></span><span class=\"block h-0.5 w-4 bg-accent\"></span></span>\n            </button>\n          </div>\n        </div>\n\n        <dialog data-region=\"mobile-drawer\" class=\"fixed inset-0 m-0 h-full max-h-none w-72 max-w-[85vw] border-r border-outline/40 bg-surface p-0 shadow-2xl backdrop:bg-black/40\">\n          <div class=\"flex h-full flex-col p-4 text-content\">\n            <div class=\"flex items-center justify-between border-b border-outline/30 pb-4\">\n              <span class=\"relative flex h-8 w-24 items-center justify-center overflow-hidden rounded-lg bg-accent\"><span class=\"select-none text-xs font-semibold tracking-widest text-muted\">LOGO</span></span>\n              <button type=\"button\" data-action=\"close-menu\" class=\"flex size-8 items-center justify-center rounded-lg hover:bg-accent/40 ${focusRing}\"><span class=\"block size-4 rounded-full bg-accent\"></span></button>\n            </div>\n            <nav class=\"flex flex-col gap-2 py-4\">\n              <div role=\"button\" tabindex=\"0\" data-action=\"nav\" data-nav-id=\"home\" class=\"rounded-lg p-2.5 font-medium hover:bg-accent/40\"><span class=\"block h-[0.75em] w-16 rounded-sm bg-accent\"></span></div>\n              <div role=\"button\" tabindex=\"0\" data-action=\"nav\" data-nav-id=\"shop\" class=\"rounded-lg p-2.5 font-medium hover:bg-accent/40\"><span class=\"block h-[0.75em] w-14 rounded-sm bg-accent\"></span></div>\n              <div role=\"button\" tabindex=\"0\" data-action=\"nav\" data-nav-id=\"about\" class=\"rounded-lg p-2.5 font-medium hover:bg-accent/40\"><span class=\"block h-[0.75em] w-16 rounded-sm bg-accent\"></span></div>\n            </nav>\n            <div class=\"mt-auto border-t border-outline/30 pt-4 flex flex-col gap-2\">\n              <button type=\"button\" data-action=\"login\" class=\"w-full rounded-lg p-2 text-left hover:bg-accent/40 font-medium\"><span class=\"block h-[0.75em] w-16 rounded-sm bg-accent\"></span></button>\n              <button type=\"button\" data-action=\"register\" class=\"w-full rounded-lg p-2 text-left hover:bg-accent/40 font-medium\"><span class=\"block h-[0.75em] w-20 rounded-sm bg-accent\"></span></button>\n            </div>\n          </div>\n        </dialog>\n      </header>`;\n  }\n}\n\nif (!customElements.get('header-08')) {\n  customElements.define('header-08', Header);\n}"}
   cssCode={""}
   height="320px"
   title="Header-08 Interactive Preview"
@@ -22,17 +22,11 @@ import { Tabs, TabItem } from '@astrojs/starlight/components';
 <Tabs>
 <TabItem label="English">
 
-## Overview
-
 Global sticky top navigation bar component, integrating brand LOGO skeleton, site-wide predictive search bar, user authentication & account portal, wishlist & cart counter badges, and horizontal category navigation menu. Features sticky positioning upon scroll and lightweight slide-out mobile drawer navigation.
 
-### Layout & Detailed Region Breakdown
-- `logo-area`: **Brand identity region**, fixed height 40px embedding neutral `LOGO` rounded rectangle skeleton on the left; dispatches `header-navigate` to return to home page upon click.
-- `search`: **Site-wide predictive search region**, high-radius pill container containing search placeholder text skeleton, clear icon, and search submit button; dispatches `header-search-input` on typing and displays up to 6 suggestion items with thumbnails in absolute dropdown panel (`search-suggestions`).
-- `navigation`: **Desktop primary navigation menu region**, horizontally aligned on viewports 1024px+, featuring 4~6 top category nav link skeletons (Home, Shop, Categories, About, Contact); triggers route events on click.
-- `account-panel`: **User auth and account portal region**, triggered by circular user avatar icon; navigates to login when unauthenticated, and opens dropdown menu with user profile skeleton, orders entry, and logout button when logged in.
-- `action-icons`: **Quick action icon group**, located at top-right corner, containing wishlist heart icon with badge, shopping cart drawer trigger with primary colored counter badge, and mobile hamburger button visible under 1024px.
-- `mobile-drawer`: **Mobile slide-out drawer region**, smoothly slides out from left on mobile viewports (max width 320px), containing brand LOGO skeleton, close cross icon, vertical nav list, and bottom login/register action buttons.
+### Regions
+Functional regions are annotated directly in the component code implementation via English comments.
+
 
 ### Dimensions & Responsiveness
 - Desktop (1024px+): Fixed height 68px~76px, follows global `content-container` with max content width 1200px centered, supports sticky positioning during page scrolling.
@@ -57,13 +51,6 @@ Global sticky top navigation bar component, integrating brand LOGO skeleton, sit
 
 顶部全局粘性导航栏组件，整合品牌 LOGO 骨架、全站级联想搜索框、用户鉴权与个人中心入口、愿望单与购物车计数角标，以及横向类目导航菜单。具备吸顶（Sticky）定位能力与移动端轻量滑出式抽屉导航，支持高内聚独立渲染。
 
-### 区域划分与内容说明
-- `logo-area`: **品牌标志区域**，固定高度 40px，内嵌居左带有中性 `LOGO` 标识的圆角骨架矩形；具备全站主路由点击交互，点击后派发 `header-navigate` 事件返回商城首页。
-- `search`: **全站预测搜索区域**，采用全圆角或高圆角胶囊容器，包含半透明搜索占位文本骨架、清除按钮以及右侧放大镜检索提交按钮；输入变动时派发 `header-search-input`，并在输入框下方绝对定位弹出最多 6 项带有缩略图骨架与标题文本的智能联想建议列表面板（`search-suggestions`）。
-- `navigation`: **桌面端主类目导航菜单区**，在大于 1024px 视口下横向水平排布，包含 4~6 个一级品类导航项骨架（如 Home、Shop、Categories、About、Contact 等）；悬浮时展现微动交互，点击链接派发页面导航事件。
-- `account-panel`: **用户鉴权与个人中心区域**，由圆形用户头像图标触发；未登录态点击直接跳转登录页，已登录态悬浮或点击后向下展开下拉操作面板，内含用户名/会员等级骨架、订单管理中心（Orders）入口以及退出登录（Logout）按钮。
-- `action-icons`: **快捷操作功能图标组**，位于页头右上角，包含带数字徽标的心愿单收藏图标、带主色圆形计数徽标的购物车抽屉触发图标，以及在小于 1024px 时显现的移动端汉堡包菜单切换按钮。
-- `mobile-drawer`: **移动端滑出式抽屉区域**，在小屏设备上从左侧滑出（最大宽度 320px），顶部包含品牌 LOGO 骨架与快速关闭叉号图标，中部以垂直大间距展示全部主导航与分类折叠项，底部包含登录/注册账户操作栏。
 
 ### 尺寸与响应式
 - 桌面端（1024px+）：高度固定为 68px~76px，遵循全局 `content-container` 最大内容宽度 1200px 居中对齐，支持页面滚动时粘性吸顶。
@@ -91,194 +78,176 @@ Global sticky top navigation bar component, integrating brand LOGO skeleton, sit
 ### HTML
 
 ```html
-<header-08 id="component-1-0"></header-08>
+<header class="bg-secondary font-sans text-on-secondary py-3 w-full">
+  <div class="content-container flex items-center justify-between gap-6">
+    <div class="flex items-center gap-8">
+      <!-- Region: Brand Identity (Logo) - Neutral LOGO placeholder with link to home -->
+
+      <div data-region="logo" class="flex-shrink-0">
+        <div role="button" tabindex="0" class="flex items-center rounded-lg focus-visible:outline-2 focus-visible:outline-offset-4 focus-visible:outline-primary">
+          <span class="relative flex h-10 w-28 items-center justify-center overflow-hidden rounded-xl bg-accent"><span class="select-none text-xs font-semibold tracking-widest text-muted">LOGO</span></span>
+        </div>
+      </div>
+
+      <!-- Region: Desktop Navigation - Main category links -->
+
+
+      <!-- Region: Primary Navigation Menu -->
+
+
+
+      <nav data-region="desktop-nav" class="hidden md:flex items-center gap-6">
+        <span class="block h-[0.75em] w-12 rounded-sm bg-accent"></span>
+        <span class="block h-[0.75em] w-10 rounded-sm bg-accent"></span>
+        <span class="block h-[0.75em] w-12 rounded-sm bg-accent"></span>
+      </nav>
+    </div>
+
+    <div class="flex items-center justify-end gap-1.5 sm:gap-3">
+      <button type="button" class="flex size-9 items-center justify-center rounded-lg hover:bg-on-secondary/10 text-on-secondary">
+        <span class="block size-4 rounded-full bg-accent"></span>
+      </button>
+
+      <button type="button" class="relative flex size-9 items-center justify-center rounded-lg hover:bg-on-secondary/10 text-on-secondary">
+        <span class="block size-4 rounded-sm bg-accent"></span>
+      </button>
+
+      <button type="button" class="relative flex size-9 items-center justify-center rounded-lg hover:bg-on-secondary/10 text-on-secondary">
+        <span class="block size-4 rounded-sm bg-accent"></span>
+      </button>
+
+      <button type="button" class="flex size-9 items-center justify-center rounded-lg md:hidden hover:bg-on-secondary/10 text-on-secondary">
+        <span class="flex flex-col gap-1"><span class="block h-0.5 w-4 bg-accent"></span><span class="block h-0.5 w-4 bg-accent"></span><span class="block h-0.5 w-4 bg-accent"></span></span>
+      </button>
+    </div>
+  </div>
+</header>
 ```
 
 ### JavaScript
 
 ```javascript
-// 下方是组件实际实现（含共享骨架、主题及在线资源加载代码）。
-(function() {
-  "use strict";
-  const shapes = {
-    image: "relative block w-full aspect-video overflow-hidden rounded-xl bg-accent",
-    logo: "relative flex h-10 w-32 items-center justify-center overflow-hidden rounded-xl bg-accent",
-    text: "block h-[0.75em] w-full rounded-sm bg-accent",
-    title: "block h-[0.75em] w-3/4 rounded-sm bg-accent",
-    circle: "block size-12 rounded-full bg-accent",
-    button: "block h-[0.75em] w-20 rounded-sm bg-accent"
-  };
-  const lengths = /^(?:0|\d+(?:\.\d+)?(?:px|rem|em|%|vw|vh|ch))$/;
-  class Skeleton extends HTMLElement {
-    static observedAttributes = ["kind", "lines", "width", "height", "ratio", "radius", "font-size"];
-    connectedCallback() {
-      this.render();
-    }
-    attributeChangedCallback() {
-      if (this.isConnected) this.render();
-    }
-    render() {
-      const kind = Object.hasOwn(shapes, this.getAttribute("kind")) ? this.getAttribute("kind") : "text";
-      const count = kind === "text" ? Math.max(1, Math.min(12, Number.parseInt(this.getAttribute("lines"), 10) || 1)) : 1;
-      const container = this.ownerDocument.createElement("span");
-      container.className = "grid min-w-0 gap-[0.5em]";
-      container.setAttribute("aria-hidden", "true");
-      const fontSize = this.getAttribute("font-size");
-      if (["text", "title", "button"].includes(kind)) {
-        const baseSize = fontSize && lengths.test(fontSize) ? fontSize : "1em";
-        container.style.fontSize = `calc(${baseSize} + var(--theme-skeleton-text-offset, 3px))`;
-      }
-      for (let i = 0; i < count; i++) {
-        const line = this.ownerDocument.createElement("span");
-        line.className = shapes[kind];
-        line.dataset.sb2Part = "shape";
-        for (const [attribute, property] of [["width", "width"], ["height", "height"], ["radius", "borderRadius"]]) {
-          const value = this.getAttribute(attribute);
-          if (value && lengths.test(value)) line.style[property] = value;
-        }
-        const ratio = this.getAttribute("ratio");
-        if (ratio && /^\d+(?:\.\d+)?\s*\/\s*\d+(?:\.\d+)?$/.test(ratio) && ratio.split("/").every((value) => Number(value) > 0)) line.style.aspectRatio = ratio;
-        if (kind === "text" && count > 1 && i === count - 1 && !this.hasAttribute("width")) {
-          line.classList.remove("w-full");
-          line.classList.add("w-2/3");
-        }
-        if (kind === "logo" || kind === "image") {
-          const marker = this.ownerDocument.createElement("span");
-          marker.dataset.sb2Marker = kind;
-          marker.className = "pointer-events-none absolute inset-0 flex items-center justify-center";
-          if (kind === "logo") {
-            const label = this.ownerDocument.createElement("span");
-            label.className = "select-none text-xs font-semibold tracking-widest text-muted";
-            label.textContent = "LOGO";
-            marker.append(label);
-          } else {
-            marker.innerHTML = '<span class="relative block aspect-[6/5] w-1/4 min-w-4 max-w-12 overflow-hidden rounded-sm border border-muted"><span class="absolute right-[15%] top-[15%] size-1/5 rounded-full bg-muted"></span><span class="absolute -bottom-1/4 left-[5%] size-3/4 rotate-45 border-l border-t border-muted"></span><span class="absolute -bottom-1/4 right-0 size-1/2 rotate-45 border-l border-t border-muted"></span></span>';
-          }
-          line.append(marker);
-        }
-        container.append(line);
-      }
-      this.replaceChildren(container);
+class Header extends HTMLElement {
+  static observedAttributes = ['is-logged-in', 'cart-count', 'wishlist-count', 'theme'];
+
+  constructor() {
+    super();
+    this._uid = 'header-08-' + Math.random().toString(36).substring(2, 8);
+    this._searchSuggestions = [];
+    window.$header = this;
+  }
+
+  get isLoggedIn() { return this.hasAttribute('is-logged-in'); }
+  set isLoggedIn(val) { this.toggleAttribute('is-logged-in', Boolean(val)); }
+
+  get cartCount() { return Number(this.getAttribute('cart-count')) || 0; }
+  set cartCount(val) { this.setAttribute('cart-count', String(Math.max(0, Math.floor(Number(val) || 0)))); }
+
+  get wishlistCount() { return Number(this.getAttribute('wishlist-count')) || 0; }
+  set wishlistCount(val) { this.setAttribute('wishlist-count', String(Math.max(0, Math.floor(Number(val) || 0)))); }
+
+  get theme() { return this.getAttribute('theme') || 'dark'; }
+  set theme(val) { this.setAttribute('theme', String(val)); }
+
+  get searchSuggestions() { return [...this._searchSuggestions]; }
+  set searchSuggestions(list) {
+    this._searchSuggestions = Array.isArray(list) ? list.slice(0, 6) : [];
+  }
+
+  toggleMobileMenu(force) {
+    const dialog = this.querySelector('dialog');
+    if (!dialog) return;
+    if (typeof force === 'boolean') {
+      if (force && !dialog.open) dialog.showModal();
+      else if (!force && dialog.open) dialog.close();
+    } else {
+      if (dialog.open) dialog.close();
+      else dialog.showModal();
     }
   }
-  class Header extends HTMLElement {
-    static observedAttributes = ["is-logged-in", "cart-count", "wishlist-count", "theme"];
-    constructor() {
-      super();
-      this._uid = "header-08-" + Math.random().toString(36).substring(2, 8);
-      this._searchSuggestions = [];
-      window.$header = this;
-    }
-    get isLoggedIn() {
-      return this.hasAttribute("is-logged-in");
-    }
-    set isLoggedIn(val) {
-      this.toggleAttribute("is-logged-in", Boolean(val));
-    }
-    get cartCount() {
-      return Number(this.getAttribute("cart-count")) || 0;
-    }
-    set cartCount(val) {
-      this.setAttribute("cart-count", String(Math.max(0, Math.floor(Number(val) || 0))));
-    }
-    get wishlistCount() {
-      return Number(this.getAttribute("wishlist-count")) || 0;
-    }
-    set wishlistCount(val) {
-      this.setAttribute("wishlist-count", String(Math.max(0, Math.floor(Number(val) || 0))));
-    }
-    get theme() {
-      return this.getAttribute("theme") || "dark";
-    }
-    set theme(val) {
-      this.setAttribute("theme", String(val));
-    }
-    get searchSuggestions() {
-      return [...this._searchSuggestions];
-    }
-    set searchSuggestions(list) {
-      this._searchSuggestions = Array.isArray(list) ? list.slice(0, 6) : [];
-    }
-    toggleMobileMenu(force) {
-      const dialog = this.querySelector("dialog");
-      if (!dialog) return;
-      if (typeof force === "boolean") {
-        if (force && !dialog.open) dialog.showModal();
-        else if (!force && dialog.open) dialog.close();
-      } else {
-        if (dialog.open) dialog.close();
-        else dialog.showModal();
+
+  toggleAccountDropdown() {
+    const panel = this.querySelector('[data-region="account-panel"]');
+    if (panel) panel.hidden = !panel.hidden;
+  }
+
+  updateCart(count) {
+    this.cartCount = count;
+  }
+
+  updateWishlist(count) {
+    this.wishlistCount = count;
+  }
+
+  connectedCallback() {
+    this.classList.add('block', 'sticky', 'top-0', 'z-40');
+    this.render();
+    this.bindEvents();
+  }
+
+  disconnectedCallback() {
+    this._controller?.abort();
+    if (window.$header === this) delete window.$header;
+  }
+
+  attributeChangedCallback() {
+    if (this.isConnected) this.render();
+  }
+
+  bindEvents() {
+    this._controller?.abort();
+    this._controller = new AbortController();
+    const { signal } = this._controller;
+
+    this.addEventListener('click', (e) => {
+      const target = e.target;
+      const actionEl = target.closest('[data-action]');
+      if (!actionEl) return;
+
+      const action = actionEl.dataset.action;
+      if (action === 'menu') {
+        this.toggleMobileMenu();
+      } else if (action === 'close-menu') {
+        this.toggleMobileMenu(false);
+      } else if (action === 'account') {
+        this.toggleAccountDropdown();
+      } else if (action === 'cart') {
+        this.emit('header-navigate', { destination: 'cart' });
+      } else if (action === 'wishlist') {
+        this.emit('header-navigate', { destination: 'wishlist' });
+      } else if (action === 'login') {
+        this.emit('header-navigate', { destination: 'login' });
+      } else if (action === 'register') {
+        this.emit('header-navigate', { destination: 'register' });
+      } else if (action === 'nav') {
+        const id = actionEl.dataset.navId;
+        this.emit('header-navigate', { destination: 'category', id });
+        this.toggleMobileMenu(false);
       }
-    }
-    toggleAccountDropdown() {
+    }, { signal });
+
+    document.addEventListener('pointerdown', (e) => {
       const panel = this.querySelector('[data-region="account-panel"]');
-      if (panel) panel.hidden = !panel.hidden;
-    }
-    updateCart(count) {
-      this.cartCount = count;
-    }
-    updateWishlist(count) {
-      this.wishlistCount = count;
-    }
-    connectedCallback() {
-      this.classList.add("block", "sticky", "top-0", "z-40");
-      this.render();
-      this.bindEvents();
-    }
-    disconnectedCallback() {
-      this._controller?.abort();
-      if (window.$header === this) delete window.$header;
-    }
-    attributeChangedCallback() {
-      if (this.isConnected) this.render();
-    }
-    bindEvents() {
-      this._controller?.abort();
-      this._controller = new AbortController();
-      const { signal } = this._controller;
-      this.addEventListener("click", (e) => {
-        const target = e.target;
-        const actionEl = target.closest("[data-action]");
-        if (!actionEl) return;
-        const action = actionEl.dataset.action;
-        if (action === "menu") {
-          this.toggleMobileMenu();
-        } else if (action === "close-menu") {
-          this.toggleMobileMenu(false);
-        } else if (action === "account") {
-          this.toggleAccountDropdown();
-        } else if (action === "cart") {
-          this.emit("header-navigate", { destination: "cart" });
-        } else if (action === "wishlist") {
-          this.emit("header-navigate", { destination: "wishlist" });
-        } else if (action === "login") {
-          this.emit("header-navigate", { destination: "login" });
-        } else if (action === "register") {
-          this.emit("header-navigate", { destination: "register" });
-        } else if (action === "nav") {
-          const id = actionEl.dataset.navId;
-          this.emit("header-navigate", { destination: "category", id });
-          this.toggleMobileMenu(false);
-        }
-      }, { signal });
-      document.addEventListener("pointerdown", (e) => {
-        const panel = this.querySelector('[data-region="account-panel"]');
-        const trigger = this.querySelector('[data-action="account"]');
-        if (panel && !panel.contains(e.target) && !trigger?.contains(e.target)) {
-          panel.hidden = true;
-        }
-      }, { signal });
-    }
-    emit(name, detail = {}) {
-      this.dispatchEvent(new CustomEvent(name, { detail, bubbles: true, composed: true }));
-    }
-    render() {
-      const isLight = this.theme === "light";
-      const focusRing = "focus-visible:outline-2 focus-visible:outline-offset-4 focus-visible:outline-primary";
-      const headerCls = isLight ? "bg-surface font-sans text-content border-b border-outline/30 shadow-xs" : "bg-secondary font-sans text-on-secondary";
-      const actionBtnCls = isLight ? "hover:bg-accent/40 text-content" : "hover:bg-on-secondary/10 text-on-secondary";
-      const navLinkCls = isLight ? "text-content/80 hover:text-primary" : "text-on-secondary/90 hover:opacity-75";
-      const authSection = this.isLoggedIn ? `<div class="relative">
+      const trigger = this.querySelector('[data-action="account"]');
+      if (panel && !panel.contains(e.target) && !trigger?.contains(e.target)) {
+        panel.hidden = true;
+      }
+    }, { signal });
+  }
+
+  emit(name, detail = {}) {
+    this.dispatchEvent(new CustomEvent(name, { detail, bubbles: true, composed: true }));
+  }
+
+  render() {
+    const isLight = this.theme === 'light';
+    const focusRing = 'focus-visible:outline-2 focus-visible:outline-offset-4 focus-visible:outline-primary';
+    const headerCls = isLight ? 'bg-surface font-sans text-content border-b border-outline/30 shadow-xs' : 'bg-secondary font-sans text-on-secondary';
+    const actionBtnCls = isLight ? 'hover:bg-accent/40 text-content' : 'hover:bg-on-secondary/10 text-on-secondary';
+    const navLinkCls = isLight ? 'text-content/80 hover:text-primary' : 'text-on-secondary/90 hover:opacity-75';
+
+    const authSection = this.isLoggedIn
+      ? `<div class="relative">
           <button type="button" data-action="account" class="flex size-9 items-center justify-center rounded-lg ${actionBtnCls} ${focusRing}">
             <span class="block size-6 rounded-full bg-accent"></span>
           </button>
@@ -287,7 +256,8 @@ Global sticky top navigation bar component, integrating brand LOGO skeleton, sit
             <button type="button" data-action="account-wishlist" class="w-full rounded-lg p-2 text-left hover:bg-accent/40 text-sm"><span class="block h-[0.75em] w-16 rounded-sm bg-accent"></span></button>
             <button type="button" data-action="logout" class="w-full rounded-lg p-2 text-left hover:bg-accent/40 text-sm"><span class="block h-[0.75em] w-14 rounded-sm bg-accent"></span></button>
           </div>
-        </div>` : `<div class="relative">
+        </div>`
+      : `<div class="relative">
           <button type="button" data-action="account" class="flex size-9 items-center justify-center rounded-lg ${actionBtnCls} ${focusRing}">
             <span class="block size-4 rounded-full bg-accent"></span>
           </button>
@@ -296,7 +266,8 @@ Global sticky top navigation bar component, integrating brand LOGO skeleton, sit
             <button type="button" data-action="register" class="w-full rounded-lg p-2 text-left hover:bg-accent/40 text-sm font-medium"><span class="block h-[0.75em] w-16 rounded-sm bg-accent"></span></button>
           </div>
         </div>`;
-      this.innerHTML = `
+
+    this.innerHTML = `
       <header class="${headerCls} py-3">
         <div class="content-container flex items-center justify-between gap-6">
           <div class="flex items-center gap-8">
@@ -318,12 +289,12 @@ Global sticky top navigation bar component, integrating brand LOGO skeleton, sit
 
             <button type="button" data-action="wishlist" class="relative flex size-9 items-center justify-center rounded-lg ${actionBtnCls} ${focusRing}">
               <span class="block size-4 rounded-sm bg-accent"></span>
-              <span data-region="wishlist-badge" class="${this.wishlistCount > 0 ? "" : "hidden"} absolute -right-1 -top-1 flex size-4 items-center justify-center rounded-full bg-primary text-on-secondary text-[10px] font-bold shadow-xs">${this.wishlistCount}</span>
+              <span data-region="wishlist-badge" class="${this.wishlistCount > 0 ? '' : 'hidden'} absolute -right-1 -top-1 flex size-4 items-center justify-center rounded-full bg-primary text-on-secondary text-[10px] font-bold shadow-xs">${this.wishlistCount}</span>
             </button>
 
             <button type="button" data-action="cart" class="relative flex size-9 items-center justify-center rounded-lg ${actionBtnCls} ${focusRing}">
               <span class="block size-4 rounded-sm bg-accent"></span>
-              <span data-region="cart-badge" class="${this.cartCount > 0 ? "" : "hidden"} absolute -right-1 -top-1 flex size-4 items-center justify-center rounded-full bg-primary text-on-secondary text-[10px] font-bold shadow-xs">${this.cartCount}</span>
+              <span data-region="cart-badge" class="${this.cartCount > 0 ? '' : 'hidden'} absolute -right-1 -top-1 flex size-4 items-center justify-center rounded-full bg-primary text-on-secondary text-[10px] font-bold shadow-xs">${this.cartCount}</span>
             </button>
 
             <button type="button" data-action="menu" class="flex size-9 items-center justify-center rounded-lg md:hidden ${actionBtnCls} ${focusRing}">
@@ -350,235 +321,11 @@ Global sticky top navigation bar component, integrating brand LOGO skeleton, sit
           </div>
         </dialog>
       </header>`;
-    }
   }
-  const themeConfig = Object.freeze({
-    colors: Object.freeze({
-      primary: "#bd0e16",
-      secondary: "#000000",
-      accent: "#e2e8f0",
-      surface: "#ffffff",
-      text: "#0f172a",
-      muted: "#64748b",
-      border: "#cbd5e1",
-      onSecondary: "#ffffff"
-    }),
-    contentMaxWidth: 1200,
-    gutters: Object.freeze({ mobile: 16, desktop: 24 }),
-    font: Object.freeze({
-      family: "Noto Sans SC",
-      weights: [400, 500, 600, 700],
-      fallback: "ui-sans-serif, system-ui, sans-serif"
-    }),
-    radius: 8,
-    radii: Object.freeze({
-      sm: 4,
-      md: 6,
-      lg: 8,
-      xl: 12
-    }),
-    skeletonTextSizeOffset: 3,
-    breakpoints: Object.freeze({ sm: 640, md: 768, lg: 1024, xl: 1280, "2xl": 1536 })
-  });
-  const themePresets = Object.freeze({
-    default: Object.freeze({}),
-    ocean: Object.freeze({ primary: "#2563eb", secondary: "#172554", accent: "#dbeafe" }),
-    forest: Object.freeze({ primary: "#15803d", secondary: "#052e16", accent: "#dcfce7" })
-  });
-  const resources = Object.freeze({
-    tailwind: "https://cdn.jsdelivr.net/npm/@tailwindcss/browser@4.1.13/dist/index.global.js",
-    tailwindFallback: "https://unpkg.com/@tailwindcss/browser@4.1.13/dist/index.global.js",
-    jquery: "https://cdn.jsdelivr.net/npm/jquery@3.7.1/dist/jquery.min.js",
-    jqueryFallback: "https://unpkg.com/jquery@3.7.1/dist/jquery.min.js",
-    swiper: "https://cdn.jsdelivr.net/npm/swiper@10.3.1/swiper-bundle.min.js",
-    swiperFallback: "https://unpkg.com/swiper@10.3.1/swiper-bundle.min.js",
-    swiperCss: "https://cdn.jsdelivr.net/npm/swiper@10.3.1/swiper-bundle.min.css",
-    swiperCssFallback: "https://unpkg.com/swiper@10.3.1/swiper-bundle.min.css",
-    font: `https://fonts.googleapis.com/css2?family=${encodeURIComponent(themeConfig.font.family)}:wght@${themeConfig.font.weights.join(";")}&display=swap`
-  });
-  const fontStack = `${JSON.stringify(themeConfig.font.family)}, ${themeConfig.font.fallback}`;
-  function applyTheme({ preset = "default", contentMaxWidth = themeConfig.contentMaxWidth } = {}, doc = document) {
-    if (!Object.hasOwn(themePresets, preset)) throw new Error(`未知全局主题：${preset}`);
-    if (!Number.isFinite(contentMaxWidth) || contentMaxWidth <= 0) throw new Error("全局内容宽度必须是正数");
-    const root = doc.documentElement;
-    const colors = { ...themeConfig.colors, ...themePresets[preset] };
-    for (const [name, value] of Object.entries(colors)) {
-      const key = name.replace(/[A-Z]/g, (letter) => `-${letter.toLowerCase()}`);
-      root.style.setProperty(`--theme-${key}`, value);
-    }
-    root.style.setProperty("--theme-content-max-width", `${contentMaxWidth}px`);
-    root.style.setProperty("--theme-radius", `${themeConfig.radius}px`);
-    root.style.setProperty("--theme-radius-sm", `${themeConfig.radii.sm}px`);
-    root.style.setProperty("--theme-radius-md", `${themeConfig.radii.md}px`);
-    root.style.setProperty("--theme-radius-lg", `${themeConfig.radii.lg}px`);
-    root.style.setProperty("--theme-radius-xl", `${themeConfig.radii.xl}px`);
-    root.style.setProperty("--theme-font", fontStack);
-    root.style.setProperty("--theme-gutter-mobile", `${themeConfig.gutters.mobile}px`);
-    root.style.setProperty("--theme-gutter-desktop", `${themeConfig.gutters.desktop}px`);
-    root.style.setProperty("--theme-skeleton-text-offset", `${themeConfig.skeletonTextSizeOffset}px`);
-    root.dataset.themePreset = preset;
-  }
-  const themeCss = `
-  @theme {
-    ${Object.entries(themeConfig.breakpoints).map(([key, value]) => `--breakpoint-${key}: ${value / 16}rem;`).join("\n")}
-  }
-  @theme inline {
-    --font-sans: var(--theme-font);
-    --color-primary: var(--theme-primary);
-    --color-secondary: var(--theme-secondary);
-    --color-accent: var(--theme-accent);
-    --color-surface: var(--theme-surface);
-    --color-content: var(--theme-text);
-    --color-muted: var(--theme-muted);
-    --color-outline: var(--theme-border);
-    --color-on-secondary: var(--theme-on-secondary);
-    --radius-sm: var(--theme-radius-sm, calc(var(--theme-radius) / 2));
-    --radius-md: var(--theme-radius-md, calc(var(--theme-radius) * 0.75));
-    --radius-lg: var(--theme-radius-lg, var(--theme-radius));
-    --radius-xl: var(--theme-radius-xl, calc(var(--theme-radius) * 1.5));
-  }
-  @layer base {
-    :root { --theme-gutter: ${themeConfig.gutters.mobile}px; }
-    @media (width >= ${themeConfig.breakpoints.md / 16}rem) { :root { --theme-gutter: ${themeConfig.gutters.desktop}px; } }
-    body { margin: 0; font-family: var(--theme-font); color: var(--theme-text); }
-    skeleton-placeholder { display: block; min-width: 0; }
-  }
-  @utility content-container {
-    width: 100%;
-    max-width: calc(var(--theme-content-max-width) + var(--theme-gutter) * 2);
-    margin-inline: auto;
-    padding-inline: var(--theme-gutter);
-  }
-`;
-  const documents = /* @__PURE__ */ new WeakMap();
-  const documentResourceKey = Symbol.for("components.resources.ready");
-  const jqueryDocuments = /* @__PURE__ */ new WeakMap();
-  const jqueryResourceKey = Symbol.for("components.jquery.ready");
-  const swiperDocuments = /* @__PURE__ */ new WeakMap();
-  const swiperResourceKey = Symbol.for("components.swiper.ready");
-  function loadAttempt(doc, tag, key, url) {
-    return new Promise((resolve, reject) => {
-      const element = doc.createElement(tag);
-      element.dataset.sb2Resource = key;
-      if (tag === "script") element.src = url;
-      else {
-        element.rel = "stylesheet";
-        element.href = url;
-      }
-      const timer = setTimeout(() => finish(new Error(`${key} 加载超时，请检查网络后刷新。`)), 8e3);
-      function finish(error) {
-        clearTimeout(timer);
-        element.onload = element.onerror = null;
-        if (error) {
-          element.remove();
-          reject(error);
-        } else resolve();
-      }
-      element.onload = () => finish();
-      element.onerror = () => finish(new Error(`${key} 加载失败，请检查 CDN 连接后刷新。`));
-      doc.head.append(element);
-    });
-  }
-  async function load(doc, tag, key, urls) {
-    let failure;
-    for (const url of urls) {
-      try {
-        await loadAttempt(doc, tag, key, url);
-        return;
-      } catch (error) {
-        failure = error;
-      }
-    }
-    throw failure;
-  }
-  function report(doc, message) {
-    let alert = doc.querySelector("[data-sb2-resource-error]");
-    if (!alert) {
-      alert = doc.createElement("div");
-      alert.dataset.sb2ResourceError = "";
-      alert.setAttribute("role", "alert");
-      alert.style.cssText = "padding:16px;background:#fff1f2;color:#9f1239;font:14px system-ui;white-space:pre-wrap";
-      (doc.body || doc.documentElement).prepend(alert);
-    }
-    alert.textContent = message;
-  }
-  function initializeResources(doc = document) {
-    if (doc[documentResourceKey]) return doc[documentResourceKey];
-    if (documents.has(doc)) return documents.get(doc);
-    applyTheme({}, doc);
-    const fallback = doc.createElement("style");
-    fallback.dataset.sb2Font = "";
-    fallback.textContent = "body { font-family: var(--theme-font); }";
-    doc.head.append(fallback);
-    const style = doc.createElement("style");
-    style.type = "text/tailwindcss";
-    style.dataset.sb2Theme = "";
-    style.textContent = themeCss;
-    doc.head.append(style);
-    const ready = Promise.allSettled([
-      load(doc, "script", "Tailwind", [resources.tailwind, resources.tailwindFallback]),
-      load(doc, "link", "Google Fonts", [resources.font])
-    ]).then((results) => {
-      const errors = results.filter((result) => result.status === "rejected").map((result) => result.reason.message);
-      if (errors.length) report(doc, errors.join("\n"));
-      return { ready: errors.length === 0, errors };
-    });
-    documents.set(doc, ready);
-    doc[documentResourceKey] = ready;
-    return ready;
-  }
-  function loadJQuery(doc = document) {
-    if (doc[jqueryResourceKey]) return doc[jqueryResourceKey];
-    if (jqueryDocuments.has(doc)) return jqueryDocuments.get(doc);
-    const ready = load(doc, "script", "jQuery", [resources.jquery, resources.jqueryFallback]).then(() => doc.defaultView.jQuery).catch((error) => {
-      report(doc, error.message);
-      throw error;
-    });
-    jqueryDocuments.set(doc, ready);
-    doc[jqueryResourceKey] = ready;
-    return ready;
-  }
-  function loadSwiper(doc = document) {
-    if (doc[swiperResourceKey]) return doc[swiperResourceKey];
-    if (swiperDocuments.has(doc)) return swiperDocuments.get(doc);
-    const ready = Promise.all([
-      load(doc, "link", "Swiper CSS", [resources.swiperCss, resources.swiperCssFallback]),
-      load(doc, "script", "Swiper JS", [resources.swiper, resources.swiperFallback])
-    ]).then(() => doc.defaultView.Swiper).catch((error) => {
-      report(doc, error.message);
-      throw error;
-    });
-    swiperDocuments.set(doc, ready);
-    doc[swiperResourceKey] = ready;
-    return ready;
-  }
-  for (const [tag, implementation] of [["skeleton-placeholder", Skeleton], ["header-08", Header]]) if (!customElements.get(tag)) customElements.define(tag, implementation);
-  Promise.all([initializeResources(), loadJQuery(), loadSwiper()]).then(([result, $, Swiper]) => {
-    document.documentElement.dataset.exampleReady = String(result.ready);
-    const eventKey = Symbol.for("components.demo.events");
-    if (!document[eventKey]) {
-      document[eventKey] = true;
-      $(document).on("product-navigate footer-navigate header-navigate carousel-navigate", function(event) {
-        console.log(event.originalEvent.detail);
-      });
-    }
-  }).catch(() => {
-    document.documentElement.dataset.exampleReady = "false";
-  });
-})();
-
-// 配置和实例变量；只需修改本段即可调整组合。
-(() => {
-const configuration = {"properties":[{"id":"component-1-0","values":{"isLoggedIn":false,"cartCount":3,"wishlistCount":2,"theme":"dark"}}],"values":{"--theme-primary":"#bd0e16","--theme-secondary":"#000000","--theme-accent":"#e2e8f0","--theme-surface":"#ffffff","--theme-text":"#0f172a","--theme-muted":"#64748b","--theme-border":"#cbd5e1","--theme-on-secondary":"#ffffff","--theme-content-max-width":"1200px"}};
-for (const [name, value] of Object.entries(configuration.values)) document.documentElement.style.setProperty(name, value);
-for (const item of configuration.properties) {
-  const element = document.getElementById(item.id);
-  if (!element) continue;
-  for (const [name, value] of Object.entries(item.values)) element[name] = value;
-  if (element.localName.startsWith('header-')) element.addEventListener('header-search-input', event => {
-    element.searchSuggestions = event.detail.query.length >= 2 ? [{ id: 'demo-product-1' }] : [];
-  });
 }
-})();
+
+if (!customElements.get('header-08')) {
+  customElements.define('header-08', Header);
+}
 ```
 

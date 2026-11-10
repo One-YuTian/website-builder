@@ -18,4 +18,5 @@
 .page-loader::before,.canvas-loader::before{content:'';position:absolute;inset:0;width:80%;background:linear-gradient(90deg,transparent,rgba(255,255,255,.5) 46%,rgba(255,255,255,.52) 54%,transparent);transform:translateX(-110%);animation:loading-sweep 2.8s ease-in-out infinite;pointer-events:none}
 @keyframes loading-sweep{0%{transform:translateX(-110%)}100%{transform:translateX(140%)}}
 .canvas-loader{position:relative;width:min(320px,70vw);height:180px;border-radius:5px;margin:auto;box-shadow:0 0 0 1px rgba(255,255,255,.6)}
+.canvas-world{display:grid;align-items:start;column-gap:72px;row-gap:160px}
 @media(prefers-reduced-motion:reduce){.page-loader::before,.canvas-loader::before{animation:none;transform:translateX(15%);opacity:.4}}

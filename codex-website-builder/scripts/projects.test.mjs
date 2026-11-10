@@ -28,7 +28,13 @@ try{
  const failed=await browser.newPage();await failed.route('**/api/project-sync*',route=>route.fulfill({status:503,body:'unavailable'}));failed.on('request',request=>{if(request.url().includes('/api/site'))demoRequests.push(request.url());});
  await failed.goto(url,{waitUntil:'domcontentloaded'});await failed.waitForTimeout(700);assert.equal(await failed.locator('.page-panel,iframe').count(),0);assert.deepEqual(demoRequests,[]);await failed.close();
  const templates=await call('website_templates',{mode:'summary'});assert.equal(JSON.parse(templates.content[0].text).length,80);
- const selected=await call('website_templates',{mode:'select',brief:'organic outdoor store'});const ids=JSON.parse(selected.content[0].text).slice(0,3).map(item=>item.id);
+ const selected=await call('website_templates',{mode:'select',brief:'organic outdoor store'});const candidates=JSON.parse(selected.content[0].text);
+ assert.ok(candidates.every(item=>item.candidates.length&&!item.id),'selection returns candidates, not automatic design choices');
+ assert.equal(candidates.reduce((sum,item)=>sum+item.candidates.length,0),80,'all available templates are candidates, not mandatory page sections');
+ assert.ok(candidates.find(item=>item.category==='header').candidates.some(item=>item.id==='header-01'),'appropriate -01 candidates are retained');
+ const secondSelection=JSON.parse((await call('website_templates',{mode:'select',brief:'luxury fashion store'})).content[0].text);
+ assert.deepEqual(secondSelection,candidates,'brief does not randomly determine design; Agent decides from candidate summaries');
+ const ids=candidates.slice(0,3).map(item=>item.candidates[0].id);
  const code=await call('website_templates',{mode:'code',ids,section:'html'});assert.ok(JSON.parse(code.content[0].text).every(item=>item.html));
  const a=await project({thread_id:'test-thread-a',name:'Complete commerce',brief:'A complete ecommerce storefront',language:'en'});assert.equal(a.pages.length,13);assert.match(a.project_id,/^[a-f0-9]{4}(?:-[a-f0-9]{4}){3}$/);assert.ok(a.pages.every(page=>page.status==='queued'));
  assert.equal((await project({thread_id:a.thread_id})).project_id,a.project_id);

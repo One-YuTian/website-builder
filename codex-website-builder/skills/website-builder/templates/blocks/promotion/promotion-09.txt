@@ -1,24 +1,23 @@
 ## Overview
 
-Promotional banner and coupon campaign showcase block, covering side-by-side grid, cinematic wide banner, coupon vouchers, and special discount highlights to drive marketing conversion.
+Promotional campaign banner section, supporting equal multi-column or asymmetric mosaic layouts with rich background marketing imagery, discount tags, and fast CTAs.
 
-### Layout & Regions
-- `banner-container`: Main banner visual container with background image skeleton and text overlay.
-- `coupon-group`: Perforated coupon cards with discount amount and Collect buttons.
-- `cta-button`: High-contrast promotional action button.
+### Regions
+Functional regions are annotated directly in the component code implementation via English comments.
+
 
 ### Dimensions & Responsiveness
-- Follows global design system, outer container uses `content-container` with PC max content width 1200px centered.
-- Desktop (1024px+): Multi-column side-by-side banners or wide cinematic banner.
-- Mobile (under 1024px): Stacks into single-column vertical flow with full width.
+- Follows `content-container` with max content width 1200px centered.
+- Desktop (1024px+): 2~3 column layout with 240px~360px card heights.
+- Mobile (under 768px): Single column vertical stacking.
 
 ### Attributes & Props
 | Attribute | Description | Type | Default |
 | --- | --- | --- | --- |
-| `layout` | Banner layout mode | `'split' \| 'full'` | `'split'` |
+| `columns` | Number of promotional banner columns | `number` | `2` |
 
 ### Events
-- `promotion-navigate`: Dispatched when clicking promotional banner or coupon voucher.
+- `promo-navigate`: Dispatched when clicking banner card or CTA button.
 
 ## Code
 

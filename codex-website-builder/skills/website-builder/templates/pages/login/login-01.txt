@@ -1,24 +1,23 @@
 ## Overview
 
-User account sign-in page, containing centered login card, brand badge skeleton, welcome headline, email field, password field (with visibility toggle), Remember Me checkbox, submit button, and link to registration.
+User login authentication page, featuring centered rounded card, brand LOGO skeleton, email/password fields, remember me checkbox, forgot password link, social login, and register link.
 
-### Layout & Regions
-- `card-header`: Brand icon placeholder, main title, and subtitle text.
-- `login-form`: Credentials form, password visibility toggle, and Remember Me option.
-- `card-footer`: Divider and switch-to-register navigation link.
+### Regions
+Functional regions are annotated directly in the component code implementation via English comments.
+
 
 ### Dimensions & Responsiveness
-- Follows global design system, outer container uses `content-container` with PC max content width 1200px centered.
-- Card max width 28rem (448px) centered, full width on mobile.
+- Centered card max width 440px, generous vertical padding, vertically centered.
+- Mobile: Width calc(100vw - 32px), button height >= 48px.
 
 ### Attributes & Props
 | Attribute | Description | Type | Default |
 | --- | --- | --- | --- |
-| `is-submitting` | Form submission loading state | `boolean` | `false` |
+| `title` | Headline title | `string` | `'Welcome Back'` |
 
 ### Events
-- `auth-navigate`: Dispatched when clicking Sign Up or Forgot Password links.
-- `auth-login`: Dispatched when submitting login credentials.
+- `auth-login`: Dispatched when submitting login form with credentials.
+- `auth-navigate`: Dispatched when clicking register or forgot password.
 
 ## Code
 
@@ -27,8 +26,12 @@ User account sign-in page, containing centered login card, brand badge skeleton,
 ```html
 <section class="login-section bg-accent/20 font-sans text-content py-12 sm:py-20 min-h-[560px] flex items-center">
   <div class="content-container flex justify-center">
+    <!-- Region: Authentication Card - User credentials and submission form -->
+
     <div data-region="auth-card" class="w-full max-w-md bg-surface rounded-2xl shadow-lg border border-outline/30 p-6 sm:p-10">
       <!-- Header -->
+      <!-- Region: Card Header - Welcome heading and brand logo -->
+
       <div data-region="card-header" class="text-center mb-8 flex flex-col items-center">
         <!-- Logo / Icon Skeleton -->
         <div class="size-12 rounded-xl bg-primary/10 border border-primary/20 flex items-center justify-center mb-4">
@@ -41,12 +44,14 @@ User account sign-in page, containing centered login card, brand badge skeleton,
       </div>
 
       <!-- Form -->
+      <!-- Region: Login Form - Email, password inputs, and sign-in button -->
+
       <form id="login-form" data-region="login-form" class="space-y-5" onsubmit="return false;">
         <!-- Email Field -->
         <div>
           <div class="h-3 w-20 bg-content/80 rounded-xs mb-2"></div>
           <div class="relative">
-            <input type="text" readonly placeholder="" aria-label="邮箱输入框" class="w-full px-4 py-3 bg-surface border border-outline/50 rounded-xl focus:border-primary text-sm shadow-2xs cursor-default">
+            <input type="text" readonly placeholder="" aria-label="Email address" class="w-full px-4 py-3 bg-surface border border-outline/50 rounded-xl focus:border-primary text-sm shadow-2xs cursor-default">
             <div class="absolute inset-y-0 left-4 flex items-center pointer-events-none">
               <div class="h-3 w-32 bg-muted/40 rounded-xs"></div>
             </div>
@@ -57,11 +62,11 @@ User account sign-in page, containing centered login card, brand badge skeleton,
         <div>
           <div class="h-3 w-16 bg-content/80 rounded-xs mb-2"></div>
           <div class="relative">
-            <input type="password" readonly placeholder="" aria-label="密码输入框" class="w-full px-4 py-3 bg-surface border border-outline/50 rounded-xl focus:border-primary text-sm pr-11 shadow-2xs cursor-default">
+            <input type="password" readonly placeholder="" aria-label="Password" class="w-full px-4 py-3 bg-surface border border-outline/50 rounded-xl focus:border-primary text-sm pr-11 shadow-2xs cursor-default">
             <div class="absolute inset-y-0 left-4 flex items-center pointer-events-none">
               <div class="h-3 w-28 bg-muted/40 rounded-xs"></div>
             </div>
-            <button type="button" aria-label="切换密码可见性" data-action="toggle-pwd" class="absolute right-3.5 top-1/2 -translate-y-1/2 text-muted hover:text-content cursor-pointer p-1">
+            <button type="button" aria-label="Toggle password visibility" data-action="toggle-pwd" class="absolute right-3.5 top-1/2 -translate-y-1/2 text-muted hover:text-content cursor-pointer p-1">
               <span class="inline-block size-4 rounded-full border border-muted/70"></span>
             </button>
           </div>
@@ -85,6 +90,8 @@ User account sign-in page, containing centered login card, brand badge skeleton,
       </form>
 
       <!-- Switch to Register Divider -->
+      <!-- Region: Card Footer - Alternate auth links and secondary actions -->
+
       <div data-region="card-footer" class="mt-8 pt-6 border-t border-outline/20 text-center">
         <div class="flex items-center justify-center gap-2">
           <div class="h-3 w-28 bg-muted/60 rounded-xs"></div>

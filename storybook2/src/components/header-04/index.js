@@ -301,7 +301,7 @@ export class Header extends HTMLElement {
               <div data-region="categories-panel" class="absolute left-0 right-0 top-full z-50 hidden group-hover/cats:block w-full border-b border-outline/30 bg-surface py-6 text-content shadow-2xl">
                 <div class="content-container">
                   <div class="grid grid-cols-6 gap-4">
-                    <!-- 分类图：从相应分类的商品数据中随机挑选一个合适的图片作为分类图 -->
+                    <!-- Category image: Pick a relevant product image from this category -->
                     <div role="button" tabindex="0" data-category="category-01" class="flex flex-col items-center justify-center p-3 rounded-xl border border-outline/40 hover:border-primary transition-colors text-center group/cat">
                       <div class="size-16 sm:size-20 rounded-full border border-outline/40 bg-accent flex items-center justify-center mb-2 overflow-hidden relative">
                         <span class="relative block aspect-[6/5] w-7 sm:w-9 overflow-hidden rounded-xs border border-muted">

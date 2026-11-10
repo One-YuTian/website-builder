@@ -1,24 +1,23 @@
 ## Overview
 
-About Us brand introduction and story page, featuring brand Hero banner visual skeleton, core mission & vision statements, service feature highlights grid, and company timeline / team credentials to build customer brand trust.
+About Us corporate brand page, integrating full-width hero banner, brand founding story narrative, key metrics dashboard, milestone timeline, and core team member showcase.
 
-### Layout & Regions
-- `hero`: Top full-width banner visual skeleton with centered text overlay.
-- `intro`: Centered brand introduction and mission statement text skeleton area.
-- `benefits-grid`: Service guarantee cards (2 cols on tablet, 4 cols on desktop).
-- `milestones`: Brand history timeline or team credentials showcase grid.
+### Regions
+Functional regions are annotated directly in the component code implementation via English comments.
+
 
 ### Dimensions & Responsiveness
-- Follows global design system, outer container uses `content-container` with PC max content width 1200px centered.
-- Mobile (under 1024px): Stacks into single-column vertical flow.
+- Follows `content-container` with PC max content width 1200px centered.
+- Desktop (1024px+): Magazine style multi-column layout with generous whitespace.
+- Mobile (under 1024px): Adapts to single vertical column with 2-column stats grid.
 
 ### Attributes & Props
 | Attribute | Description | Type | Default |
 | --- | --- | --- | --- |
-| `theme` | Theme styling mode | `'light' \| 'dark'` | `'light'` |
+| `theme` | Theme mode | `'light' \| 'dark'` | `'light'` |
 
 ### Events
-- `about-navigate`: Dispatched when clicking action buttons or links within the About section.
+- `about-navigate`: Dispatched when clicking team social link or CTA.
 
 ## Code
 
@@ -27,6 +26,8 @@ About Us brand introduction and story page, featuring brand Hero banner visual s
 ```html
 <section class="bg-surface font-sans text-content py-4 sm:py-6">
   <div class="content-container space-y-12 sm:space-y-16">
+    <!-- Region: Hero Section - Headline banner and visual introduction -->
+
     <div data-region="hero" class="relative w-full py-16 md:py-20 overflow-hidden rounded-2xl">
       <div class="absolute inset-0 bg-accent overflow-hidden"><span class="absolute inset-0 flex items-center justify-center"><span class="relative block aspect-[21/9] w-24 sm:w-32 overflow-hidden rounded-sm border border-muted"><span class="absolute right-[15%] top-[15%] size-1/5 rounded-full bg-muted"></span><span class="absolute -bottom-1/4 left-[5%] size-3/4 rotate-45 border-l border-t border-muted"></span><span class="absolute -bottom-1/4 right-0 size-1/2 rotate-45 border-l border-t border-muted"></span></span></span></div>
       <div class="absolute inset-0 bg-black/40"></div>
@@ -35,6 +36,9 @@ About Us brand introduction and story page, featuring brand Hero banner visual s
         <div class="h-[0.85em] w-40 sm:w-56 rounded-sm bg-white/70 mx-auto"></div>
       </div>
     </div>
+
+    <!-- Region: Introduction - Brand narrative and overview text -->
+
 
     <div data-region="intro" class="max-w-4xl mx-auto text-center space-y-6 px-4">
       <div class="space-y-2.5">
@@ -48,6 +52,9 @@ About Us brand introduction and story page, featuring brand Hero banner visual s
         <div class="h-[0.8em] w-4/5 rounded-sm bg-accent mx-auto"></div>
       </div>
     </div>
+
+    <!-- Region: Benefits Grid - Core brand value propositions -->
+
 
     <div data-region="benefits-grid" class="p-8 sm:p-10 rounded-2xl bg-accent/30 space-y-8">
       <div class="h-[1.5em] w-44 rounded-sm bg-accent mx-auto"></div>
@@ -82,6 +89,6 @@ About Us brand introduction and story page, featuring brand Hero banner visual s
 
 ```javascript
 $(function() {
-
+  // Page interaction support
 });
 ```

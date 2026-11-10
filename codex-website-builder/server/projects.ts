@@ -2,6 +2,10 @@ import { mkdir, readFile, rename, writeFile, open, unlink, realpath, stat, readd
 import { randomBytes, randomUUID, createHash } from 'node:crypto';
 import { dirname, isAbsolute, join, relative, resolve, sep } from 'node:path';
 import { assemblePage } from './assemble';
+import { validateSource } from './validate-source';
+import { fileURLToPath } from 'node:url';
+import { regionMarkers, type TemplateBinding } from './template-source';
+import { readTemplates } from './templates';
 
 export type PageState = 'queued'|'generating'|'ready'|'error';
 export interface ProjectPage { path: string; title: string; status: PageState; version: number; error?: string }
@@ -22,6 +26,7 @@ async function atomic(file: string, value: string) {
 }
 
 export class ProjectStore {
+  readonly skillRoot = (process.env.WEBSITE_BUILDER_SKILL_ROOT || fileURLToPath(new URL('../../skills/website-builder/', import.meta.url))).replaceAll('${PLUGIN_ROOT}', fileURLToPath(new URL('../../', import.meta.url)));
   readonly stateRoot: string;
   constructor(readonly root: string) { this.root=resolve(root);this.stateRoot=join(dirname(this.root),'.builder-state'); }
   private binding(thread: string) { if(!thread.trim())throw new Error('需要当前真实 thread_id，不能使用共享匿名会话');return join(this.stateRoot,'threads',createHash('sha256').update(thread).digest('hex')+'.json'); }
@@ -81,6 +86,30 @@ export class ProjectStore {
   async begin(threadId:string,paths:string[]) {
     return this.update(threadId,async({project})=>{for(const path of paths){this.path(path,true);const page=project.pages.find(item=>item.path===path);if(!page)throw new Error(`页面未在计划内：${path}`);page.status='generating';page.version++;delete page.error;}});
   }
+  async bindTemplates(threadId: string, bindings: TemplateBinding[]) {
+    for (const binding of bindings) {
+      this.path(binding.file);
+      if (!/^[a-z0-9][a-z0-9_-]{0,79}$/.test(binding.region)) throw new Error('区域名只允许小写字母、数字、下划线和短横线');
+      await readTemplates(this.skillRoot, { mode: 'doc', ids: [binding.id] });
+    }
+    const view = await this.update(threadId, async view => {
+      const file = await this.target(view.project.id, 'website-builder.templates.json');
+      const previous = await json<{ bindings: TemplateBinding[] }>(file);
+      const merged = [...(previous?.bindings || [])];
+      for (const binding of bindings) {
+        const index = merged.findIndex(item => item.file === binding.file && item.region === binding.region);
+        if (index >= 0) merged[index] = binding; else merged.push(binding);
+      }
+      await atomic(file, JSON.stringify({ version: 2, purpose: "source-trace-only", bindings: merged }, null, 2));
+    });
+    return { project_id: view.project.id, bindings: bindings.map(binding => ({ ...binding, ...regionMarkers(binding) })), advisory: true };
+  }
+  async auditTemplates(threadId: string) {
+    const view = await this.get(threadId);
+    if (!view) throw new Error('请先打开当前会话项目');
+    const sources = await json<{bindings?:TemplateBinding[]}>(await this.target(view.project.id, 'website-builder.templates.json'));
+    return { advisory: true, configured: !!sources, bindings: sources?.bindings || [], message: 'Template fidelity is SKILL guidance only. No structure score or generation pass/fail is calculated. Page readiness uses complete HTML and local dependency validation.' };
+  }
   private async complete(view:ProjectView,paths:string[]) {
     for(const path of paths){const page=view.project.pages.find(item=>item.path===path);if(!page)throw new Error(`页面未在计划内：${path}`);
       try {
@@ -120,7 +149,11 @@ export class ProjectStore {
     return this.update(threadId,async view=>{
       for(const file of files)if(/\.html?$/i.test(file.path)&&!view.project.pages.some(page=>page.path===file.path))throw new Error(`请先将页面加入计划：${file.path}`);
       for(const file of files){const page=view.project.pages.find(page=>page.path===file.path);if(page&&file.title)page.title=file.title;}
-      const output=files.map(file=>({...file,content:file.fragment?assemblePage(file.content,file.title||view.project.pages.find(page=>page.path===file.path)?.title||view.project.name,view.project.language):file.content}));
+      const hasFile=async(path:string)=>files.some(file=>file.path===path)||!!await stat(join(view.directory,path)).catch(()=>null);
+      const commerce=await hasFile('js/ec-sdk.js')&&await hasFile('js/sdk.js');
+      const commerceConfig=commerce&&await hasFile('js/commerce-config.js');
+      const cart = !await hasFile('components/cart.js') ? 'none' : view.project.pages.some(page=>/(^|\/)cart\.html?$/i.test(page.path)) ? 'page' : 'drawer';
+      const output=files.map(file=>({...file,content:validateSource(file.path,file.fragment?assemblePage(file.content,file.title||view.project.pages.find(page=>page.path===file.path)?.title||view.project.name,view.project.language,{commerce,commerceConfig,cart}):file.content)}));
       const changed=new Set<string>();
       for(const file of output){const target=await this.target(view.project.id,file.path);if(await readFile(target,'utf8').catch(()=>null)!==file.content)changed.add(file.path);}
       const affected:ProjectPage[]=[];

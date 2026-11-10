@@ -1,11 +1,15 @@
 <section class="bg-surface font-sans text-content py-6 sm:py-8">
   <div class="content-container">
+    <!-- Region: Page Header - Title, subtitle, and breadcrumb -->
+
     <div data-region="page-header" class="mb-6 sm:mb-8">
       <span class="block h-[1em] w-32 rounded-sm bg-accent text-3xl mb-2"></span>
       <span class="block h-[0.75em] w-64 rounded-sm bg-accent"></span>
     </div>
 
     <div class="flex flex-col lg:flex-row gap-6 lg:gap-8">
+      <!-- Region: Filter Sidebar - Faceted search, categories, and price sliders -->
+
       <aside data-region="sidebar" class="hidden lg:block lg:w-64 lg:shrink-0">
         <div class="bg-surface rounded-xl border border-outline/60 p-5 sticky top-24 shadow-xs space-y-6">
           <div>
@@ -55,6 +59,8 @@
       </aside>
 
       <div class="flex-1">
+        <!-- Region: Catalog Toolbar - Item count, sorting dropdown, and view mode toggle -->
+
         <div data-region="toolbar" class="bg-surface rounded-xl border border-outline/60 p-3.5 sm:p-4 mb-6 shadow-xs flex flex-col sm:flex-row justify-between items-stretch sm:items-center gap-3 sm:gap-4">
           <div class="flex items-center gap-2 text-sm text-muted">
             <span class="text-content font-medium text-xs sm:text-sm">
@@ -112,6 +118,9 @@
             </div>
           </div>
         </div>
+
+        <!-- Region: Products Grid - Responsive product card showcase -->
+
 
         <div data-region="products-grid" id="productsContainer" class="grid grid-cols-2 sm:grid-cols-3 gap-4 md:gap-6"></div>
       </div>

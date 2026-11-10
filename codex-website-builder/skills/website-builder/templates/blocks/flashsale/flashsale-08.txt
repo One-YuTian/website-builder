@@ -1,24 +1,25 @@
 ## Overview
 
-Limited-time flash sale and clearance showcase block, integrating countdown timer (hours/minutes/seconds), flash sale title, Shop More CTA, and responsive product card list.
+Flash sale and limited-time marketing section, integrating animated countdown timer blocks, promotional badges, flash cards with sold percentage progress, and View All CTA.
 
-### Layout & Regions
-- `sale-header`: Flash sale title skeleton, countdown clock badges, and right-aligned View More link.
-- `sale-grid`: Multi-card grid or Swiper slider container.
-- `sale-card`: FlashCard product card embedding discount badge, price comparison, and progress bar.
+### Regions
+Functional regions are annotated directly in the component code implementation via English comments.
+
 
 ### Dimensions & Responsiveness
-- Follows global design system, outer container uses `content-container` with PC max content width 1200px centered.
-- Desktop (1024px+): 4~5 cards per row, height 360px~420px.
-- Mobile (under 768px): 2 cards per row, horizontally scrollable.
+- Follows `content-container` with max content width 1200px centered.
+- Desktop (1024px+): 3~4 flash cards side by side.
+- Mobile (under 768px): 2 compact cards with smooth horizontal swipe.
 
 ### Attributes & Props
 | Attribute | Description | Type | Default |
 | --- | --- | --- | --- |
-| `end-time` | Countdown target timestamp | `string` | `'2026-12-31T23:59:59'` |
+| `limit` | Max items displayed | `number` | `4` |
+| `endTime` | Target end timestamp | `string` | `'2026-12-31'` |
 
 ### Events
-- `flashsale-navigate`: Dispatched when clicking flash sale section or products.
+- `flashsale-navigate`: Dispatched when clicking View All button.
+- `product-navigate`: Dispatched when clicking flash card.
 
 ## Code
 

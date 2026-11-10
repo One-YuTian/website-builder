@@ -1,26 +1,16 @@
 ## Overview
 
-Flash sale and limited-time promotional product card component built on Native Web Components. Integrates square image skeleton, high-saturation discount badge, price comparison, animated flash sale progress bar, and sold percentage notice.
-
-### Layout & Regions
-- `image-box`: Square 1:1 product image skeleton area with high-contrast discount percentage badge.
-- `price-group`: Bold highlighted flash sale price skeleton and muted strikethrough original price skeleton.
-- `progress-bar`: Flash sale progress bar container with sold percentage text and primary color fill bar.
-- `action-btn`: High-contrast Buy Now CTA button.
+FlashCard-01 product-card component variant. Regions and interactions are annotated directly within the code implementation via English comments.
 
 ### Dimensions & Responsiveness
-- Card width fills container grid column or Swiper slide with 1:1 aspect ratio image.
-- Scales responsively across desktop and mobile while keeping text hierarchy clear.
 
-### Attributes & Props
-| Attribute | Description | Type | Default |
-| --- | --- | --- | --- |
-| `product-id` | Unique product identifier | `string` | `'flash-item-01'` |
-| `sold-percent` | Sold stock percentage | `number` | `65` |
+Retains the actual render image-container aspect ratio, Grid/List branches, widths and Tailwind breakpoints.
 
-### Events
-- `flashcard-navigate`: Dispatched when clicking flash sale card.
-- `flashcard-buy`: Dispatched when clicking buy button.
+### Attributes & Operations
+
+- Actual observedAttributes: `product-id`, `discounted`, `sold-percent`. product-id defaults to `product-01`.
+- Implemented actions: see event binding.
+- Component events: see source event handling.
 
 ## Code
 
@@ -28,6 +18,8 @@ Flash sale and limited-time promotional product card component built on Native W
 
 ```html
 <article class="flex flex-col h-full bg-surface rounded-xl border border-outline/30 shadow-2xs hover:shadow-sm transition-all overflow-hidden p-2.5 sm:p-3 cursor-pointer select-none group font-sans">
+  <!-- Region: Product Image & Badges -->
+
   <div class="relative w-full aspect-square bg-accent/40 rounded-lg flex items-center justify-center overflow-hidden mb-2.5">
     <span class="relative block aspect-[6/5] w-1/2 overflow-hidden rounded-sm border border-muted">
       <span class="absolute right-[15%] top-[15%] size-1/5 rounded-full bg-muted"></span>
@@ -57,7 +49,7 @@ Flash sale and limited-time promotional product card component built on Native W
 ### JavaScript
 
 ```javascript
-export class FlashCard extends HTMLElement {
+class FlashCard extends HTMLElement {
   static observedAttributes = ['product-id', 'discounted', 'sold-percent'];
 
   constructor() {
@@ -106,5 +98,9 @@ export class FlashCard extends HTMLElement {
   </div>
 </article>`;
   }
+}
+
+if (!customElements.get('flashcard-01')) {
+  customElements.define('flashcard-01', FlashCard);
 }
 ```

@@ -98,3 +98,51 @@ MCP 测试覆盖独立无 node_modules 安装、全局入口、14 个压缩页�
 代理只读取公共 HTTP(S) 资源（GET/HEAD），不携带浏览器 Cookie、登录凭据或提交表单。HTTP 错误和超时返回具体错误，不伪装成成功；单资源上限 64MB、缓存有效期 10 分钟。默认拒绝本机/私网地址及重定向，WEBSITE_BUILDER_PROXY_ALLOW_LOCAL=1 仅用于本地测试资源服务器。上游拒绝访问、需要登录、同步 XHR、循环模块依赖或依赖真实服务端状态的第三方服务不能保证可在隔离预览中运行。
 
 `pnpm test:proxy` 验证任意域名/无扩展名资源、嵌套 CSS/字体、动态加载、fetch/XHR/模块、分片缓存、严格 CSP 下无浏览器直连及源文件哈希不变。
+## Agent 数据与创建规范整合（0.6.0）
+
+Website Builder 仍为一个技能。首次数据/SDK 准备和组件/页面创建分别读取 commerce-data.md、creation-contract.md。以实际 SDK 代码核对文档，避免使用未实现的方法；不加载已移除的旧版原文和 Agent 分析参考。
+
+website_commerce 一次准备 mock 商品数据、缺失的 SDK 与配置，已有数据、SDK、配置优先保留，API 数据源不造 mock；action=validate 检查商品契约。新配置集中到 app.js，不再创建独立配置脚本。生成器使用品牌样本和 seed，默认 24 条，ID 稳定、折扣计算一致。输出摘要不携带全量源码。CLI 回退使用 action=commerce、mode=prepare/validate。
+
+本包 sdk.js 保留旧实现的查询语义，具体限制已写入契约；ec-sdk.js 是适配版：账户注册/登录/更新为异步方法，使用 PBKDF2 而非明文密码，公开 user 不含凭据，购物车/收藏按项目与账户隔离。真实后端仍需独立接入。任何已有用户项目 SDK 均不自动覆盖。
+
+website_write 保留提交源码的格式，不要求多行或固定缩进，也不自动排版。JS/JSON 语法错误不会覆盖旧文件；未完成 HTML 不会被修复为已完成页面。fragment 装配检测已准备的 SDK 与配置，在数据初始化后注册组件。数据、业务状态、应用编排分别为 productData、SDK、APP 与 app，避免互相覆盖。
+
+pnpm test:commerce 覆盖数据契约/稳定 ID/保护已有数据/API 跳过、源码格式保留、SDK 加载顺序、账户隔离、订单快照，以及跨 iframe 业务状态局部刷新。它只使用临时项目，不修改原 Agent 或用户站点。
+## 模板复用与 Tailwind 指导（0.6.4）
+
+Website Builder 以用户清理后的模板源码为基线，不再按旧演示脚手架做二次剥离。code 读取始终包含 Overview 和所需部分说明；传 targets、thread_id、project_id 时一次返回完整代码并绑定文件/区域/模板 ID/html 或 render 基线。
+
+website-builder.templates.json 仅记录可选来源。组件约80%保真只在 SKILL 中作创作指导；write/finish 不再检查结构、布局类、响应式或覆盖率分数，旧 threshold 和绑定也不触发评分门禁。HTML 完整且本地依赖存在即可 ready。audit 保留兼容入口，仅返回来源信息，不打分、不写审计报告、不改变生成状态。
+
+Agent 仍需在 375/768/1280px 验证真实页面：整站配色、宽度、视觉层级、移动/桌面显隐、REM、栅格比例、抽屉/Swiper/表单；ready 表示内容已输出完成，不代表审美或业务验收已完成。
+
+规范完整吸收指定原 SKILL 的 2.4/2.6/2.7：app.js 顶部唯一 Tailwind config，常规样式优先使用 class，不用自己的 CSS 重画；原生技术栈、Swiper、jQuery、APP 持久化、cdnjs、Google Fonts、专业图标、Light DOM、截断、window 共享与 data.js 薄门面。自动装配器与旧 hook 均已移除注入的基础手写 CSS；Google Fonts link 可随 fragment 提交并移入 head。
+
+当前技能参考 creation-contract 不再提供另一套通用卡片 HTML，避免它取代模板。详细规范见 skills/website-builder/references/template-fidelity.md。pnpm test:templates 验证来源可选、还原度不阻止完成、旧契约不影响 ready，保留 HTML/依赖完整性检查，并验证购物车页面/抽屉及三档视口真实模板。
+
+## 区域文档与多行画布（0.6.2）
+
+Starlight 的 80 个组件与页面模板使用简明英文注释直接标注于代码（HTML/JS）各功能区域中，文档保持简洁规范，且 LLM txt 采用 100% 纯英文格式，绝无中文字符干扰。
+
+在 starlight 运行 npm run build 会生成文档和 public/llms，并同步替换项目与插件的 SKILL templates。pnpm test:docs 验证 80 份模板与构建输出逐字节相同、区域说明完整及文档预览定位。组件源码保留用户清理后的独立实现，不重新引入演示资源加载器或主题注入。
+
+画布按面板宽度和页面宽度排列为 1–3 列，多页自动换行；定位页面与查看全部同时考虑横纵坐标。换行、缩放及调整宽度保留既有 iframe，单页生成仍只替换对应页面。
+
+## 整站视觉设计先行（0.6.3）
+
+Agent 先按品牌、商品与信息密度确定视觉方向、语义色板、亮暗策略、内容/正文/表单宽度和字阶/间距，再选择相容模板，首批输出记录 website-builder.design.json。亮暗主题、宽度和布局是可选能力，演示默认值无需照搬，也不要求全启用；共享 app.js 的 Tailwind config 统一设计 token。
+
+website_templates select 现在返回按类别分组的未排序候选（category/candidates/selection），不再按 brief 哈希抽取单个模板或排除 -01。旧 read-template.mjs select 同样仅列候选，不再随机生成主题、宽度与板块顺序。Agent 决定最终组合，只读取所选模板及必要备选。
+
+80% 结构复用仅在 SKILL 中指导创作，不作为页面生成成功的判断依据。生成时需在真实内容和代表页面上核对配色、容器轴线、图片、字阶、留白和跨页一致性，再交付。详细规范见 skills/website-builder/references/visual-design.md。
+
+## 购物车展示选择（0.6.5）
+
+新生成遵循 demo5 互斥规则：页面方案只创建 cart.html，在 main 直接实现购物车，不创建 cart.js 或挂载 cart-component；抽屉方案省略 cart.html，只提供 components/cart.js 和唯一 cart-component。装配器自动挂载一份 drawer，已有实例不重复。两种方案都使用 APP.cart，抽屉无需独立画板页面。既有项目的页面内组件方案继续兼容，不自动删除旧文件。
+
+兼容既有项目的特殊命名或页面内组件时，可提交完整 HTML 显式安排；新生成仍采用页面/抽屉互斥规则。旧 hook-page.mjs 支持 --cart=page/drawer/none，默认 page，不再无条件添加抽屉；--no-cart 继续兼容。此版本只改变后续生成/装配，不自动改写用户已有网站文件或页面计划。
+
+## demo5 SKILL 迁移（0.6.5）
+
+迁入用户指定 demo5 的模板槽位/响应式、AI自主配色与卡片色差、唯一 xxx-component 注册、按需子组件、购物车互斥，以及图标、圆角、统一版心、卡片等高和面包屑截断要求。新生成不臆造模板外区域，不编造数据或商业承诺。两份旧参考及其引用已移除；源码格式不再作要求，写入链路和CLI也移除格式化能力。来源文件哈希及迁入内容记录在技能 source.json，模板本身及来源目录保持原样。

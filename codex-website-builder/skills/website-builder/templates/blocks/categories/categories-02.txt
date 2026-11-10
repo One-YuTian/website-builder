@@ -1,24 +1,23 @@
 ## Overview
 
-E-commerce category navigation and product matrix showcase block, featuring circular/square category icon placeholders, category titles, item count tags, and hover transition feedback to guide catalog exploration.
+Category showcase and navigation block, integrating section title, round/square category thumbnail cards, and item counter badges with smooth hover micro-interactions.
 
-### Layout & Regions
-- `block-header`: Section title skeleton and View All Categories link.
-- `category-grid`: Responsive multi-column grid or smooth horizontal swipe container for category cards.
-- `category-card`: Individual category card with circular/square icon skeleton, title, and count tag.
+### Regions
+Functional regions are annotated directly in the component code implementation via English comments.
+
 
 ### Dimensions & Responsiveness
-- Follows global design system, outer container uses `content-container` with PC max content width 1200px centered.
-- Desktop (1024px+): 6~8 columns equal-width grid display.
-- Mobile (under 1024px): Adapts to 2~3 compact grid columns or horizontal scrollable list.
+- Follows `content-container` with max content width 1200px centered.
+- Desktop (1024px+): 4~6 column circular or square cards evenly distributed.
+- Mobile (under 768px): Adapts to 3 compact columns or horizontal swipe slider.
 
 ### Attributes & Props
 | Attribute | Description | Type | Default |
 | --- | --- | --- | --- |
-| `columns` | Grid column count configuration | `number` | `6` |
+| `limit` | Max categories displayed | `number` | `6` |
 
 ### Events
-- `category-navigate`: Dispatched when clicking a category card.
+- `category-navigate`: Dispatched when clicking a category card, providing category ID.
 
 ## Code
 
@@ -32,6 +31,8 @@ E-commerce category navigation and product matrix showcase block, featuring circ
       <div class="h-4 w-20 bg-primary/70 rounded-xs"></div>
     </div>
     <!-- Desktop Categories Grid (Exactly 6 items: 2 rows of 3, hidden on mobile) -->
+    <!-- Region: Category Entrance Cards Grid -->
+
     <div class="hidden md:grid md:grid-cols-3 gap-4 lg:gap-6">
       
       <div role="button" tabindex="0" class="group relative h-48 rounded-lg overflow-hidden cursor-pointer bg-accent/60 border border-outline/20 flex flex-col justify-end p-4 hover:shadow-md transition-all">

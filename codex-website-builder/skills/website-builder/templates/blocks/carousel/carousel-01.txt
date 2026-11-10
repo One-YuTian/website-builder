@@ -2,10 +2,9 @@
 
 Full-width hero visual carousel showcase block, supporting multi-aspect ratio scaling, touch drag gestures, auto-rotation timer, bottom dot pagination indicators, and left/right navigation arrows, with dedicated breakpoint viewport adaptation.
 
-### Layout & Regions
-- `carousel-stage`: Main carousel slide stage embedding large image skeletons and floating text overlay layers.
-- `arrow-controls`: Semi-transparent floating left/right navigation arrow buttons.
-- `pagination`: Centered floating dot pagination indicators highlighting the active slide.
+### Regions
+Functional regions are annotated directly in the component code implementation via English comments.
+
 
 ### Dimensions & Responsiveness
 - Follows global design system, outer container uses `content-container` with PC max content width 1200px centered.
@@ -30,6 +29,8 @@ Full-width hero visual carousel showcase block, supporting multi-aspect ratio sc
 ```html
 <section class="bg-surface font-sans text-content pb-4 sm:pb-6">
   <div class="content-container">
+    <!-- Region: Desktop Banner Slider -->
+
     <div class="hidden lg:block relative w-full h-[550px] rounded-xl overflow-hidden bg-accent">
       <div class="swiper banner-swiper h-full w-full">
         <div class="swiper-wrapper h-full">
@@ -52,10 +53,15 @@ Full-width hero visual carousel showcase block, supporting multi-aspect ratio sc
             </div>
           </div>
         </div>
+        <!-- Region: Pagination Indicators -->
+
         <div class="swiper-pagination !z-30"></div>
       </div>
       <div class="absolute inset-x-0 bottom-0 h-32 lg:h-40 bg-gradient-to-t from-surface to-transparent pointer-events-none z-20"></div>
     </div>
+
+    <!-- Region: Mobile Banner Slider -->
+
 
     <div class="lg:hidden relative w-full aspect-[50/21] rounded-xl overflow-hidden bg-accent">
       <div class="swiper mobile-banner-swiper absolute inset-0 h-full w-full">
@@ -79,6 +85,8 @@ Full-width hero visual carousel showcase block, supporting multi-aspect ratio sc
             </div>
           </div>
         </div>
+        <!-- Region: Pagination Indicators -->
+
         <div class="swiper-pagination !z-30"></div>
       </div>
     </div>

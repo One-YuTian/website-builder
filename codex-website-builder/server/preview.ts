@@ -81,7 +81,7 @@ function instrument(html: string, embedded = false) {
     // Preserve embedded images when the demo's optional URL formatter adds its CDN prefix.
     let imageFormatter;
     Object.defineProperty(window,'formatCdnUrl',{configurable:true,get:()=>imageFormatter,set:fn=>{imageFormatter=typeof fn==='function'?function(url,...args){return typeof url==='string' && /^(data:|blob:)/i.test(url)?url:fn.call(this,url,...args);}:fn;}});
-    addEventListener('message',event=>{if(event.source===parent && event.data?.type==='website-builder:storage-sync')stored=event.data.value;});
+    addEventListener('message',event=>{if(event.source===parent && event.data?.type==='website-builder:storage-sync'){stored=event.data.value;dispatchEvent(new Event('storage'));}});
   }
   let previous = 0, pending = false;
   let scrollIdle;

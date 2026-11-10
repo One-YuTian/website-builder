@@ -2,10 +2,9 @@
 
 Full-width hero visual carousel showcase block, supporting multi-aspect ratio scaling, touch drag gestures, auto-rotation timer, bottom dot pagination indicators, and left/right navigation arrows, with dedicated breakpoint viewport adaptation.
 
-### Layout & Regions
-- `carousel-stage`: Main carousel slide stage embedding large image skeletons and floating text overlay layers.
-- `arrow-controls`: Semi-transparent floating left/right navigation arrow buttons.
-- `pagination`: Centered floating dot pagination indicators highlighting the active slide.
+### Regions
+Functional regions are annotated directly in the component code implementation via English comments.
+
 
 ### Dimensions & Responsiveness
 - Follows global design system, outer container uses `content-container` with PC max content width 1200px centered.
@@ -52,6 +51,8 @@ Full-width hero visual carousel showcase block, supporting multi-aspect ratio sc
   </div>
         </div>
       </div>
+      <!-- Region: Pagination Indicators -->
+
       <div class="swiper-pagination !z-30"></div>
     </div>
   </div>
@@ -82,6 +83,8 @@ Full-width hero visual carousel showcase block, supporting multi-aspect ratio sc
   </div>
         </div>
       </div>
+      <!-- Region: Pagination Indicators -->
+
       <div class="swiper-pagination !z-30"></div>
     </div>
   </div>
