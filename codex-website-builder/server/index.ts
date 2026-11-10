@@ -19,7 +19,7 @@ const projects = new ProjectStore(process.env.WEBSITE_BUILDER_PROJECT_ROOT || re
 const syncProject = projectService(projects);
 const preview = await createPreview(html, process.env.WEBSITE_BUILDER_ROOT || resolve('../website'), 'www.noventrad.com', syncProject);
 const skillRoot = (process.env.WEBSITE_BUILDER_SKILL_ROOT || resolve('skills/website-builder')).replaceAll('${PLUGIN_ROOT}',fileURLToPath(new URL('../../',import.meta.url)));
-const server = new McpServer({ name: 'codex-website-builder', version: '0.6.6' });
+const server = new McpServer({ name: 'codex-website-builder', version: '0.6.7' });
 const csp = { connectDomains: ['data:', 'blob:'], resourceDomains: ['data:', 'blob:'], frameDomains: ['blob:', 'data:'], baseUriDomains: ['https://website-builder.invalid'] };
 const legacyCsp = { connect_domains: csp.connectDomains, resource_domains: csp.resourceDomains, frame_domains: csp.frameDomains, base_uri_domains: csp.baseUriDomains };
 registerAppResource(server, 'canvas', uri, { _meta: { ui: { csp }, 'openai/widgetCSP': legacyCsp } }, async () => ({
@@ -62,7 +62,7 @@ server.registerTool('read_page', {
 const pageSchema=z.object({path:z.string(),title:z.string()});
 server.registerTool('website_project',{
   title:'Website Builder',
-  description:'Use the bundled website-builder skill. Open/reuse the exact thread project; plan pages before generation, begin before edits, finish only after complete files. New projects require new_project=true.',
+  description:'Use the bundled skill and reuse the exact thread project. For a complete ecommerce site, explicitly plan home/shop/product/wishlist/checkout/login/register/about/contact/terms/privacy/return, plus cart only for page mode. Do not silently reduce a complete site to transaction pages. Existing custom names or partial user requests may differ. Plan missing pages, begin before edits, finish after complete files. New projects require new_project=true.',
   inputSchema:{action:z.enum(['open','plan','begin','finish','status']).default('open'),thread_id:z.string().min(1),project_id:z.string().optional(),new_project:z.boolean().optional(),name:z.string().optional(),brief:z.string().optional(),language:z.string().optional(),pages:z.array(pageSchema).min(1).optional(),paths:z.array(z.string()).optional()},
   annotations:{readOnlyHint:false,destructiveHint:false,openWorldHint:false},
 },async input=>{

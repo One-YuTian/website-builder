@@ -21,7 +21,7 @@
   ],
   "sourceSkillSha256": "bdf83d787cc5f81e00e8b41b172575db9362d5b9222ef057b83eb8452f433b3a",
   "templatesSha256": "dfe6df0a09fa5aaf8457535c177de1c5a360d1f882c5b2a9a8ef26b5c41b9c59",
-  "defaultSkillBytes": 13679,
+  "defaultSkillBytes": 14922,
   "originalSkillBytes": 15371,
   "agentSource": {
     "directory": "Q:/Projects/域名DEMO/2026年8月03日_demo1",
@@ -141,5 +141,6 @@
     "bytes": 15481,
     "sha256": "b344af2eb7645d3134f75e204b03f8c11e35645d45e73d9e435cad74a697bc89",
     "policy": "User-restored and modified reference; package bytes unchanged"
-  }
+  },
+  "pagePlanning": "Complete ecommerce defaults include about/contact/terms/privacy/return; cart is optional for drawer; explicit partial scopes are respected"
 }

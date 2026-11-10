@@ -40,6 +40,8 @@
 交互与委托使用有命名空间的 jQuery `.on('click.productCard', '[data-action="add-cart"]', handler)`；重复连接前先 `.off('.productCard')`，断开时解绑相同命名空间与具体 APP handler。保持源模板的 data-action/data-region 与键盘可访问行为。CustomEvent 派发、Custom Elements 回调、SDK 内部事件等平台机制仍按各自接口处理。
 ## 页面契约与加载顺序
 
+完整建站的页面范围按 SKILL 中的清单逐项规划：品牌介绍、联系、服务条款、隐私和退换货政策同样是独立页面，不仅是页脚文案。只有购物车是否独立成页取决于 page/drawer 选择；用户明确只做部分页面时才缩减。没有专用模板的政策页沿用整站页头/页脚、版心和正文风格，不借模板限制省略页面，也不编造业务政策。复用已有项目时先核对缺页并 plan，再逐页输出，保留已有文件。
+
 完整页面包含 doctype、lang、charset、viewport、独立 title、header/main/footer。根目录 fragment 使用自动装配，自动检测已存在的两份 SDK；新项目电商配置在 app.js，旧项目的独立配置文件仅作兼容读取；不要在 fragment 再塞一遍共享头尾/CDN/SDK。嵌套路径页面要使用正确的相对路径，必要时提交完整 HTML，不能沿用根目录片段路径。
 
 依赖顺序：

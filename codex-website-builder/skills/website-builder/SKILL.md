@@ -59,7 +59,7 @@ description: 严格遵循选定模板的原始排版与响应式结构，严禁�
 
 1. 提取品牌、语言、货币、商品来源、页面和交互；缺失非关键信息时合理决策，默认单语言。先读 [整站设计](references/visual-design.md)，将简短设计决策和购物车模式保存到 website-builder.design.json；单页修改复用现有系统。
 2. 先调用 website_project(action="open",thread_id=当前真实会话ID,name,brief,language,pages)。同一 thread 复用同一项目；仅用户指定新项目才 new_project=true，指定已有项目才 project_id。输出仅在返回的 directory（插件源码 project/xxxx-xxxx-xxxx-xxxx/），不修改来源目录。首次需要预览时调用一次 open_canvas，不重复打开。
-3. 一次声明必要的页面计划。购物车选 page 时声明 cart.html、在页面中直接实现购物车；选 drawer 时省略 cart.html、仅提供 components/cart.js。计划页先显示加载扫光，页面完整输出后独立展示。当前插件保留对既有页面/组件方案的兼容，不自动删除用户旧文件；新生成遵循上方互斥规则。
+3. **完整电商建站必须声明完整页面计划**：默认包含 index.html（首页）、shop.html（商店）、product.html（详情）、wishlist.html（心愿单）、checkout.html（结账）、login.html、register.html、about.html（关于）、contact.html（联系）、terms.html（服务条款）、privacy.html（隐私政策）、return.html（退换货政策）。购物车选 page 时另声明 cart.html、在页面直接实现；选 drawer 时仅省略 cart.html，提供 components/cart.js，不能连带省略品牌、联系或政策页面。只有用户明确限定局部页面或功能范围时才精简；已有不同命名或合并账户页可沿用，但必须逐项核对用途，不能静默遗漏。当前项目已存在时先比较完整清单，用 plan 补充本轮缺页，不另建项目。政策/正文页没有专用模板时复用共享页头页脚与正文版式，不因没有模板而删页，政策内容依据真实业务资料，不编造承诺。完整规划后逐页生成；不得只完成首页和交易页便宣称整站完成。计划页先显示加载扫光，完整输出后独立展示；用户旧文件不自动删除。
 4. 首次准备数据读 [商品与SDK契约](references/commerce-data.md)：已有数据/API不造 mock，无数据用少量品牌样本调用一次 website_commerce(action="prepare",thread_id,project_id,products,count,seed,currency,locale)。默认24条，仅明确重建才 regenerate=true。配置统一在 app.js；工具返回 config_defaults 供缺失项合并，不覆盖已有设置，不另建配置文件。账户 register/login/update 必须 await。
 5. website_templates(mode="select") 返回候选，由 Agent 选择相容组合，不随机决定主题或强制避开 -01。批量 code 读取本轮1–12个 ids 的 Overview、HTML、JS、必要CSS，先看A/B区域表。模板ID只作来源追溯；代码实际注册/挂载统一改为 xxx-component，嵌套组件和脚本选择器同步映射，同一构造函数只注册一次。可用 targets 保存 website-builder.templates.json，绑定不是成功条件，旧 audit 仅返回来源信息，无需调用。
 6. 首次建组件读 [创建规范](references/creation-contract.md)，按 app.js配置/数据SDK → 共享组件 → 页面推进。按模板所需新增 components/ 子组件，不限制为固定几个文件。APP负责持久化，SDK查询，app编排，不能覆盖APP。
@@ -67,6 +67,8 @@ description: 严格遵循选定模板的原始排版与响应式结构，严禁�
 8. 完成后在375/768/1280px检查代表页的全站配色、版心/边距、卡片与背景色差、列数、轮播、图像、图标/圆角、标题/面包屑截断和真实交互。检查商品未知/空状态、筛选排序分页、购物车数量/行ID/数值金额、账户、表单/订单；失败判断 success===false。不要虚构审美/还原度分数，未实际验证时如实说明。
 
 ## 预览与共享状态
+
+“不添加模板外内容”约束选定组件/页面模板内部的区域，不是删减整站页面的理由。原始目录规范见 [original-skill](references/original-skill.md) 第1节；完整建站规划时读取该节，其他章节仅按需参考。页面范围以用户要求和上方完整清单为准，购物车互斥规则继续执行；完整站点的页头/页脚链接必须指向实际规划并输出的对应页面。
 
 UI使用独立iframe，外链与页面跳转由预览层拦截，外部资源统一代理；正常网站链接仍按相对路径生成，不移除拦截。单页更新只刷新该页，保留其他页面和画布状态；不轮询status、不全站刷新。APP的项目/账户隔离与密码散列保留，本地演示不冒充真实认证/支付。图片优先本地assets，价格保持数字；APP购物车写入使用final_price，行操作使用cart ID。
 
