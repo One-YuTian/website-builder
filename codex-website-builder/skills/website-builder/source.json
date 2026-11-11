@@ -3,7 +3,6 @@
   "templates": 80,
   "preserved": [
     "templates/",
-    "scripts/read-template.mjs",
     "references/cdn-links.json"
   ],
   "optimization": [
@@ -21,7 +20,7 @@
   ],
   "sourceSkillSha256": "bdf83d787cc5f81e00e8b41b172575db9362d5b9222ef057b83eb8452f433b3a",
   "templatesSha256": "dfe6df0a09fa5aaf8457535c177de1c5a360d1f882c5b2a9a8ef26b5c41b9c59",
-  "defaultSkillBytes": 14922,
+  "defaultSkillBytes": 34856,
   "originalSkillBytes": 15371,
   "agentSource": {
     "directory": "Q:/Projects/域名DEMO/2026年8月03日_demo1",
@@ -138,9 +137,161 @@
   },
   "originalReference": {
     "file": "references/original-skill.md",
-    "bytes": 15481,
-    "sha256": "b344af2eb7645d3134f75e204b03f8c11e35645d45e73d9e435cad74a697bc89",
-    "policy": "User-restored and modified reference; package bytes unchanged"
+    "bytes": 15535,
+    "sha256": "58948a704ec77c0d3958139e8e1be4e51a9c70b0798a1db85d35f63494460f6e",
+    "policy": "User-updated directory reference including components/toast.js retained without rewriting"
   },
-  "pagePlanning": "Complete ecommerce defaults include about/contact/terms/privacy/return; cart is optional for drawer; explicit partial scopes are respected"
+  "pagePlanning": "Complete ecommerce defaults include about/contact/terms/privacy/return; cart is optional for drawer; explicit partial scopes are respected",
+  "release070": {
+    "version": "0.7.0",
+    "scope": "Plugin source and runtime only; existing user projects and reference libraries not regenerated",
+    "shopFix": {
+      "contract": "references/shop-layouts.json",
+      "integration": "references/shop-integration.md",
+      "cause": [
+        "shared inaccurate overview",
+        "demo data and legacy card selectors require explicit adaptation",
+        "global visual advice conflicted with selected source layout"
+      ],
+      "delivery": "select/summary/doc/code and read-template reader return per-template accurate layout; raw source templates retained"
+    },
+    "mockSkill": {
+      "source": "Q:/Projects/域名DEMO/2026年7月01日_demo3/.opencode/skills/generate-mock-data/SKILL.md",
+      "snapshot": "../generate-mock-data/references/original-skill.md",
+      "sha256": "28ff56026227d33bae32d87464ad8905bf092a6265bf41313ecb8ddfabb225dc"
+    },
+    "skills": [
+      "website-builder",
+      "generate-mock-data",
+      "website-copywriter",
+      "website-image-generator",
+      "website-acceptance"
+    ],
+    "acceptance": "Explicit invocation only; agents/openai.yaml allow_implicit_invocation=false",
+    "canvas": {
+      "pcColumns": 5,
+      "tabletMobileColumns": 7,
+      "mode": "global width > 1024 selects PC"
+    },
+    "screenshot": {
+      "tool": "website_screenshot",
+      "cliAction": "screenshot",
+      "readiness": [
+        "document load",
+        "window.websiteReady",
+        "fonts",
+        "image decoding",
+        "lazy scroll",
+        "stable layout"
+      ],
+      "output": "full PNG and absolute project artifacts/screenshots path"
+    },
+    "auth": "SDK guest write rejection + prompt/redirect; APP.auth.requireLogin and safeReturnTo; existing SDKs preserved"
+  },
+  "release071": {
+    "version": "0.7.1",
+    "productionDirectory": "directory contains runtime assets only; metadata_directory stores control state, drafts, raw sources and reports outside production",
+    "compatibility": "legacy root manifest and template bindings read as fallback; future writes use metadata_directory, old files not deleted",
+    "imageWorkflow": "host imagegen skill -> image_gen tool; content and dimensions; text-free unless necessary; prefer shared image with responsive crop; monochrome transparent icons",
+    "copyWorkflow": "scene-specific length; detailed About Us and privacy text without concrete promises; optional image skill collaboration",
+    "header": "Home, Shop, About Us, Contact Us are required in desktop and mobile navigation",
+    "validation": [
+      "TypeScript and bundled build",
+      "production directory and screenshot output regression",
+      "project isolation and incremental preview",
+      "commerce preservation",
+      "template rendering"
+    ]
+  },
+  "release072": {
+    "version": "0.7.2",
+    "previewFix": {
+      "cause": "local base64 media inflated whole-page gzip past 3.8MB single-message cap",
+      "solution": [
+        "opaque local-media chunk resources",
+        "gzip page payload descriptors above 1MB base64",
+        "512KB resource chunks",
+        "atomic client acknowledgement after full decode; retries retain all pages"
+      ],
+      "sourceImages": "not compressed or rewritten"
+    },
+    "mobileRootFontSize": "html 12px for viewport <768; restore desktop scale across breakpoint",
+    "logo": "img/picture asset required",
+    "homeComposition": "1–2 distinct extra blocks beyond header/footer/hero/products; no duplicate sections",
+    "variety": {
+      "aboutLayouts": "references/about-layouts.json (11 source-based region/grid summaries)",
+      "history": "select.usage projects and lastUsed derived from recorded template bindings, without inferring unrecorded sites",
+      "policy": "compare >=3 Shop/About candidates; prefer compatible less-used variants for new sites; preserve existing layout on local edits"
+    },
+    "cartDefault": "drawer; default plan omits cart.html, page mode only for explicit need or existing page-mode sites",
+    "validation": [
+      "large-preview >6MB gzip/base64 with 4.7MB PNG",
+      "chunk retry retains all page payloads",
+      "no source image rewrite",
+      "About layout contracts and binding usage",
+      "default 12-page plan",
+      "project/commerce/template/proxy/smoke regressions"
+    ]
+  },
+  "release073": {
+    "version": "0.7.3",
+    "cdn": "online HTTPS source dependencies; default preview fetches upstream; pinned vendor fixtures require explicit test opt-in",
+    "brandAssets": "square favicon; transparent tightly cropped typographic wordmark without left icon; brand/site-specific styling",
+    "imageComposition": "content-specific centered subjects, banner critical content inside max-content safe zone; distinct carousel and About images",
+    "copy": "richer narrative multi-sentence paragraphs, except key labels/contact details and concise interaction feedback",
+    "home": "avoid repeated category module when Header includes category suite",
+    "controls": "shared hover/focus/disabled/radius language through theme and uiStyles",
+    "notifications": {
+      "asset": "assets/ui/toast.js",
+      "runtime": "components/toast.js",
+      "api": [
+        "Toast.show",
+        "Toast.success",
+        "Toast.error",
+        "Toast.info",
+        "Toast.warning",
+        "Toast.dismiss",
+        "Toast.clear"
+      ],
+      "assembly": "full/fragment/nested pages and direct-write finish; early head script + single Light DOM instance",
+      "auth": "Toast before delayed login navigation; no native alert"
+    },
+    "overlays": "explicit data-overlay-root/backdrop/panel and Overlay.open/close/register; content clicks preserved; outside click/Escape restores scroll/focus",
+    "validation": [
+      "TypeScript and build",
+      "full/fragment/nested/direct Toast injection and early API",
+      "Toast safe rendering/timers/dismiss/duplicate script",
+      "backdrop/panel/Escape and focus/scroll",
+      "guest Toast + login without alert",
+      "online upstream overrides conflicting bundled mapping",
+      "features/projects/templates/commerce/proxy/large preview regressions"
+    ]
+  },
+  "release074": {
+    "version": "0.7.4",
+    "toast": "Named ToastComponent, Light DOM, template/refresh, instance-owned state/timers/events, disconnect cleanup; thin global facade; user Toast directory declaration preserved",
+    "overlay": "Unified Overlay API and global backdrop/Escape listeners removed; component-local behavior documented only",
+    "cdn": "Avoid jsDelivr/jsdeliver and aliases in generation guidance",
+    "layout": "Within PC max-content reduce outer/nested horizontal padding and Logo-side whitespace; align section edges; preserve mobile safety spacing",
+    "products": {
+      "skill": "../import-products/SKILL.md",
+      "tool": "website_products",
+      "script": "../import-products/scripts/import-products.mjs",
+      "contract": "Parse JSON without execution; SDK runtime fields only; actual bundled SDK query counts; raw JSON unchanged",
+      "categories": "5–6 real display groups, More for excess, real subcategory/type/brand splits for shortfall; no empty invented categories",
+      "images": "relative paths resolved using www.domain -> https://cdn.domain/; absolute URLs retained",
+      "fallback": "unrecognized data -> mode mock and generate-mock-data routing, without overwriting existing data",
+      "provenance": "source SHA256 and normalized-runtime hash in metadata_directory, commerce validator recognizes imported SDK schema"
+    },
+    "pageScripts": "Single-page logic inline in corresponding HTML script; shared app/SDK/components remain files",
+    "detailLength": "Collapsible/paginated/revealed content retains complete accessible data",
+    "validation": [
+      "import adapter/SDK counts/secondary groups/CDN mapping/source hashes",
+      "JSON file and stdin script",
+      "invalid data Mock routing",
+      "existing SDK/data preservation and imported commerce validation",
+      "Toast lifecycle and removed Overlay interception",
+      "project/template/commerce/features/CDN/large-preview regressions"
+    ]
+  }
 }

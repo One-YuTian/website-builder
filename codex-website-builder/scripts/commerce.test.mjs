@@ -12,7 +12,7 @@ import { chromium } from '@playwright/test';
 const sandbox = await mkdtemp(join(tmpdir(), 'website-commerce-'));
 const config = JSON.parse(await readFile('mcp.json', 'utf8')).mcpServers['website-builder'];
 const env = {
-  ...process.env, ...config.env,
+  ...process.env, WEBSITE_BUILDER_PREVIEW_VENDOR_FIXTURES:'1', ...config.env,
   WEBSITE_BUILDER_PROJECT_ROOT: join(sandbox, 'project'),
   WEBSITE_BUILDER_SKILL_ROOT: resolve('skills/website-builder'),
 };

@@ -14,6 +14,8 @@ import path from 'node:path';
 import { fileURLToPath } from 'node:url';
 
 const __dirname = path.dirname(fileURLToPath(import.meta.url));
+const shopLayouts = JSON.parse(fs.readFileSync(path.resolve(__dirname, '../references/shop-layouts.json'), 'utf8'));
+Object.assign(shopLayouts,JSON.parse(fs.readFileSync(path.resolve(__dirname, '../references/about-layouts.json'),'utf8')));
 const templatesDir = path.resolve(__dirname, '../templates');
 
 // Helper to index all templates
@@ -65,6 +67,8 @@ function parseTemplate(filePath) {
   const cssMatch = codeContent.match(/### CSS\s*```css([\s\S]*?)```/);
   if (cssMatch) sections.css = cssMatch[1].trim();
 
+  const layout = shopLayouts[path.basename(filePath, '.txt')];
+  if (layout) sections.overview = sections.overview.replace(/^(?:Shop catalog page|About Us corporate brand page)[^\n]*/m,layout.summary).replace(/### Dimensions & Responsiveness[\s\S]*?(?=### Attributes)/, `### Dimensions & Responsiveness\n- Grid: ${layout.columns}.\n- Regions: ${layout.regions.join(', ')}.\n- Mobile: ${layout.mobile}.\n\n`);
   return sections;
 }
 
@@ -148,9 +152,10 @@ switch (command) {
 
   case 'select': {
     const catalog = JSON.parse(fs.readFileSync(path.resolve(__dirname, '../catalog.json'), 'utf8'));
+    for(const item of catalog)if(shopLayouts[item.id])item.summary=shopLayouts[item.id].summary;
     const categories = [...new Set(catalog.map(item => item.category))];
     console.log(JSON.stringify({
-      selection: 'Unranked candidates. Agent must decide brand palette, light/dark strategy, content widths and compatible layout before choosing templates. Use only needed sections; -01 is valid. No automatic or random theme/layout selection.',
+      selection: 'Unranked candidates. Agent must decide brand palette, light/dark strategy, content widths and compatible layout before choosing templates. Use only needed sections; -01 is valid. Compare 3 Shop/About layouts and actual regions, prefer compatible less-used templates for new sites; retain current layout for existing edits. No automatic or random theme/layout selection.',
       categories: categories.map(category => ({
         category,
         candidates: catalog.filter(item => item.category === category).map(({ id, summary }) => ({ id, summary }))

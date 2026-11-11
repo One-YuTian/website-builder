@@ -1,7 +1,7 @@
 import { mkdir, readFile, rename, writeFile, open, unlink, realpath, stat, readdir } from 'node:fs/promises';
 import { randomBytes, randomUUID, createHash } from 'node:crypto';
 import { dirname, isAbsolute, join, relative, resolve, sep } from 'node:path';
-import { assemblePage } from './assemble';
+import { assemblePage, injectSharedUI } from './assemble';
 import { validateSource } from './validate-source';
 import { fileURLToPath } from 'node:url';
 import { regionMarkers, type TemplateBinding } from './template-source';
@@ -10,8 +10,8 @@ import { readTemplates } from './templates';
 export type PageState = 'queued'|'generating'|'ready'|'error';
 export interface ProjectPage { path: string; title: string; status: PageState; version: number; error?: string }
 export interface WebsiteProject { id: string; name: string; brief: string; language: string; revision: string; pages: ProjectPage[]; updatedAt: string }
-export interface ProjectView { project: WebsiteProject; threadId: string; directory: string; revision: string }
-export const DEFAULT_PAGES = ['index','shop','product','cart','wishlist','checkout','login','register','about','contact','terms','privacy','return'].map(name=>({path:`${name}.html`,title:name}));
+export interface ProjectView { project: WebsiteProject; threadId: string; directory: string; metadataDirectory: string; revision: string }
+export const DEFAULT_PAGES = ['index','shop','product','wishlist','checkout','login','register','about','contact','terms','privacy','return'].map(name=>({path:`${name}.html`,title:name}));
 const idPattern = /^[a-f0-9]{4}(?:-[a-f0-9]{4}){3}$/;
 const pause = (ms: number) => new Promise(resolve=>setTimeout(resolve,ms));
 async function json<T>(file: string): Promise<T | null> { try { return JSON.parse(await readFile(file,'utf8')); } catch(error) { if((error as NodeJS.ErrnoException).code==='ENOENT')return null;throw error; } }
@@ -31,7 +31,9 @@ export class ProjectStore {
   constructor(readonly root: string) { this.root=resolve(root);this.stateRoot=join(dirname(this.root),'.builder-state'); }
   private binding(thread: string) { if(!thread.trim())throw new Error('需要当前真实 thread_id，不能使用共享匿名会话');return join(this.stateRoot,'threads',createHash('sha256').update(thread).digest('hex')+'.json'); }
   private folder(id: string) { if(!idPattern.test(id))throw new Error('项目 ID 无效');return join(this.root,id); }
-  private manifest(id: string) { return join(this.folder(id),'.website-builder.json'); }
+  metadataDirectory(id: string) { this.folder(id); return join(this.stateRoot,'projects',id); }
+  private manifest(id: string) { return join(this.metadataDirectory(id),'project.json'); }
+  private async loadProject(id:string) { return await json<WebsiteProject>(this.manifest(id)) || await json<WebsiteProject>(join(this.folder(id),'.website-builder.json')); }
   private async lock<T>(key: string, run: ()=>Promise<T>): Promise<T> {
     await mkdir(join(this.stateRoot,'locks'),{recursive:true});const file=join(this.stateRoot,'locks',createHash('sha256').update(key).digest('hex')+'.lock');
     let handle: Awaited<ReturnType<typeof open>> | undefined;
@@ -43,12 +45,23 @@ export class ProjectStore {
   async get(threadId?: string, projectId?: string): Promise<ProjectView | null> {
     const binding = threadId ? await json<{projectId:string;threadId:string}>(this.binding(threadId)) : await json<{projectId:string;threadId:string}>(join(this.stateRoot,'active.json'));
     const id=projectId || binding?.projectId;if(!id)return null;
-    const project=await json<WebsiteProject>(this.manifest(id));if(!project)throw new Error('项目不存在');
+    const project=await this.loadProject(id);if(!project)throw new Error('项目不存在');
     const base=await realpath(this.root),folder=await realpath(this.folder(id)),rel=relative(base,folder);if(rel==='..'||rel.startsWith(`..${sep}`)||isAbsolute(rel))throw new Error('项目目录不能指向外部');
     const currentThread=threadId || binding?.threadId || '';
-    return {project,threadId:currentThread,directory:this.folder(id),revision:`${id}:${currentThread}:${project.revision}`};
+    return {project,threadId:currentThread,directory:this.folder(id),metadataDirectory:this.metadataDirectory(id),revision:`${id}:${currentThread}:${project.revision}`};
   }
-  async list() {await mkdir(this.root,{recursive:true});const projects=[];for(const entry of await readdir(this.root,{withFileTypes:true})){if(!entry.isDirectory()||!idPattern.test(entry.name))continue;const project=await json<WebsiteProject>(this.manifest(entry.name));if(project)projects.push({id:project.id,name:project.name,updatedAt:project.updatedAt});}return projects.sort((a,b)=>b.updatedAt.localeCompare(a.updatedAt));}
+  async list() {await mkdir(this.root,{recursive:true});const projects=[];for(const entry of await readdir(this.root,{withFileTypes:true})){if(!entry.isDirectory()||!idPattern.test(entry.name))continue;const project=await this.loadProject(entry.name);if(project)projects.push({id:project.id,name:project.name,updatedAt:project.updatedAt});}return projects.sort((a,b)=>b.updatedAt.localeCompare(a.updatedAt));}
+  async templateUsage() {
+    const usage:Record<string,{projects:number;lastUsed?:string}>={};
+    for(const project of await this.list()) {
+      let data:any;
+      try { data=await json<any>(join(this.metadataDirectory(project.id),'website-builder.templates.json')) || await json<any>(join(this.folder(project.id),'website-builder.templates.json')); } catch { continue; }
+      const items=Array.isArray(data)?data:Array.isArray(data?.bindings)?data.bindings:Object.values(data||{});
+      const ids=new Set<string>(items.map((item:any)=>typeof item==='string'?item:item?.id).filter((id:any)=>typeof id==='string'&&/^[a-z]+-[0-9]+$/.test(id)));
+      for(const id of ids){const previous=usage[id];usage[id]={projects:(previous?.projects||0)+1,lastUsed:previous?.lastUsed&&previous.lastUsed>project.updatedAt?previous.lastUsed:project.updatedAt};}
+    }
+    return usage;
+  }
   async open(input: {threadId:string;projectId?:string;newProject?:boolean;name?:string;brief?:string;language?:string;pages?:{path:string;title:string}[]}) {
     return this.lock(`thread:${input.threadId}`,async()=>{
       let view = input.newProject ? null : await this.get(input.threadId,input.projectId);
@@ -59,7 +72,7 @@ export class ProjectStore {
         if(new Set(pages.map(page=>page.path)).size!==pages.length)throw new Error('页面路径重复');
         const project:WebsiteProject={id,name:input.name||'Ecommerce website',brief:input.brief||'',language:input.language||'en',revision:'',pages,updatedAt:''};
         await mkdir(this.folder(id),{recursive:true});await this.save(project);
-        view={project,threadId:input.threadId,directory:this.folder(id),revision:`${id}:${input.threadId}:${project.revision}`};
+        view={project,threadId:input.threadId,directory:this.folder(id),metadataDirectory:this.metadataDirectory(id),revision:`${id}:${input.threadId}:${project.revision}`};
       }
       const binding={threadId:input.threadId,projectId:view.project.id};
       await atomic(this.binding(input.threadId),JSON.stringify(binding));await atomic(join(this.stateRoot,'active.json'),JSON.stringify(binding));
@@ -71,7 +84,11 @@ export class ProjectStore {
     if(htmlOnly&&!/\.html?$/i.test(value))throw new Error('页面必须是 HTML 文件');return value;
   }
   private async target(id: string, value: string) {
-    const path=this.path(value), root=await realpath(this.folder(id));let folder=root;
+    const path=this.path(value), metadata=/^website-builder\.[a-z-]+\.json$/.test(path);
+    if(metadata)await mkdir(this.metadataDirectory(id),{recursive:true});
+    const root=await realpath(metadata?this.metadataDirectory(id):this.folder(id));
+    if(metadata){const base=await realpath(this.stateRoot),rel=relative(base,root);if(rel==='..'||rel.startsWith(`..${sep}`)||isAbsolute(rel))throw new Error('管理目录不能指向外部');}
+    let folder=root;
     for(const part of path.split('/').slice(0,-1)){folder=join(folder,part);await mkdir(folder,{recursive:true});const actual=await realpath(folder);const rel=relative(root,actual);if(rel==='..'||rel.startsWith(`..${sep}`)||isAbsolute(rel))throw new Error('项目路径不能经过外部符号链接');}
     const file=join(root,path);try{const actual=await realpath(file);const rel=relative(root,actual);if(rel==='..'||rel.startsWith(`..${sep}`)||isAbsolute(rel))throw new Error('文件不能指向项目外部');}catch(error){if((error as NodeJS.ErrnoException).code!=='ENOENT')throw error;}
     return file;
@@ -94,7 +111,7 @@ export class ProjectStore {
     }
     const view = await this.update(threadId, async view => {
       const file = await this.target(view.project.id, 'website-builder.templates.json');
-      const previous = await json<{ bindings: TemplateBinding[] }>(file);
+      const previous = await json<{ bindings: TemplateBinding[] }>(file) || await json<{bindings:TemplateBinding[]}>(join(view.directory,'website-builder.templates.json'));
       const merged = [...(previous?.bindings || [])];
       for (const binding of bindings) {
         const index = merged.findIndex(item => item.file === binding.file && item.region === binding.region);
@@ -107,14 +124,17 @@ export class ProjectStore {
   async auditTemplates(threadId: string) {
     const view = await this.get(threadId);
     if (!view) throw new Error('请先打开当前会话项目');
-    const sources = await json<{bindings?:TemplateBinding[]}>(await this.target(view.project.id, 'website-builder.templates.json'));
+    const sources = await json<{bindings?:TemplateBinding[]}>(await this.target(view.project.id, 'website-builder.templates.json')) || await json<{bindings?:TemplateBinding[]}>(join(view.directory,'website-builder.templates.json'));
     return { advisory: true, configured: !!sources, bindings: sources?.bindings || [], message: 'Template fidelity is SKILL guidance only. No structure score or generation pass/fail is calculated. Page readiness uses complete HTML and local dependency validation.' };
   }
   private async complete(view:ProjectView,paths:string[]) {
     for(const path of paths){const page=view.project.pages.find(item=>item.path===path);if(!page)throw new Error(`页面未在计划内：${path}`);
       try {
-        const file=await this.target(view.project.id,path),html=await readFile(file,'utf8');
+        const file=await this.target(view.project.id,path);let html=await readFile(file,'utf8');
         if(!/<html\b/i.test(html)||!/<\/html>\s*$/i.test(html)||!/<body\b/i.test(html))throw new Error('HTML 尚未完整输出');
+        const toastPath=await this.target(view.project.id,'components/toast.js');
+        if(!await stat(toastPath).catch(()=>null))await atomic(toastPath,await readFile(join(this.skillRoot,'assets/ui/toast.js'),'utf8'));
+        const enhanced=injectSharedUI(html,path);if(enhanced!==html){await atomic(file,enhanced);html=enhanced;}
         for(const match of html.matchAll(/\b(?:src|href)\s*=\s*["']([^"']+\.(?:js|css))(?:\?[^"']*)?["']/gi)){
           if(/^(?:[a-z]+:|\/\/)/i.test(match[1]))continue;
           const relativePath=relative(view.directory,resolve(dirname(file),match[1])).split(sep).join('/');await stat(await this.target(view.project.id,relativePath));
@@ -134,7 +154,7 @@ export class ProjectStore {
       let text:string;try{text=await readFile(await this.target(view.project.id,path),'utf8');}catch{return false;}
       // Match resources embedded by the snapshot compiler. Classic JS URLs resolve
       // against the document; CSS URLs resolve against the stylesheet itself.
-      const refs=[...text.matchAll(/(?:\b(?:src|href)\s*=\s*["']|url\(\s*["']?|["'`])([^"'`\s<>)]*\.(?:js|css|png|jpe?g|webp|gif|svg|ico|woff2?|ttf|json)(?:[?#][^"'`\s<>)]*)?)/gi)];
+      const refs=[...text.matchAll(/(?:\b(?:src|href)\s*=\s*["']|url\(\s*["']?|["'`])([^"'`\s<>)]*\.(?:js|css|png|jpe?g|webp|avif|gif|svg|ico|woff2?|ttf|otf|mp4|mp3|json)(?:[?#][^"'`\s<>)]*)?)/gi)];
       for(const match of refs){const url=match[1].replaceAll('&amp;','&');if(/^(?:[a-z]+:|\/\/|#)/i.test(url))continue;
         const target=url.startsWith('/')?resolve(view.directory,url.slice(1).split(/[?#]/)[0]):resolve(dirname(/\.js$/i.test(file)?document:file),url.split(/[?#]/)[0]);
         if(await visit(target))return true;
@@ -145,7 +165,10 @@ export class ProjectStore {
   }
   async write(threadId:string,files:{path:string;content:string;fragment?:boolean;title?:string}[],finalizePages?:string[]) {
     if(!files.length)throw new Error('没有文件内容');
-    files.forEach(file=>this.path(file.path));
+    files.forEach(file=>{
+      this.path(file.path);
+      if(/(?:^|\/)(?:tmp|temp|artifacts|test-results|playwright-report)(?:\/|$)|\.(?:tmp|bak|log|psd)$/i.test(file.path))throw new Error('网站输出目录是生产目录；临时文件、报告与源素材请保存到 metadata_directory');
+    });
     return this.update(threadId,async view=>{
       for(const file of files)if(/\.html?$/i.test(file.path)&&!view.project.pages.some(page=>page.path===file.path))throw new Error(`请先将页面加入计划：${file.path}`);
       for(const file of files){const page=view.project.pages.find(page=>page.path===file.path);if(page&&file.title)page.title=file.title;}
@@ -153,7 +176,8 @@ export class ProjectStore {
       const commerce=await hasFile('js/ec-sdk.js')&&await hasFile('js/sdk.js');
       const commerceConfig=commerce&&await hasFile('js/commerce-config.js');
       const cart = !await hasFile('components/cart.js') ? 'none' : view.project.pages.some(page=>/(^|\/)cart\.html?$/i.test(page.path)) ? 'page' : 'drawer';
-      const output=files.map(file=>({...file,content:validateSource(file.path,file.fragment?assemblePage(file.content,file.title||view.project.pages.find(page=>page.path===file.path)?.title||view.project.name,view.project.language,{commerce,commerceConfig,cart}):file.content)}));
+      const output=files.map(file=>({...file,content:validateSource(file.path,/\.html?$/i.test(file.path)?injectSharedUI(file.fragment?assemblePage(file.content,file.title||view.project.pages.find(page=>page.path===file.path)?.title||view.project.name,view.project.language,{commerce,commerceConfig,cart}):file.content,file.path):file.content)}));
+      if(output.some(file=>/\.html?$/i.test(file.path)&&/<toast-component\b/i.test(file.content))&&!await hasFile('components/toast.js'))output.push({path:'components/toast.js',content:await readFile(join(this.skillRoot,'assets/ui/toast.js'),'utf8')});
       const changed=new Set<string>();
       for(const file of output){const target=await this.target(view.project.id,file.path);if(await readFile(target,'utf8').catch(()=>null)!==file.content)changed.add(file.path);}
       const affected:ProjectPage[]=[];

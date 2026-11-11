@@ -10,7 +10,7 @@ async function sourceHash(folder){const hash=createHash('sha256');for(const entr
 const sourceRoot=join(config.env.WEBSITE_BUILDER_ROOT,'www.noventrad.com');
 const before=await sourceHash(sourceRoot);
 const testState=await mkdtemp(join(tmpdir(),'website-visual-'));
-const child=spawn(process.execPath,['dist/server/index.js','--preview'],{env:{...process.env,...config.env,WEBSITE_BUILDER_PROJECT_ROOT:join(testState,'project')},stdio:['ignore','pipe','pipe']});
+const child=spawn(process.execPath,['dist/server/index.js','--preview'],{env:{...process.env, WEBSITE_BUILDER_PREVIEW_VENDOR_FIXTURES:'1',...config.env,WEBSITE_BUILDER_PROJECT_ROOT:join(testState,'project')},stdio:['ignore','pipe','pipe']});
 const url=await new Promise((resolve,reject)=>{child.stdout.once('data',data=>resolve(data.toString().trim()));child.once('error',reject);child.once('exit',code=>reject(new Error(`preview exit ${code}`)));});
 const browser=await chromium.launch({channel:'chrome',headless:true});
 try{
@@ -28,7 +28,7 @@ try{
  assert.equal(await page.locator('iframe').count(),14);
  const positions=await page.locator('.page-panel').evaluateAll(nodes=>nodes.map(node=>{const box=node.getBoundingClientRect();return{x:box.x,y:box.y,width:box.width,height:box.height};}));
  const columns=Number(await page.locator('.canvas-world').getAttribute('data-columns'));
- assert.ok(columns>=1&&columns<=3);
+ assert.equal(columns,5);
  assert.ok(positions[columns].y>positions[0].y+positions[0].height,'pages wrap into multiple rows');
  for(let i=0;i<positions.length;i++)if(i%columns)assert.ok(Math.abs(positions[i].y-positions[i-1].y)<1&&positions[i].x>positions[i-1].x+positions[i-1].width,'each row is aligned without overlap');
  const frame=page.frameLocator('iframe[title="index.html"]');

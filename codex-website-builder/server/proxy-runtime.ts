@@ -2,7 +2,7 @@
 export const proxyRuntime=String.raw`<script>
 (()=>{
  const requests=new Map(),cached=new Map();let sequence=0;
- const remote=value=>{try{const url=new URL(String(value),window.__websiteBuilderLocation);return /^https?:$/.test(url.protocol)&&url.hostname!=='website-builder.invalid'?url.href:null;}catch{return null;}};
+ const remote=value=>{try{const url=new URL(String(value),window.__websiteBuilderLocation);return /^https?:$/.test(url.protocol)&&(url.hostname!=='website-builder.invalid'||url.pathname.startsWith('/preview-assets/'))?url.href:null;}catch{return null;}};
  const request=(url,raw=false)=>{
   const key=(raw?'raw:':'asset:')+url;if(cached.has(key))return cached.get(key);
   const promise=new Promise((resolve,reject)=>{const id=++sequence;const timer=setTimeout(()=>{requests.delete(id);reject(new Error('资源代理超时：'+url));},60000);requests.set(id,{resolve,reject,timer});parent.postMessage({type:'website-builder:resource',id,url,raw},'*');});

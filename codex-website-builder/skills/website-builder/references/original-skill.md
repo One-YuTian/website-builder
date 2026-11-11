@@ -34,6 +34,7 @@ description: Professional website builder skill adhering to strict development, 
 │   ├── footer.js              // 页脚组件
 │   ├── cart.js                // 购物车抽屉与弹窗组件
 │   ├── card.js                // 商品卡片与通用展示组件
+│   ├── toast.js               // Toast弹窗
 │   └── ...                    // 其他组件
 │
 └── js/

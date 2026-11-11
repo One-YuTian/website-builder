@@ -6,44 +6,8 @@
 
 1. 已有有效 `js/data.js`：复用，改页面不重新造商品、不改变商品 ID。
 2. 用户给出真实 API：不生成 mock；编写字段适配器，数据加载完成后再 `SDK.init(normalizedProducts, config)`、注册/刷新数据组件。失败显示错误及重试，不能用 mock 假装 API 成功。接口凭据留在后端，预览代理不发送写入请求。
-3. 确实无数据源：按品牌准备商品样本，调用 `website_commerce` 一次生成数据并安装缺失的 SDK。默认 24 条，常规演示约 20–50 条、3–5 个相关分类；精品小目录按用户要求缩减，不为凑数量填无关行业。已有文件无法静态解析时保留并在浏览器验证，不能按“无数据”处理。
-4. 只有用户明确要求重建数据才传 `regenerate:true`。即使重新生成数据也保留已有 SDK、配置、购物车和订单；商品改名不改 ID。对真实数据按项目原接口适配，不强制替换成示例 SDK。
-
-`website_commerce` 参数沿用真实 `thread_id/project_id`。所有输出经过项目写入器，已有计划页的状态及增量更新规则仍然生效。
-
-```javascript
-// products 是品牌样本，不是调用者手写数十条重复记录。
-// 同一个 seed + 相同顺序/样本得到稳定的 ID、评分和销量。
-{
-  action: 'prepare',
-  thread_id: currentThreadId,
-  project_id: currentProjectId,
-  count: 24,
-  seed: 'brand-catalog-v1',
-  currency: 'USD',
-  locale: 'en-US',
-  products: [
-    {
-      name: 'Trail Daypack',
-      brand: 'Brand from the brief',
-      category: 'Daypacks',
-      main_image: 'assets/products/trail-daypack.webp',
-      images: ['assets/products/trail-daypack.webp'],
-      final_price: 89,
-      description: 'Lightweight pack for day hikes.',
-      features: ['Water-resistant fabric', 'Adjustable shoulder straps'],
-      specifications: [
-        { key: 'Capacity', value: '20 L' },
-        { key: 'Material', value: 'Recycled nylon' }
-      ]
-    }
-  ]
-}
-```
-
-样本应覆盖实际分类、品牌和价位，不照抄上面的行业。数量大于样本时生成器会加数字后缀；重要展示位先提供不同名称/文案/图片的充分样本，不能把编号副本宣称为真实商品。真实库存不得使用生成器扩增。图片采用用户素材、项目已有资源或已核实授权的资源；没有图片时明确安排占位素材，不凭空编造 URL，不重复一张图伪装多个角度。
-
-生成文件：`js/data.js`、缺失的 `js/sdk.js`、`js/ec-sdk.js`，以及缺失的 `js/app.js` 配置起点。禁止新建或引入独立 commerce-config.js；ISO货币、locale、项目storageKey统一到app.js的window.commerceConfig，SDK与APP直接消费。已有app.js不覆盖，使用工具返回config_defaults合并缺失项，Tailwind config保持顶部唯一；已有旧配置仅兼容读取，不自动改写用户项目。工具只返回数量、来源、文件名等摘要，不回显全量数据或 SDK 源码。
+3. 无真实数据源时调用同包 [Mock Data 技能](../../generate-mock-data/SKILL.md)。生成参数、样本、来源和验证流程只在该技能维护；主技能与本接口参考不再维护生成工作流。
+4. 只有用户明确重建数据时才重建，现有 SDK、配置、购物车和订单保留。配置在 js/app.js，禁止新建 commerce-config.js。
 
 ## 统一商品格式
 

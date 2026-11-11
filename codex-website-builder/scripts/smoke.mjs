@@ -20,7 +20,7 @@ await cp('package.json', join(isolated, 'package.json'));
 const config = mcp.mcpServers['website-builder'];
 assert.equal(config.command, 'node');
 const expand = value => value.replaceAll('${PLUGIN_ROOT}', isolated);
-const transport = new StdioClientTransport({ command: process.execPath, args: config.args.map(expand), cwd: expand(config.cwd), env: { ...process.env, ...config.env } });
+const transport = new StdioClientTransport({ command: process.execPath, args: config.args.map(expand), cwd: expand(config.cwd), env: { ...process.env, WEBSITE_BUILDER_PREVIEW_VENDOR_FIXTURES:'1', ...config.env } });
 try {
   await client.connect(transport);
   assert.equal(client.getServerVersion().version, manifest.version);
@@ -42,10 +42,17 @@ try {
   assert.equal(embedded._meta.website.pages.length, 14);
   for(const page of embedded._meta.website.pages) {
     const result = await client.callTool({ name:'read_page', arguments:{directory:'www.noventrad.com',path:page.path} });
-    assert.ok(!result.isError,page.path);
-    const html = gunzipSync(Buffer.from(result._meta.gzip,'base64')).toString('utf8');
+    assert.ok(!result.isError,`${page.path}: ${JSON.stringify(result.content)}`);
+    let zipped;
+    if(typeof result._meta.gzip==='string')zipped=Buffer.from(result._meta.gzip,'base64');
+    else {
+      const chunks=[];let offset=0,total=Infinity;
+      while(offset<total){const response=await client.callTool({name:'proxy_resource',arguments:{url:result._meta.gzip.resource,offset,raw:true}});assert.ok(!response.isError);const value=response._meta.resource;chunks.push(Buffer.from(value.base64,'base64'));offset=value.next;total=value.total;}
+      zipped=Buffer.concat(chunks);
+    }
+    const html = gunzipSync(zipped).toString('utf8');
     assert.ok(html.includes('data:text/javascript;base64,') && html.includes('website-builder:height'), page.path);
-    assert.ok(result._meta.gzip.length < 4 * 1024 * 1024);
+    assert.ok(JSON.stringify(result._meta.gzip).length < 1100000);
   }
   console.log('PASS: 14 individual compressed MCP page transfers with embedded resources; no HTTP CSP dependency');
   const site = await (await fetch(bootstrap.api)).json();

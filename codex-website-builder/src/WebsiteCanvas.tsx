@@ -8,6 +8,11 @@ type View = { x: number; y: number; zoom: number };
 type Wheel = { dx: number; dy: number; zoom: boolean; x: number; y: number };
 const clamp = (value: number, min: number, max: number) => Math.max(min, Math.min(max, value));
 
+async function decodePagePayload(value: string | {resource:string}) {
+  const bytes=typeof value==='string'?Uint8Array.from(atob(value),char=>char.charCodeAt(0)):new Uint8Array(await (await fetch((await readResource(value.resource,true)).data)).arrayBuffer());
+  return new Response(new Blob([bytes]).stream().pipeThrough(new DecompressionStream('gzip'))).text();
+}
+
 const PageFrame = memo(function PageFrame({ page, storage, index, width, selected, select, wheel, notify }: {
   page: SitePage; index: number; width: number; selected: boolean; select: (path: string) => void;
   wheel: (value: Wheel) => void; notify: (text: string) => void;
@@ -72,7 +77,7 @@ const PageFrame = memo(function PageFrame({ page, storage, index, width, selecte
   useEffect(() => () => { if(loadTimer.current)clearTimeout(loadTimer.current); }, []);
   return <article className={`page-panel ${selected ? 'is-selected' : ''}`} data-page={page.path} style={{ width }}>
     <button className="page-label" onClick={() => select(page.path)} title={`${page.path} - ${page.title}`}>
-      <span className="page-icon">▣</span><span className="page-title">{page.path} - {page.title}</span><span className="page-number">{String(index + 1).padStart(2, '0')}</span>
+      <span className="page-icon"><Icon name="pages" /></span><span className="page-title">{page.path} - {page.title}</span><span className="page-number">{String(index + 1).padStart(2, '0')}</span>
     </button>
     <div className={`frame-glass ${ready ? 'is-ready' : 'is-loading'}`} style={{ height: viewportHeight }}>
     {!ready && <div className="page-loader" role="progressbar" aria-label={`正在加载 ${page.path}`} />}
@@ -106,16 +111,7 @@ export function WebsiteCanvas({ background }: { background: ReactNode }) {
   const [dragging, setDragging] = useState(false);
   const stage = useRef<HTMLDivElement>(null);
   const world = useRef<HTMLDivElement>(null);
-  const [columns, setColumns] = useState(3);
-  useEffect(() => {
-    if (!stage.current) return;
-    const observer = new ResizeObserver(([entry]) => {
-      const widest = Math.max(width, ...Object.values(widths));
-      setColumns(clamp(Math.floor((entry.contentRect.width - 120) / ((widest + 72) * .26)), 1, 3));
-    });
-    observer.observe(stage.current);
-    return () => observer.disconnect();
-  }, [width, widths]);
+  const columns = width > 1024 ? 5 : 7;
   const drag = useRef<{ x: number; y: number; view: View } | null>(null);
   const sequence = useRef(0);
   const projectMode=useRef(false);
@@ -136,9 +132,8 @@ export function WebsiteCanvas({ background }: { background: ReactNode }) {
         for (let start = 0; start < pages.length; start += 3) {
           await Promise.all(pages.slice(start,start+3).map(async page => {
             const result = await hostApp!.callServerTool({ name:'read_page', arguments:{directory,path:page.path} });
-            if (result.isError || typeof result._meta?.gzip !== 'string') throw new Error(`读取 ${page.path} 失败`);
-            const bytes = Uint8Array.from(atob(result._meta.gzip),char=>char.charCodeAt(0));
-            page.html = await new Response(new Blob([bytes]).stream().pipeThrough(new DecompressionStream('gzip'))).text();
+            if (result.isError || !result._meta?.gzip) throw new Error(`读取 ${page.path} 失败`);
+            page.html = await decodePagePayload(result._meta.gzip as string | {resource:string});
           }));
           if (id !== sequence.current) return;
         }
@@ -161,7 +156,7 @@ export function WebsiteCanvas({ background }: { background: ReactNode }) {
     if(!config)return;
     let stopped=false,probed=false,since='none',projectId='';let known:Record<string,number>={};
     const controller=new AbortController();
-    const unzip=async(value:string)=>new Response(new Blob([Uint8Array.from(atob(value),char=>char.charCodeAt(0))]).stream().pipeThrough(new DecompressionStream('gzip'))).text();
+    const unzip=decodePagePayload;
     async function run(){
       if(hostApp)await hostReady;
       while(!stopped){
@@ -178,9 +173,9 @@ export function WebsiteCanvas({ background }: { background: ReactNode }) {
           if(!manifest?.projectId){if(projectMode.current){setSite(null);projectMode.current=false;projectId='';known={};}since=value.revision||'none';continue;}
           const changed=manifest.projectId!==projectId;
           if(changed){known={};projectId=manifest.projectId;sequence.current++;projectMode.current=true;storage.current={};setWidths({});setSelected(manifest.pages[0]?.path||'');setView({x:28,y:30,zoom:.26});}
-          const decoded:Record<string,string>={};
-          for(const [path,payload]of Object.entries(value.pages||{})){decoded[path]=await unzip(payload as string);const page=manifest.pages.find(item=>item.path===path);if(page)known[path]=page.version||0;}
-          for(const path of Object.keys(value.errors||{})){const page=manifest.pages.find(item=>item.path===path);if(page)known[path]=page.version||0;}
+          const decoded:Record<string,string>={},nextKnown={...known};
+          for(const [path,payload]of Object.entries(value.pages||{})){decoded[path]=await unzip(payload as string | {resource:string});const page=manifest.pages.find(item=>item.path===path);if(page)nextKnown[path]=page.version||0;}
+          for(const path of Object.keys(value.errors||{})){const page=manifest.pages.find(item=>item.path===path);if(page)nextKnown[path]=page.version||0;}
           if(stopped)return;
           setSite(previous=>({...manifest,pages:manifest.pages.map(page=>{
             const old=!changed?previous?.pages.find(item=>item.path===page.path):undefined;
@@ -188,7 +183,7 @@ export function WebsiteCanvas({ background }: { background: ReactNode }) {
             const next={...page,...(failure?{status:'error' as const,error:failure}:{}),html:page.status==='ready'?(decoded[page.path]??(old?.version===page.version?old?.html:undefined)):undefined};
             return old&&Object.keys({...old,...next}).every(key=>old[key as keyof SitePage]===next[key as keyof SitePage])?old:next;
           })}));
-          setDirectory(manifest.directory);setProjectList(value.projects||[]);setError('');setLoading(false);since=value.revision;
+          setDirectory(manifest.directory);setProjectList(value.projects||[]);setError('');setLoading(false);known=nextKnown;since=value.revision;
         }catch(error){if(stopped)return;probed=true;setNotice((error as Error).message);await new Promise(resolve=>setTimeout(resolve,3000));}
       }
     }

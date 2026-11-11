@@ -117,7 +117,40 @@
     }
     return APP;
   }
+  // Shared UI boundary for rejected guest writes; storage guards remain in each module.
+  var _loginPending = false;
+  function _safeReturnTo(value) {
+    if (typeof value !== "string") return "shop.html";
+    var decoded;
+    try { decoded = decodeURIComponent(value); } catch (error) { return "shop.html"; }
+    if (/[\\:\x00-\x20]/.test(decoded) || decoded.indexOf("//") !== -1 || decoded.split(/[/?#]/).indexOf("..") !== -1) return "shop.html";
+    return /^(?:[a-zA-Z0-9_-]+\/)*[a-zA-Z0-9_-]+\.html(?:[?#].*)?$/.test(decoded) ? value : "shop.html";
+  }
+  function _requireLogin(code) {
+    if (account.logged()) { _loginPending = false; return true; }
+    if (!global.location || _loginPending) return false;
+    _loginPending = true;
+    var config = global.commerceConfig || {};
+    var current = global.location.pathname.replace(/^\//, "") + (global.location.search || "");
+    var login = _safeReturnTo(config.loginUrl || "login.html").split(/[?#]/)[0];
+    var loginUrl = login + "?returnTo=" + encodeURIComponent(_safeReturnTo(current));
+    if (typeof config.onLoginRequired === "function") config.onLoginRequired({code:code, loginUrl:loginUrl});
+    else {
+      var message = config.loginRequiredMessage || "Please log in to continue.";
+      if (global.Toast && typeof global.Toast.info === "function") global.Toast.info(message);
+      else if (typeof global.dispatchEvent === "function" && typeof global.CustomEvent === "function") global.dispatchEvent(new global.CustomEvent("website:toast", {detail:{message:message,type:"info"}}));
+      var navigateLogin = function () {
+        if (typeof global.__websiteBuilderNavigate === "function") global.__websiteBuilderNavigate(loginUrl);
+        else global.location.assign(loginUrl);
+      };
+      if (typeof global.setTimeout === "function") global.setTimeout(navigateLogin, 900);
+      else navigateLogin();
+    }
+    return false;
+  }
   function _emit(event, data) {
+    if (event === "ACCOUNT_LOGIN" && data && data.success === true || event === "ACCOUNT_LOGOUT") _loginPending = false;
+    if (data && data.success === false && [2001,3001,4001].indexOf(data.code) !== -1) _requireLogin(data.code);
     var arr = _events[event];
     if (!arr) {
       return;
@@ -937,7 +970,8 @@
 
   /* ====== Global Mount ====== */
   var APP = {
-    version: "1.0.0",
+    version: "1.1.0",
+    auth: { requireLogin: _requireLogin, safeReturnTo: _safeReturnTo },
     account: account,
     cart: cart,
     wishlist: wishlist,

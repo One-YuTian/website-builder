@@ -4,11 +4,30 @@ import { lookup } from 'node:dns';
 import { isIP } from 'node:net';
 import { gunzipSync, inflateSync, brotliDecompressSync } from 'node:zlib';
 import { previewScript } from './snapshot';
+import { readFile, stat } from 'node:fs/promises';
+import { createHash } from 'node:crypto';
 
 type Resource = { bytes: Buffer; mime: string; url: string; status: number };
 const maximum=64*1024*1024;
 const privateAddress=(ip:string)=> /^(?:0\.|10\.|127\.|169\.254\.|192\.168\.|172\.(?:1[6-9]|2\d|3[01])\.|22[4-9]\.|2[3-5]\d\.)/.test(ip)||ip.includes(':')&&(/^(?:::|f[cd]|fe[89ab])/i.test(ip)||ip.toLowerCase().includes('ffff:'));
 const cache=new Map<string,{time:number;value:Promise<Resource>;size:number}>();
+const previewPrefix='https://website-builder.invalid/preview-assets/';
+const previewFiles=new Map<string,{file:string;mime:string;version:string}>();
+const previewBuffers=new Map<string,{bytes:Buffer;mime:string}>();
+export function registerPreviewBuffer(bytes:Buffer,mime:string) {
+ const url=previewPrefix+createHash('sha256').update(mime).update(bytes).digest('hex');
+ previewBuffers.delete(url);previewBuffers.set(url,{bytes,mime});
+ let size=[...previewBuffers.values()].reduce((sum,item)=>sum+item.bytes.length,0);
+ for(const [key,item]of previewBuffers){if(size<=128*1024*1024)break;if(key!==url){previewBuffers.delete(key);size-=item.bytes.length;}}
+ return url;
+}
+export async function registerPreviewFile(file:string,mime:string) {
+ const info=await stat(file),version=`${info.size}:${info.mtimeMs}`;
+ const url=previewPrefix+createHash('sha256').update(file).update(version).digest('hex');
+ previewFiles.set(url,{file,mime,version});
+ if(previewFiles.size>8192)previewFiles.delete(previewFiles.keys().next().value!);
+ return url;
+}
 const mimeByPath:Record<string,string>={js:'text/javascript',mjs:'text/javascript',css:'text/css',svg:'image/svg+xml',png:'image/png',jpg:'image/jpeg',jpeg:'image/jpeg',webp:'image/webp',avif:'image/avif',gif:'image/gif',woff:'font/woff',woff2:'font/woff2',ttf:'font/ttf',otf:'font/otf',json:'application/json'};
 
 function download(value:string,redirects=0):Promise<Resource>{
@@ -37,6 +56,13 @@ const replaceAsync=async(text:string,pattern:RegExp,fn:(match:RegExpMatchArray)=
 
 export async function proxyResource(url:string,raw=false,chain:string[]=[]):Promise<Resource>{
  url=new URL(url).href;const key=`${raw?'raw':'compiled'}:${url}`;
+ if(url.startsWith(previewPrefix)) {
+  const buffer=previewBuffers.get(url);if(buffer)return{...buffer,url,status:200};
+  const entry=previewFiles.get(url);if(!entry)throw new Error('预览资源已过期，请重新载入对应页面');
+  const info=await stat(entry.file);if(`${info.size}:${info.mtimeMs}`!==entry.version)throw new Error('预览资源已更新，请重新载入对应页面');
+  if(info.size>maximum)throw new Error('单个预览资源超过64MB限制');
+  return{bytes:await readFile(entry.file),mime:entry.mime,url,status:200};
+ }
  if(chain.includes(url))throw new Error(`资源循环依赖：${url}`);
  const existing=cache.get(key);if(existing&&Date.now()-existing.time<600000)return existing.value;
  const entry={time:Date.now(),size:0,value:Promise.resolve(null as unknown as Resource)};

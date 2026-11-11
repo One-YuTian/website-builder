@@ -8,7 +8,7 @@ import {StdioClientTransport} from '@modelcontextprotocol/sdk/client/stdio.js';
 import {chromium} from '@playwright/test';
 const sandbox=await mkdtemp(join(tmpdir(),'website-project-test-'));
 const settings=JSON.parse(await readFile('mcp.json','utf8')).mcpServers['website-builder'];
-const env={...process.env,...settings.env,WEBSITE_BUILDER_PROJECT_ROOT:join(sandbox,'project'),WEBSITE_BUILDER_SKILL_ROOT:resolve('skills/website-builder')};
+const env={...process.env, WEBSITE_BUILDER_PREVIEW_VENDOR_FIXTURES:'1',...settings.env,WEBSITE_BUILDER_PROJECT_ROOT:join(sandbox,'project'),WEBSITE_BUILDER_SKILL_ROOT:resolve('skills/website-builder')};
 const client=new Client({name:'project-test',version:'1'});
 const transport=new StdioClientTransport({command:process.execPath,args:[resolve('dist/server/index.js')],cwd:resolve('.'),env});
 let browser,preview;
@@ -36,7 +36,7 @@ try{
  assert.deepEqual(secondSelection,candidates,'brief does not randomly determine design; Agent decides from candidate summaries');
  const ids=candidates.slice(0,3).map(item=>item.candidates[0].id);
  const code=await call('website_templates',{mode:'code',ids,section:'html'});assert.ok(JSON.parse(code.content[0].text).every(item=>item.html));
- const a=await project({thread_id:'test-thread-a',name:'Complete commerce',brief:'A complete ecommerce storefront',language:'en'});assert.equal(a.pages.length,13);assert.match(a.project_id,/^[a-f0-9]{4}(?:-[a-f0-9]{4}){3}$/);assert.ok(a.pages.every(page=>page.status==='queued'));
+ const a=await project({thread_id:'test-thread-a',name:'Complete commerce',brief:'A complete ecommerce storefront',language:'en'});assert.equal(a.pages.length,12);assert.ok(!a.pages.some(page=>page.path==='cart.html'),'new default plan uses drawer instead of a cart page');assert.match(a.project_id,/^[a-f0-9]{4}(?:-[a-f0-9]{4}){3}$/);assert.ok(a.pages.every(page=>page.status==='queued'));
  assert.equal((await project({thread_id:a.thread_id})).project_id,a.project_id);
  const b=await project({thread_id:'test-thread-b',name:'Second store'});assert.notEqual(b.project_id,a.project_id);
  assert.equal((await project({thread_id:a.thread_id,project_id:b.project_id})).project_id,b.project_id);
@@ -48,8 +48,8 @@ try{
  let complete=await write(a,a.pages.map(page=>({path:page.path,fragment:true,title:`${page.path} | Test Store`,content:`<main><h1>${page.path}</h1><input aria-label="Search"><button onclick="this.textContent='Done'">Test</button></main>`})));
  assert.ok(complete.pages.every(page=>page.status==='ready'));
  const known={};let since='none',last;
- for(let i=0;i<20;i++){last=(await call('project_sync',{since,known,wait_ms:0}))._meta.sync;assert.ok(last.manifest);since=last.revision;for(const path of Object.keys(last.pages)){known[path]=last.manifest.pages.find(page=>page.path===path).version;}if(Object.keys(known).length===13)break;}
- assert.equal(Object.keys(known).length,13);
+ for(let i=0;i<20;i++){last=(await call('project_sync',{since,known,wait_ms:0}))._meta.sync;assert.ok(last.manifest);since=last.revision;for(const path of Object.keys(last.pages)){known[path]=last.manifest.pages.find(page=>page.path===path).version;}if(Object.keys(known).length===a.pages.length)break;}
+ assert.equal(Object.keys(known).length,a.pages.length);
  const pending=call('project_sync',{since,known,wait_ms:2500});await new Promise(resolve=>setTimeout(resolve,80));
  await project({action:'begin',thread_id:a.thread_id,project_id:a.project_id,paths:['index.html']});
  const started=(await pending)._meta.sync;assert.equal(started.manifest.pages[0].status,'generating');assert.deepEqual(Object.keys(started.pages),[]);
@@ -86,5 +86,5 @@ try{
  await shop.getByRole('heading',{name:'Shop',exact:true}).waitFor();assert.equal(await page.locator('iframe[title="index.html"]').getAttribute('src'),homeBlob);assert.equal(await page.locator('iframe[title="about.html"]').getAttribute('src'),aboutBlob);
  assert.deepEqual(errors,[]);
  await mkdir('artifacts',{recursive:true});await page.screenshot({path:'artifacts/project-live.png'});
- const report={result:'PASS',checks:['empty canvas without active project, including sync failure and refresh','80 bundled templates and batch code reads','13-page complete HTML assembly','same thread reuse and cross-thread isolation','explicit project switching/new project','persistent CLI fallback','concurrent open reuses one project','partial HTML rejected','path traversal/stale-project writes rejected','long poll wakes on begin','delta payload only for changed page','cross-process live UI','all planned pages loading before output','single-page regeneration preserves other iframe instances, form values, JS state and scroll','unchanged shared files do not refresh pages','CSS update refreshes only its dependent page'],testRoot:sandbox};await writeFile('artifacts/project-verification.json',JSON.stringify(report,null,2));console.log(JSON.stringify(report,null,2));
+ const report={result:'PASS',checks:['empty canvas without active project, including sync failure and refresh','80 bundled templates and batch code reads','12-page complete HTML assembly with default drawer cart','same thread reuse and cross-thread isolation','explicit project switching/new project','persistent CLI fallback','concurrent open reuses one project','partial HTML rejected','path traversal/stale-project writes rejected','long poll wakes on begin','delta payload only for changed page','cross-process live UI','all planned pages loading before output','single-page regeneration preserves other iframe instances, form values, JS state and scroll','unchanged shared files do not refresh pages','CSS update refreshes only its dependent page'],testRoot:sandbox};await writeFile('artifacts/project-verification.json',JSON.stringify(report,null,2));console.log(JSON.stringify(report,null,2));
 }finally{if(browser)await browser.close();if(preview)preview.kill();await client.close();}

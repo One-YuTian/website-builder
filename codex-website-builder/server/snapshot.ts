@@ -2,7 +2,7 @@ import { readFile } from 'node:fs/promises';
 import { basename, dirname, extname, resolve } from 'node:path';
 import { contained } from './preview';
 import { parse } from 'acorn';
-import { proxyResource } from './resource-proxy';
+import { proxyResource, registerPreviewFile } from './resource-proxy';
 
 // Rewrite navigation in preview scripts using syntax nodes, never by matching source text.
 // The original files are not written. Opaque blob frames cannot cancel Navigation API events.
@@ -53,7 +53,7 @@ export function snapshotCompiler(root: string, site: string, vendor: string, ven
     let file: string;
     if (/^(?:https?:)?\/\//i.test(decoded)) {
       const remote=decoded.startsWith('//')?`https:${decoded}`:decoded;
-      if (!vendors[remote]) {
+      if (!vendors[remote] || process.env.WEBSITE_BUILDER_PREVIEW_VENDOR_FIXTURES!=='1') {
         if(!external&&!/\.(?:m?js|css)(?:[?#]|$)/i.test(remote))return remote;
         const resource=await proxyResource(remote);return `data:${resource.mime};base64,${resource.bytes.toString('base64')}`;
       }
@@ -61,9 +61,13 @@ export function snapshotCompiler(root: string, site: string, vendor: string, ven
     } else file = decoded.startsWith('/') ? resolve(site, decoded.slice(1).split(/[?#]/)[0]) : resolve(dirname(from), decoded.split(/[?#]/)[0]);
     const type = types[extname(file).toLowerCase()];
     if (!type) return url;
-    if (!cache.has(file)) cache.set(file, (async () => {
+    const cacheKey=`${external?'embedded':'lazy'}:${file}`;
+    if (!cache.has(cacheKey)) cache.set(cacheKey, (async () => {
       try {
         const safe = await contained(file.startsWith(vendor) ? vendor : root, file);
+        // Keep local bitmap/media payloads out of HTML and classic scripts. CSS
+        // dependencies remain embedded because data-URI stylesheets have no base.
+        if(!external && /^(?:image\/(?!svg)|video\/|audio\/)/.test(type))return registerPreviewFile(safe,type);
         let bytes = await readFile(safe);
         if (/\.css$/i.test(file)) bytes = Buffer.from(await transform(bytes.toString('utf8'), safe, true));
         else if (/\.js$/i.test(file) && !file.startsWith(vendor)) {
@@ -77,7 +81,7 @@ export function snapshotCompiler(root: string, site: string, vendor: string, ven
         return type.startsWith('image/') ? missing : `data:${type};base64,`;
       }
     })());
-    return cache.get(file)!;
+    return cache.get(cacheKey)!;
   }
   async function transform(text: string, from: string, css = false): Promise<string> {
     if (css) {
@@ -85,7 +89,7 @@ export function snapshotCompiler(root: string, site: string, vendor: string, ven
       text = await replaceAsync(text, /url\(\s*(['"]?)([^)'"\s]+)\1\s*\)/gi, async match => `url("${await asset(match[2], from,true)}")`);
     }
     if(!css)text=await replaceAsync(text,/(\b(?:from|import)\s*)(['"])((?:https?:)?\/\/[^'"]+)\2/g,async match=>`${match[1]}${match[2]}${await asset(match[3],from,true)}${match[2]}`);
-    return replaceAsync(text, /(["'`])((?:https?:\/\/|\.{0,2}\/)?[^"'`\s<>]*\.(?:js|css|png|jpe?g|webp|gif|svg|ico|woff2?|ttf)(?:[?#][^"'`\s<>]*)?)\1/gi, async match => `${match[1]}${await asset(match[2], from)}${match[1]}`);
+    return replaceAsync(text, /(["'`])((?:https?:\/\/|\.{0,2}\/)?[^"'`\s<>]*\.(?:js|css|png|jpe?g|webp|avif|gif|svg|ico|woff2?|ttf|otf|mp4|mp3)(?:[?#][^"'`\s<>]*)?)\1/gi, async match => `${match[1]}${await asset(match[2], from)}${match[1]}`);
   }
   return async (path: string) => {
     const file = await contained(root, resolve(site, path));
@@ -109,8 +113,16 @@ export function snapshotCompiler(root: string, site: string, vendor: string, ven
       if (/\.html?(?:[?#]|$)/i.test(match[3])) return match[0];
       return `${match[1]}=${match[2]}${await asset(match[3], file)}${match[2]}`;
     });
+    html = await replaceAsync(html, /\bsrcset\s*=\s*(["'])([^"']+)\1/gi, async match => {
+      if(/data:/i.test(match[2]))return match[0];
+      const candidates=await Promise.all(match[2].split(',').map(async candidate=>{
+        const [url,...descriptor]=candidate.trim().split(/\s+/);
+        return [await asset(url,file),...descriptor].join(' ');
+      }));
+      return `srcset=${match[1]}${candidates.join(', ')}${match[1]}`;
+    });
     // CDN Tailwind is extensionless, so handle it explicitly before inline scripts.
-    for (const remote of Object.keys(vendors)) html = html.replaceAll(remote.replaceAll('&','&amp;'), await asset(remote, file)).replaceAll(remote, await asset(remote, file));
+    for (const remote of (process.env.WEBSITE_BUILDER_PREVIEW_VENDOR_FIXTURES==='1'?Object.keys(vendors):[])) html = html.replaceAll(remote.replaceAll('&','&amp;'), await asset(remote, file)).replaceAll(remote, await asset(remote, file));
     html = await replaceAsync(html, /<script\b([^>]*)>([\s\S]*?)<\/script>/gi, async match => `<script${match[1]}>${await transform(previewScript(match[2]), file)}</script>`);
     html = await replaceAsync(html, /<style\b([^>]*)>([\s\S]*?)<\/style>/gi, async match => `<style${match[1]}>${await transform(match[2], file, true)}</style>`);
     html=await replaceAsync(html,/\bstyle\s*=\s*(["'])([\s\S]*?)\1/gi,async match=>/url\(/i.test(match[2])?`style=${match[1]}${(await transform(match[2],file,true)).replaceAll(match[1],match[1]==='"'?'&quot;':'&#39;')}${match[1]}`:match[0]);

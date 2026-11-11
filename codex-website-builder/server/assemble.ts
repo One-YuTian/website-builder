@@ -1,3 +1,14 @@
+import { posix } from 'node:path';
+
+export function injectSharedUI(html:string,path:string) {
+  if(!/<html\b/i.test(html)||!/<\/body>/i.test(html)||!/<\/html>\s*$/i.test(html))return html;
+  if(!/<head\b/i.test(html))html=html.replace(/<html\b[^>]*>/i,match=>`${match}<head></head>`);
+  const src=posix.relative(posix.dirname(path),'components/toast.js');
+  if(!/<script\b[^>]*\bsrc\s*=\s*["'][^"']*\bcomponents\/toast\.js["']/i.test(html))html=html.replace(/<head\b[^>]*>/i,match=>`${match}\n<script src="${src}"></script>`);
+  if(!/<toast-component\b/i.test(html))html=html.replace(/<\/body>/i,'<toast-component></toast-component>\n</body>');
+  return html;
+}
+
 export function assemblePage(body: string, title: string, language = 'en', options:{commerce?:boolean;commerceConfig?:boolean;cart?:'page'|'drawer'|'none'}={}) {
   if (/<html\b/i.test(body)) return body;
   const scripts:string[]=[];

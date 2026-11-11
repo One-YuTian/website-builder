@@ -222,7 +222,7 @@ export async function createPreview(ui: string, configuredRoot: string, defaultD
         res.setHeader('Content-Type', type);
         if (/\.(html?|js|css|json)$/i.test(path)) {
           let text = data.toString('utf8');
-          for (const [remote, local] of Object.entries(assets)) {
+          for (const [remote, local] of (process.env.WEBSITE_BUILDER_PREVIEW_VENDOR_FIXTURES==='1'?Object.entries(assets):[])) {
             text = text.replaceAll(remote, `${origin}${prefix}/vendor/${local}`).replaceAll(remote.replaceAll('&', '&amp;'), `${origin}${prefix}/vendor/${local}`);
           }
           const key = [...siteKeys].sort((a, b) => b.length - a.length).find(key => !key || requested.startsWith(key + '/'));

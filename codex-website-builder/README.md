@@ -72,7 +72,7 @@ MCP 测试覆盖独立无 node_modules 安装、全局入口、14 个压缩页�
 
 插件已打包用户指定来源的 Website Builder SKILL、80 个模板、原装配脚本和 CDN 清单。默认 SKILL 入口为精简工作流，详细规范延迟读取；模板支持一次选型及按选定 ID 批量获取代码。HTML 业务片段通过 website_write 自动补齐公共骨架，共享代码只写一次。来源记录在 skills/website-builder/source.json。
 
-在会话中描述品牌、语言、商品和页面需求后，agent 使用该 SKILL 分析并生成电商网站；本地服务本身不另行调用付费模型或索要 API key。默认计划包含首页、商店、详情、购物车、心愿单、结账、登录、注册、关于、联系、条款、隐私和退换货，按需求增补页面。只有实际完成并通过验证的页面才标记 ready；测试用的简单内容不代表已生成用户的商业网站。
+在会话中描述品牌、语言、商品和页面需求后，agent 使用该 SKILL 分析并生成电商网站；本地服务本身不另行调用付费模型或索要 API key。默认计划包含首页、商店、详情、心愿单、结账、登录、注册、关于、联系、条款、隐私和退换货，共12页，购物车默认共享抽屉；仅明确独立页需求或保留已有页面模式时增补cart.html。只有实际完成并通过验证的页面才标记 ready；测试用的简单内容不代表已生成用户的商业网站。
 
 - website_project：open 复用会话绑定；显式 project_id 切换已有项目，new_project=true 创建新项目；plan 扩展页面计划，begin 让指定页面重新加载，finish 验证直接写出的文件。
 - website_write：批量原子写入；fragment=true 自动装配完整 HTML。写共享资源时刷新依赖页面，修改单页时不重载其他 iframe。
@@ -87,7 +87,7 @@ MCP 测试覆盖独立无 node_modules 安装、全局入口、14 个压缩页�
 
 当前会话尚未发现新工具时可使用同包 skills/website-builder/scripts/project.mjs，通过 stdin 接收操作 JSON；CLI 自动使用当前 CODEX_THREAD_ID，并与 MCP 共用持久化项目和 UI 状态，不要求另开聊天。
 
-额外验证：`pnpm test:projects`，覆盖13页装配、80模板访问、会话复用/隔离、显式新建/切换、CLI、并发打开、路径与旧项目写入保护、不完整HTML、跨进程实时显示以及单页重生成时其他 iframe 不变。测试项目位于系统临时目录，不写入用户真实项目目录。
+额外验证：`pnpm test:projects`，覆盖默认12页装配与抽屉模式、80模板访问、会话复用/隔离、显式新建/切换、CLI、并发打开、路径与旧项目写入保护、不完整HTML、跨进程实时显示以及单页重生成时其他 iframe 不变。测试项目位于系统临时目录，不写入用户真实项目目录。
 
 ## 外部资源代理（0.5.2）
 
@@ -146,3 +146,54 @@ website_templates select 现在返回按类别分组的未排序候选（categor
 ## demo5 SKILL 迁移（0.6.5）
 
 迁入用户指定 demo5 的模板槽位/响应式、AI自主配色与卡片色差、唯一 xxx-component 注册、按需子组件、购物车互斥，以及图标、圆角、统一版心、卡片等高和面包屑截断要求。新生成不臆造模板外区域，不编造数据或商业承诺。两份旧参考及其引用已移除；源码格式不再作要求，写入链路和CLI也移除格式化能力。来源文件哈希及迁入内容记录在技能 source.json，模板本身及来源目录保持原样。
+
+
+## 0.7.0 生成能力
+
+画布PC模式（统一宽度>1024）每行5页，iPad/Tablet/Mobile模式每行7页；单页宽度覆盖不改变全局设备模式，画布仍可平移缩放。
+
+主技能负责模板组装和交易闭环；generate-mock-data负责模拟商品，website-copywriter负责非商品文案，website-image-generator负责Logo/Banner/About/ICON位图，website-acceptance仅明确要求时调用。未登录加购/收藏提示后跳登录，登录返回使用APP.auth.safeReturnTo；按国家配置loginRequiredMessage。现有项目SDK保留，修现有站点时需显式接入守卫。
+
+website_screenshot(thread_id,project_id,path,width=1280)返回指定ready页面全页PNG和绝对路径，保存在生产目录外metadata_directory/artifacts/screenshots。支持相对HTML路径及商品查询参数，要求本机Chrome；浏览器驱动随dist/runtime打包，安装后不依赖开发node_modules。它使用独立渲染会话，不包含画布内已登录状态或输入草稿。异步页面在app.js设置window.websiteReady Promise，涵盖数据与首轮组件渲染。截图最多等待60秒，缺图/脚本错误/未稳定布局会失败，不交付半成品。旧会话stdin action:"screenshot" 使用skills/website-builder/scripts/project.mjs。
+
+修改原因与验证见CHANGELOG-0.7.0.md。源码升级后重新安装/重载插件使新技能和工具生效。
+
+
+## 0.7.1 生产目录与内容协作
+
+website_project返回directory（可发布的网站生产目录）和metadata_directory（生产目录外的.builder-state/projects/<project_id>）。网站目录仅保留运行所需文件；项目状态、设计、模板来源、文案/素材记录、截图/验收报告、临时脚本及原始数据放管理目录。website_write自动将根级website-builder.*.json记录路由到管理目录，并拒绝常见临时/报告文件；js/data.js为实际运行商品数据，可以保留。旧项目状态和模板绑定兼容读取，不自动删除用户旧文件。
+
+主技能按缺失内容主动调用文案、图片和Mock Data技能；图片技能使用宿主imagegen技能的image_gen工具，依据实际内容和尺寸生图，优先无字主图自动裁切适配多端，保护主体与HTML文案留白；ICON优先单色透明底。文案按场景控制长度，About Us/隐私政策分节详细撰写，必要时协作生图，不编造具体承诺。
+
+Header桌面与移动菜单都必须包含Home、Shop、About Us、Contact Us的目标语言菜单及有效链接。详情见CHANGELOG-0.7.1.md。
+
+
+## 0.7.2 预览传输与模板选择
+
+原“页面资源超过单页预览传输限制”来自整页Base64内嵌图片后超过3.8MB单包限制，不代表网站生成失败。本地静态/dynamic/srcset位图通过opaque预览资源地址按512KB二进制分片传输；较大gzip页面包也改用资源分片，主同步消息只传描述符。保留原图和源网站，传输临时失败会重试，不丢其他已解码页面。CSS内嵌依赖继续兼容，由大页面分片兜底。
+
+Shop/About选择要比较至少3个候选（不足3个则全看）的实际区域与图文结构。About的11个候选现在有不同的真实布局摘要，select附带已绑定模板的项目使用次数/最近使用时间；新站在相容方案中优先较少使用的布局，记录理由并绑定来源。旧项目局部编辑保持布局，不随机换型，也不一律禁用-01。未绑定的历史网站不编造统计。
+
+移动端<768px的html根字号必须12px，跨断点恢复桌面字阶；Logo必须用真实图片。完整首页在Header/Footer/轮播/商品列表之外组合1–2个不同用途、内容和视觉不重复的独立板块。购物车默认drawer，独立cart.html是例外。详见CHANGELOG-0.7.2.md。
+
+
+## 0.7.3 在线依赖、品牌图像与共享通知
+
+所有网站字体/第三方JS、CSS及图标库从在线HTTPS CDN加载，不在生产目录存第三方副本。默认预览也向在线URL取资源后通过宿主安全代理传输，不优先用内置副本；只有隔离回归测试显式设置WEBSITE_BUILDER_PREVIEW_VENDOR_FIXTURES=1时使用固定依赖样本。
+
+图片技能支持独立1:1 favicon；Logo优先品牌特色字标、左侧不附加icon，透明背景、紧贴有效字形且无额外边距。Banner/About按各自内容重点独立生成，元素尽量在视觉中心；Banner关键内容在max-content安全区内，轮播图片彼此不同且不与About共用一张图。正文/板块说明更丰富，除关键短信息及即时交互提示外不只用一句话概过。Header已有分类套件时首页改选其他独立板块。按钮/控件使用统一圆角、hover/focus/disabled与过渡风格。
+
+write/finish为每个完整HTML自动安装缺失的components/toast.js，注入唯一toast-component与提前加载的相对脚本，保留已有实现；提供window.Toast.show/success/error/info/warning/dismiss/clear。登录门槛以Toast提示并稍后跳转，不调用原生alert。对直接写文件也须finish。弹窗/抽屉关闭要求现按各组件开发规范实现，不再提供统一Overlay接口或全局拦截；详见0.7.4修订。
+
+具体交付和验证见CHANGELOG-0.7.3.md；本次未生成品牌图片或重写历史网站。
+
+
+## 0.7.4 组件规范与商品JSON导入
+
+保留用户在标准目录中加入的components/toast.js，Toast改为真正的ToastComponent：Light DOM、template/refresh、实例状态/定时器、幂等连接和断开清理，window.Toast仅为薄门面。统一Overlay接口及全局蒙层监听已撤回；蒙层空白关闭、内容不误关等只作为每个组件的开发/验收规范。
+
+CDN规范避免jsDelivr/jsdeliver及其镜像；PC在max-content内减少Logo与各区块外层/嵌套左右padding，保持左右轴线对齐，移动安全边距和控件内部间距仍保留。页面业务逻辑写对应HTML的script，不新增单页JS文件；详情/规格/评论过长时可展开、分页或分批显示，内容不可永久丢失。
+
+新增import-products技能、website_products工具与skills/import-products/scripts/import-products.mjs。用户提供JSON时通过工具/脚本解析适配，再实际运行可信sdk.js统计商品/分类；inspect不写入，import只输出运行商品视图和缺失SDK，源JSON不修改。支持字段映射、locale数值价格、www.mreceix.com→https://cdn.mreceix.com/相对图拼接，保留绝对图URL；主要分类通常5–6个，过多采用聚合/More，过少用真实子分类/类型/品牌二次分组，不能凑空类。完整筛选关系在window.catalogGroups；工具只返回有限摘要/样本。导入无法识别时返回Mock工作流指令，由主技能接续Mock生成，原运行数据不被坏导入覆盖。商品图允许作为Banner/分类场景图的引用素材，不因此改写商品目录图。
+
+更多说明见CHANGELOG-0.7.4.md。新工具在重载/安装新版本后可用，旧会话可用脚本。

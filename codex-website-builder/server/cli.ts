@@ -4,6 +4,8 @@ import { ProjectStore } from './projects';
 import { compactProject } from './project-service';
 import { readTemplates } from './templates';
 import { prepareCommerce } from './commerce';
+import { screenshotPage } from './screenshot';
+import { importProducts } from './product-import';
 
 try {
   let text='';for await(const chunk of process.stdin)text+=chunk;
@@ -24,9 +26,16 @@ try {
         if(input.mode==='bind')console.log(JSON.stringify(binding));
         else console.log(JSON.stringify({templates:await readTemplates(root,{...input,mode:'code',section:'all',ids:[...new Set<string>(input.targets.map((target:{id:string})=>target.id))]}),binding}));
       }
-    }else console.log(JSON.stringify(await readTemplates(root,input)));process.exit(0);
+    }else console.log(JSON.stringify(await readTemplates(root,{...input,usage:input.mode==='select'?await store.templateUsage():undefined})));process.exit(0);
   }
   if(!thread)throw new Error('当前环境没有真实 CODEX_THREAD_ID；请提供 thread_id');
+  if(input.action==='import_products') {
+    console.log(JSON.stringify(await importProducts(store,skillRoot,{...input,action:input.mode||'import',thread_id:thread})));process.exit(0);
+  }
+  if(input.action==='screenshot') {
+    const {bytes,...result}=await screenshotPage(store,{...input,thread_id:thread});
+    console.log(JSON.stringify(result));process.exit(0);
+  }
   if(input.action==='commerce') {
     console.log(JSON.stringify(await prepareCommerce(store,skillRoot,{...input,action:input.mode||'prepare',thread_id:thread})));process.exit(0);
   }

@@ -98,6 +98,17 @@ export function validateProducts(products: Product[], generated = false) {
   return { count: products.length, brands: new Set(products.map(item => item.brand)).size, categories: new Set(products.map(item => item.category)).size };
 }
 
+// Imported catalogs follow SDK core fields, without fabricating mock-only
+// ratings/sales/descriptions just to satisfy the generator's richer schema.
+function validateSDKProducts(products:Product[]) {
+  const ids=new Set<string>();
+  for(const [index,item]of products.entries()){
+    if(!item||typeof item.id!=='string'||!item.id||ids.has(item.id)||typeof item.name!=='string'||!item.name.trim()||typeof item.category!=='string'||!item.category.trim()||!Number.isFinite(item.final_price)||item.final_price<0)throw Error(`导入商品${index+1}不符合SDK核心字段契约`);
+    ids.add(item.id);
+  }
+  return {count:products.length,brands:new Set(products.map(item=>item.brand).filter(Boolean)).size,categories:new Set(products.map(item=>item.category)).size};
+}
+
 export function generateProducts(input: CommerceInput) {
   const samples = input.products || [];
   if (!samples.length) throw new Error('请提供与品牌相符的 products 样本，不能自动套用无关行业数据');
@@ -139,9 +150,13 @@ export async function prepareCommerce(store: ProjectStore, skillRoot: string, in
   if (!view || view.project.id !== input.project_id) throw new Error('当前会话项目不匹配，请先打开项目');
   new Intl.NumberFormat(input.locale || 'en-US', { style: 'currency', currency: input.currency || 'USD' });
   const existing = await existingFile(view.directory, 'js/data.js');
+  let imported=false;
+  try { const record=JSON.parse(await readFile(join(view.metadataDirectory,'website-builder.import.json'),'utf8'));imported=record.schema==='sdk-import-v1'&&!!existing&&record.runtime_data_sha256===createHash('sha256').update(existing).digest('hex'); } catch(error) { if((error as NodeJS.ErrnoException).code!=='ENOENT'&&!(error instanceof SyntaxError))throw error; }
+  const validateExisting=(products:Product[])=>imported?validateSDKProducts(products):validateProducts(products);
+
   if (input.action === 'validate') {
     if (!existing) throw new Error('缺少 js/data.js');
-    return { source: 'existing', ...validateProducts(productData(existing)) };
+    return { source: 'existing', ...validateExisting(productData(existing)) };
   }
   const files: { path: string; content: string }[] = [];
   let source = 'generated', count = 0;
@@ -151,7 +166,7 @@ export async function prepareCommerce(store: ProjectStore, skillRoot: string, in
     source = 'api';
   } else if (existing && !input.regenerate) {
     const products = productData(existing);
-    if (products.length) { validateProducts(products); source = 'existing'; count = products.length; }
+    if (products.length) { validateExisting(products); source = 'existing'; count = products.length; }
   }
   if (source === 'generated') {
     const products = generateProducts(input); count = products.length;
