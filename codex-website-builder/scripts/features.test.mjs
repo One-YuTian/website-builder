@@ -9,7 +9,7 @@ import { StdioClientTransport } from '@modelcontextprotocol/sdk/client/stdio.js'
 import { chromium } from '@playwright/test';
 
 const root=await mkdtemp(join(tmpdir(),'website-features-'));
-const env={...process.env, WEBSITE_BUILDER_PREVIEW_VENDOR_FIXTURES:'1',WEBSITE_BUILDER_ROOT:resolve('../website'),WEBSITE_BUILDER_PROJECT_ROOT:join(root,'project'),WEBSITE_BUILDER_SKILL_ROOT:resolve('skills/website-builder')};
+const env={...process.env, WEBSITE_BUILDER_PREVIEW_VENDOR_FIXTURES:'1',WEBSITE_BUILDER_ROOT:root,WEBSITE_BUILDER_PROJECT_ROOT:join(root,'project'),WEBSITE_BUILDER_SKILL_ROOT:resolve('skills/website-builder')};
 const client=new Client({name:'features-test',version:'1'});
 let browser;
 const call=async(name,args)=>{const value=await client.callTool({name,arguments:args});assert.ok(!value.isError,JSON.stringify(value));return value;};

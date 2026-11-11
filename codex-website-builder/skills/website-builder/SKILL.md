@@ -91,7 +91,19 @@ UI使用独立iframe，外链与页面跳转由预览层拦截，外部资源统
 
 网站必须实现商品浏览 → 详情 → 加购物车/加心愿单 → 购物车编辑 → 结算 → 订单确认，所有入口连接真实页面和 APP 方法，不能只做视觉按钮。仅用户明确限定功能范围时缩减。
 
-加购与收藏前先检查 `APP.account.logged()`：未登录先展示目标语言“请先登录”提示，再跳转 `login.html?returnTo=...`；returnTo 只接受站内相对 HTML 路径，拒绝协议、双斜线、反斜线和路径越界，登录成功后返回来源页。不偷偷写入游客购物车/收藏，不先报成功，不自动重放购买动作。结算也检查登录与非空购物车。登录/注册 await 成功结果，注册后根据真实 logged 状态决定返回还是登录；失败保留输入并展示错误。
+加购与收藏前先检查 `APP.account.logged()`：未登录先展示目标语言“请先登录”提示，再跳转 `login.html?returnTo=...`；returnTo 只接受站内相对 HTML 路径，拒绝协议、双斜线、反斜线和路径越界，登录成功后返回来源页。不偷偷写入游客购物车/收藏，不先报成功，不自动重放购买动作。订单/结算页入口遵循下方状态守卫，未登录时不能沿用加购/收藏的跳登录规则。已登录的结算页还须检查非空购物车。登录/注册 await 成功结果，注册后根据真实 logged 状态决定返回还是登录；失败保留输入并展示错误。
+
+### 登录状态与页面入口守卫（硬约束）
+
+SDK 与账户状态初始化完成后，在表单、订单数据或结算内容渲染/请求之前检查真实 `APP.account.logged()`，不能把初始化中的未知状态当成未登录，也不能仅凭本地标记或 URL 参数判断。页面职责以项目实际路由为准，覆盖订单列表、订单详情、订单确认和结算入口，不能只按某一个固定文件名判断。
+
+* **已登录访问登录/注册页**：直接使用 `location.replace` 跳转本站首页，不展示登录/注册表单；即使 URL 带有 returnTo，也不得让该入口守卫跳往其他页面。
+* **未登录访问订单/结算页**：先通过本地化 `Toast.info` 提示“未登录，请先登录”，保留约 900ms 的可见时间，再使用 `location.replace` 跳转本站首页。提示后立即终止当前页面业务初始化，不能读取/显示订单、执行结算或下单，也不能重定向到登录页。相同访问只提示一次、跳转一次。
+* **未登录访问登录/注册页、已登录访问订单/结算页**：正常进入相应流程；结算继续验证购物车等业务条件。首页本身不应用这些重定向条件，避免循环。
+
+首页路径按当前页面层级解析为本站实际首页，支持嵌套目录，不能硬编码外部域名。直接输入 URL、站内导航、浏览器返回恢复（pageshow）和账户登录状态变化后均需重新应用守卫；重入时清理旧计时器，防止退出后仍请求受保护内容或重复导航。该入口规则优先于通用 SDK 的“提示后跳登录页”默认行为；仅在入口守卫通过后调用账户/订单/结算方法，不全局改写其他页面的登录目标。
+
+生成后实际验证：已登录分别访问登录与注册页均到首页；未登录分别访问订单与结算页均先出现提示再到首页，且无受保护请求；正常状态不误跳转。此处修改的是生成规范，不能仅修改 SKILL 后宣称已有网站已具备守卫。
 
 内置 APP 在未登录写入时继续拒绝操作；配置 `commerceConfig.loginUrl`、`commerceConfig.loginRequiredMessage`（目标语言），SDK 默认提示并跳转。自定义 UI 可提供 `commerceConfig.onLoginRequired({code, loginUrl})` 统一显示提示和导航。既有 SDK 不覆盖，由页面显式执行同样守卫。处理 2001/3001/4001 错误，不能吞掉未登录提示。购物车行 ID、数值价格、账户隔离、订单快照遵守数据契约；下单必须防重复提交，成功才清空购物车并显示确认，失败可重试。
 
@@ -151,13 +163,28 @@ UI使用独立iframe，外链与页面跳转由预览层拦截，外部资源统
 
 每个HTML页面（首页、交易、账户、正文、政策等）都必须注入唯一toast-component和components/toast.js，注册全局window.Toast，禁止业务通知调用浏览器alert或把alert别名当Toast。网站工具在write/finish时对完整HTML自动装配组件脚本和唯一实例，并创建缺失的components/toast.js，嵌套页面使用正确相对路径；已有实现保留时必须核对下述API。仅写文件绕过工具时也须执行finish。Toast脚本在app.js/账户组件业务执行前加载，API可在DOM就绪前接收消息。
 
-全站统一调用Toast.show(message,{type,duration})、Toast.success/error/info/warning(message,options)、Toast.dismiss(id)、Toast.clear()；show返回id，duration:0表示保持至手动关闭。文案按目标语言输出；window.uiMessages.close提供本地化关闭文案，window.uiStyles.toast/toastClose定义统一控件样式。Toast通过安全文本或严格转义后的template渲染外部消息，支持可访问状态、手动关闭、超时消失，避免重复实例和阻挡页面交互。表单字段错误仍可内联展示，不能把长政策正文塞进Toast。未登录操作先Toast.info提示，再跳登录，不使用alert；默认守卫留约900ms展示提示，业务不得多次提交或重复跳转。
+全站统一调用Toast.show(message,{type,duration})、Toast.success/error/info/warning(message,options)、Toast.dismiss(id)、Toast.clear()；show返回id，duration:0表示保持至手动关闭。文案按目标语言输出；window.uiMessages.close提供本地化关闭文案，window.uiStyles.toast/toastClose定义统一控件样式。Toast通过安全文本或严格转义后的template渲染外部消息，支持可访问状态、手动关闭、超时消失，避免重复实例和阻挡页面交互。表单字段错误仍可内联展示，不能把长政策正文塞进Toast。未登录操作先Toast.info提示，不使用alert；加购/收藏等操作按通用规则跳登录，订单/结算页必须按入口守卫提示后跳首页。默认守卫留约900ms展示提示，业务不得多次提交或重复跳转。
 
 所有有蒙层的弹窗、购物车/筛选/移动菜单抽屉，点击蒙层空白或装饰区域必须关闭对应浮层；点击面板、输入框或内容不得误关。此处仅为提示词/开发规范，不定义、不注入window.Overlay、统一data-overlay协议或全局点击/Esc拦截。每个组件在自身作用域内实现关闭按钮、蒙层点击、Esc与清理逻辑，关闭时移除自身open状态，恢复滚动、焦点和aria，重连不重复监听、断开解除事件。逐个验证浮层，不猜测所有fixed/深色元素是蒙层。
 
 ## 页面规范补充
 
 Toast遵循用户标准目录中的components/toast.js，按WebComponent规范实现：命名ToastComponent、继承HTMLElement、Light DOM、template(data)/refresh()、唯一注册toast-component；状态、计时器和DOM事件由组件自身持有，connectedCallback幂等绑定，disconnectedCallback解除监听并清除计时器，重连可正常恢复。window.Toast只是调用组件的全局薄门面，不在全局函数里直接管理组件DOM或夹带弹窗统一接口。已有用户实现先读再复用，不覆盖用户文件。
+
+### Logo 尺寸与留白（硬约束）
+
+Logo 图片与其专用链接/包装容器的左右 margin、padding 必须为 0，禁止新增水平空槽、占位列或装饰留白，也不能通过给 Logo 图片添加 px/mx 变相缩小品牌标识。保留原始宽高比与 `object-fit: cover; display: block`，不切换为 contain，不同时强制宽高导致拉伸。源图片本身不能有左右透明空边，需在素材阶段去除，不能靠额外容器边距补偿。此明确要求优先于模板中的 Logo 装饰性边距，但不改变其他区域的导航间距与移动端安全边距。
+
+* **PC端**：Logo 与同一页头主行中的导航、搜索/操作控件保持协调一致的显示高度，图片使用 `height: 100%; width: auto`，对应 `block h-full w-auto object-cover p-0 m-0`。Logo 链接与槽位继承该主行的有效内容高度，父级须有可解析的高度（优先 REM），避免 `h-full` 的祖先均为 auto 而实际失效。不能按包含公告条/第二导航行的整个 Header 高度放大 Logo，也不能再用桌面 `w-full h-auto` 覆盖此规则。不改变原模板断点、区域顺序及网格。
+* **移动端及未进入PC布局的尺寸**：沿用 `width: 100%; height: auto`，对应 `block w-full h-auto object-cover p-0 m-0`，占满模板原有 Logo 槽位，不占满整个页头。通过模板实际PC断点切换两种模式，不自行新建冲突断点。
+
+在375/768/1280px读回 Logo 图片及其专用容器的 computed style 与边界尺寸：两侧 margin/padding 为0；PC图片高度匹配有效槽位/同排控件高度、宽度按自然比例自适应；移动布局宽度匹配槽位、高度按自然比例自适应；无透明空边。不能只确认 class 字符串存在。
+
+### REM 单位与页面最小高度（代码规范）
+
+* 字号、间距、宽高、圆角等可缩放尺寸优先用 REM，优先选择 Tailwind 默认 REM 工具类；自定义尺寸使用如 `max-w-[11.25rem]`，避免写成 `max-w-[180px]`。Tailwind 的 `px-4` 是水平 padding 工具类，不代表使用 PX 单位，无需因此删除。百分比、fr、auto、vh 等用于相对布局时保留；细边框/发丝线可保留1px，素材原生像素、截图视口和浏览器测量值不必转为REM。换算需结合实际根字号，保留既有移动端12px/桌面16px规则，不靠改变根字号或模板断点掩盖尺寸问题。
+* **每个完整HTML页面的可见整体高度不得低于100vh**，包括首页、登录/注册、空订单、空购物车和政策等短内容页。使用 `body` 或唯一页面外壳 `min-height: 100vh`（Tailwind `min-h-screen`），不能写固定 `height: 100vh` 截断长内容。页头、主体、页脚位于同一纵向 flex 外壳，主体 `flex: 1`，短内容时页脚落在视口底部，长内容正常滚动；不要给每个板块或页头/页脚之外的主体再重复加100vh，制造多余滚动。移动端可补充动态视口适配，但须保留不低于100vh的下限。
+* 生成后检查代表性自定义尺寸实际使用REM；在375/768/1280px验证短页整体高度至少等于视口高度，长页内容完整可达且无固定高度裁切，再检查PC Logo与相邻控件高度及自然宽高比。
 
 所有字体与第三方库继续用在线HTTPS CDN，但避免jsDelivr/jsdeliver（含cdn.jsdelivr.net、fastly.jsdelivr.net、gcore.jsdelivr.net等镜像/别名），优先可用的cdnjs、Google Fonts或库官方CDN；项目有既定依赖版本就保留版本，不因为换CDN静默升级。
 

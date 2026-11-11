@@ -18,7 +18,7 @@ const ihdr=Buffer.alloc(13);ihdr.writeUInt32BE(width);ihdr.writeUInt32BE(height,
 const png=Buffer.concat([Buffer.from([137,80,78,71,13,10,26,10]),chunk('IHDR',ihdr),chunk('IDAT',deflateSync(raw)),chunk('IEND',Buffer.alloc(0))]);
 const hash=bytes=>createHash('sha256').update(bytes).digest('hex');
 const root=await mkdtemp(join(tmpdir(),'website-large-preview-'));
-const env={...process.env, WEBSITE_BUILDER_PREVIEW_VENDOR_FIXTURES:'1',WEBSITE_BUILDER_ROOT:resolve('../website'),WEBSITE_BUILDER_PROJECT_ROOT:join(root,'project'),WEBSITE_BUILDER_SKILL_ROOT:resolve('skills/website-builder')};
+const env={...process.env, WEBSITE_BUILDER_PREVIEW_VENDOR_FIXTURES:'1',WEBSITE_BUILDER_ROOT:root,WEBSITE_BUILDER_PROJECT_ROOT:join(root,'project'),WEBSITE_BUILDER_SKILL_ROOT:resolve('skills/website-builder')};
 const client=new Client({name:'large-preview-test',version:'1'});
 const call=async(name,args)=>{const value=await client.callTool({name,arguments:args});assert.ok(!value.isError,JSON.stringify(value));return value;};
 const json=async(name,args)=>JSON.parse((await call(name,args)).content[0].text);

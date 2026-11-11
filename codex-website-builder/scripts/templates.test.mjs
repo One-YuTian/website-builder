@@ -8,7 +8,7 @@ import { Client } from '@modelcontextprotocol/sdk/client/index.js';
 import { StdioClientTransport } from '@modelcontextprotocol/sdk/client/stdio.js';
 
 const sandbox = await mkdtemp(join(tmpdir(), 'website-template-'));
-const env = { ...process.env, WEBSITE_BUILDER_PREVIEW_VENDOR_FIXTURES:'1', WEBSITE_BUILDER_PROJECT_ROOT: join(sandbox, 'project'), WEBSITE_BUILDER_SKILL_ROOT: resolve('skills/website-builder'), WEBSITE_BUILDER_ROOT: resolve('../website') };
+const env = { ...process.env, WEBSITE_BUILDER_PREVIEW_VENDOR_FIXTURES:'1', WEBSITE_BUILDER_PROJECT_ROOT: join(sandbox, 'project'), WEBSITE_BUILDER_SKILL_ROOT: resolve('skills/website-builder'), WEBSITE_BUILDER_ROOT: sandbox };
 const client = new Client({ name: 'template-test', version: '1' });
 const transport = new StdioClientTransport({ command: process.execPath, args: [resolve('dist/server/index.js')], env });
 const call = async (name, input) => {
