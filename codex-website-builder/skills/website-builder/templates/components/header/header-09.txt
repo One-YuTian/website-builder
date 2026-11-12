@@ -7,7 +7,7 @@ Functional regions are annotated directly in the component code implementation v
 
 
 ### Dimensions & Responsiveness
-- Desktop (1024px+): Fixed height 68px~76px, follows global `content-container` with max content width 1200px centered, supports sticky positioning during page scrolling.
+- Desktop (1024px+): Fixed height 68px~76px, follows global Tailwind centered container（`w-full max-w-content mx-auto px-4 lg:px-6`） with max content width 1200px centered, supports sticky positioning during page scrolling.
 - Tablet & Mobile (under 1024px): Horizontal category list collapses, main bar retains Logo, search, and action icons; hamburger button triggers 320px smooth slide-out drawer.
 
 ### Attributes & Props
@@ -30,7 +30,7 @@ Functional regions are annotated directly in the component code implementation v
 
 ```html
 <header class="bg-secondary font-sans text-on-secondary py-3 w-full">
-  <div class="content-container flex items-center justify-between gap-6">
+  <div class="w-full max-w-content mx-auto px-4 lg:px-6 flex items-center justify-between gap-6">
     <!-- Region: Brand Identity (Logo) - Neutral LOGO placeholder with link to home -->
 
     <div data-region="logo" class="flex-shrink-0">
@@ -282,7 +282,7 @@ class Header extends HTMLElement {
 
     this.innerHTML = `
       <header class="${headerCls} py-3">
-        <div class="content-container flex items-center justify-between gap-6">
+        <div class="w-full max-w-content mx-auto px-4 lg:px-6 flex items-center justify-between gap-6">
           <div data-region="logo" class="flex-shrink-0">
             <div role="button" tabindex="0" data-action="nav" data-nav-id="home" class="flex items-center rounded-lg ${focusRing}">
               <span class="relative flex h-10 w-28 items-center justify-center overflow-hidden rounded-xl bg-accent"><span class="select-none text-xs font-semibold tracking-widest text-muted">LOGO</span></span>

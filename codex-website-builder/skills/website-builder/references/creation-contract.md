@@ -4,7 +4,7 @@
 
 ## 写入与完成
 
-不规定源码的换行、缩进或单双行形式，写入器不自动格式化。website_write 原子保存提交内容；JS/JSON语法错误不会覆盖旧文件。直接写文件先begin，完整输出后finish。HTML完整性与本地依赖检查继续执行。
+遵循 [逐页落盘与统一代码格式](code-output.md)：每完成一页立即写文件，不等待全站；website_write支持多HTML批量提交及共享依赖；逐页即时落盘是生成时机要求，不是接口数量限制。页面校验通过后立即ready供UI渲染，结束任务前finish收尾并核对状态，不能遗留generating。插件本地Prettier standalone按2空格、printWidth 100、JS单引号/分号、LF格式化HTML/内联JS/CSS及独立JS/CSS/JSON，不使用npm格式化器包。语法错误不覆盖旧文件，未完整HTML不自动补齐为ready。直接写HTML先begin后finish，其他代码经website_write输出。
 
 ## 职责与创建顺序
 

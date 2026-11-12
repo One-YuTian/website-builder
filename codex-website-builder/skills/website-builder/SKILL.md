@@ -25,6 +25,14 @@ Shop 必须先读 [Shop 接入契约](references/shop-integration.md)，同时�
 * **页面背景与卡片必须有清晰色差**：选用页面与板块背景色时，**必须与商品卡片底色有明确区分与层次色差**，严禁卡片底色与页面底色完全相同融为一体。例如：页面/板块背景选用浅灰或中性浅底（如 `bg-slate-50`、`bg-[#f8fafc]`、`bg-[#f1f5f9]`），商品卡片选用纯白（`bg-white`）搭配精致边框；深色模式下亦须具备明暗对比，确保卡片边界清晰、立体可辨。
 * **协调与可读性**：AI 自主决定的调色板（主色 Primary、辅助色 Secondary、强调色 Accent、背景 Surface、文字 Content、边框 Outline）须在 `js/app.js` 顶部的 `window.tailwind.config` 唯一定义。必须确保文字与背景满足可读对比度，强调色能准确引导核心交互。
 
+### PC 最大内容宽度：随机整数（硬约束）
+
+新建网站时，全站主版心最大宽度必须在 **1200–1550px（含1200和1550）** 之间实际随机选取一个整数，不固定选1200、1280、1440或1550，也不从几个预设档位中轮换。可在建站阶段使用Node的`crypto.randomInt(1200, 1551)`获得整数N；禁止让N带小数，或把“随机”理解为凭习惯选一个常用宽度。
+
+每个新站只抽取一次，立即将`maxContentWidthPx: N`保存到`metadata_directory/website-builder.design.json`，并在`js/app.js`唯一Tailwind主题的`maxWidth.content`中应用。遵循REM规范时，按实际PC根字号换算为REM（默认16px时为`N / 16`rem），不随意取整REM导致实际PC上限偏离整数N；记录中的像素整数是校验依据。Header、主视觉文案、商品区域、各板块与Footer共用此值并保持左右对齐，不逐页抽取不同宽度，也不在浏览器每次加载/刷新时重新随机。
+
+同一网站的后续页面、局部修改与重生成复用已记录的N；已有网站没有记录时先确认实际版心，不能仅为执行随机规则擅自改变现有布局。用户明确指定最大宽度时按其指定值执行。正文/表单可有更窄的内部阅读宽度，全幅背景可出血，但不能覆盖全站主版心上限。此规则调整全局宽度token，不改变模板列数、断点或移动端html根字号12px；移动端仍以100%可用宽度及必要安全边距适配。验证时在足以展示N的PC视口读回主容器实际最大宽度，确认对应整数N且所有共享容器一致。
+
 ## 3. 响应式与移动端适配保持完全一致（硬约束）
 
 * **移动端列数与断点绝不擅改**：
@@ -66,15 +74,15 @@ Shop 必须先读 [Shop 接入契约](references/shop-integration.md)，同时�
 
 ## Codex 插件执行流程
 
-以上是 SKILL 的创作要求；模板还原度不进行自动评分，不作为页面生成成功或 ready 的依据。80% 只保留为复用指导，不能理解为允许臆造20%的额外内容。品牌色彩、亮暗方案和内容宽度由 Agent 决定，再比较并选择契合的模板；不得总取候选数组第一项或固定套用同一Shop/About布局；模板选定后忠实保留其布局与响应式。
+以上是 SKILL 的创作要求；模板还原度不进行自动评分，不作为页面生成成功或 ready 的依据。80% 只保留为复用指导，不能理解为允许臆造20%的额外内容。品牌色彩和亮暗方案由Agent决定，主版心最大宽度按上方1200–1550px随机整数规则确定，再比较并选择契合的模板；不得总取候选数组第一项或固定套用同一Shop/About布局；模板选定后忠实保留其布局与响应式。
 
 1. 提取品牌、语言、货币、商品来源、页面和交互；缺失非关键信息时合理决策，默认单语言。先读 [整站设计](references/visual-design.md)，将简短设计决策和购物车模式（新站默认drawer）保存到 metadata_directory/website-builder.design.json；单页修改复用现有系统。
 2. 先调用 website_project(action="open",thread_id=当前真实会话ID,name,brief,language,pages)。同一 thread 复用同一项目；仅用户指定新项目才 new_project=true，指定已有项目才 project_id。生产产物仅在返回的 directory（插件源码 project/xxxx-xxxx-xxxx-xxxx/），过程文件只在返回的 metadata_directory，不修改来源目录。首次需要预览时调用一次 open_canvas，不重复打开。
 3. **完整电商建站必须声明完整页面计划**：默认包含 index.html（首页）、shop.html（商店）、product.html（详情）、wishlist.html（心愿单）、checkout.html（结账）、login.html、register.html、about.html（关于）、contact.html（联系）、terms.html（服务条款）、privacy.html（隐私政策）、return.html（退换货政策）。默认购物车为drawer；用户明确选page或需保留已有page模式时另声明cart.html、在页面直接实现；选 drawer 时仅省略 cart.html，提供 components/cart.js，不能连带省略品牌、联系或政策页面。只有用户明确限定局部页面或功能范围时才精简；已有不同命名或合并账户页可沿用，但必须逐项核对用途，不能静默遗漏。当前项目已存在时先比较完整清单，用 plan 补充本轮缺页，不另建项目。政策/正文页没有专用模板时复用共享页头页脚与正文版式，不因没有模板而删页，政策内容依据真实业务资料，不编造承诺。完整规划后逐页生成；不得只完成首页和交易页便宣称整站完成。计划页先显示加载扫光，完整输出后独立展示；用户旧文件不自动删除。
-4. 数据与 SDK 接口读 [商品与SDK契约](references/commerce-data.md)。用户提供商品JSON/JSON文件时先调用同包 [商品导入与读取](../import-products/SKILL.md) 和website_products，不直接读取源JSON。成功后复用SDK运行视图；工具返回mode:mock时接续Mock Data流程并说明回退。其他已有数据/API直接复用；无商品数据时调用同包 [generate-mock-data](../generate-mock-data/SKILL.md)，主技能不负责 Mock 参数、样本扩增或生成步骤。非商品文案调用 [website-copywriter](../website-copywriter/SKILL.md)，Logo/Banner/About Us/图片图标等调用 [website-image-generator](../website-image-generator/SKILL.md)。新站必须逐项评估并充分使用这三个技能：网站文案缺失即调用文案技能；缺少所需品牌/叙事图片即调用图片技能；没有真实商品数据即调用Mock Data技能。不能只链接技能却自行草率填占位文案、伪图或重复商品；已有有效内容直接复用，避免无谓重生成。先确定槽位和图文需求，再让文案与图片技能协作，最后接入同一份商品数据。账户 register/login/update 必须 await。
+4. 数据与 SDK 接口读 [商品与SDK契约](references/commerce-data.md)。用户提供商品JSON/JSON文件时先调用同包 [商品导入与读取](../import-products/SKILL.md) 和website_products，不直接读取源JSON。成功后复用SDK运行视图；mode:classification_required时先根据分类摘要提交category_map、完成二次分类再导入，不能直接沿用过多源分类；渲染图片时显式调用storeData.imageUrl拼接CDN，源JSON与运行图片路径均不改写。工具返回mode:mock时接续Mock Data流程并说明回退。其他已有数据/API直接复用；无商品数据时调用同包 [generate-mock-data](../generate-mock-data/SKILL.md)，主技能不负责 Mock 参数、样本扩增或生成步骤。非商品文案调用 [website-copywriter](../website-copywriter/SKILL.md)，Logo/Banner/About Us/图片图标等调用 [website-image-generator](../website-image-generator/SKILL.md)。新站必须逐项评估并充分使用这三个技能：网站文案缺失即调用文案技能；缺少所需品牌/叙事图片即调用图片技能；没有真实商品数据即调用Mock Data技能。不能只链接技能却自行草率填占位文案、伪图或重复商品；已有有效内容直接复用，避免无谓重生成。先确定槽位和图文需求，再让文案与图片技能协作，最后接入同一份商品数据。账户 register/login/update 必须 await。
 5. website_templates(mode="select") 返回候选及历史使用统计usage，由Agent比较后选择相容组合，不随机决定主题、不按编号直接选第一个，也不机械禁用-01。完整新站必须比较至少3个Shop与至少3个About候选（不足3个则全看），依据真实区域、图文结构、内容长度和筛选需求作选择；在同样适合的候选中优先较少使用的不同布局。为Shop和About各保存候选、所选ID、布局理由与历史重复/例外理由到metadata_directory/website-builder.design.json，并用targets绑定实际来源以供后续统计；不得只换颜色或文案仍重复一套布局却声称多样。已有网站局部修改沿用原模板，用户要求重设计时才重新选型。批量 code 读取本轮1–12个 ids 的 Overview、HTML、JS、必要CSS，先看A/B区域表。模板ID只作来源追溯；代码实际注册/挂载统一改为 xxx-component，嵌套组件和脚本选择器同步映射，同一构造函数只注册一次。可用 targets 保存模板绑定到 metadata_directory/website-builder.templates.json，绑定不是成功条件，旧 audit 仅返回来源信息，无需调用。
 6. 首次建组件读 [创建规范](references/creation-contract.md)，按 app.js配置/数据SDK → 共享组件 → 页面推进。按模板所需新增 components/ 子组件，不限制为固定几个文件。APP负责持久化，SDK查询，app编排，不能覆盖APP。
-7. 修改/重生成前 website_project(action="begin",thread_id,project_id,paths=[目标页])。用 website_write 批量原子保存，fragment=true 自动装配HTML和共享依赖；完整HTML/JS/CSS用fragment=false。写入保留提交的源码格式，不强制多行、缩进或自动格式化。直接写文件也先begin，完成后finish。HTML尚未完整或本地依赖缺失时保持未完成/错误；JS/JSON做语法检查。
+7. 遵守 [逐页落盘与代码格式](references/code-output.md)：共享依赖准备后，每完成一个页面的完整代码就立即website_write到文件并检查ready，之后才开始下一页生成；禁止先生成全站代码再统一输出。接口支持一次提交多个HTML和共享依赖，已有代码/批量导入不受单页限制；新生成页面完成即写，不人为等待全站。其他未生成页面保持queued/未完成。当前页先begin，fragment=true自动装配HTML；完整HTML/JS/CSS用fragment=false。写入链路使用插件内置本地Prettier standalone格式化（不是npm包）：2空格、printWidth 100、JS单引号/分号、LF，HTML内联JS/CSS同样格式化。语法失败不覆盖旧文件，未完整HTML不被修复为ready。直接写HTML先begin后finish；结束任务前调用finish收尾（省略paths校验所有未完成页面），检查返回状态，无页面继续处于generating；有错误则修复或明确报告。write中提交的HTML和受依赖影响的页面自动校验，不受finalize_pages空数组抑制；通过后立即ready并在UI渲染，无需等待全站或对话结束。共享代码不要绕开website_write格式化链路。
 8. 完成后在375/768/1280px检查代表页的全站配色、版心/边距、卡片与背景色差、列数、轮播、图像、图标/圆角、标题/面包屑截断和真实交互。检查商品未知/空状态、筛选排序分页、购物车数量/行ID/数值金额、账户、表单/订单；失败判断 success===false。不要虚构审美/还原度分数，未实际验证时如实说明。
 
 ## 预览与共享状态
@@ -86,6 +94,16 @@ UI使用独立iframe，外链与页面跳转由预览层拦截，外部资源统
 ## 当前会话尚无新工具时
 
 使用同包 scripts/project.mjs，通过stdin接收JSON。action为open/plan/begin/write/finish/status/templates；数据准备为action:"commerce",mode:"prepare"或"validate"。脚本自动读真实CODEX_THREAD_ID，后续携带project_id；路径按本SKILL位置解析，不用旧机器路径。一次shell调用可顺序完成相关写入与finish，输出简短JSON，不回显全部源码。仅按需读 [CDN清单](references/cdn-links.json)，不预读全模板库。
+
+## 品牌、账户与商品展示补充规范
+
+以下仅作为生成提示与创作规范，不新增工具校验、自动扫描、评分、ready门禁或统一行为拦截器。生成页面/组件时按各自职责实现，不修改现有网站来批量追溯执行。
+
+1. **加购保持当前浏览位置**：加购物车成功后更新购物车数量/状态，可用全局Toast简短反馈；不必打开购物车，默认不自动展开cart抽屉、不跳cart页，也不把加购与打开购物车绑定。用户主动点击购物车入口时才打开所选购物车组件；用户明确要求其他交互时遵从。
+2. **注册四项资料**：注册表单必须提供用户名、邮箱、手机号、密码四个输入项，使用目标语言标签，按目标国家组织手机号输入；用户名不能被邮箱替代，手机号不能仅出现在结算地址表单。提交时按已有账户SDK字段接口传递和保存相应资料，异步注册及登录状态守卫继续执行。本条不新增插件端校验器，也不因这条规范批量修改SDK或现有表单。
+3. **域名决定默认身份**：以用户给定或当前站点实际域名为准，去掉协议、路径、端口与www前缀后，按实际主域提取品牌名称；不能把项目随机ID、临时预览域名或文件夹当品牌。以www.abcd.com为例，默认品牌为abcd，联系邮箱为support@abcd.com，版权署名使用abcd（如© 当前年份 abcd）；跨页标题、Header/Footer、About Us、联系及政策统一使用这组身份。用户指定品牌/邮箱/版权时优先沿用。Logo可基于品牌进行符合定位的字体与视觉延展，仍使用图片。多级域名后缀按实际主域识别，不机械取倒数第二段；缺少域名且无法从上下文推断时再询问。
+4. **商品详情图片不额外留边**：商品详情主图、缩略图及图片展示区域不叠加装饰性padding、空白框或额外左右外边距，尽量让图片直接贴合所属展示槽位；仍遵循整页最大内容宽度和多端布局，图文列间距保留必要层级，不为去留白裁掉商品主体，也不强制图片超出版心。源商品图片自带的空白不修改源文件。
+5. **面向顾客的正式网站文案**：采用自然、具体的品牌介绍、产品相关介绍、选购引导、账户/交易提示、联系及必要政策正文，呈现正式商店语境。不得在页面、弹窗、Toast、页脚、SEO或图片文字中加入“演示网站/示例商店”“仅本地浏览器运行”“账户/收藏/购物车/订单仅为模拟”“不构成销售、收款或配送”“品牌素材为示意”等开发/演示声明，任何语言均同；不要套用用户指出的葡语告示。实现限制、Mock来源与虚构联系资料标记放在交付说明或metadata_directory，不作为店铺内容插入。真实感来自一致的品牌与具体内容，不通过虚构经营历史、认证、评价、团队、物流/收款能力或服务承诺营造；政策仍客观说明实际数据处理，不把未实现功能写成已实现。非商品内容交给文案技能，商品介绍仍依商品数据/SDK，不扩大文案技能到编造商品描述或价格。
 
 ## 必备交易闭环与登录门槛
 
@@ -193,3 +211,9 @@ PC在统一最大内容宽度max-content内，Header Logo与导航、主视觉�
 单页业务逻辑（Shop筛选/排序/分页，详情tab/折叠/评论分页，登录表单等）写进对应HTML的script标签，通常放依赖和组件之后；不再为此创建js/pages/*.js、shop.js、product.js等单页逻辑文件。js/app.js只保留全站配置/共享初始化，SDK和复用WebComponents仍可独立文件；不要把单页代码塞到app.js污染全站。已有用户文件不擅自删除，修改时按授权范围迁入页面script并同步移除对应引用。
 
 商品详情的介绍/规格/评论过长时，依据选定布局使用折叠/展开、分页、分批加载或合适的标签页展示，避免整页被长内容无限拉长。保留完整数据与可达入口，不简单截断丢弃、不把溢出内容永久隐藏；展开/分页按钮有清晰文案、键盘支持与aria状态，移动端也可操作，切换商品/排序后重置正确位置和页码。单页逻辑内联，数据查询仍走SDK。
+
+## 商品渲染与分类字段
+
+导入商品的main_image/images保留源相对路径；卡片、详情图库、分类图、购物车展示等在设置img.src、srcset、background-image或HTML图片属性时，显式调用storeData.imageUrl(path)（或productImageUrl(path)）得到CDN URL，并按上下文安全转义。不修改productData/SDK返回对象，不在导入阶段批量替换图片地址，也不安装全局拦截自动改图。绝对HTTP(S)地址保持可用，原始JSON绝不写回。
+
+源品类>6时必须进行有意义的二次归类，不能机械取前5类+More。website_products先返回源分类摘要；如返回classification_required，就根据摘要整理覆盖全部源类的category_map，再调用导入。摘要分页用category_offset/category_limit和category_page.next_offset读取，不能直接读取原JSON。成功后SDK.get/list/filter/categories返回的category必须是二次归类，source_category仅保留来源追溯；分类菜单与Shop筛选统一读SDK.categories()，不重新展示原分类。通常5–6主类，源信息不足时使用真实可用类别并说明，不造空类。

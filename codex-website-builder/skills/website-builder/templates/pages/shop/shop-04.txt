@@ -7,7 +7,7 @@ Functional regions are annotated directly in the component code implementation v
 
 
 ### Dimensions & Responsiveness
-- Follows `content-container` with PC max content width 1200px centered.
+- Follows Tailwind centered container（`w-full max-w-content mx-auto px-4 lg:px-6`） with PC max content width 1200px centered.
 - Desktop (1024px+): 4 equal columns with optional 260px filter sidebar on left.
 - Mobile (under 768px): 2 compact columns with wrapped toolbar.
 
@@ -27,7 +27,7 @@ Functional regions are annotated directly in the component code implementation v
 
 ```html
 <section class="bg-surface font-sans text-content py-6 sm:py-8">
-  <div class="content-container">
+  <div class="w-full max-w-content mx-auto px-4 lg:px-6">
     <div class="flex flex-col lg:flex-row gap-6 lg:gap-8">
       <!-- Region: Filter Sidebar - Faceted search, categories, and price sliders -->
 

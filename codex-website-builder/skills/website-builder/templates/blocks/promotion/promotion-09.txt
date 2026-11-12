@@ -7,7 +7,7 @@ Functional regions are annotated directly in the component code implementation v
 
 
 ### Dimensions & Responsiveness
-- Follows `content-container` with max content width 1200px centered.
+- Follows Tailwind centered container（`w-full max-w-content mx-auto px-4 lg:px-6`） with max content width 1200px centered.
 - Desktop (1024px+): 2~3 column layout with 240px~360px card heights.
 - Mobile (under 768px): Single column vertical stacking.
 
@@ -25,7 +25,7 @@ Functional regions are annotated directly in the component code implementation v
 
 ```html
 <section class="bg-accent/30 py-4 font-sans text-content">
-  <div class="content-container">
+  <div class="w-full max-w-content mx-auto px-4 lg:px-6">
     <div class="relative group overflow-hidden rounded-2xl border border-outline/30 shadow-xs bg-slate-900">
       <!-- Background Picture Skeleton -->
       <div class="w-full aspect-[5/2] sm:aspect-[3/1] relative flex items-center justify-center overflow-hidden">

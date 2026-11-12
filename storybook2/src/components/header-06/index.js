@@ -185,7 +185,7 @@ export class Header extends HTMLElement {
     this.innerHTML = `
       <header class="w-full">
         <div data-region="top-bar" class="${topBarCls} py-2.5">
-          <div class="content-container flex items-center justify-between gap-4">
+          <div class="w-full max-w-content mx-auto px-4 lg:px-6 flex items-center justify-between gap-4">
             <div data-region="logo">
               <div role="button" tabindex="0" data-action="nav" data-nav-id="home" class="flex items-center rounded-lg ${focusRing}">
                 <span class="relative flex h-10 w-28 items-center justify-center overflow-hidden rounded-xl bg-accent"><span class="select-none text-xs font-semibold tracking-widest text-muted">LOGO</span></span>
@@ -226,7 +226,7 @@ export class Header extends HTMLElement {
         </div>
 
         <div data-region="menu-bar" class="${subBarCls} py-2.5 hidden md:block">
-          <div class="content-container">
+          <div class="w-full max-w-content mx-auto px-4 lg:px-6">
             <nav class="flex items-center justify-center gap-8">
               <div role="button" tabindex="0" data-action="nav" data-nav-id="home" class="rounded-sm py-1 font-medium transition-colors hover:text-primary ${focusRing}"><span class="block h-[0.75em] w-12 rounded-sm bg-accent"></span></div>
               <div role="button" tabindex="0" data-action="nav" data-nav-id="shop" class="rounded-sm py-1 font-medium transition-colors hover:text-primary ${focusRing}"><span class="block h-[0.75em] w-10 rounded-sm bg-accent"></span></div>

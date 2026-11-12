@@ -203,13 +203,13 @@ export class Header extends HTMLElement {
 
     this.innerHTML = `
       <div class="bg-primary text-on-secondary py-2">
-        <div class="content-container flex items-center justify-center text-center">
+        <div class="w-full max-w-content mx-auto px-4 lg:px-6 flex items-center justify-center text-center">
           <span class="block h-[0.75em] w-72 max-w-full rounded-sm bg-on-secondary/30"></span>
         </div>
       </div>
 
       <header class="${headerBg} font-sans">
-        <div data-region="header-content" class="content-container">
+        <div data-region="header-content" class="w-full max-w-content mx-auto px-4 lg:px-6">
           <div class="flex h-16 items-center justify-between gap-4">
             <div class="shrink-0">
               <div role="button" tabindex="0" data-destination="home" class="flex h-10 items-center rounded-sm ${focusRing}">

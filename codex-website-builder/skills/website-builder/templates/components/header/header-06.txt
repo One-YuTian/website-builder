@@ -7,7 +7,7 @@ Functional regions are annotated directly in the component code implementation v
 
 
 ### Dimensions & Responsiveness
-- Desktop (1024px+): Fixed height 68px~76px, follows global `content-container` with max content width 1200px centered, supports sticky positioning during page scrolling.
+- Desktop (1024px+): Fixed height 68px~76px, follows global Tailwind centered container（`w-full max-w-content mx-auto px-4 lg:px-6`） with max content width 1200px centered, supports sticky positioning during page scrolling.
 - Tablet & Mobile (under 1024px): Horizontal category list collapses, main bar retains Logo, search, and action icons; hamburger button triggers 320px smooth slide-out drawer.
 
 ### Attributes & Props
@@ -33,7 +33,7 @@ Functional regions are annotated directly in the component code implementation v
   <!-- Region: Top Announcement Bar - Promotional broadcast and quick links -->
 
   <div data-region="top-bar" class="bg-primary font-sans text-white py-2.5">
-    <div class="content-container flex items-center justify-between gap-4">
+    <div class="w-full max-w-content mx-auto px-4 lg:px-6 flex items-center justify-between gap-4">
       <!-- Region: Brand Identity (Logo) - Neutral LOGO placeholder with link to home -->
 
       <div data-region="logo">
@@ -83,7 +83,7 @@ Functional regions are annotated directly in the component code implementation v
 
 
   <div data-region="menu-bar" class="bg-surface text-content shadow-xs border-b border-outline/20 py-2.5 hidden md:block">
-    <div class="content-container">
+    <div class="w-full max-w-content mx-auto px-4 lg:px-6">
       <nav class="flex items-center justify-center gap-8">
         <span class="block h-[0.75em] w-12 rounded-sm bg-accent"></span>
         <span class="block h-[0.75em] w-10 rounded-sm bg-accent"></span>
@@ -285,7 +285,7 @@ class Header extends HTMLElement {
     this.innerHTML = `
       <header class="w-full">
         <div data-region="top-bar" class="${topBarCls} py-2.5">
-          <div class="content-container flex items-center justify-between gap-4">
+          <div class="w-full max-w-content mx-auto px-4 lg:px-6 flex items-center justify-between gap-4">
             <div data-region="logo">
               <div role="button" tabindex="0" data-action="nav" data-nav-id="home" class="flex items-center rounded-lg ${focusRing}">
                 <span class="relative flex h-10 w-28 items-center justify-center overflow-hidden rounded-xl bg-accent"><span class="select-none text-xs font-semibold tracking-widest text-muted">LOGO</span></span>
@@ -326,7 +326,7 @@ class Header extends HTMLElement {
         </div>
 
         <div data-region="menu-bar" class="${subBarCls} py-2.5 hidden md:block">
-          <div class="content-container">
+          <div class="w-full max-w-content mx-auto px-4 lg:px-6">
             <nav class="flex items-center justify-center gap-8">
               <div role="button" tabindex="0" data-action="nav" data-nav-id="home" class="rounded-sm py-1 font-medium transition-colors hover:text-primary ${focusRing}"><span class="block h-[0.75em] w-12 rounded-sm bg-accent"></span></div>
               <div role="button" tabindex="0" data-action="nav" data-nav-id="shop" class="rounded-sm py-1 font-medium transition-colors hover:text-primary ${focusRing}"><span class="block h-[0.75em] w-10 rounded-sm bg-accent"></span></div>

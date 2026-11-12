@@ -65,4 +65,24 @@ $(function() {
     $('.tab-panel').addClass('hidden');
     $('#' + tab + '-panel').removeClass('hidden');
   });
+
+  // Collapsible sections (Description, Specifications, Reviews)
+  $('.collapsible-toggle').on('click', function() {
+    const $toggle = $(this);
+    const $container = $toggle.closest('.relative');
+    const $content = $container.find('.collapsible-content');
+    const $fade = $container.find('.collapsible-fade');
+    const $chevron = $toggle.find('span');
+    const isExpanded = $content.hasClass('max-h-none');
+
+    if (isExpanded) {
+      $content.removeClass('max-h-none overflow-visible');
+      $fade.removeClass('opacity-0 pointer-events-none');
+      $chevron.removeClass('-rotate-135').addClass('rotate-45');
+    } else {
+      $content.addClass('max-h-none overflow-visible');
+      $fade.addClass('opacity-0 pointer-events-none');
+      $chevron.removeClass('rotate-45').addClass('-rotate-135');
+    }
+  });
 });

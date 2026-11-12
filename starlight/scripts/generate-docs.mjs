@@ -94,7 +94,9 @@ function escapeMdxText(text) {
 
 function cleanOverview(text) {
   return text.replace(/^(?:## Overview|# [^\n]+)\s*/i, '').replace(/^## Overview\s*/i, '')
-    .replace(/### (?:Layout[^\n]*|区域[^\n]*)\n[\s\S]*?(?=\n### |$)/gi, '').trim();
+    .replaceAll('`content-container`', 'Tailwind container (`w-full max-w-content mx-auto px-4 lg:px-6`)')
+    .replaceAll('content-container', 'w-full max-w-content mx-auto px-4 lg:px-6')
+    .trim();
 }
 
 // Card overview helper (Pure English for English tab / LLM doc, clean Chinese for Chinese tab)
@@ -145,6 +147,7 @@ for (const entry of catalog) {
 
   let previewHeight = '420px';
   if (entry.id === 'header-04') previewHeight = '480px';
+  else if (entry.id === 'cart-01') previewHeight = '650px';
   else if (entry.id.startsWith('header-')) previewHeight = '320px';
   else if (entry.id.startsWith('card-')) previewHeight = '560px';
   else if (entry.id.startsWith('footer-')) previewHeight = '400px';

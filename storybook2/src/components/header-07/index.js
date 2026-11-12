@@ -140,7 +140,7 @@ export class Header extends HTMLElement {
 
     this.innerHTML = `
       <header class="${headerCls} py-3">
-        <div class="content-container flex items-center justify-between gap-4">
+        <div class="w-full max-w-content mx-auto px-4 lg:px-6 flex items-center justify-between gap-4">
           <nav data-region="desktop-nav" class="hidden md:flex items-center gap-6 flex-1">
             <div role="button" tabindex="0" data-action="nav" data-nav-id="home" class="py-1 font-medium transition-colors ${navLinkCls} ${focusRing}"><span class="block h-[0.75em] w-12 rounded-sm bg-accent"></span></div>
             <div role="button" tabindex="0" data-action="nav" data-nav-id="shop" class="py-1 font-medium transition-colors ${navLinkCls} ${focusRing}"><span class="block h-[0.75em] w-10 rounded-sm bg-accent"></span></div>

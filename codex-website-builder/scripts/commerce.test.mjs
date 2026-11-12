@@ -13,6 +13,7 @@ const sandbox = await mkdtemp(join(tmpdir(), 'website-commerce-'));
 const config = JSON.parse(await readFile('mcp.json', 'utf8')).mcpServers['website-builder'];
 const env = {
   ...process.env, WEBSITE_BUILDER_PREVIEW_VENDOR_FIXTURES:'1', ...config.env,
+  WEBSITE_BUILDER_ROOT:sandbox,
   WEBSITE_BUILDER_PROJECT_ROOT: join(sandbox, 'project'),
   WEBSITE_BUILDER_SKILL_ROOT: resolve('skills/website-builder'),
 };
@@ -137,8 +138,9 @@ try {
   assert.ok(html.indexOf('js/sdk.js') < html.indexOf('js/data.js'));
   assert.ok(html.indexOf('window.SDK.init') < html.indexOf('components/header.js'));
   assert.ok(!html.includes('js/commerce-config.js'));
-  assert.equal(await readFile(join(state.directory, 'js/app.js'), 'utf8'), `window.commerceConfig=${JSON.stringify(prepared.config_defaults)};window.app={init(){return true;}};`, 'source formatting is preserved');
-  assert.equal(await readFile(join(state.directory, 'css/theme.css'), 'utf8'), 'body{color:#123;background:#fff}h1{font-size:2rem}');
+  const formattedApp=await readFile(join(state.directory,'js/app.js'),'utf8');
+  assert.ok(formattedApp.includes('window.commerceConfig = ') && formattedApp.includes('\n  init() {'),'local Prettier formats JS');
+  assert.equal(await readFile(join(state.directory,'css/theme.css'),'utf8'),'body {\n  color: #123;\n  background: #fff;\n}\nh1 {\n  font-size: 2rem;\n}\n');
   const cli = spawn(process.execPath, ['skills/website-builder/scripts/project.mjs'], {
     env: { ...env, CODEX_THREAD_ID: state.thread_id }, stdio: ['pipe', 'pipe', 'pipe'],
   });
@@ -170,7 +172,7 @@ try {
   await shop.locator('header-component').filter({ hasText: 'products:24 cart:2' }).waitFor();
   assert.equal(await page.locator('iframe[title="shop.html"]').getAttribute('src'), shopSrc);
   assert.deepEqual(errors, []);
-  const report = { result: 'PASS', checks: ['mock schema, stable IDs, filters and numeric price mapping', 'existing data/SDK/config preservation', 'API skips mock and computed data is never overwritten', 'async demo accounts without plaintext passwords', 'account-specific cart/wishlist isolation', 'coupon, order snapshot and cancellation', 'source formatting preserved and syntax errors preserve old files', 'new commerce configuration in app.js only', 'SDK init before component registration', 'cross-iframe business state refresh without iframe reload'], testRoot: sandbox };
+  const report = { result: 'PASS', checks: ['mock schema, stable IDs, filters and numeric price mapping', 'existing data/SDK/config preservation', 'API skips mock and computed data is never overwritten', 'async demo accounts without plaintext passwords', 'account-specific cart/wishlist isolation', 'coupon, order snapshot and cancellation', 'local Prettier formatting and syntax errors preserve old files', 'new commerce configuration in app.js only', 'SDK init before component registration', 'cross-iframe business state refresh without iframe reload'], testRoot: sandbox };
   await mkdir('artifacts', { recursive: true });
   await writeFile('artifacts/commerce-verification.json', JSON.stringify(report, null, 2));
   console.log(JSON.stringify(report, null, 2));

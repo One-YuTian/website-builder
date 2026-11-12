@@ -188,7 +188,7 @@ export class Header extends HTMLElement {
 
     this.innerHTML = `
       <header class="${headerCls} py-3">
-        <div class="content-container flex items-center justify-between gap-6">
+        <div class="w-full max-w-content mx-auto px-4 lg:px-6 flex items-center justify-between gap-6">
           <div data-region="logo" class="flex-shrink-0">
             <div role="button" tabindex="0" data-action="nav" data-nav-id="home" class="flex items-center rounded-lg ${focusRing}">
               <span class="relative flex h-10 w-28 items-center justify-center overflow-hidden rounded-xl bg-accent"><span class="select-none text-xs font-semibold tracking-widest text-muted">LOGO</span></span>

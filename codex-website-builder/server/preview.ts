@@ -159,11 +159,14 @@ export async function compileProjectPage(root:string,directory:string,path:strin
 }
 
 export async function createPreview(ui: string, configuredRoot: string, defaultDirectory = 'www.noventrad.com', projectSync?: (input:{since?:string;known?:Record<string,number>;waitMs?:number})=>Promise<unknown>) {
-  const root = await realpath(configuredRoot);
+  // The reference library is optional. Resolve it only when explicitly read;
+  // an unavailable drive must not prevent project tools or the canvas starting.
+  const referenceRoot = () => realpath(configuredRoot);
   const vendor = fileURLToPath(new URL('../vendor/', import.meta.url));
   const assets: Record<string, string> = JSON.parse(await readFile(join(vendor, 'manifest.json'), 'utf8'));
   const siteKeys = new Set<string>();
   async function readWebsite(directory: string, includeHtml = true) {
+    const root = await referenceRoot();
     const manifest = await scanSite(root, directory, 'https://website-builder.invalid');
     if (!includeHtml) return manifest;
     const site = await contained(root, directory);
@@ -172,6 +175,7 @@ export async function createPreview(ui: string, configuredRoot: string, defaultD
     return manifest;
   }
   async function readPage(directory: string, path: string) {
+    const root = await referenceRoot();
     const manifest = await readWebsite(directory, false);
     if (!manifest.pages.some(page => page.path === path)) throw new Error('页面不在识别结果内');
     const site = await contained(root, directory);
@@ -195,6 +199,7 @@ export async function createPreview(ui: string, configuredRoot: string, defaultD
       }
       if (route === '/canvas') { res.setHeader('Content-Type', mime['.html']); res.setHeader('Content-Security-Policy', "frame-src blob: data:; object-src 'none'"); res.end(render()); return; }
       if (route === '/api/site') {
+        const root = await referenceRoot();
         const directory = url.searchParams.get('directory') || defaultDirectory;
         const manifest = url.searchParams.get('embedded') === '1' ? await readWebsite(directory) : await scanSite(root, directory, origin + prefix);
         siteKeys.add(manifest.directory === '.' ? '' : manifest.directory);
@@ -213,6 +218,7 @@ export async function createPreview(ui: string, configuredRoot: string, defaultD
         res.setHeader('Content-Type', type); res.end(await readFile(path)); return;
       }
       if (route.startsWith('/files/')) {
+        const root = await referenceRoot();
         const requested = decodeURIComponent(route.slice('/files/'.length));
         if (requested.includes('\\') || requested.includes('\0') || requested.split('/').some(part => part.startsWith('.'))) throw new Error('不可读取此路径');
         const path = await contained(root, requested);

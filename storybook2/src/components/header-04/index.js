@@ -245,12 +245,12 @@ export class Header extends HTMLElement {
 
     this.innerHTML = `
       <div class="bg-primary text-white py-2">
-        <div class="content-container flex items-center justify-center text-center">
+        <div class="w-full max-w-content mx-auto px-4 lg:px-6 flex items-center justify-center text-center">
           <span class="block h-[0.75em] w-64 max-w-full rounded-sm bg-white/40"></span>
         </div>
       </div>
       <header class="${headerCls}">
-        <div data-region="header-content" class="content-container">
+        <div data-region="header-content" class="w-full max-w-content mx-auto px-4 lg:px-6">
           <div class="flex h-16 items-center justify-between gap-4">
             <div class="shrink-0">
               <div role="button" tabindex="0" data-destination="home" class="flex h-10 items-center rounded-sm ${focusRing}">
@@ -291,7 +291,7 @@ export class Header extends HTMLElement {
           </div>
         </div>
         <div class="${subBarCls} relative">
-          <div class="content-container hidden md:flex items-center justify-between h-11">
+          <div class="w-full max-w-content mx-auto px-4 lg:px-6 hidden md:flex items-center justify-between h-11">
             <div class="group/cats flex items-center h-full">
               <button type="button" data-action="toggle-categories" class="flex items-center gap-2 text-xs font-semibold uppercase tracking-wider ${catBtnCls} py-2.5 ${focusRing}">
                 <span class="block size-3 rounded-full bg-accent"></span>
@@ -299,7 +299,7 @@ export class Header extends HTMLElement {
                 <span class="block size-2 rounded-full bg-accent/60 transition-transform group-hover/cats:rotate-180"></span>
               </button>
               <div data-region="categories-panel" class="absolute left-0 right-0 top-full z-50 hidden group-hover/cats:block w-full border-b border-outline/30 bg-surface py-6 text-content shadow-2xl">
-                <div class="content-container">
+                <div class="w-full max-w-content mx-auto px-4 lg:px-6">
                   <div class="grid grid-cols-6 gap-4">
                     <!-- Category image: Pick a relevant product image from this category -->
                     <div role="button" tabindex="0" data-category="category-01" class="flex flex-col items-center justify-center p-3 rounded-xl border border-outline/40 hover:border-primary transition-colors text-center group/cat">

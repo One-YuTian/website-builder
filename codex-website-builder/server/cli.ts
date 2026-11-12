@@ -6,6 +6,7 @@ import { readTemplates } from './templates';
 import { prepareCommerce } from './commerce';
 import { screenshotPage } from './screenshot';
 import { importProducts } from './product-import';
+import { formatSource } from './format-source';
 
 try {
   let text='';for await(const chunk of process.stdin)text+=chunk;
@@ -28,6 +29,7 @@ try {
       }
     }else console.log(JSON.stringify(await readTemplates(root,{...input,usage:input.mode==='select'?await store.templateUsage():undefined})));process.exit(0);
   }
+  if(input.action==='format') { console.log(JSON.stringify({content:await formatSource(input.path,input.content)}));process.exit(0); }
   if(!thread)throw new Error('当前环境没有真实 CODEX_THREAD_ID；请提供 thread_id');
   if(input.action==='import_products') {
     console.log(JSON.stringify(await importProducts(store,skillRoot,{...input,action:input.mode||'import',thread_id:thread})));process.exit(0);

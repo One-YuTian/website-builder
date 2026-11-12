@@ -1,12 +1,17 @@
+<!-- Region: Top Announcement Bar - Top promotional broadcast bar.
+     Configurable with three primary message formats:
+     1) Brand Tagline / Value Proposition (e.g., "Official Flagship Store | 100% Authentic Guarantee | Free Global Delivery");
+     2) Promotional Discount Notice (e.g., "Storewide Sale: Up to 50% OFF for a limited time");
+     3) Limited-Time Countdown Timer (e.g., "Special promo ends in 04:15:32 - Target countdown to 23:59:59 today"). -->
 <div class="bg-primary text-white py-2 font-sans">
-  <div class="content-container flex items-center justify-center text-center">
+  <div class="w-full max-w-content mx-auto px-4 lg:px-6 flex items-center justify-center text-center">
     <span class="block h-[0.75em] w-64 max-w-full rounded-sm bg-white/40"></span>
   </div>
 </div>
 <header class="bg-secondary text-on-secondary shadow-md font-sans">
   <!-- Region: Header Main Bar - Brand logo, search, navigation, and user actions -->
 
-  <div data-region="header-content" class="content-container">
+  <div data-region="header-content" class="w-full max-w-content mx-auto px-4 lg:px-6">
     <div class="flex h-16 items-center justify-between gap-4">
       <div class="shrink-0">
         <div role="button" tabindex="0" data-destination="home" class="flex h-10 items-center rounded-sm focus-visible:outline-2 focus-visible:outline-offset-4 focus-visible:outline-primary">
@@ -51,7 +56,7 @@
     </div>
   </div>
   <div class="border-t border-on-secondary/10 bg-secondary/90 text-on-secondary relative">
-    <div class="content-container hidden md:flex items-center justify-between h-11">
+    <div class="w-full max-w-content mx-auto px-4 lg:px-6 hidden md:flex items-center justify-between h-11">
       <div class="group/cats flex items-center h-full">
         <button type="button" data-action="toggle-categories" class="flex items-center gap-2 text-xs font-semibold uppercase tracking-wider text-on-secondary hover:text-white/80 py-2.5 focus-visible:outline-2 focus-visible:outline-offset-4 focus-visible:outline-primary">
           <span class="block size-3 rounded-full bg-accent"></span>
@@ -61,7 +66,7 @@
         <!-- Region: Categories Dropdown - Category links panel -->
 
         <div data-region="categories-panel" class="absolute left-0 right-0 top-full z-50 hidden group-hover/cats:block w-full border-b border-outline/30 bg-surface py-6 text-content shadow-2xl">
-          <div class="content-container">
+          <div class="w-full max-w-content mx-auto px-4 lg:px-6">
             <div class="grid grid-cols-6 gap-4">
               <!-- Category 01 (Category image: Pick a relevant product image from this category) -->
               <div role="button" tabindex="0" data-category="category-01" class="flex flex-col items-center justify-center p-3 rounded-xl border border-outline/40 hover:border-primary transition-colors text-center group/cat">

@@ -7,7 +7,7 @@ Functional regions are annotated directly in the component code implementation v
 
 
 ### Dimensions & Responsiveness
-- Follows `content-container` with max content width 1200px centered.
+- Follows Tailwind centered container（`w-full max-w-content mx-auto px-4 lg:px-6`） with max content width 1200px centered.
 - Desktop (1024px+): 4~6 column circular or square cards evenly distributed.
 - Mobile (under 768px): Adapts to 3 compact columns or horizontal swipe slider.
 
@@ -25,7 +25,7 @@ Functional regions are annotated directly in the component code implementation v
 
 ```html
 <section class="pb-12 md:pb-16 bg-surface font-sans text-content">
-  <div class="content-container">
+  <div class="w-full max-w-content mx-auto px-4 lg:px-6">
     <div class="h-8 md:h-10 w-44 bg-accent rounded-sm mx-auto mb-8 md:mb-12"></div>
     <!-- Row 1: 3 items -->
     <!-- Region: Category Entrance Cards Grid -->

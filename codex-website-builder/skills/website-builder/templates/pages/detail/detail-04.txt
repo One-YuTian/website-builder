@@ -7,7 +7,7 @@ Functional regions are annotated directly in the component code implementation v
 
 
 ### Dimensions & Responsiveness
-- Follows `content-container` with PC max content width 1200px centered.
+- Follows Tailwind centered container（`w-full max-w-content mx-auto px-4 lg:px-6`） with PC max content width 1200px centered.
 - Desktop (1024px+): 1:1 two-column layout (gallery ~550px, summary ~550px).
 - Mobile (under 1024px): Adapts to single vertical column with swipeable gallery.
 
@@ -26,7 +26,7 @@ Functional regions are annotated directly in the component code implementation v
 
 ```html
 <section class="bg-surface font-sans text-content py-6 sm:py-8">
-  <div class="content-container">
+  <div class="w-full max-w-content mx-auto px-4 lg:px-6">
     <!-- Region: Breadcrumb Navigation - Page hierarchy and navigation trail -->
 
     <nav data-region="breadcrumb" class="mb-6">
@@ -65,6 +65,7 @@ Functional regions are annotated directly in the component code implementation v
           </span>
         </div>
 
+        <!-- Region: Thumbnail Carousel - Must use Swiper to power the thumbnail slide carousel navigation -->
         <div class="swiper thumbnails-swiper w-full overflow-hidden pb-1">
           <div class="swiper-wrapper" id="thumbnails-list">
             <div class="swiper-slide !w-auto">
@@ -228,110 +229,154 @@ Functional regions are annotated directly in the component code implementation v
       </div>
 
       <div class="tab-content">
+        <!-- Region: Product Description - Collapsible section when text exceeds max height.
+             CRITICAL: When product description content exceeds maximum height (e.g. max-h-56 / 224px or line-clamp-6),
+             display a bottom gradient fade overlay and an expand/collapse toggle button.
+             Toggling expands the section to full height (removes max-h, hides fade overlay, flips chevron),
+             and collapsing restores the original clamped height with fade overlay, preserving all formatting. -->
         <div id="description-panel" class="tab-panel">
-          <div class="bg-surface rounded-xl border border-outline/50 p-6 space-y-4">
-            <span class="block h-[1em] w-36 rounded-sm bg-accent text-lg font-bold"></span>
-            <div class="space-y-2">
-              <span class="block h-[0.75em] w-full rounded-sm bg-accent"></span>
-              <span class="block h-[0.75em] w-full rounded-sm bg-accent"></span>
-              <span class="block h-[0.75em] w-4/5 rounded-sm bg-accent"></span>
-            </div>
-            <div class="pt-2 grid grid-cols-1 sm:grid-cols-2 gap-4">
-              <div class="p-4 rounded-lg bg-accent/20 border border-outline/30 space-y-2">
-                <span class="block h-[0.75em] w-24 rounded-sm bg-accent font-semibold"></span>
+          <div class="relative bg-surface rounded-xl border border-outline/50 overflow-hidden shadow-xs">
+            <div class="collapsible-content max-h-56 overflow-hidden p-6 space-y-4 transition-all duration-300">
+              <span class="block h-[1em] w-36 rounded-sm bg-accent text-lg font-bold"></span>
+              <div class="space-y-2">
+                <span class="block h-[0.75em] w-full rounded-sm bg-accent"></span>
+                <span class="block h-[0.75em] w-full rounded-sm bg-accent"></span>
+                <span class="block h-[0.75em] w-4/5 rounded-sm bg-accent"></span>
                 <span class="block h-[0.75em] w-full rounded-sm bg-accent"></span>
               </div>
-              <div class="p-4 rounded-lg bg-accent/20 border border-outline/30 space-y-2">
-                <span class="block h-[0.75em] w-24 rounded-sm bg-accent font-semibold"></span>
-                <span class="block h-[0.75em] w-full rounded-sm bg-accent"></span>
+              <div class="pt-2 grid grid-cols-1 sm:grid-cols-2 gap-4">
+                <div class="p-4 rounded-lg bg-accent/20 border border-outline/30 space-y-2">
+                  <span class="block h-[0.75em] w-24 rounded-sm bg-accent font-semibold"></span>
+                  <span class="block h-[0.75em] w-full rounded-sm bg-accent"></span>
+                </div>
+                <div class="p-4 rounded-lg bg-accent/20 border border-outline/30 space-y-2">
+                  <span class="block h-[0.75em] w-24 rounded-sm bg-accent font-semibold"></span>
+                  <span class="block h-[0.75em] w-full rounded-sm bg-accent"></span>
+                </div>
               </div>
             </div>
+            <div class="collapsible-fade absolute bottom-0 left-0 right-0 h-14 bg-gradient-to-t from-surface to-transparent pointer-events-none transition-opacity duration-300"></div>
+            <button type="button" class="collapsible-toggle absolute bottom-0 left-0 right-0 flex items-center justify-center py-1.5 text-muted hover:text-content transition-all duration-300 cursor-pointer bg-surface/90 backdrop-blur-xs border-t border-outline/20" aria-label="Toggle description expansion">
+              <span class="inline-block size-2 rotate-45 border-r-2 border-b-2 border-current transition-transform duration-300"></span>
+            </button>
           </div>
         </div>
 
+        <!-- Region: Product Specifications - Collapsible table when specifications exceed max height.
+             CRITICAL: When specifications exceed maximum height (e.g. max-h-56 / 224px or >4 rows),
+             display a bottom gradient fade overlay and an expand/collapse toggle button.
+             Toggling expands to full height (removes max-h, hides fade overlay, flips chevron),
+             and collapsing restores original max-h with fade overlay, preserving table formatting. -->
         <div id="specifications-panel" class="tab-panel hidden">
-          <div class="bg-surface rounded-xl border border-outline/50 overflow-hidden shadow-xs">
-            <div class="divide-y divide-outline/30">
-              <div class="grid grid-cols-3 p-4 bg-accent/20">
-                <span class="block h-[0.75em] w-20 rounded-sm bg-accent"></span>
-                <span class="col-span-2 block h-[0.75em] w-36 rounded-sm bg-accent"></span>
-              </div>
-              <div class="grid grid-cols-3 p-4">
-                <span class="block h-[0.75em] w-24 rounded-sm bg-accent"></span>
-                <span class="col-span-2 block h-[0.75em] w-48 rounded-sm bg-accent"></span>
-              </div>
-              <div class="grid grid-cols-3 p-4 bg-accent/20">
-                <span class="block h-[0.75em] w-20 rounded-sm bg-accent"></span>
-                <span class="col-span-2 block h-[0.75em] w-32 rounded-sm bg-accent"></span>
+          <div class="relative bg-surface rounded-xl border border-outline/50 overflow-hidden shadow-xs">
+            <div class="collapsible-content max-h-56 overflow-hidden transition-all duration-300">
+              <div class="divide-y divide-outline/30">
+                <div class="grid grid-cols-3 p-4 bg-accent/20">
+                  <span class="block h-[0.75em] w-20 rounded-sm bg-accent"></span>
+                  <span class="col-span-2 block h-[0.75em] w-36 rounded-sm bg-accent"></span>
+                </div>
+                <div class="grid grid-cols-3 p-4">
+                  <span class="block h-[0.75em] w-24 rounded-sm bg-accent"></span>
+                  <span class="col-span-2 block h-[0.75em] w-48 rounded-sm bg-accent"></span>
+                </div>
+                <div class="grid grid-cols-3 p-4 bg-accent/20">
+                  <span class="block h-[0.75em] w-20 rounded-sm bg-accent"></span>
+                  <span class="col-span-2 block h-[0.75em] w-32 rounded-sm bg-accent"></span>
+                </div>
+                <div class="grid grid-cols-3 p-4">
+                  <span class="block h-[0.75em] w-28 rounded-sm bg-accent"></span>
+                  <span class="col-span-2 block h-[0.75em] w-40 rounded-sm bg-accent"></span>
+                </div>
+                <div class="grid grid-cols-3 p-4 bg-accent/20">
+                  <span class="block h-[0.75em] w-22 rounded-sm bg-accent"></span>
+                  <span class="col-span-2 block h-[0.75em] w-44 rounded-sm bg-accent"></span>
+                </div>
               </div>
             </div>
+            <div class="collapsible-fade absolute bottom-0 left-0 right-0 h-14 bg-gradient-to-t from-surface to-transparent pointer-events-none transition-opacity duration-300"></div>
+            <button type="button" class="collapsible-toggle absolute bottom-0 left-0 right-0 flex items-center justify-center py-1.5 text-muted hover:text-content transition-all duration-300 cursor-pointer bg-surface/90 backdrop-blur-xs border-t border-outline/20" aria-label="Toggle specifications expansion">
+              <span class="inline-block size-2 rotate-45 border-r-2 border-b-2 border-current transition-transform duration-300"></span>
+            </button>
           </div>
         </div>
 
-        <div id="reviews-panel" class="tab-panel hidden space-y-4">
-          <div class="p-4 sm:p-5 rounded-xl border border-outline/50 bg-surface space-y-3">
-            <div class="flex items-center justify-between">
-              <div class="flex items-center gap-3">
-                <span class="size-9 rounded-full bg-accent block shrink-0"></span>
-                <div class="space-y-1">
-                  <span class="block h-[0.75em] w-20 rounded-sm bg-accent"></span>
-                  <div class="flex items-center gap-1">
-                    <span class="block size-2.5 rounded-full bg-primary"></span>
-                    <span class="block size-2.5 rounded-full bg-primary"></span>
-                    <span class="block size-2.5 rounded-full bg-primary"></span>
-                    <span class="block size-2.5 rounded-full bg-primary"></span>
-                    <span class="block size-2.5 rounded-full bg-primary"></span>
+        <!-- Region: Customer Reviews - Collapsible review list when reviews exceed max height.
+             CRITICAL: When customer reviews list exceeds maximum height (e.g. max-h-72 / 288px or >2 reviews),
+             display a bottom gradient fade overlay and an expand/collapse toggle button.
+             Toggling expands to full height (removes max-h, hides fade overlay, flips chevron),
+             and collapsing restores original max-h with fade overlay, preserving all review styles. -->
+        <div id="reviews-panel" class="tab-panel hidden">
+          <div class="relative overflow-hidden">
+            <div class="collapsible-content max-h-72 overflow-hidden space-y-4 transition-all duration-300">
+              <div class="p-4 sm:p-5 rounded-xl border border-outline/50 bg-surface space-y-3">
+                <div class="flex items-center justify-between">
+                  <div class="flex items-center gap-3">
+                    <span class="size-9 rounded-full bg-accent block shrink-0"></span>
+                    <div class="space-y-1">
+                      <span class="block h-[0.75em] w-20 rounded-sm bg-accent"></span>
+                      <div class="flex items-center gap-1">
+                        <span class="block size-2.5 rounded-full bg-primary"></span>
+                        <span class="block size-2.5 rounded-full bg-primary"></span>
+                        <span class="block size-2.5 rounded-full bg-primary"></span>
+                        <span class="block size-2.5 rounded-full bg-primary"></span>
+                        <span class="block size-2.5 rounded-full bg-primary"></span>
+                      </div>
+                    </div>
                   </div>
+                  <span class="block h-[0.75em] w-14 rounded-sm bg-accent"></span>
+                </div>
+                <div class="space-y-1.5 pt-1">
+                  <span class="block h-[0.75em] w-full rounded-sm bg-accent"></span>
+                  <span class="block h-[0.75em] w-4/5 rounded-sm bg-accent"></span>
+                </div>
+
+                <!-- Seller Reply -->
+                <div class="mt-3 ml-4 sm:ml-6 pl-3 sm:pl-4 border-l-2 border-primary/40 space-y-2 bg-accent/10 py-2.5 px-3 rounded-r-lg">
+                  <div class="flex items-center justify-between">
+                    <span class="block h-4 w-16 rounded-xs bg-primary/20"></span>
+                    <span class="block h-[0.65em] w-12 rounded-xs bg-accent"></span>
+                  </div>
+                  <span class="block h-[0.75em] w-full max-w-md rounded-xs bg-accent"></span>
+                  <span class="block h-[0.75em] w-2/3 rounded-xs bg-accent"></span>
                 </div>
               </div>
-              <span class="block h-[0.75em] w-14 rounded-sm bg-accent"></span>
-            </div>
-            <div class="space-y-1.5 pt-1">
-              <span class="block h-[0.75em] w-full rounded-sm bg-accent"></span>
-              <span class="block h-[0.75em] w-4/5 rounded-sm bg-accent"></span>
-            </div>
 
-            <!-- Seller Reply -->
-            <div class="mt-3 ml-4 sm:ml-6 pl-3 sm:pl-4 border-l-2 border-primary/40 space-y-2 bg-accent/10 py-2.5 px-3 rounded-r-lg">
-              <div class="flex items-center justify-between">
-                <span class="block h-4 w-16 rounded-xs bg-primary/20"></span>
-                <span class="block h-[0.65em] w-12 rounded-xs bg-accent"></span>
-              </div>
-              <span class="block h-[0.75em] w-full max-w-md rounded-xs bg-accent"></span>
-              <span class="block h-[0.75em] w-2/3 rounded-xs bg-accent"></span>
-            </div>
-          </div>
-
-          <div class="p-4 sm:p-5 rounded-xl border border-outline/50 bg-surface space-y-3">
-            <div class="flex items-center justify-between">
-              <div class="flex items-center gap-3">
-                <span class="size-9 rounded-full bg-accent block shrink-0"></span>
-                <div class="space-y-1">
-                  <span class="block h-[0.75em] w-24 rounded-sm bg-accent"></span>
-                  <div class="flex items-center gap-1">
-                    <span class="block size-2.5 rounded-full bg-primary"></span>
-                    <span class="block size-2.5 rounded-full bg-primary"></span>
-                    <span class="block size-2.5 rounded-full bg-primary"></span>
-                    <span class="block size-2.5 rounded-full bg-primary"></span>
-                    <span class="block size-2.5 rounded-full bg-muted/40"></span>
+              <div class="p-4 sm:p-5 rounded-xl border border-outline/50 bg-surface space-y-3">
+                <div class="flex items-center justify-between">
+                  <div class="flex items-center gap-3">
+                    <span class="size-9 rounded-full bg-accent block shrink-0"></span>
+                    <div class="space-y-1">
+                      <span class="block h-[0.75em] w-24 rounded-sm bg-accent"></span>
+                      <div class="flex items-center gap-1">
+                        <span class="block size-2.5 rounded-full bg-primary"></span>
+                        <span class="block size-2.5 rounded-full bg-primary"></span>
+                        <span class="block size-2.5 rounded-full bg-primary"></span>
+                        <span class="block size-2.5 rounded-full bg-primary"></span>
+                        <span class="block size-2.5 rounded-full bg-muted/40"></span>
+                      </div>
+                    </div>
                   </div>
+                  <span class="block h-[0.75em] w-14 rounded-sm bg-accent"></span>
+                </div>
+                <div class="space-y-1.5 pt-1">
+                  <span class="block h-[0.75em] w-full rounded-sm bg-accent"></span>
+                  <span class="block h-[0.75em] w-3/5 rounded-sm bg-accent"></span>
+                </div>
+
+                <!-- Seller Reply -->
+                <div class="mt-3 ml-4 sm:ml-6 pl-3 sm:pl-4 border-l-2 border-primary/40 space-y-2 bg-accent/10 py-2.5 px-3 rounded-r-lg">
+                  <div class="flex items-center justify-between">
+                    <span class="block h-4 w-16 rounded-xs bg-primary/20"></span>
+                    <span class="block h-[0.65em] w-12 rounded-xs bg-accent"></span>
+                  </div>
+                  <span class="block h-[0.75em] w-full max-w-sm rounded-xs bg-accent"></span>
                 </div>
               </div>
-              <span class="block h-[0.75em] w-14 rounded-sm bg-accent"></span>
             </div>
-            <div class="space-y-1.5 pt-1">
-              <span class="block h-[0.75em] w-full rounded-sm bg-accent"></span>
-              <span class="block h-[0.75em] w-3/5 rounded-sm bg-accent"></span>
-            </div>
-
-            <!-- Seller Reply -->
-            <div class="mt-3 ml-4 sm:ml-6 pl-3 sm:pl-4 border-l-2 border-primary/40 space-y-2 bg-accent/10 py-2.5 px-3 rounded-r-lg">
-              <div class="flex items-center justify-between">
-                <span class="block h-4 w-16 rounded-xs bg-primary/20"></span>
-                <span class="block h-[0.65em] w-12 rounded-xs bg-accent"></span>
-              </div>
-              <span class="block h-[0.75em] w-full max-w-sm rounded-xs bg-accent"></span>
-            </div>
+            <div class="collapsible-fade absolute bottom-0 left-0 right-0 h-14 bg-gradient-to-t from-surface to-transparent pointer-events-none transition-opacity duration-300"></div>
+            <button type="button" class="collapsible-toggle absolute bottom-0 left-0 right-0 flex items-center justify-center py-1.5 text-muted hover:text-content transition-all duration-300 cursor-pointer bg-surface/90 backdrop-blur-xs border-t border-outline/20" aria-label="Toggle reviews expansion">
+              <span class="inline-block size-2 rotate-45 border-r-2 border-b-2 border-current transition-transform duration-300"></span>
+            </button>
           </div>
         </div>
       </div>
@@ -425,6 +470,26 @@ $(function() {
 
     $('.tab-panel').addClass('hidden');
     $('#' + tab + '-panel').removeClass('hidden');
+  });
+
+  // Collapsible sections (Description, Specifications, Reviews)
+  $('.collapsible-toggle').on('click', function() {
+    const $toggle = $(this);
+    const $container = $toggle.closest('.relative');
+    const $content = $container.find('.collapsible-content');
+    const $fade = $container.find('.collapsible-fade');
+    const $chevron = $toggle.find('span');
+    const isExpanded = $content.hasClass('max-h-none');
+
+    if (isExpanded) {
+      $content.removeClass('max-h-none overflow-visible');
+      $fade.removeClass('opacity-0 pointer-events-none');
+      $chevron.removeClass('-rotate-135').addClass('rotate-45');
+    } else {
+      $content.addClass('max-h-none overflow-visible');
+      $fade.addClass('opacity-0 pointer-events-none');
+      $chevron.removeClass('rotate-45').addClass('-rotate-135');
+    }
   });
 });
 ```

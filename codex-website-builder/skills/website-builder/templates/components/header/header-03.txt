@@ -7,7 +7,7 @@ Functional regions are annotated directly in the component code implementation v
 
 
 ### Dimensions & Responsiveness
-- Desktop (1024px+): Fixed height 68px~76px, follows global `content-container` with max content width 1200px centered, supports sticky positioning during page scrolling.
+- Desktop (1024px+): Fixed height 68px~76px, follows global Tailwind centered container（`w-full max-w-content mx-auto px-4 lg:px-6`） with max content width 1200px centered, supports sticky positioning during page scrolling.
 - Tablet & Mobile (under 1024px): Horizontal category list collapses, main bar retains Logo, search, and action icons; hamburger button triggers 320px smooth slide-out drawer.
 
 ### Attributes & Props
@@ -32,7 +32,7 @@ Functional regions are annotated directly in the component code implementation v
 <header class="bg-secondary text-on-secondary font-sans">
   <!-- Region: Header Main Bar - Brand logo, search, navigation, and user actions -->
 
-  <div data-region="header-content" class="content-container">
+  <div data-region="header-content" class="w-full max-w-content mx-auto px-4 lg:px-6">
     <div class="flex h-16 items-center justify-between gap-4">
       <div class="shrink-0">
         <div role="button" tabindex="0" data-destination="home" class="flex h-10 items-center rounded-sm focus-visible:outline-2 focus-visible:outline-offset-4 focus-visible:outline-primary">
@@ -283,7 +283,7 @@ class Header extends HTMLElement {
 
     this.innerHTML = `
       <header class="${headerCls}">
-        <div data-region="header-content" class="content-container">
+        <div data-region="header-content" class="w-full max-w-content mx-auto px-4 lg:px-6">
           <div class="flex h-16 items-center justify-between gap-4">
             <div class="shrink-0">
               <div role="button" tabindex="0" data-destination="home" class="flex h-10 items-center rounded-sm ${focusRing}">

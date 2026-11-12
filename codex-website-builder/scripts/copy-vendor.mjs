@@ -8,3 +8,6 @@ const require = createRequire(import.meta.url);
 const testRequire = createRequire(require.resolve('@playwright/test'));
 const playwrightRequire = createRequire(testRequire.resolve('playwright'));
 await cp(dirname(playwrightRequire.resolve('playwright-core/package.json')), new URL('../dist/runtime/playwright-core/', import.meta.url), {recursive:true});
+
+// Prettier is vendored standalone files, never an npm runtime dependency.
+await cp(new URL('../assets/prettier/', import.meta.url), new URL('../dist/runtime/prettier/', import.meta.url), { recursive: true });

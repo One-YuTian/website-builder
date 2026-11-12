@@ -2,13 +2,13 @@ import { mkdir, readFile, rename, writeFile, open, unlink, realpath, stat, readd
 import { randomBytes, randomUUID, createHash } from 'node:crypto';
 import { dirname, isAbsolute, join, relative, resolve, sep } from 'node:path';
 import { assemblePage, injectSharedUI } from './assemble';
-import { validateSource } from './validate-source';
+import { formatSource } from './format-source';
 import { fileURLToPath } from 'node:url';
 import { regionMarkers, type TemplateBinding } from './template-source';
 import { readTemplates } from './templates';
 
 export type PageState = 'queued'|'generating'|'ready'|'error';
-export interface ProjectPage { path: string; title: string; status: PageState; version: number; error?: string }
+export interface ProjectPage { path: string; title: string; status: PageState; version: number; error?: string; generationHash?: string }
 export interface WebsiteProject { id: string; name: string; brief: string; language: string; revision: string; pages: ProjectPage[]; updatedAt: string }
 export interface ProjectView { project: WebsiteProject; threadId: string; directory: string; metadataDirectory: string; revision: string }
 export const DEFAULT_PAGES = ['index','shop','product','wishlist','checkout','login','register','about','contact','terms','privacy','return'].map(name=>({path:`${name}.html`,title:name}));
@@ -101,7 +101,27 @@ export class ProjectStore {
     return this.update(threadId,async({project})=>{for(const page of pages){this.path(page.path,true);const current=project.pages.find(item=>item.path===page.path);if(current)current.title=page.title;else project.pages.push({...page,status:'queued',version:0});}});
   }
   async begin(threadId:string,paths:string[]) {
-    return this.update(threadId,async({project})=>{for(const path of paths){this.path(path,true);const page=project.pages.find(item=>item.path===path);if(!page)throw new Error(`页面未在计划内：${path}`);page.status='generating';page.version++;delete page.error;}});
+    return this.update(threadId,async({project})=>{for(const path of paths){this.path(path,true);const page=project.pages.find(item=>item.path===path);if(!page)throw new Error(`页面未在计划内：${path}`);page.generationHash=await this.sourceHash(project.id,path);page.status='generating';page.version++;delete page.error;}});
+  }
+  private async sourceHash(id:string,path:string) {
+    const source=await readFile(await this.target(id,path)).catch(error=>{if(error.code==='ENOENT')return null;throw error;});
+    return source?createHash('sha256').update(source).digest('hex'):'';
+  }
+  // Direct-file generation may finish without a tool callback. Only a complete,
+  // changed document can leave generating; begin must not redisplay the old file.
+  async reconcile(threadId?:string) {
+    const view=await this.get(threadId);if(!view)return null;
+    const candidates=async(current:ProjectView)=>{
+      const paths:string[]=[];
+      for(const page of current.project.pages){
+        if(page.status!=='generating'||page.generationHash===undefined)continue;
+        const source=await readFile(await this.target(current.project.id,page.path),'utf8').catch(()=>null);
+        if(source&&/<html\b/i.test(source)&&/<body\b/i.test(source)&&/<\/body>/i.test(source)&&/<\/html>\s*$/i.test(source)&&createHash('sha256').update(source).digest('hex')!==page.generationHash)paths.push(page.path);
+      }
+      return paths;
+    };
+    if(!(await candidates(view)).length)return view;
+    return this.update(view.threadId,async current=>{await this.complete(current,await candidates(current));});
   }
   async bindTemplates(threadId: string, bindings: TemplateBinding[]) {
     for (const binding of bindings) {
@@ -131,19 +151,19 @@ export class ProjectStore {
     for(const path of paths){const page=view.project.pages.find(item=>item.path===path);if(!page)throw new Error(`页面未在计划内：${path}`);
       try {
         const file=await this.target(view.project.id,path);let html=await readFile(file,'utf8');
-        if(!/<html\b/i.test(html)||!/<\/html>\s*$/i.test(html)||!/<body\b/i.test(html))throw new Error('HTML 尚未完整输出');
+        if(!/<html\b/i.test(html)||!/<\/html>\s*$/i.test(html)||!/<body\b/i.test(html)||!/<\/body>/i.test(html))throw new Error('HTML 尚未完整输出');
         const toastPath=await this.target(view.project.id,'components/toast.js');
-        if(!await stat(toastPath).catch(()=>null))await atomic(toastPath,await readFile(join(this.skillRoot,'assets/ui/toast.js'),'utf8'));
-        const enhanced=injectSharedUI(html,path);if(enhanced!==html){await atomic(file,enhanced);html=enhanced;}
+        if(!await stat(toastPath).catch(()=>null))await atomic(toastPath,await formatSource('components/toast.js',await readFile(join(this.skillRoot,'assets/ui/toast.js'),'utf8')));
+        const enhanced=await formatSource(path,injectSharedUI(html,path));if(enhanced!==html){await atomic(file,enhanced);html=enhanced;}
         for(const match of html.matchAll(/\b(?:src|href)\s*=\s*["']([^"']+\.(?:js|css))(?:\?[^"']*)?["']/gi)){
           if(/^(?:[a-z]+:|\/\/)/i.test(match[1]))continue;
           const relativePath=relative(view.directory,resolve(dirname(file),match[1])).split(sep).join('/');await stat(await this.target(view.project.id,relativePath));
         }
-        page.status='ready';page.version++;delete page.error;
-      } catch(error){page.status='error';page.error=(error as Error).message;page.version++;}
+        page.status='ready';page.version++;delete page.error;delete page.generationHash;
+      } catch(error){page.status='error';page.error=(error as Error).message;page.version++;delete page.generationHash;}
     }
   }
-  async finish(threadId:string,paths:string[]) {return this.update(threadId,async view=>{await this.complete(view,paths);});}
+  async finish(threadId:string,paths:string[]) {return this.update(threadId,async view=>{await this.complete(view,paths.length?paths:view.project.pages.filter(page=>page.status!=='ready').map(page=>page.path));});}
   private async usesFiles(view:ProjectView,page:string,changed:Set<string>) {
     const document=resolve(view.directory,page),visited=new Set<string>();
     const visit=async(file:string):Promise<boolean>=>{
@@ -170,30 +190,41 @@ export class ProjectStore {
       if(/(?:^|\/)(?:tmp|temp|artifacts|test-results|playwright-report)(?:\/|$)|\.(?:tmp|bak|log|psd)$/i.test(file.path))throw new Error('网站输出目录是生产目录；临时文件、报告与源素材请保存到 metadata_directory');
     });
     return this.update(threadId,async view=>{
+      for(const path of finalizePages||[])if(!view.project.pages.some(page=>page.path===path))throw new Error(`页面未在计划内：${path}`);
       for(const file of files)if(/\.html?$/i.test(file.path)&&!view.project.pages.some(page=>page.path===file.path))throw new Error(`请先将页面加入计划：${file.path}`);
       for(const file of files){const page=view.project.pages.find(page=>page.path===file.path);if(page&&file.title)page.title=file.title;}
       const hasFile=async(path:string)=>files.some(file=>file.path===path)||!!await stat(join(view.directory,path)).catch(()=>null);
       const commerce=await hasFile('js/ec-sdk.js')&&await hasFile('js/sdk.js');
       const commerceConfig=commerce&&await hasFile('js/commerce-config.js');
       const cart = !await hasFile('components/cart.js') ? 'none' : view.project.pages.some(page=>/(^|\/)cart\.html?$/i.test(page.path)) ? 'page' : 'drawer';
-      const output=files.map(file=>({...file,content:validateSource(file.path,/\.html?$/i.test(file.path)?injectSharedUI(file.fragment?assemblePage(file.content,file.title||view.project.pages.find(page=>page.path===file.path)?.title||view.project.name,view.project.language,{commerce,commerceConfig,cart}):file.content,file.path):file.content)}));
-      if(output.some(file=>/\.html?$/i.test(file.path)&&/<toast-component\b/i.test(file.content))&&!await hasFile('components/toast.js'))output.push({path:'components/toast.js',content:await readFile(join(this.skillRoot,'assets/ui/toast.js'),'utf8')});
+      const output=await Promise.all(files.map(async file=>({...file,content:await formatSource(file.path,/\.html?$/i.test(file.path)?injectSharedUI(file.fragment?assemblePage(file.content,file.title||view.project.pages.find(page=>page.path===file.path)?.title||view.project.name,view.project.language,{commerce,commerceConfig,cart}):file.content,file.path):file.content)}))).catch(async error=>{
+        const submitted=new Set(files.map(file=>file.path));
+        for(const page of view.project.pages)if(page.status!=='ready'&&(submitted.has(page.path)||page.status==='generating'&&await this.usesFiles(view,page.path,submitted))){page.status='error';page.error=`代码格式/语法校验失败：${(error as Error).message}`;page.version++;delete page.generationHash;}
+        await this.save(view.project);throw error;
+      });
+      if(output.some(file=>/\.html?$/i.test(file.path)&&/<toast-component\b/i.test(file.content))&&!await hasFile('components/toast.js'))output.push({path:'components/toast.js',content:await formatSource('components/toast.js',await readFile(join(this.skillRoot,'assets/ui/toast.js'),'utf8'))});
       const changed=new Set<string>();
       for(const file of output){const target=await this.target(view.project.id,file.path);if(await readFile(target,'utf8').catch(()=>null)!==file.content)changed.add(file.path);}
       const affected:ProjectPage[]=[];
       for(const page of view.project.pages)if(changed.has(page.path)||await this.usesFiles(view,page.path,changed))affected.push(page);
-      const previouslyReady=affected.filter(page=>page.status==='ready').map(page=>page.path);
-      for(const page of affected){page.status='generating';page.version++;delete page.error;}
+      for(const page of affected){page.status='generating';page.version++;delete page.error;delete page.generationHash;}
       // Publish generating before any write; an old finished page must disappear immediately.
       await this.save(view.project);
-      for(const file of output)if(changed.has(file.path))await atomic(await this.target(view.project.id,file.path),file.content);
-      const complete=[...new Set([...(finalizePages||files.filter(file=>/\.html?$/i.test(file.path)&&view.project.pages.find(page=>page.path===file.path)?.status!=='ready').map(file=>file.path)),...previouslyReady])];
+      try {
+        for(const file of output)if(changed.has(file.path))await atomic(await this.target(view.project.id,file.path),file.content);
+      } catch(error) {
+        for(const page of affected){page.status='error';page.error=`文件写入失败：${(error as Error).message}`;page.version++;}
+        await this.save(view.project);throw error;
+      }
+      // Explicit finalize paths are additive. Even [] cannot suppress validation
+      // of submitted HTML or pages whose missing dependencies just arrived.
+      const complete=[...new Set([...(finalizePages||[]),...files.filter(file=>/\.html?$/i.test(file.path)).map(file=>file.path),...affected.map(page=>page.path)])];
       await this.complete(view,complete);
     });
   }
   async wait(since:string,threadId?:string,waitMs=20000) {
-    const deadline=Date.now()+Math.min(Math.max(waitMs,0),20000);let view=await this.get(threadId);
-    while((view?.revision||'none')===since&&Date.now()<deadline){await pause(Math.min(250,deadline-Date.now()));view=await this.get(threadId);}
+    const deadline=Date.now()+Math.min(Math.max(waitMs,0),20000);let view=await this.reconcile(threadId);
+    while((view?.revision||'none')===since&&Date.now()<deadline){await pause(Math.min(250,deadline-Date.now()));view=await this.reconcile(threadId);}
     return view;
   }
 }

@@ -7,7 +7,7 @@ Functional regions are annotated directly in the component code implementation v
 
 
 ### Dimensions & Responsiveness
-- Follows `content-container` with max content width 1200px centered.
+- Follows Tailwind centered container（`w-full max-w-content mx-auto px-4 lg:px-6`） with max content width 1200px centered.
 - Desktop (1024px+): 2~3 column layout with 240px~360px card heights.
 - Mobile (under 768px): Single column vertical stacking.
 
@@ -37,7 +37,7 @@ Functional regions are annotated directly in the component code implementation v
 
     <!-- Overlay Content -->
     <div class="absolute inset-0 flex items-center z-10 pointer-events-none">
-      <div class="content-container flex items-center">
+      <div class="w-full max-w-content mx-auto px-4 lg:px-6 flex items-center">
         <div class="max-w-[200px] sm:max-w-[320px] md:max-w-[420px] flex flex-col items-start select-none">
           <div class="h-6 sm:h-8 md:h-10 w-44 sm:w-64 bg-content/85 rounded-xs mb-2"></div>
           <div class="h-6 sm:h-8 md:h-10 w-36 sm:w-52 bg-primary rounded-xs mb-4"></div>

@@ -7,7 +7,7 @@ Functional regions are annotated directly in the component code implementation v
 
 
 ### Dimensions & Responsiveness
-- Follows global design system, outer container uses `content-container` with PC max content width 1200px centered.
+- Follows global design system, outer container uses Tailwind centered container（`w-full max-w-content mx-auto px-4 lg:px-6`） with PC max content width 1200px centered.
 - Desktop (1024px+): 3 to 4 column grid layout side by side with 32px~48px gutter spacing.
 - Mobile (under 1024px): Adapts to single-column vertical flow with generous spacing between columns, ensuring touch targets are at least 44px high.
 
@@ -25,7 +25,7 @@ Functional regions are annotated directly in the component code implementation v
 
 ```html
 <footer class="border-t border-outline bg-surface text-content font-sans">
-  <div class="content-container pb-4 pt-8">
+  <div class="w-full max-w-content mx-auto px-4 lg:px-6 pb-4 pt-8">
     <!-- Region: Footer Columns - Navigation links, customer service, and company info -->
 
     <div data-region="footer-columns" class="grid grid-cols-1 gap-8 pb-8 md:grid-cols-3">
@@ -112,7 +112,7 @@ class Footer extends HTMLElement {
 
     this.innerHTML = `
       <footer class="border-t border-outline bg-surface text-content font-sans">
-        <div class="content-container pb-4 pt-8">
+        <div class="w-full max-w-content mx-auto px-4 lg:px-6 pb-4 pt-8">
           <div data-region="footer-columns" class="grid grid-cols-1 gap-8 pb-8 md:grid-cols-3">
             <div class="min-w-0 space-y-5">
               <span class="relative flex h-10 w-36 items-center justify-center overflow-hidden rounded-xl bg-accent select-none text-xs font-semibold tracking-widest text-muted">LOGO</span>

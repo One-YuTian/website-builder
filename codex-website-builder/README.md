@@ -106,7 +106,7 @@ website_commerce 一次准备 mock 商品数据、缺失的 SDK 与配置，已�
 
 本包 sdk.js 保留旧实现的查询语义，具体限制已写入契约；ec-sdk.js 是适配版：账户注册/登录/更新为异步方法，使用 PBKDF2 而非明文密码，公开 user 不含凭据，购物车/收藏按项目与账户隔离。真实后端仍需独立接入。任何已有用户项目 SDK 均不自动覆盖。
 
-website_write 保留提交源码的格式，不要求多行或固定缩进，也不自动排版。JS/JSON 语法错误不会覆盖旧文件；未完成 HTML 不会被修复为已完成页面。fragment 装配检测已准备的 SDK 与配置，在数据初始化后注册组件。数据、业务状态、应用编排分别为 productData、SDK、APP 与 app，避免互相覆盖。
+website_write支持多HTML批量提交；新生成页面完成即落盘，不等待全站。提交页面和受依赖影响页面校验通过即ready供UI渲染，finalize_pages仅追加校验目标；使用内置本地Prettier standalone统一格式，不依赖npm包。JS/JSON 语法错误不会覆盖旧文件；未完成 HTML 不会被修复为已完成页面。fragment 装配检测已准备的 SDK 与配置，在数据初始化后注册组件。数据、业务状态、应用编排分别为 productData、SDK、APP 与 app，避免互相覆盖。
 
 pnpm test:commerce 覆盖数据契约/稳定 ID/保护已有数据/API 跳过、源码格式保留、SDK 加载顺序、账户隔离、订单快照，以及跨 iframe 业务状态局部刷新。它只使用临时项目，不修改原 Agent 或用户站点。
 ## 模板复用与 Tailwind 指导（0.6.4）
@@ -145,7 +145,7 @@ website_templates select 现在返回按类别分组的未排序候选（categor
 
 ## demo5 SKILL 迁移（0.6.5）
 
-迁入用户指定 demo5 的模板槽位/响应式、AI自主配色与卡片色差、唯一 xxx-component 注册、按需子组件、购物车互斥，以及图标、圆角、统一版心、卡片等高和面包屑截断要求。新生成不臆造模板外区域，不编造数据或商业承诺。两份旧参考及其引用已移除；源码格式不再作要求，写入链路和CLI也移除格式化能力。来源文件哈希及迁入内容记录在技能 source.json，模板本身及来源目录保持原样。
+迁入用户指定 demo5 的模板槽位/响应式、AI自主配色与卡片色差、唯一 xxx-component 注册、按需子组件、购物车互斥，以及图标、圆角、统一版心、卡片等高和面包屑截断要求。新生成不臆造模板外区域，不编造数据或商业承诺。两份旧参考及其引用已移除；旧版曾移除格式化能力；0.7.5起按用户要求改为本地Prettier统一输出。来源文件哈希及迁入内容记录在技能 source.json，模板本身及来源目录保持原样。
 
 
 ## 0.7.0 生成能力
@@ -197,3 +197,32 @@ CDN规范避免jsDelivr/jsdeliver及其镜像；PC在max-content内减少Logo与
 新增import-products技能、website_products工具与skills/import-products/scripts/import-products.mjs。用户提供JSON时通过工具/脚本解析适配，再实际运行可信sdk.js统计商品/分类；inspect不写入，import只输出运行商品视图和缺失SDK，源JSON不修改。支持字段映射、locale数值价格、www.mreceix.com→https://cdn.mreceix.com/相对图拼接，保留绝对图URL；主要分类通常5–6个，过多采用聚合/More，过少用真实子分类/类型/品牌二次分组，不能凑空类。完整筛选关系在window.catalogGroups；工具只返回有限摘要/样本。导入无法识别时返回Mock工作流指令，由主技能接续Mock生成，原运行数据不被坏导入覆盖。商品图允许作为Banner/分类场景图的引用素材，不因此改写商品目录图。
 
 更多说明见CHANGELOG-0.7.4.md。新工具在重载/安装新版本后可用，旧会话可用脚本。
+
+
+## 0.7.5 逐页输出、渲染图URL与二次分类
+
+每完成一个页面就立即格式化并写文件，再生成下一页；0.7.5曾限制单次一个HTML，现已在0.7.6撤回，当前支持多HTML批量提交及共享依赖。格式配置见skills/website-builder/references/code-output.md和assets/prettier/options.json：本地Prettier standalone 3.6.2、2空格、printWidth 100、JS单引号与分号、LF，内联JS/CSS也格式化；JSON双引号层级缩进。仅插件持有格式化器和解析器文件/许可证，不增加npm依赖、不发布到网站。CLI format及旧hook也使用同一路径。
+
+导入商品图片main_image/images保留相对路径，渲染时显式storeData.imageUrl(path)/productImageUrl(path)拼接CDN，SDK查询或导入不改图地址，源JSON也不变。类别过多不再取前5类+More：先读取工具分类摘要，提交完整category_map进行二次归类（或使用一致parent_category）；classification_required表示继续分类，不是Mock。成功后SDK的category/categories/filter使用新类，source_category留原类追溯，分类菜单和筛选统一使用新类。分类摘要支持分页，不需要读取整份源JSON。
+
+更多变更和验证见CHANGELOG-0.7.5.md。新版本需重新安装/重载；既有网站不会自动批量重写。
+
+## 0.7.6 批量提交与即时就绪同步
+
+撤回单次只能提交一个HTML的接口限制，支持已有代码批量导入；新生成页面依然完成即写入。提交HTML和受依赖变更影响的页面自动校验，finalize_pages仅追加目标，空数组不再阻止就绪。通过即ready供UI同步，不等待全部页面或会话结束。
+
+begin记录原文件指纹，跨进程同步可识别直接写出的新完整HTML并校验，保留旧文件时继续等待。finish省略paths会校验全部未完成页；任务结束前须收尾并核对状态。格式/语法或磁盘写入错误会明确记录，避免残留生成中。单页预览传输异常不阻断其他页面更新，失败页自动重试。
+
+变更和验证见CHANGELOG-0.7.6.md。需重新安装/重载插件启用；不改写现有网站。
+
+## 0.7.7 启动目录容错
+
+修复mcp.json误指向不存在的F盘目录导致启动退出的问题：本机配置恢复到Q盘仓库既有website参考目录与插件project目录，不搬迁或重建已有项目。参考库改为按需realpath校验；缺失参考库不再阻断MCP注册、画布、项目生成与同步，显式读取缺失目录仍返回错误，不扩大读取边界。
+
+新增test:startup：使用实际mcp.json路径进行握手/工具发现/画布资源验证，并隔离验证参考库缺失时项目生成与UI同步仍可用。此检查纳入prepare:plugin。更多见CHANGELOG-0.7.7.md。
+
+## 0.7.8 五项生成规范（仅文档）
+
+主SKILL及相关文案/图片/展示参考新增：加购默认不打开购物车；注册提供用户名/邮箱/手机号/密码；品牌、support邮箱和版权默认依网站域名统一；商品详情图片不额外留边；店铺采用正式品牌语境，不输出演示/模拟/本地运行告示。实现限制和虚构联系资料说明保留在交付说明或metadata_directory，不能为追求真实感编造经营事实、能力或承诺。
+
+这些仅约束后续生成提示，不增加校验器、扫描、ready门禁、统一接口或运行时代码，不批量修改已生成网站。同步修正文案技能旧有example.com邮箱与页面演示联系提示要求。见CHANGELOG-0.7.8.md。

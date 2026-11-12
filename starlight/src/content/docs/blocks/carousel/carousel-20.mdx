@@ -29,7 +29,7 @@ Functional regions are annotated directly in the component code implementation v
 
 
 ### Dimensions & Responsiveness
-- Follows global design system, outer container uses `content-container` with PC max content width 1200px centered.
+- Follows global design system, outer container uses Tailwind centered container（`w-full max-w-content mx-auto px-4 lg:px-6`） with PC max content width 1200px centered.
 - Desktop (1024px+): Fixed height 500px~550px with stable text overlay alignment.
 - Mobile (under 1024px): Adapts to 16:9 or 50:21 aspect ratio with smooth swipe touch gestures.
 
@@ -49,9 +49,12 @@ Functional regions are annotated directly in the component code implementation v
 
 首页全宽主视觉轮播展示板块，支持多画幅等比缩放、触控拖拽滑动、自动轮播定时器、底部圆点分页指示器与左右切换箭头，桌面端与移动端按断点提供专用画幅适配。
 
+### 区域划分
+本组件各功能区域通过英文注释直接标注于代码实现中。
+
 
 ### 尺寸与响应式
-- 遵循全局设计规范，外层容器采用 `content-container`，PC 最大内容宽度 1200px 居中对齐。
+- 遵循全局设计规范，外层容器采用 Tailwind 居中容器（`w-full max-w-content mx-auto px-4 lg:px-6`），PC 最大内容宽度 1200px 居中对齐。
 - 桌面端（1024px+）：高度固定为 500px~550px，图文浮层保持稳定对齐。
 - 移动端（小于 1024px）：自适应收缩为 16:9 或 50:21 高宽比，支持手势横滑平滑翻页。
 

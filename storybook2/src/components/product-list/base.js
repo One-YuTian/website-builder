@@ -16,7 +16,7 @@ export class ProductListBase extends ViewElement {
     return matches('lg') ? 10 : matches('md') ? 8 : matches('sm') ? 9 : 6;
   }
   render() {
-    this.innerHTML = `<section class="bg-accent/20 py-5 pb-8 font-sans text-content"><div class="content-container"><div data-region="section-title" class="mb-5 text-xl md:text-2xl">${placeholder('title', '200px', '', 'heading')}</div><div data-region="product-grid" class="grid grid-cols-2 gap-3 sm:grid-cols-3 md:grid-cols-4 md:gap-4 lg:grid-cols-5"></div></div></section>`;
+    this.innerHTML = `<section class="bg-accent/20 py-5 pb-8 font-sans text-content"><div class="w-full max-w-content mx-auto px-4 lg:px-6"><div data-region="section-title" class="mb-5 text-xl md:text-2xl">${placeholder('title', '200px', '', 'heading')}</div><div data-region="product-grid" class="grid grid-cols-2 gap-3 sm:grid-cols-3 md:grid-cols-4 md:gap-4 lg:grid-cols-5"></div></div></section>`;
     const grid = this.querySelector('[data-region="product-grid"]');
     [...this._products].sort((a, b) => b.rating - a.rating).slice(0, this.visibleLimit()).forEach(product => {
       const card = this.ownerDocument.createElement('card-01');

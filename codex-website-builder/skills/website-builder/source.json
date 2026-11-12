@@ -15,12 +15,12 @@
     "Deterministic mock generation from compact brand samples",
     "Reusable commerce SDK assets without repeated source reads",
     "Verified implementation-based SDK contract",
-    "Source formatting preserved; JS/JSON syntax validated without reformatting",
+    "Local vendored Prettier with syntax-checked, single-page code output",
     "New commerce configuration consolidated into app.js"
   ],
   "sourceSkillSha256": "bdf83d787cc5f81e00e8b41b172575db9362d5b9222ef057b83eb8452f433b3a",
   "templatesSha256": "dfe6df0a09fa5aaf8457535c177de1c5a360d1f882c5b2a9a8ef26b5c41b9c59",
-  "defaultSkillBytes": 34856,
+  "defaultSkillBytes": 43779,
   "originalSkillBytes": 15371,
   "agentSource": {
     "directory": "Q:/Projects/域名DEMO/2026年8月03日_demo1",
@@ -133,7 +133,7 @@
       "cart page/drawer mutual exclusion for new output",
       "icon/radius/gutter/card/breadcrumb visual rules"
     ],
-    "formatting": "No forced source formatting; preserve submitted source"
+    "formatting": "Superseded by release075: local vendored Prettier output formatting"
   },
   "originalReference": {
     "file": "references/original-skill.md",
@@ -293,5 +293,69 @@
       "Toast lifecycle and removed Overlay interception",
       "project/template/commerce/features/CDN/large-preview regressions"
     ]
+  },
+  "contentWidthPolicy": {
+    "minPx": 1200,
+    "maxPx": 1550,
+    "integer": true,
+    "selection": "crypto.randomInt(1200,1551), once per new website",
+    "persistence": "metadata_directory/website-builder.design.json maxContentWidthPx",
+    "theme": "app.js maxWidth.content; exact REM conversion at actual PC root size",
+    "reuse": "same site and existing-site edits retain recorded/current width; explicit user width overrides"
+  },
+  "release075": {
+    "version": "0.7.5",
+    "pageCommit": "at most one HTML per write; immediately persist finished page before generating next; shared dependency batches allowed",
+    "formatting": {
+      "engine": "vendored Prettier standalone 3.6.2",
+      "files": "assets/prettier -> dist/runtime/prettier",
+      "dependency": "no npm package/install or runtime download",
+      "options": "assets/prettier/options.json",
+      "scope": "HTML plus inline scripts/styles, JS/MJS/CSS/JSON; finish and hook too; unfinished HTML not repaired"
+    },
+    "images": "raw relative paths preserved in productData and SDK; explicit render-time storeData.imageUrl/productImageUrl; source JSON hash unchanged",
+    "taxonomy": "source_category traces source; runtime category and SDK.categories/filter expose secondary mapping; no automatic top5+More; classification_required -> semantic category_map retry; paged summaries",
+    "validation": [
+      "per-page write with queued subsequent page and multi-HTML rejection",
+      "local formatting/idempotence/inline syntax protection and isolated offline bundle",
+      "raw relative image fields unchanged before/after render helper",
+      "SDK secondary categories + filters and source taxonomy provenance",
+      "category summary pagination and source hashes",
+      "core project/template/commerce/UI/features/large-preview/CDN regressions"
+    ]
+  },
+  "release076": {
+    "version": "0.7.6",
+    "pageCommit": "supports multiple HTML files per request and batch imports; newly generated pages are written as soon as complete",
+    "readiness": "submitted HTML and dependency-affected pages always validate; finalize_pages is additive; successful pages immediately sync to UI",
+    "recovery": "begin records source fingerprint; sync reconciles changed complete direct-file output without resurfacing old HTML; finish without paths validates unfinished pages; syntax/write errors settle status",
+    "ui": "per-page decoding failures retry without blocking successful page updates; snapshot changes reset load acknowledgement",
+    "validation": [
+      "multi-HTML import with finalize_pages empty",
+      "per-page ready before other pages finish",
+      "dependency-only recovery",
+      "cross-process direct-file completion and stale-file protection",
+      "finish without paths settles UI",
+      "syntax failure leaves error instead of generating",
+      "large preview chunk retry",
+      "project and commerce regressions"
+    ]
+  },
+  "release078": {
+    "version": "0.7.8",
+    "scope": "instruction-only; no new validators, readiness gates, runtime behaviors or retroactive site rewrites",
+    "rules": [
+      "adding products does not automatically open cart",
+      "registration provides username/email/phone/password",
+      "domain-derived default brand/support email/copyright",
+      "no extra padding around product detail images",
+      "customer-facing store copy uses consistent brand language without demo/local-simulation disclaimers; do not fabricate facts or promises"
+    ],
+    "relatedSkills": [
+      "website-builder",
+      "website-copywriter",
+      "website-image-generator"
+    ],
+    "verification": "manual documentation consistency review; no new rule validation code or tests"
   }
 }

@@ -14,9 +14,13 @@ export function createDocument(items, runtimes, { contentWidth = themeConfig.con
     const markup = tags.map((tag, variant) => {
       const elementId = `${id}-${variant}`;
       properties.push({ id: elementId, values: item.props || {} });
-      const isCard = tag.startsWith('card-') || tag.startsWith('flashcard-') || tag.startsWith('cart-');
-      const node = `<${tag} id="${elementId}"${isCard ? ` class="block w-full ${tag.startsWith('cart-') ? 'max-w-md' : (item.props?.viewMode === 'list' ? 'max-w-3xl' : 'max-w-sm')}"` : ''}></${tag}>`;
-      return isCard ? `<div class="content-container py-6 flex justify-center">${node}</div>` : node;
+      const isCard = tag.startsWith('card-') || tag.startsWith('flashcard-');
+      const isCart = tag.startsWith('cart-');
+      if (isCart) {
+        return `<${tag} id="${elementId}" view-mode="drawer" open class="block w-full"></${tag}>`;
+      }
+      const node = `<${tag} id="${elementId}"${isCard ? ` class="block w-full ${item.props?.viewMode === 'list' ? 'max-w-3xl' : 'max-w-sm'}"` : ''}></${tag}>`;
+      return isCard ? `<div class="w-full max-w-content mx-auto px-4 sm:px-6 py-6 flex justify-center">${node}</div>` : node;
     }).join('\n');
     return markup;
   }).join('\n');

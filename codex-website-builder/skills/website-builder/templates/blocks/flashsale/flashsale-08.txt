@@ -7,7 +7,7 @@ Functional regions are annotated directly in the component code implementation v
 
 
 ### Dimensions & Responsiveness
-- Follows `content-container` with max content width 1200px centered.
+- Follows Tailwind centered container（`w-full max-w-content mx-auto px-4 lg:px-6`） with max content width 1200px centered.
 - Desktop (1024px+): 3~4 flash cards side by side.
 - Mobile (under 768px): 2 compact cards with smooth horizontal swipe.
 
@@ -27,7 +27,7 @@ Functional regions are annotated directly in the component code implementation v
 
 ```html
 <section class="py-6 font-sans text-content bg-surface">
-  <div class="content-container">
+  <div class="w-full max-w-content mx-auto px-4 lg:px-6">
     <div class="flex items-center justify-center gap-4 sm:gap-6 mt-2 mb-6 sm:mb-8">
       <span class="w-12 sm:w-20 md:w-24 h-[2px] bg-content/30"></span>
       <div class="h-6 sm:h-8 w-32 sm:w-36 bg-accent rounded-sm"></div>

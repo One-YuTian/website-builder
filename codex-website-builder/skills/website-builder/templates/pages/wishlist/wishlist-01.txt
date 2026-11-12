@@ -7,7 +7,7 @@ Functional regions are annotated directly in the component code implementation v
 
 
 ### Dimensions & Responsiveness
-- Follows `content-container` with PC max content width 1200px centered.
+- Follows Tailwind centered container（`w-full max-w-content mx-auto px-4 lg:px-6`） with PC max content width 1200px centered.
 - Desktop (1024px+): 4 equal columns.
 - Mobile (under 768px): 2 compact columns.
 
@@ -26,7 +26,7 @@ Functional regions are annotated directly in the component code implementation v
 
 ```html
 <section class="wishlist-section bg-surface font-sans text-content py-8 sm:py-12">
-  <div class="content-container">
+  <div class="w-full max-w-content mx-auto px-4 lg:px-6">
     <!-- Page Header -->
     <!-- Region: Page Header - Title, subtitle, and breadcrumb -->
 

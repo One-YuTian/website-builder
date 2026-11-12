@@ -175,7 +175,7 @@ export class Header extends HTMLElement {
 
     this.innerHTML = `
       <header class="${headerCls}">
-        <div data-region="header-content" class="content-container">
+        <div data-region="header-content" class="w-full max-w-content mx-auto px-4 lg:px-6">
           <div data-region="top-bar" class="hidden items-center justify-center gap-4 py-1 md:flex lg:justify-between border-b ${isLight ? 'border-outline/20' : 'border-on-secondary/10'}">
             <div data-region="promotion" class="hidden shrink-0 lg:block"><span class="block h-[0.75em] w-56 rounded-sm bg-accent"></span></div>
             <nav class="flex items-center gap-5 lg:gap-7">

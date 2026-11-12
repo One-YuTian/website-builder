@@ -13,7 +13,7 @@ export function compactProject(view:ProjectView) {
 export function projectService(store:ProjectStore) {
   const cache=new Map<string,{version:number;gzip:string}>();
   return async function sync(input:{since?:string;known?:Record<string,number>;threadId?:string;waitMs?:number}) {
-    let view=await store.get(input.threadId);const known=input.known||{};
+    let view=await store.reconcile(input.threadId);const known=input.known||{};
     const missing=view?.project.pages.some(page=>page.status==='ready'&&known[page.path]!==page.version);
     if(!missing&&(view?.revision||'none')===(input.since||'none'))view=await store.wait(input.since||'none',input.threadId,input.waitMs??20000);
     if(!view)return{revision:'none',unchanged:true};

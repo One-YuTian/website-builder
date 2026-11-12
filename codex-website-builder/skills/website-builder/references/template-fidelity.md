@@ -27,10 +27,10 @@ code 可以用 ids 批量读取；targets/bind 与来源标记仅用于可选追
 <script src="js/app.js"></script>
 ```
 
-`content-container` 是模板语义/选择器类，保留该名称，同时在相同元素追加 `w-full max-w-content mx-auto px-4 lg:px-6` 等 utility，使宽度、居中与内边距直接由 class 渲染；不能再为它单独写一段 CSS。具体内边距与所选模板的全局容器要求一致。所有模板实际用到的 primary/secondary/accent/surface/content/muted/outline/on-* 等颜色 token、字体与 content 宽度必须在唯一 Tailwind theme 中定义完整。
+`w-full max-w-content mx-auto px-4 lg:px-6` 是模板语义/选择器类，保留该名称，同时在相同元素追加 `w-full max-w-content mx-auto px-4 lg:px-6` 等 utility，使宽度、居中与内边距直接由 class 渲染；不能再为它单独写一段 CSS。具体内边距与所选模板的全局容器要求一致。所有模板实际用到的 primary/secondary/accent/surface/content/muted/outline/on-* 等颜色 token、字体与 content 宽度必须在唯一 Tailwind theme 中定义完整。
 
 ```html
-<div class="content-container w-full max-w-content mx-auto px-4 lg:px-6">
+<div class="w-full max-w-content mx-auto px-4 lg:px-6 w-full max-w-content mx-auto px-4 lg:px-6">
   <!-- 保留所选模板的原有子结构 -->
 </div>
 ```

@@ -8,7 +8,7 @@ import {StdioClientTransport} from '@modelcontextprotocol/sdk/client/stdio.js';
 import {chromium} from '@playwright/test';
 const sandbox=await mkdtemp(join(tmpdir(),'website-project-test-'));
 const settings=JSON.parse(await readFile('mcp.json','utf8')).mcpServers['website-builder'];
-const env={...process.env, WEBSITE_BUILDER_PREVIEW_VENDOR_FIXTURES:'1',...settings.env,WEBSITE_BUILDER_PROJECT_ROOT:join(sandbox,'project'),WEBSITE_BUILDER_SKILL_ROOT:resolve('skills/website-builder')};
+const env={...process.env, WEBSITE_BUILDER_PREVIEW_VENDOR_FIXTURES:'1',...settings.env,WEBSITE_BUILDER_ROOT:sandbox,WEBSITE_BUILDER_PROJECT_ROOT:join(sandbox,'project'),WEBSITE_BUILDER_SKILL_ROOT:resolve('skills/website-builder')};
 const client=new Client({name:'project-test',version:'1'});
 const transport=new StdioClientTransport({command:process.execPath,args:[resolve('dist/server/index.js')],cwd:resolve('.'),env});
 let browser,preview;
@@ -67,7 +67,15 @@ try{
  const errors=[];page.on('pageerror',error=>errors.push(error.message));await page.goto(url,{waitUntil:'domcontentloaded'});await page.locator('.page-panel').nth(2).waitFor();
  assert.equal(await page.locator('iframe').count(),0);assert.equal(await page.locator('.page-loader').count(),3);
  await write(ui,[{path:'index.html',content:'<html><body>not finished',fragment:false}]);await page.waitForTimeout(400);assert.equal(await page.locator('iframe').count(),0);
- await write(ui,[{path:'css/shop.css',content:'h1{color:green}'},{path:'index.html',content:shell('<h1>Home v1</h1><button onclick="this.textContent=\'Clicked\'">Click</button>')},{path:'shop.html',content:shell('<link rel="stylesheet" href="css/shop.css"><h1>Shop</h1><input id="state"><div style="height:6000px"></div>')},{path:'about.html',content:shell('<h1>About</h1>')}]);
+ // One completed page appears while other pages are unfinished; no task-level finish.
+ const firstPage=await call('website_write',{thread_id:ui.thread_id,project_id:ui.project_id,finalize_pages:[],files:[{path:'index.html',content:shell('<h1>Home v1</h1><button onclick="this.textContent=\'Clicked\'">Click</button>')}]});assert.ok(!firstPage.isError);
+ await page.frameLocator('iframe[title="index.html"]').getByRole('heading',{name:'Home v1'}).waitFor();
+ assert.equal(await page.locator('iframe').count(),1);
+ const missing=await write(ui,[{path:'shop.html',content:shell('<link rel="stylesheet" href="css/shop.css"><h1>Shop</h1><input id="state"><div style="height:6000px"></div>')},{path:'about.html',content:shell('<h1>About</h1>')}]);
+ assert.equal(missing.pages.find(page=>page.path==='shop.html').status,'error');
+ // A later dependency-only write settles the failed page automatically.
+ const recovered=await write(ui,[{path:'css/shop.css',content:'h1{color:green}'}]);assert.ok(recovered.pages.every(page=>page.status==='ready'));
+
  await page.waitForFunction(()=>document.querySelectorAll('.page-caption[data-ready="true"]').length===3,{}, {timeout:30000});
  const shopBlob=await page.locator('iframe[title="shop.html"]').getAttribute('src');const aboutBlob=await page.locator('iframe[title="about.html"]').getAttribute('src');
  const shop=page.frameLocator('iframe[title="shop.html"]');await shop.locator('#state').fill('keep this value');
@@ -84,7 +92,21 @@ try{
  await write(ui,[{path:'css/shop.css',content:'h1{color:blue}'}]);
  await page.waitForFunction(previous=>document.querySelector('iframe[title="shop.html"]')?.getAttribute('src')!==previous,shopBlob);
  await shop.getByRole('heading',{name:'Shop',exact:true}).waitFor();assert.equal(await page.locator('iframe[title="index.html"]').getAttribute('src'),homeBlob);assert.equal(await page.locator('iframe[title="about.html"]').getAttribute('src'),aboutBlob);
+ // Direct filesystem output is reconciled across processes, but begin alone
+ // must keep the previous finished page hidden until new code exists.
+ await project({action:'begin',thread_id:ui.thread_id,paths:['about.html']});
+ await page.locator('[data-page="about.html"] .page-loader').waitFor();
+ await page.waitForTimeout(600);assert.equal(await page.locator('iframe[title="about.html"]').count(),0);
+ await writeFile(join(ui.directory,'about.html'),'<html><body>partial');
+ await page.waitForTimeout(500);assert.equal(await page.locator('iframe[title="about.html"]').count(),0);
+ await writeFile(join(ui.directory,'about.html'),shell('<h1>Direct output</h1>'));
+ await page.frameLocator('iframe[title="about.html"]').getByRole('heading',{name:'Direct output'}).waitFor({timeout:30000});
+ await page.waitForFunction(()=>document.querySelectorAll('.page-caption[data-ready="true"]').length===3);
+ await project({action:'begin',thread_id:ui.thread_id,paths:['index.html','about.html']});
+ const settled=await project({action:'finish',thread_id:ui.thread_id});assert.ok(settled.pages.every(page=>page.status==='ready'),'finish without paths settles pending pages');
+ await page.waitForFunction(()=>document.querySelectorAll('.page-caption[data-ready="true"]').length===3);
+ assert.equal(await page.locator('.page-list small').count(),0);
  assert.deepEqual(errors,[]);
  await mkdir('artifacts',{recursive:true});await page.screenshot({path:'artifacts/project-live.png'});
- const report={result:'PASS',checks:['empty canvas without active project, including sync failure and refresh','80 bundled templates and batch code reads','12-page complete HTML assembly with default drawer cart','same thread reuse and cross-thread isolation','explicit project switching/new project','persistent CLI fallback','concurrent open reuses one project','partial HTML rejected','path traversal/stale-project writes rejected','long poll wakes on begin','delta payload only for changed page','cross-process live UI','all planned pages loading before output','single-page regeneration preserves other iframe instances, form values, JS state and scroll','unchanged shared files do not refresh pages','CSS update refreshes only its dependent page'],testRoot:sandbox};await writeFile('artifacts/project-verification.json',JSON.stringify(report,null,2));console.log(JSON.stringify(report,null,2));
+ const report={result:'PASS',checks:['empty canvas without active project, including sync failure and refresh','80 bundled templates and batch code reads','12-page complete HTML assembly with default drawer cart','same thread reuse and cross-thread isolation','explicit project switching/new project','persistent CLI fallback','concurrent open reuses one project','partial HTML rejected','path traversal/stale-project writes rejected','long poll wakes on begin','delta payload only for changed page','cross-process live UI','completed page renders while other pages unfinished','empty finalize_pages does not suppress readiness','missing dependency recovery','direct-file output reconciles without stale old HTML','finish without paths settles UI state','all planned pages loading before output','single-page regeneration preserves other iframe instances, form values, JS state and scroll','unchanged shared files do not refresh pages','CSS update refreshes only its dependent page'],testRoot:sandbox};await writeFile('artifacts/project-verification.json',JSON.stringify(report,null,2));console.log(JSON.stringify(report,null,2));
 }finally{if(browser)await browser.close();if(preview)preview.kill();await client.close();}

@@ -140,7 +140,7 @@ export class Header extends HTMLElement {
 
     this.innerHTML = `
       <header class="${headerCls} py-3">
-        <div class="content-container flex items-center justify-between gap-6">
+        <div class="w-full max-w-content mx-auto px-4 lg:px-6 flex items-center justify-between gap-6">
           <div class="flex items-center gap-8">
             <div data-region="logo" class="flex-shrink-0">
               <div role="button" tabindex="0" data-action="nav" data-nav-id="home" class="flex items-center rounded-lg ${focusRing}">

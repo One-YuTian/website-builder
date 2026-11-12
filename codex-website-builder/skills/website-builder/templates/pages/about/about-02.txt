@@ -7,7 +7,7 @@ Functional regions are annotated directly in the component code implementation v
 
 
 ### Dimensions & Responsiveness
-- Follows `content-container` with PC max content width 1200px centered.
+- Follows Tailwind centered container（`w-full max-w-content mx-auto px-4 lg:px-6`） with PC max content width 1200px centered.
 - Desktop (1024px+): Magazine style multi-column layout with generous whitespace.
 - Mobile (under 1024px): Adapts to single vertical column with 2-column stats grid.
 
@@ -25,7 +25,7 @@ Functional regions are annotated directly in the component code implementation v
 
 ```html
 <section class="bg-surface font-sans text-content py-4 sm:py-6">
-  <div class="content-container space-y-12 sm:space-y-16">
+  <div class="w-full max-w-content mx-auto px-4 lg:px-6 space-y-12 sm:space-y-16">
     <!-- Region: Hero Banner - High-impact promotional visual banner -->
 
     <div data-region="hero-banner" class="relative w-full py-16 md:py-24 overflow-hidden rounded-2xl">

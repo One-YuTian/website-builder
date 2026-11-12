@@ -7,7 +7,7 @@ Functional regions are annotated directly in the component code implementation v
 
 
 ### Dimensions & Responsiveness
-- Desktop (1024px+): Fixed height 68px~76px, follows global `content-container` with max content width 1200px centered, supports sticky positioning during page scrolling.
+- Desktop (1024px+): Fixed height 68px~76px, follows global Tailwind centered container（`w-full max-w-content mx-auto px-4 lg:px-6`） with max content width 1200px centered, supports sticky positioning during page scrolling.
 - Tablet & Mobile (under 1024px): Horizontal category list collapses, main bar retains Logo, search, and action icons; hamburger button triggers 320px smooth slide-out drawer.
 
 ### Attributes & Props
@@ -32,11 +32,15 @@ Functional regions are annotated directly in the component code implementation v
 <header class="bg-gradient-to-r from-secondary via-secondary to-[#1e1b4b] text-on-secondary font-sans">
   <!-- Region: Header Main Bar - Brand logo, search, navigation, and user actions -->
 
-  <div data-region="header-content" class="content-container">
-    <!-- Region: Top Announcement Bar - Promotional broadcast and quick links -->
+  <div data-region="header-content" class="w-full max-w-content mx-auto px-4 lg:px-6">
+    <!-- Region: Top Announcement Bar - Top promotional notice banner and quick links.
+         Configurable with three primary message formats:
+         1) Brand Tagline / Value Proposition (e.g., "Official Flagship Store | 100% Authentic Guarantee | Free Global Delivery");
+         2) Promotional Discount Notice (e.g., "Storewide Sale: Up to 50% OFF for a limited time");
+         3) Limited-Time Countdown Timer (e.g., "Special promo ends in 04:15:32 - Target countdown to 23:59:59 today"). -->
 
     <div data-region="top-bar" class="hidden items-center justify-center gap-4 py-1 md:flex lg:justify-between border-b border-on-secondary/10">
-      <!-- Region: Promotion Notice - Special discount banner or notification -->
+      <!-- Region: Promotion Notice - Announcement text (Brand tagline / Up to xx% OFF discount / Countdown ending at 23:59:59) -->
 
       <div data-region="promotion" class="hidden shrink-0 lg:block"><span class="block h-[0.75em] w-56 rounded-sm bg-accent"></span></div>
       <!-- Region: Primary Navigation Menu -->
@@ -283,7 +287,7 @@ class Header extends HTMLElement {
 
     this.innerHTML = `
       <header class="${headerCls}">
-        <div data-region="header-content" class="content-container">
+        <div data-region="header-content" class="w-full max-w-content mx-auto px-4 lg:px-6">
           <div data-region="top-bar" class="hidden items-center justify-center gap-4 py-1 md:flex lg:justify-between border-b ${isLight ? 'border-outline/20' : 'border-on-secondary/10'}">
             <div data-region="promotion" class="hidden shrink-0 lg:block"><span class="block h-[0.75em] w-56 rounded-sm bg-accent"></span></div>
             <nav class="flex items-center gap-5 lg:gap-7">

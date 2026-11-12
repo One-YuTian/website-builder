@@ -31,6 +31,7 @@ const PageFrame = memo(function PageFrame({ page, storage, index, width, selecte
   const pending = !!page.status && page.status !== 'ready';
   const snapshot = pending ? undefined : page.html;
   useEffect(() => {
+    acknowledged.current=false;if(loadTimer.current)clearTimeout(loadTimer.current);
     if (!snapshot) {setSrc('');setReady(false);if(loadTimer.current)clearTimeout(loadTimer.current);return;}
     const escape = (value: unknown) => JSON.stringify(value).replaceAll('<', '\\u003c');
     const html = snapshot.replaceAll('"__WEBSITE_BUILDER_VIRTUAL_URL__"', escape(currentUrl)).replaceAll('"__WEBSITE_BUILDER_STORAGE__"', escape(storage.current)).replaceAll('__WEBSITE_BUILDER_BASE_URL__', currentUrl.replaceAll('&','&amp;').replaceAll('"','&quot;'));
@@ -173,17 +174,21 @@ export function WebsiteCanvas({ background }: { background: ReactNode }) {
           if(!manifest?.projectId){if(projectMode.current){setSite(null);projectMode.current=false;projectId='';known={};}since=value.revision||'none';continue;}
           const changed=manifest.projectId!==projectId;
           if(changed){known={};projectId=manifest.projectId;sequence.current++;projectMode.current=true;storage.current={};setWidths({});setSelected(manifest.pages[0]?.path||'');setView({x:28,y:30,zoom:.26});}
-          const decoded:Record<string,string>={},nextKnown={...known};
-          for(const [path,payload]of Object.entries(value.pages||{})){decoded[path]=await unzip(payload as string | {resource:string});const page=manifest.pages.find(item=>item.path===path);if(page)nextKnown[path]=page.version||0;}
+          const decoded:Record<string,string>={},nextKnown={...known},decodeErrors:Record<string,string>={};
+          for(const [path,payload]of Object.entries(value.pages||{})){
+            try{decoded[path]=await unzip(payload as string | {resource:string});const page=manifest.pages.find(item=>item.path===path);if(page)nextKnown[path]=page.version||0;}
+            catch(error){decodeErrors[path]=`预览传输失败，正在重试：${(error as Error).message}`;}
+          }
           for(const path of Object.keys(value.errors||{})){const page=manifest.pages.find(item=>item.path===path);if(page)nextKnown[path]=page.version||0;}
           if(stopped)return;
           setSite(previous=>({...manifest,pages:manifest.pages.map(page=>{
             const old=!changed?previous?.pages.find(item=>item.path===page.path):undefined;
-            const failure=value.errors?.[page.path];
+            const failure=value.errors?.[page.path]||decodeErrors[page.path];
             const next={...page,...(failure?{status:'error' as const,error:failure}:{}),html:page.status==='ready'?(decoded[page.path]??(old?.version===page.version?old?.html:undefined)):undefined};
             return old&&Object.keys({...old,...next}).every(key=>old[key as keyof SitePage]===next[key as keyof SitePage])?old:next;
           })}));
           setDirectory(manifest.directory);setProjectList(value.projects||[]);setError('');setLoading(false);known=nextKnown;since=value.revision;
+          if(Object.keys(decodeErrors).length)await new Promise(resolve=>setTimeout(resolve,1000));
         }catch(error){if(stopped)return;probed=true;setNotice((error as Error).message);await new Promise(resolve=>setTimeout(resolve,3000));}
       }
     }

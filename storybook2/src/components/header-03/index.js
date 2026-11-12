@@ -172,7 +172,7 @@ export class Header extends HTMLElement {
 
     this.innerHTML = `
       <header class="${headerCls}">
-        <div data-region="header-content" class="content-container">
+        <div data-region="header-content" class="w-full max-w-content mx-auto px-4 lg:px-6">
           <div class="flex h-16 items-center justify-between gap-4">
             <div class="shrink-0">
               <div role="button" tabindex="0" data-destination="home" class="flex h-10 items-center rounded-sm ${focusRing}">

@@ -36,7 +36,7 @@ export class Footer extends HTMLElement {
 
     this.innerHTML = `
       <footer class="border-t border-outline bg-surface text-content font-sans">
-        <div class="content-container pb-4 pt-8">
+        <div class="w-full max-w-content mx-auto px-4 lg:px-6 pb-4 pt-8">
           <div data-region="footer-columns" class="grid grid-cols-1 gap-8 pb-8 md:grid-cols-3">
             <div class="min-w-0 space-y-5">
               <span class="relative flex h-10 w-36 items-center justify-center overflow-hidden rounded-xl bg-accent select-none text-xs font-semibold tracking-widest text-muted">LOGO</span>

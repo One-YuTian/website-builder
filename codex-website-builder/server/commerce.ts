@@ -151,7 +151,7 @@ export async function prepareCommerce(store: ProjectStore, skillRoot: string, in
   new Intl.NumberFormat(input.locale || 'en-US', { style: 'currency', currency: input.currency || 'USD' });
   const existing = await existingFile(view.directory, 'js/data.js');
   let imported=false;
-  try { const record=JSON.parse(await readFile(join(view.metadataDirectory,'website-builder.import.json'),'utf8'));imported=record.schema==='sdk-import-v1'&&!!existing&&record.runtime_data_sha256===createHash('sha256').update(existing).digest('hex'); } catch(error) { if((error as NodeJS.ErrnoException).code!=='ENOENT'&&!(error instanceof SyntaxError))throw error; }
+  try { const record=JSON.parse(await readFile(join(view.metadataDirectory,'website-builder.import.json'),'utf8'));imported=['sdk-import-v1','sdk-import-v2'].includes(record.schema)&&!!existing&&record.runtime_data_sha256===createHash('sha256').update(existing).digest('hex'); } catch(error) { if((error as NodeJS.ErrnoException).code!=='ENOENT'&&!(error instanceof SyntaxError))throw error; }
   const validateExisting=(products:Product[])=>imported?validateSDKProducts(products):validateProducts(products);
 
   if (input.action === 'validate') {

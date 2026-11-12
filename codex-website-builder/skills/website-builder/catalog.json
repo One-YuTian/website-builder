@@ -214,28 +214,28 @@
     "group": "pages",
     "category": "shop",
     "file": "pages/shop/shop-01.txt",
-    "summary": "Header + toolbar + grid, no sidebar; 2/sm:3/lg:4 columns."
+    "summary": "Shop-01: Native Web Component specification, annotated regions, and responsive template."
   },
   {
     "id": "shop-02",
     "group": "pages",
     "category": "shop",
     "file": "pages/shop/shop-02.txt",
-    "summary": "lg:w-64 sidebar + toolbar + grid; 2/sm:3 columns, desktop stays 3."
+    "summary": "Shop-02: Native Web Component specification, annotated regions, and responsive template."
   },
   {
     "id": "shop-04",
     "group": "pages",
     "category": "shop",
     "file": "pages/shop/shop-04.txt",
-    "summary": "lg:w-64 sidebar + toolbar + grid, no page header; 2/sm:3/lg:4 columns."
+    "summary": "Shop-04: Native Web Component specification, annotated regions, and responsive template."
   },
   {
     "id": "shop-12",
     "group": "pages",
     "category": "shop",
     "file": "pages/shop/shop-12.txt",
-    "summary": "Header + lg:w-64 sidebar + toolbar + grid/list switch; 2/sm:3 columns, desktop stays 3."
+    "summary": "Shop-12: Native Web Component specification, annotated regions, and responsive template."
   },
   {
     "id": "detail-01",
@@ -256,77 +256,77 @@
     "group": "pages",
     "category": "about",
     "file": "pages/about/about-01.txt",
-    "summary": "Hero + brand introduction + responsive benefits grid; compact overview with visual introduction."
+    "summary": "About-01: Native Web Component specification, annotated regions, and responsive template."
   },
   {
     "id": "about-02",
     "group": "pages",
     "category": "about",
     "file": "pages/about/about-02.txt",
-    "summary": "Hero banner followed by two-column brand story; editorial narrative with paired content."
+    "summary": "About-02: Native Web Component specification, annotated regions, and responsive template."
   },
   {
     "id": "about-03",
     "group": "pages",
     "category": "about",
     "file": "pages/about/about-03.txt",
-    "summary": "Promotional visual followed by long-form article; reading-focused narrative without a card grid."
+    "summary": "About-03: Native Web Component specification, annotated regions, and responsive template."
   },
   {
     "id": "about-04",
     "group": "pages",
     "category": "about",
     "file": "pages/about/about-04.txt",
-    "summary": "Main article with contact sidebar; asymmetric reading and contact layout."
+    "summary": "About-04: Native Web Component specification, annotated regions, and responsive template."
   },
   {
     "id": "about-05",
     "group": "pages",
     "category": "about",
     "file": "pages/about/about-05.txt",
-    "summary": "Page header and continuous narrative; restrained text-first brand story."
+    "summary": "About-05: Native Web Component specification, annotated regions, and responsive template."
   },
   {
     "id": "about-06",
     "group": "pages",
     "category": "about",
     "file": "pages/about/about-06.txt",
-    "summary": "Our story followed by craftsmanship; two distinct narrative/visual sections."
+    "summary": "About-06: Native Web Component specification, annotated regions, and responsive template."
   },
   {
     "id": "about-10",
     "group": "pages",
     "category": "about",
     "file": "pages/about/about-10.txt",
-    "summary": "Header plus split content; side-by-side visual and brand narrative."
+    "summary": "About-10: Native Web Component specification, annotated regions, and responsive template."
   },
   {
     "id": "about-12",
     "group": "pages",
     "category": "about",
     "file": "pages/about/about-12.txt",
-    "summary": "Hero followed by story section; visual-led introduction with paired story content."
+    "summary": "About-12: Native Web Component specification, annotated regions, and responsive template."
   },
   {
     "id": "about-15",
     "group": "pages",
     "category": "about",
     "file": "pages/about/about-15.txt",
-    "summary": "Hero and two-column editorial body; longer narrative in balanced columns."
+    "summary": "About-15: Native Web Component specification, annotated regions, and responsive template."
   },
   {
     "id": "about-21",
     "group": "pages",
     "category": "about",
     "file": "pages/about/about-21.txt",
-    "summary": "Hero and quality section; focused narrative on selection/design approach, without invented guarantees."
+    "summary": "About-21: Native Web Component specification, annotated regions, and responsive template."
   },
   {
     "id": "about-26",
     "group": "pages",
     "category": "about",
     "file": "pages/about/about-26.txt",
-    "summary": "Welcome introduction followed by differences section; text-led introduction and split visual narrative."
+    "summary": "About-26: Native Web Component specification, annotated regions, and responsive template."
   },
   {
     "id": "contact-01",
@@ -417,7 +417,7 @@
     "group": "blocks",
     "category": "promotion",
     "file": "blocks/promotion/promotion-01.txt",
-    "summary": "Regions: promo-grid. Responsive arrangement follows actual source; compare slots before selection."
+    "summary": "Promotion-01: Native Web Component specification, annotated regions, and responsive template."
   },
   {
     "id": "promotion-02",
@@ -459,14 +459,14 @@
     "group": "blocks",
     "category": "promotion",
     "file": "blocks/promotion/promotion-10.txt",
-    "summary": "Regions: coupons-grid. Responsive arrangement follows actual source; compare slots before selection."
+    "summary": "Promotion-10: Native Web Component specification, annotated regions, and responsive template."
   },
   {
     "id": "promotion-11",
     "group": "blocks",
     "category": "promotion",
     "file": "blocks/promotion/promotion-11.txt",
-    "summary": "Regions: coupon-cards. Responsive arrangement follows actual source; compare slots before selection."
+    "summary": "Promotion-11: Native Web Component specification, annotated regions, and responsive template."
   },
   {
     "id": "services-02",

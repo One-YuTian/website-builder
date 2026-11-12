@@ -64,10 +64,10 @@ try{
   await page.waitForFunction(()=>document.querySelectorAll('.page-caption[data-ready="true"]').length===2);
   for(const file of ['index.html','large.html']){
     const frame=page.frameLocator(`iframe[title="${file}"]`);
-    await frame.locator('img').first().evaluate(image=>image.decode());
+    await frame.locator('img').first().evaluate(async image=>{for(let attempt=0;attempt<200;attempt++){if(image.complete&&image.naturalWidth>0){await image.decode();return;}await new Promise(resolve=>setTimeout(resolve,100));}throw Error('Image did not finish proxy loading');});
     assert.equal(await frame.locator('img').first().evaluate(image=>image.naturalWidth),width);
   }
-  await page.frameLocator('iframe[title="index.html"]').getByAltText('Dynamic').evaluate(image=>image.decode());
+  await page.frameLocator('iframe[title="index.html"]').getByAltText('Dynamic').evaluate(async image=>{for(let attempt=0;attempt<200;attempt++){if(image.complete&&image.naturalWidth>0){await image.decode();return;}await new Promise(resolve=>setTimeout(resolve,100));}throw Error('Dynamic image did not load');});
   const background=page.frameLocator('iframe[title="large.html"]').locator('.banner');
   assert.ok((await background.evaluate(el=>getComputedStyle(el).backgroundImage)).includes('data:image/png'));
   await page.getByRole('button',{name:'页面宽度',exact:true}).click();

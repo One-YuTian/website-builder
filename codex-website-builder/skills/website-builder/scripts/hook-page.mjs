@@ -7,7 +7,7 @@
  * with the standard HTML boilerplate:
  * - Full <!doctype html> and <html lang="zh-CN">
  * - Standard <head> with Google Fonts, Bootstrap Icons, Swiper CSS, Tailwind CDN, and js/app.js
- * - Tailwind utility classes; content-container keeps source semantics and uses explicit Tailwind utilities
+ * - Tailwind utility classes; w-full max-w-content mx-auto px-4 lg:px-6 keeps source semantics and uses explicit Tailwind utilities
  * - Pre-appended <header-component>
  * - Optional cart drawer (--cart=drawer), plus footer
  * - Standard CDN runtime scripts (jQuery, Swiper) and components/data scripts
@@ -28,6 +28,8 @@
  *      type body.html | node scripts/hook-page.mjs --output=./dist/index.html --title="Home"
  */
 
+import { spawn } from 'node:child_process';
+import { fileURLToPath } from 'node:url';
 import fs from 'node:fs';
 import path from 'node:path';
 
@@ -142,7 +144,13 @@ async function run() {
     process.exit(1);
   }
 
-  const fullHtml = assembleHtml(fragment, title);
+  const rawHtml = assembleHtml(fragment, title);
+  const fullHtml = await new Promise((resolve,reject)=>{
+    const child=spawn(process.execPath,[fileURLToPath(new URL('../../../dist/server/cli.js',import.meta.url))],{stdio:['pipe','pipe','pipe'],env:process.env});
+    let output='',error='';child.stdout.on('data',data=>output+=data);child.stderr.on('data',data=>error+=data);
+    child.on('error',reject);child.on('exit',code=>{if(code)return reject(new Error(error));try{resolve(JSON.parse(output).content);}catch(cause){reject(cause);}});
+    child.stdin.end(JSON.stringify({action:'format',path:targetFile||'index.html',content:rawHtml}));
+  });
 
   if (targetFile) {
     const outPath = path.resolve(process.cwd(), targetFile);

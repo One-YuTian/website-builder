@@ -7,7 +7,7 @@ Functional regions are annotated directly in the component code implementation v
 
 
 ### Dimensions & Responsiveness
-- Follows global design system, outer container uses `content-container` with PC max content width 1200px centered.
+- Follows global design system, outer container uses Tailwind centered container（`w-full max-w-content mx-auto px-4 lg:px-6`） with PC max content width 1200px centered.
 - Desktop (1024px+): Fixed height 500px~550px with stable text overlay alignment.
 - Mobile (under 1024px): Adapts to 16:9 or 50:21 aspect ratio with smooth swipe touch gestures.
 
@@ -28,7 +28,7 @@ Functional regions are annotated directly in the component code implementation v
 
 ```html
 <section class="bg-surface font-sans text-content py-4 sm:py-6">
-  <div class="content-container">
+  <div class="w-full max-w-content mx-auto px-4 lg:px-6">
     <div class="hidden lg:grid grid-cols-3 gap-3 h-[250px]">
       <div class="col-span-2 h-full min-w-0">
         <div class="swiper banner-swiper h-full w-full rounded-xl overflow-hidden bg-accent">
