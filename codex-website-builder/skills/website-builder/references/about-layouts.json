@@ -1,0 +1,102 @@
+{
+  "about-01": {
+    "summary": "Hero + brand introduction + responsive benefits grid; compact overview with visual introduction.",
+    "columns": "grid-cols-1 sm:grid-cols-2 lg:grid-cols-4",
+    "regions": [
+      "hero",
+      "intro",
+      "benefits-grid"
+    ],
+    "mobile": "Benefits grid grows from one to two to four columns; retain source spacing"
+  },
+  "about-02": {
+    "summary": "Hero banner followed by two-column brand story; editorial narrative with paired content.",
+    "columns": "grid-cols-1 md:grid-cols-2",
+    "regions": [
+      "hero-banner",
+      "story-columns"
+    ],
+    "mobile": "Story columns stack below md"
+  },
+  "about-03": {
+    "summary": "Promotional visual followed by long-form article; reading-focused narrative without a card grid.",
+    "columns": "No grid; promo-banner + article-content",
+    "regions": [
+      "promo-banner",
+      "article-content"
+    ],
+    "mobile": "Retain source article width and responsive visual"
+  },
+  "about-04": {
+    "summary": "Main article with contact sidebar; asymmetric reading and contact layout.",
+    "columns": "grid-cols-1 lg:grid-cols-4",
+    "regions": [
+      "main-article",
+      "contact-sidebar"
+    ],
+    "mobile": "Article and sidebar stack below lg; preserve their source spans"
+  },
+  "about-05": {
+    "summary": "Page header and continuous narrative; restrained text-first brand story.",
+    "columns": "No grid; header + narrative",
+    "regions": [
+      "header",
+      "narrative"
+    ],
+    "mobile": "Retain source reading layout; no invented statistics/team grid"
+  },
+  "about-06": {
+    "summary": "Our story followed by craftsmanship; two distinct narrative/visual sections.",
+    "columns": "grid-cols-1 lg:grid-cols-2",
+    "regions": [
+      "our-story",
+      "craftsmanship"
+    ],
+    "mobile": "Paired content stacks below lg"
+  },
+  "about-10": {
+    "summary": "Header plus split content; side-by-side visual and brand narrative.",
+    "columns": "grid-cols-1 lg:grid-cols-2",
+    "regions": [
+      "header",
+      "content-split"
+    ],
+    "mobile": "Content split stacks below lg"
+  },
+  "about-12": {
+    "summary": "Hero followed by story section; visual-led introduction with paired story content.",
+    "columns": "grid-cols-1 lg:grid-cols-2",
+    "regions": [
+      "hero",
+      "story"
+    ],
+    "mobile": "Story split stacks below lg"
+  },
+  "about-15": {
+    "summary": "Hero and two-column editorial body; longer narrative in balanced columns.",
+    "columns": "grid-cols-1 md:grid-cols-2",
+    "regions": [
+      "hero",
+      "two-columns"
+    ],
+    "mobile": "Editorial columns stack below md"
+  },
+  "about-21": {
+    "summary": "Hero and quality section; focused narrative on selection/design approach, without invented guarantees.",
+    "columns": "grid-cols-1 md:grid-cols-2",
+    "regions": [
+      "hero",
+      "quality"
+    ],
+    "mobile": "Quality content stacks below md"
+  },
+  "about-26": {
+    "summary": "Welcome introduction followed by differences section; text-led introduction and split visual narrative.",
+    "columns": "grid-cols-1 lg:grid-cols-2",
+    "regions": [
+      "welcome",
+      "differences"
+    ],
+    "mobile": "Differences content stacks below lg"
+  }
+}

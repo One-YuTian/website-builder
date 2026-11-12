@@ -1,0 +1,106 @@
+## Overview
+
+Category showcase and navigation block, integrating section title, round/square category thumbnail cards, and item counter badges with smooth hover micro-interactions.
+
+### Regions
+Functional regions are annotated directly in the component code implementation via English comments.
+
+
+### Dimensions & Responsiveness
+- Follows Tailwind centered container（`w-full max-w-content mx-auto px-4 lg:px-6`） with max content width 1200px centered.
+- Desktop (1024px+): 4~6 column circular or square cards evenly distributed.
+- Mobile (under 768px): Adapts to 3 compact columns or horizontal swipe slider.
+
+### Attributes & Props
+| Attribute | Description | Type | Default |
+| --- | --- | --- | --- |
+| `limit` | Max categories displayed | `number` | `6` |
+
+### Events
+- `category-navigate`: Dispatched when clicking a category card, providing category ID.
+
+## Code
+
+### HTML
+
+```html
+<section class="py-8 md:py-12 bg-surface font-sans text-content">
+  <div class="w-full max-w-content mx-auto px-4 lg:px-6">
+    <div class="swiper categories-swiper-05 overflow-hidden">
+      <div class="swiper-wrapper py-2">
+        
+        <div class="swiper-slide !h-auto">
+          <div role="button" tabindex="0" class="flex flex-col items-center hover:opacity-85 transition-opacity cursor-pointer">
+            <div class="w-full aspect-square max-w-[280px] bg-accent/50 rounded-xl overflow-hidden border border-outline/20 flex items-center justify-center p-6 shadow-2xs">
+              <span class="relative block aspect-[6/5] w-2/3 overflow-hidden rounded-sm border border-muted">
+    <span class="absolute right-[15%] top-[15%] size-1/5 rounded-full bg-muted"></span>
+    <span class="absolute -bottom-1/4 left-[5%] size-3/4 rotate-45 border-l border-t border-muted"></span>
+    <span class="absolute -bottom-1/4 right-0 size-1/2 rotate-45 border-l border-t border-muted"></span>
+  </span>
+            </div>
+            <div class="mt-3 sm:mt-4 h-4 sm:h-5 w-24 sm:w-32 bg-accent rounded-xs"></div>
+          </div>
+        </div>
+        
+        <div class="swiper-slide !h-auto">
+          <div role="button" tabindex="0" class="flex flex-col items-center hover:opacity-85 transition-opacity cursor-pointer">
+            <div class="w-full aspect-square max-w-[280px] bg-accent/50 rounded-xl overflow-hidden border border-outline/20 flex items-center justify-center p-6 shadow-2xs">
+              <span class="relative block aspect-[6/5] w-2/3 overflow-hidden rounded-sm border border-muted">
+    <span class="absolute right-[15%] top-[15%] size-1/5 rounded-full bg-muted"></span>
+    <span class="absolute -bottom-1/4 left-[5%] size-3/4 rotate-45 border-l border-t border-muted"></span>
+    <span class="absolute -bottom-1/4 right-0 size-1/2 rotate-45 border-l border-t border-muted"></span>
+  </span>
+            </div>
+            <div class="mt-3 sm:mt-4 h-4 sm:h-5 w-24 sm:w-32 bg-accent rounded-xs"></div>
+          </div>
+        </div>
+        
+        <div class="swiper-slide !h-auto">
+          <div role="button" tabindex="0" class="flex flex-col items-center hover:opacity-85 transition-opacity cursor-pointer">
+            <div class="w-full aspect-square max-w-[280px] bg-accent/50 rounded-xl overflow-hidden border border-outline/20 flex items-center justify-center p-6 shadow-2xs">
+              <span class="relative block aspect-[6/5] w-2/3 overflow-hidden rounded-sm border border-muted">
+    <span class="absolute right-[15%] top-[15%] size-1/5 rounded-full bg-muted"></span>
+    <span class="absolute -bottom-1/4 left-[5%] size-3/4 rotate-45 border-l border-t border-muted"></span>
+    <span class="absolute -bottom-1/4 right-0 size-1/2 rotate-45 border-l border-t border-muted"></span>
+  </span>
+            </div>
+            <div class="mt-3 sm:mt-4 h-4 sm:h-5 w-24 sm:w-32 bg-accent rounded-xs"></div>
+          </div>
+        </div>
+        
+        <div class="swiper-slide !h-auto">
+          <div role="button" tabindex="0" class="flex flex-col items-center hover:opacity-85 transition-opacity cursor-pointer">
+            <div class="w-full aspect-square max-w-[280px] bg-accent/50 rounded-xl overflow-hidden border border-outline/20 flex items-center justify-center p-6 shadow-2xs">
+              <span class="relative block aspect-[6/5] w-2/3 overflow-hidden rounded-sm border border-muted">
+    <span class="absolute right-[15%] top-[15%] size-1/5 rounded-full bg-muted"></span>
+    <span class="absolute -bottom-1/4 left-[5%] size-3/4 rotate-45 border-l border-t border-muted"></span>
+    <span class="absolute -bottom-1/4 right-0 size-1/2 rotate-45 border-l border-t border-muted"></span>
+  </span>
+            </div>
+            <div class="mt-3 sm:mt-4 h-4 sm:h-5 w-24 sm:w-32 bg-accent rounded-xs"></div>
+          </div>
+        </div>
+        
+      </div>
+    </div>
+  </div>
+</section>
+```
+
+### JavaScript
+
+```javascript
+$(function() {
+  if (typeof Swiper !== 'undefined' && $('.categories-swiper-05').length) {
+    new Swiper('.categories-swiper-05', {
+      slidesPerView: 1.8,
+      spaceBetween: 14,
+      breakpoints: {
+        640: { slidesPerView: 2.5, spaceBetween: 18 },
+        768: { slidesPerView: 3.2, spaceBetween: 20 },
+        1024: { slidesPerView: 4, spaceBetween: 24 }
+      }
+    });
+  }
+});
+```

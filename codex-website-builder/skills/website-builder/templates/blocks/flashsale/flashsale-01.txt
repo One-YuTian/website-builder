@@ -1,0 +1,106 @@
+## Overview
+
+Flash sale and limited-time marketing section, integrating animated countdown timer blocks, promotional badges, flash cards with sold percentage progress, and View All CTA.
+
+### Regions
+Functional regions are annotated directly in the component code implementation via English comments.
+
+
+### Dimensions & Responsiveness
+- Follows Tailwind centered container（`w-full max-w-content mx-auto px-4 lg:px-6`） with max content width 1200px centered.
+- Desktop (1024px+): 3~4 flash cards side by side.
+- Mobile (under 768px): 2 compact cards with smooth horizontal swipe.
+
+### Attributes & Props
+| Attribute | Description | Type | Default |
+| --- | --- | --- | --- |
+| `limit` | Max items displayed | `number` | `4` |
+| `endTime` | Target end timestamp | `string` | `'2026-12-31'` |
+
+### Events
+- `flashsale-navigate`: Dispatched when clicking View All button.
+- `product-navigate`: Dispatched when clicking flash card.
+
+## Code
+
+### HTML
+
+```html
+<section class="py-6 font-sans text-content bg-surface">
+  <div class="w-full max-w-content mx-auto px-4 lg:px-6">
+    <div class="h-6 md:h-7 w-36 bg-accent rounded-sm mb-4"></div>
+    <div class="bg-surface rounded-xl shadow-xs border border-outline/30 p-4 md:p-6">
+      <div class="flex items-center justify-between mb-4 sm:mb-6 pb-3 sm:pb-4 border-b border-outline/30 gap-2 sm:gap-4">
+        <div class="flex items-center gap-2 sm:gap-4 min-w-0">
+          <div class="h-4 sm:h-5 w-20 sm:w-28 bg-accent rounded-xs shrink-0"></div>
+          <div class="h-3 sm:h-4 w-12 sm:w-16 bg-muted/60 rounded-xs shrink-0 hidden xs:block"></div>
+          <!-- Region: Countdown Timer - Urgent limited-time flash sale timer -->
+
+          <div class="flex items-center gap-1 shrink-0" data-region="countdown">
+            <span class="bg-primary text-white px-1.5 sm:px-2 py-0.5 sm:py-1 text-[11px] sm:text-xs font-bold rounded-xs min-w-6 sm:min-w-7 text-center">00</span>
+            <span class="text-content font-bold text-xs">:</span>
+            <span class="bg-primary text-white px-1.5 sm:px-2 py-0.5 sm:py-1 text-[11px] sm:text-xs font-bold rounded-xs min-w-6 sm:min-w-7 text-center">00</span>
+            <span class="text-content font-bold text-xs">:</span>
+            <span class="bg-primary text-white px-1.5 sm:px-2 py-0.5 sm:py-1 text-[11px] sm:text-xs font-bold rounded-xs min-w-6 sm:min-w-7 text-center">00</span>
+          </div>
+        </div>
+        <div role="button" tabindex="0" class="shrink-0 inline-flex items-center justify-center border-2 border-primary text-primary px-2.5 sm:px-4 py-1 sm:py-1.5 text-xs sm:text-sm font-medium rounded-sm hover:bg-primary hover:text-white transition-colors cursor-pointer whitespace-nowrap">
+          <div class="h-3 sm:h-3.5 w-14 sm:w-24 bg-primary/70 rounded-xs"></div>
+        </div>
+      </div>
+      <div class="relative">
+        <div class="swiper flash-sale-swiper-01 overflow-hidden">
+          <div class="swiper-wrapper py-1">
+            
+            <div class="swiper-slide !h-auto">
+              <flashcard-01 product-id="product-01"></flashcard-01>
+            </div>
+            
+            <div class="swiper-slide !h-auto">
+              <flashcard-01 product-id="product-02"></flashcard-01>
+            </div>
+            
+            <div class="swiper-slide !h-auto">
+              <flashcard-01 product-id="product-03"></flashcard-01>
+            </div>
+            
+            <div class="swiper-slide !h-auto">
+              <flashcard-01 product-id="product-04"></flashcard-01>
+            </div>
+            
+            <div class="swiper-slide !h-auto">
+              <flashcard-01 product-id="product-05"></flashcard-01>
+            </div>
+            
+          </div>
+        </div>
+        <div class="swiper-button-next flash-sale-next-01 !size-8 md:!size-9 after:!text-sm md:after:!text-base !text-primary bg-surface/90 border border-outline/30 rounded-full shadow-xs !right-1"></div>
+        <div class="swiper-button-prev flash-sale-prev-01 !size-8 md:!size-9 after:!text-sm md:after:!text-base !text-primary bg-surface/90 border border-outline/30 rounded-full shadow-xs !left-1"></div>
+      </div>
+    </div>
+  </div>
+</section>
+```
+
+### JavaScript
+
+```javascript
+$(function() {
+  if (typeof Swiper !== 'undefined' && $('.flash-sale-swiper-01').length) {
+    new Swiper('.flash-sale-swiper-01', {
+      slidesPerView: 2,
+      spaceBetween: 12,
+      navigation: {
+        nextEl: '.flash-sale-next-01',
+        prevEl: '.flash-sale-prev-01'
+      },
+      breakpoints: {
+        640: { slidesPerView: 3, spaceBetween: 14 },
+        768: { slidesPerView: 3, spaceBetween: 16 },
+        1024: { slidesPerView: 4, spaceBetween: 18 },
+        1280: { slidesPerView: 5, spaceBetween: 20 }
+      }
+    });
+  }
+});
+```

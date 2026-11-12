@@ -1,0 +1,114 @@
+## Overview
+
+About Us corporate brand page, integrating full-width hero banner, brand founding story narrative, key metrics dashboard, milestone timeline, and core team member showcase.
+
+### Regions
+Functional regions are annotated directly in the component code implementation via English comments.
+
+
+### Dimensions & Responsiveness
+- Follows Tailwind centered container（`w-full max-w-content mx-auto px-4 lg:px-6`） with PC max content width 1200px centered.
+- Desktop (1024px+): Magazine style multi-column layout with generous whitespace.
+- Mobile (under 1024px): Adapts to single vertical column with 2-column stats grid.
+
+### Attributes & Props
+| Attribute | Description | Type | Default |
+| --- | --- | --- | --- |
+| `theme` | Theme mode | `'light' \| 'dark'` | `'light'` |
+
+### Events
+- `about-navigate`: Dispatched when clicking team social link or CTA.
+
+## Code
+
+### HTML
+
+```html
+<section class="bg-surface font-sans text-content py-6 sm:py-10">
+  <div class="w-full max-w-content mx-auto px-4 lg:px-6">
+    <div class="grid grid-cols-1 lg:grid-cols-4 gap-8 md:gap-12">
+      <!-- Region: Main Article - Editorial brand article and imagery -->
+
+      <div data-region="main-article" class="lg:col-span-3 space-y-10">
+        <div class="space-y-4">
+          <div class="h-[1.8em] w-4/5 rounded-sm bg-accent"></div>
+          <div class="space-y-2">
+            <div class="h-[0.8em] w-full rounded-sm bg-accent"></div>
+            <div class="h-[0.8em] w-full rounded-sm bg-accent"></div>
+            <div class="h-[0.8em] w-5/6 rounded-sm bg-accent"></div>
+          </div>
+        </div>
+
+        <div class="space-y-4">
+          <div class="h-[1.4em] w-44 rounded-sm bg-accent"></div>
+          <div class="space-y-2">
+            <div class="h-[0.8em] w-full rounded-sm bg-accent"></div>
+            <div class="h-[0.8em] w-full rounded-sm bg-accent"></div>
+            <div class="h-[0.8em] w-4/5 rounded-sm bg-accent"></div>
+          </div>
+        </div>
+
+        <div class="space-y-4">
+          <div class="h-[1.4em] w-52 rounded-sm bg-accent"></div>
+          <div class="space-y-3" id="about-accordion">
+            <div class="border border-outline/50 rounded-xl overflow-hidden bg-surface">
+              <button type="button" class="w-full flex justify-between items-center p-4 text-left font-bold cursor-pointer hover:bg-accent/30 transition-colors">
+                <div class="h-[0.85em] w-48 rounded-sm bg-accent"></div>
+                <span class="size-2 rotate-45 border-r border-b border-muted inline-block"></span>
+              </button>
+              <div class="p-4 pt-0 space-y-2">
+                <div class="h-[0.7em] w-full rounded-xs bg-accent"></div>
+                <div class="h-[0.7em] w-4/5 rounded-xs bg-accent"></div>
+              </div>
+            </div>
+            <div class="border border-outline/50 rounded-xl overflow-hidden bg-surface">
+              <button type="button" class="w-full flex justify-between items-center p-4 text-left font-bold cursor-pointer hover:bg-accent/30 transition-colors">
+                <div class="h-[0.85em] w-48 rounded-sm bg-accent"></div>
+                <span class="size-2 rotate-45 border-r border-b border-muted inline-block"></span>
+              </button>
+              <div class="p-4 pt-0 space-y-2">
+                <div class="h-[0.7em] w-full rounded-xs bg-accent"></div>
+                <div class="h-[0.7em] w-4/5 rounded-xs bg-accent"></div>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <!-- Region: Contact Info Sidebar - Address, phone, email, and business hours -->
+
+
+      <div data-region="contact-sidebar" class="space-y-6">
+        <div class="p-6 rounded-2xl border border-outline/50 bg-surface space-y-6 lg:sticky lg:top-24 shadow-xs">
+          <div class="space-y-1">
+            <div class="h-[0.65em] w-16 rounded-xs bg-accent"></div>
+            <div class="h-[0.85em] w-28 rounded-sm bg-accent"></div>
+          </div>
+          <div class="space-y-1 pt-3 border-t border-outline/40">
+            <div class="h-[0.65em] w-16 rounded-xs bg-accent"></div>
+            <div class="h-[0.85em] w-36 rounded-sm bg-accent"></div>
+          </div>
+          <div class="space-y-1 pt-3 border-t border-outline/40">
+            <div class="h-[0.65em] w-16 rounded-xs bg-accent"></div>
+            <div class="h-[0.85em] w-32 rounded-sm bg-accent"></div>
+          </div>
+          <div class="space-y-1 pt-3 border-t border-outline/40">
+            <div class="h-[0.65em] w-16 rounded-xs bg-accent"></div>
+            <div class="h-[0.85em] w-full rounded-sm bg-accent"></div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+</section>
+```
+
+### JavaScript
+
+```javascript
+$(function() {
+  $('#about-accordion button').on('click', function() {
+    $(this).next().slideToggle(200);
+  });
+});
+```

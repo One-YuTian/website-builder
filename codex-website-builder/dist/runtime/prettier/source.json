@@ -1,0 +1,38 @@
+{
+  "name": "Prettier standalone",
+  "version": "3.6.2",
+  "documentation": "https://prettier.io/docs/browser",
+  "files": [
+    {
+      "path": "standalone.mjs",
+      "url": "https://unpkg.com/prettier@3.6.2/standalone.mjs",
+      "sha256": "2b798ca702b6a276f900ec01e6c95c618977fd2951e3bcb68c3220fe1b8589ec"
+    },
+    {
+      "path": "plugins/babel.mjs",
+      "url": "https://unpkg.com/prettier@3.6.2/plugins/babel.mjs",
+      "sha256": "e5c8e96f6a63f9e034363344f84a6a64fd806fbb28099c9ec88884c86c332db0"
+    },
+    {
+      "path": "plugins/estree.mjs",
+      "url": "https://unpkg.com/prettier@3.6.2/plugins/estree.mjs",
+      "sha256": "39b21f2c97d7f6a68c5f21ad01bb866aae500809644764818afb5b04525c421c"
+    },
+    {
+      "path": "plugins/html.mjs",
+      "url": "https://unpkg.com/prettier@3.6.2/plugins/html.mjs",
+      "sha256": "d077d42c8c984e8e17360f5bf7e79e430b05922d92fa35e94749308e7f7dfc86"
+    },
+    {
+      "path": "plugins/postcss.mjs",
+      "url": "https://unpkg.com/prettier@3.6.2/plugins/postcss.mjs",
+      "sha256": "2b5d0e635de557904b590807de97b63149ab4a828d57c8cf5eefbd851ea702e6"
+    },
+    {
+      "path": "LICENSE",
+      "url": "https://unpkg.com/prettier@3.6.2/LICENSE",
+      "sha256": "b0f2417199889f1c0d28ec4e0244eacf1a15de5819d61f641dd7d8f45153ac9c"
+    }
+  ],
+  "policy": "Vendored local ESM files; no npm dependency/install or runtime downloads; tooling only, never copied into website output"
+}

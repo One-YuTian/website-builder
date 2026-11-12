@@ -1,0 +1,361 @@
+{
+  "source": "Q:/Projects/域名DEMO/2026年11月10日_demo5/.agents/skills/website-builder",
+  "templates": 80,
+  "preserved": [
+    "templates/",
+    "references/cdn-links.json"
+  ],
+  "optimization": [
+    "Compact default instructions",
+    "Batch progressive template access",
+    "Automatic HTML boilerplate",
+    "Thread-project binding",
+    "Atomic per-page commit",
+    "UI-only long poll with changed-page payloads",
+    "Deterministic mock generation from compact brand samples",
+    "Reusable commerce SDK assets without repeated source reads",
+    "Verified implementation-based SDK contract",
+    "Local vendored Prettier with syntax-checked, single-page code output",
+    "New commerce configuration consolidated into app.js"
+  ],
+  "sourceSkillSha256": "bdf83d787cc5f81e00e8b41b172575db9362d5b9222ef057b83eb8452f433b3a",
+  "templatesSha256": "dfe6df0a09fa5aaf8457535c177de1c5a360d1f882c5b2a9a8ef26b5c41b9c59",
+  "defaultSkillBytes": 43779,
+  "originalSkillBytes": 15371,
+  "agentSource": {
+    "directory": "Q:/Projects/域名DEMO/2026年8月03日_demo1",
+    "files": [
+      {
+        "path": ".opencode/skills/generate-mock-data/SKILL.md",
+        "sha256": "28ff56026227d33bae32d87464ad8905bf092a6265bf41313ecb8ddfabb225dc"
+      },
+      {
+        "path": ".opencode/docs/API.md",
+        "sha256": "daa6c3f9cdf9a2e37774eb70794ed3e22185bc360281e6fe3be69aab640bc1bf"
+      },
+      {
+        "path": ".opencode/docs/sdk.md",
+        "sha256": "b9ee5862a1fca2539bead007b2e3a50d3b2b576af4e486bb2c9b14e57ba69b98"
+      },
+      {
+        "path": "js/ec-sdk.js",
+        "sha256": "b825676d608632e555ccc6efcf09537f744ba345773768199ba4e73697ce3cfa"
+      },
+      {
+        "path": "js/sdk.js",
+        "sha256": "49bb467277085f8b58202a7cf8d08b409b895d27ca987204dac96963defecfc0"
+      },
+      {
+        "path": ".opencode/skills/create-js/SKILL.md",
+        "sha256": "04d856cde45eb710e5a5c16b222105b3ebe9e08f34e769cc42c8cf865b0d94a6"
+      },
+      {
+        "path": ".opencode/skills/create-component/SKILL.md",
+        "sha256": "bcb7d8af23d18410ec6e5e754c5bc2986f9a7a8db3e69e2e69e21b76e007fd70"
+      },
+      {
+        "path": ".opencode/skills/create-page/SKILL.md",
+        "sha256": "21bb490b9584758643bc8bd6cba0d423821ee34c319895e81a8b357e256d4ec4"
+      },
+      {
+        "path": ".opencode/AGENTS.md",
+        "sha256": "53cf2bcc4562633e54876dc5a19f4b8bc76be151f09611ee001b16ed095d7aba"
+      },
+      {
+        "path": ".opencode/agents/site-builder.md",
+        "sha256": "f60afd535a1baba5e814d473a4fd7f91ac37936d9dea04e11dc5d9d8174f448d"
+      },
+      {
+        "path": ".opencode/agents/data-generator.md",
+        "sha256": "fae4909ca57048e9a10d5240502c714dbfffd4a9b76f4ce685a286355c685c2a"
+      },
+      {
+        "path": ".opencode/memories/dev-workflow.md",
+        "sha256": "0c65b758d2346742c036388a8403ddac6585f44b8a7951ddaa8acb71f610ba21"
+      },
+      {
+        "path": ".opencode/memories/tech-stack.md",
+        "sha256": "743fefad551f38e51fdf87f70dd4b033289573f6af0eaa8936f71de79409728f"
+      },
+      {
+        "path": ".opencode/memories/sdk-reference.md",
+        "sha256": "96c23b33976074ae28c4e0a7d3bc4661fa57fe18be6d4b68050a412bf893951f"
+      },
+      {
+        "path": ".opencode/skills/generate-design/SKILL.md",
+        "sha256": "509375d942ada76f2a183d7c80853dab94e403334adf4c89f07e24a426d3d6a5"
+      }
+    ],
+    "assetPolicy": "sdk.js retains source behavior; ec-sdk.js adapts async password hashing and storage isolation; original source is read-only"
+  },
+  "strictTemplatePolicy": {
+    "source": "Q:/Projects/域名DEMO/2026年11月10日_demo5/.agents/skills/website-builder/SKILL.md",
+    "sourceSha256": "bdf83d787cc5f81e00e8b41b172575db9362d5b9222ef057b83eb8452f433b3a",
+    "sections": [
+      "1",
+      "2",
+      "3",
+      "4",
+      "5"
+    ],
+    "reference": "references/template-fidelity.md",
+    "adaptedScripts": [
+      "scripts/hook-page.mjs"
+    ],
+    "measurement": "Ordered normalized DOM + layout retention; responsive/selectors required. Not a screenshot similarity metric.",
+    "enforcement": "SKILL guidance only; no runtime fidelity scores, coverage checks or readiness gates",
+    "guideline": 80
+  },
+  "currentTemplateBaseline": {
+    "files": 80,
+    "sha256": "dfe6df0a09fa5aaf8457535c177de1c5a360d1f882c5b2a9a8ef26b5c41b9c59",
+    "method": "SHA256(sorted relative UTF8 path + original file bytes)",
+    "origin": "Starlight actual-component region documentation; independent component implementation retained without demo loaders/theme injection",
+    "sourceRoot": "skills/website-builder/templates",
+    "regions": 823
+  },
+  "visualDesignPolicy": {
+    "reference": "references/visual-design.md",
+    "ownership": "Agent decides brand palette, light/dark strategy, content widths and compatible composition before template selection",
+    "acceptance": "Agent reviews rendered site-wide visuals and interactions; readiness validates complete HTML and local dependencies, never fidelity",
+    "selection": "Unranked candidates; no random/hash theme or layout choices"
+  },
+  "cartPresentation": "Agent chooses cart.html inline page or shared drawer; no compulsory separate cart page for drawer",
+  "sourceSkillBytes": 9122,
+  "migration": {
+    "source": "Q:/Projects/域名DEMO/2026年11月10日_demo5/.agents/skills/website-builder/SKILL.md",
+    "parts": [
+      "template slots without invented regions",
+      "AI-chosen palette with card/background separation",
+      "original responsive columns and Swiper",
+      "unique xxx-component registration",
+      "app.js-only commerce configuration",
+      "cart page/drawer mutual exclusion for new output",
+      "icon/radius/gutter/card/breadcrumb visual rules"
+    ],
+    "formatting": "Superseded by release075: local vendored Prettier output formatting"
+  },
+  "originalReference": {
+    "file": "references/original-skill.md",
+    "bytes": 15535,
+    "sha256": "58948a704ec77c0d3958139e8e1be4e51a9c70b0798a1db85d35f63494460f6e",
+    "policy": "User-updated directory reference including components/toast.js retained without rewriting"
+  },
+  "pagePlanning": "Complete ecommerce defaults include about/contact/terms/privacy/return; cart is optional for drawer; explicit partial scopes are respected",
+  "release070": {
+    "version": "0.7.0",
+    "scope": "Plugin source and runtime only; existing user projects and reference libraries not regenerated",
+    "shopFix": {
+      "contract": "references/shop-layouts.json",
+      "integration": "references/shop-integration.md",
+      "cause": [
+        "shared inaccurate overview",
+        "demo data and legacy card selectors require explicit adaptation",
+        "global visual advice conflicted with selected source layout"
+      ],
+      "delivery": "select/summary/doc/code and read-template reader return per-template accurate layout; raw source templates retained"
+    },
+    "mockSkill": {
+      "source": "Q:/Projects/域名DEMO/2026年7月01日_demo3/.opencode/skills/generate-mock-data/SKILL.md",
+      "snapshot": "../generate-mock-data/references/original-skill.md",
+      "sha256": "28ff56026227d33bae32d87464ad8905bf092a6265bf41313ecb8ddfabb225dc"
+    },
+    "skills": [
+      "website-builder",
+      "generate-mock-data",
+      "website-copywriter",
+      "website-image-generator",
+      "website-acceptance"
+    ],
+    "acceptance": "Explicit invocation only; agents/openai.yaml allow_implicit_invocation=false",
+    "canvas": {
+      "pcColumns": 5,
+      "tabletMobileColumns": 7,
+      "mode": "global width > 1024 selects PC"
+    },
+    "screenshot": {
+      "tool": "website_screenshot",
+      "cliAction": "screenshot",
+      "readiness": [
+        "document load",
+        "window.websiteReady",
+        "fonts",
+        "image decoding",
+        "lazy scroll",
+        "stable layout"
+      ],
+      "output": "full PNG and absolute project artifacts/screenshots path"
+    },
+    "auth": "SDK guest write rejection + prompt/redirect; APP.auth.requireLogin and safeReturnTo; existing SDKs preserved"
+  },
+  "release071": {
+    "version": "0.7.1",
+    "productionDirectory": "directory contains runtime assets only; metadata_directory stores control state, drafts, raw sources and reports outside production",
+    "compatibility": "legacy root manifest and template bindings read as fallback; future writes use metadata_directory, old files not deleted",
+    "imageWorkflow": "host imagegen skill -> image_gen tool; content and dimensions; text-free unless necessary; prefer shared image with responsive crop; monochrome transparent icons",
+    "copyWorkflow": "scene-specific length; detailed About Us and privacy text without concrete promises; optional image skill collaboration",
+    "header": "Home, Shop, About Us, Contact Us are required in desktop and mobile navigation",
+    "validation": [
+      "TypeScript and bundled build",
+      "production directory and screenshot output regression",
+      "project isolation and incremental preview",
+      "commerce preservation",
+      "template rendering"
+    ]
+  },
+  "release072": {
+    "version": "0.7.2",
+    "previewFix": {
+      "cause": "local base64 media inflated whole-page gzip past 3.8MB single-message cap",
+      "solution": [
+        "opaque local-media chunk resources",
+        "gzip page payload descriptors above 1MB base64",
+        "512KB resource chunks",
+        "atomic client acknowledgement after full decode; retries retain all pages"
+      ],
+      "sourceImages": "not compressed or rewritten"
+    },
+    "mobileRootFontSize": "html 12px for viewport <768; restore desktop scale across breakpoint",
+    "logo": "img/picture asset required",
+    "homeComposition": "1–2 distinct extra blocks beyond header/footer/hero/products; no duplicate sections",
+    "variety": {
+      "aboutLayouts": "references/about-layouts.json (11 source-based region/grid summaries)",
+      "history": "select.usage projects and lastUsed derived from recorded template bindings, without inferring unrecorded sites",
+      "policy": "compare >=3 Shop/About candidates; prefer compatible less-used variants for new sites; preserve existing layout on local edits"
+    },
+    "cartDefault": "drawer; default plan omits cart.html, page mode only for explicit need or existing page-mode sites",
+    "validation": [
+      "large-preview >6MB gzip/base64 with 4.7MB PNG",
+      "chunk retry retains all page payloads",
+      "no source image rewrite",
+      "About layout contracts and binding usage",
+      "default 12-page plan",
+      "project/commerce/template/proxy/smoke regressions"
+    ]
+  },
+  "release073": {
+    "version": "0.7.3",
+    "cdn": "online HTTPS source dependencies; default preview fetches upstream; pinned vendor fixtures require explicit test opt-in",
+    "brandAssets": "square favicon; transparent tightly cropped typographic wordmark without left icon; brand/site-specific styling",
+    "imageComposition": "content-specific centered subjects, banner critical content inside max-content safe zone; distinct carousel and About images",
+    "copy": "richer narrative multi-sentence paragraphs, except key labels/contact details and concise interaction feedback",
+    "home": "avoid repeated category module when Header includes category suite",
+    "controls": "shared hover/focus/disabled/radius language through theme and uiStyles",
+    "notifications": {
+      "asset": "assets/ui/toast.js",
+      "runtime": "components/toast.js",
+      "api": [
+        "Toast.show",
+        "Toast.success",
+        "Toast.error",
+        "Toast.info",
+        "Toast.warning",
+        "Toast.dismiss",
+        "Toast.clear"
+      ],
+      "assembly": "full/fragment/nested pages and direct-write finish; early head script + single Light DOM instance",
+      "auth": "Toast before delayed login navigation; no native alert"
+    },
+    "overlays": "explicit data-overlay-root/backdrop/panel and Overlay.open/close/register; content clicks preserved; outside click/Escape restores scroll/focus",
+    "validation": [
+      "TypeScript and build",
+      "full/fragment/nested/direct Toast injection and early API",
+      "Toast safe rendering/timers/dismiss/duplicate script",
+      "backdrop/panel/Escape and focus/scroll",
+      "guest Toast + login without alert",
+      "online upstream overrides conflicting bundled mapping",
+      "features/projects/templates/commerce/proxy/large preview regressions"
+    ]
+  },
+  "release074": {
+    "version": "0.7.4",
+    "toast": "Named ToastComponent, Light DOM, template/refresh, instance-owned state/timers/events, disconnect cleanup; thin global facade; user Toast directory declaration preserved",
+    "overlay": "Unified Overlay API and global backdrop/Escape listeners removed; component-local behavior documented only",
+    "cdn": "Avoid jsDelivr/jsdeliver and aliases in generation guidance",
+    "layout": "Within PC max-content reduce outer/nested horizontal padding and Logo-side whitespace; align section edges; preserve mobile safety spacing",
+    "products": {
+      "skill": "../import-products/SKILL.md",
+      "tool": "website_products",
+      "script": "../import-products/scripts/import-products.mjs",
+      "contract": "Parse JSON without execution; SDK runtime fields only; actual bundled SDK query counts; raw JSON unchanged",
+      "categories": "5–6 real display groups, More for excess, real subcategory/type/brand splits for shortfall; no empty invented categories",
+      "images": "relative paths resolved using www.domain -> https://cdn.domain/; absolute URLs retained",
+      "fallback": "unrecognized data -> mode mock and generate-mock-data routing, without overwriting existing data",
+      "provenance": "source SHA256 and normalized-runtime hash in metadata_directory, commerce validator recognizes imported SDK schema"
+    },
+    "pageScripts": "Single-page logic inline in corresponding HTML script; shared app/SDK/components remain files",
+    "detailLength": "Collapsible/paginated/revealed content retains complete accessible data",
+    "validation": [
+      "import adapter/SDK counts/secondary groups/CDN mapping/source hashes",
+      "JSON file and stdin script",
+      "invalid data Mock routing",
+      "existing SDK/data preservation and imported commerce validation",
+      "Toast lifecycle and removed Overlay interception",
+      "project/template/commerce/features/CDN/large-preview regressions"
+    ]
+  },
+  "contentWidthPolicy": {
+    "minPx": 1200,
+    "maxPx": 1550,
+    "integer": true,
+    "selection": "crypto.randomInt(1200,1551), once per new website",
+    "persistence": "metadata_directory/website-builder.design.json maxContentWidthPx",
+    "theme": "app.js maxWidth.content; exact REM conversion at actual PC root size",
+    "reuse": "same site and existing-site edits retain recorded/current width; explicit user width overrides"
+  },
+  "release075": {
+    "version": "0.7.5",
+    "pageCommit": "at most one HTML per write; immediately persist finished page before generating next; shared dependency batches allowed",
+    "formatting": {
+      "engine": "vendored Prettier standalone 3.6.2",
+      "files": "assets/prettier -> dist/runtime/prettier",
+      "dependency": "no npm package/install or runtime download",
+      "options": "assets/prettier/options.json",
+      "scope": "HTML plus inline scripts/styles, JS/MJS/CSS/JSON; finish and hook too; unfinished HTML not repaired"
+    },
+    "images": "raw relative paths preserved in productData and SDK; explicit render-time storeData.imageUrl/productImageUrl; source JSON hash unchanged",
+    "taxonomy": "source_category traces source; runtime category and SDK.categories/filter expose secondary mapping; no automatic top5+More; classification_required -> semantic category_map retry; paged summaries",
+    "validation": [
+      "per-page write with queued subsequent page and multi-HTML rejection",
+      "local formatting/idempotence/inline syntax protection and isolated offline bundle",
+      "raw relative image fields unchanged before/after render helper",
+      "SDK secondary categories + filters and source taxonomy provenance",
+      "category summary pagination and source hashes",
+      "core project/template/commerce/UI/features/large-preview/CDN regressions"
+    ]
+  },
+  "release076": {
+    "version": "0.7.6",
+    "pageCommit": "supports multiple HTML files per request and batch imports; newly generated pages are written as soon as complete",
+    "readiness": "submitted HTML and dependency-affected pages always validate; finalize_pages is additive; successful pages immediately sync to UI",
+    "recovery": "begin records source fingerprint; sync reconciles changed complete direct-file output without resurfacing old HTML; finish without paths validates unfinished pages; syntax/write errors settle status",
+    "ui": "per-page decoding failures retry without blocking successful page updates; snapshot changes reset load acknowledgement",
+    "validation": [
+      "multi-HTML import with finalize_pages empty",
+      "per-page ready before other pages finish",
+      "dependency-only recovery",
+      "cross-process direct-file completion and stale-file protection",
+      "finish without paths settles UI",
+      "syntax failure leaves error instead of generating",
+      "large preview chunk retry",
+      "project and commerce regressions"
+    ]
+  },
+  "release078": {
+    "version": "0.7.8",
+    "scope": "instruction-only; no new validators, readiness gates, runtime behaviors or retroactive site rewrites",
+    "rules": [
+      "adding products does not automatically open cart",
+      "registration provides username/email/phone/password",
+      "domain-derived default brand/support email/copyright",
+      "no extra padding around product detail images",
+      "customer-facing store copy uses consistent brand language without demo/local-simulation disclaimers; do not fabricate facts or promises"
+    ],
+    "relatedSkills": [
+      "website-builder",
+      "website-copywriter",
+      "website-image-generator"
+    ],
+    "verification": "manual documentation consistency review; no new rule validation code or tests"
+  }
+}

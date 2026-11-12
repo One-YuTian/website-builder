@@ -1,0 +1,63 @@
+## Overview
+
+Promotional campaign banner section, supporting equal multi-column or asymmetric mosaic layouts with rich background marketing imagery, discount tags, and fast CTAs.
+
+### Regions
+Functional regions are annotated directly in the component code implementation via English comments.
+
+
+### Dimensions & Responsiveness
+- Follows Tailwind centered container（`w-full max-w-content mx-auto px-4 lg:px-6`） with max content width 1200px centered.
+- Desktop (1024px+): 2~3 column layout with 240px~360px card heights.
+- Mobile (under 768px): Single column vertical stacking.
+
+### Attributes & Props
+| Attribute | Description | Type | Default |
+| --- | --- | --- | --- |
+| `columns` | Number of promotional banner columns | `number` | `2` |
+
+### Events
+- `promo-navigate`: Dispatched when clicking banner card or CTA button.
+
+## Code
+
+### HTML
+
+```html
+<section class="w-full bg-surface p-0 m-0 overflow-hidden relative font-sans text-content">
+  <div class="w-full relative aspect-[21/9] min-h-[260px] md:min-h-[400px] bg-accent/70 flex items-center justify-center overflow-hidden">
+    <!-- Distinct Background Image Skeleton -->
+    <div class="absolute inset-0 flex items-center justify-center opacity-40">
+      <span class="relative block aspect-[16/9] w-2/3 max-w-[600px] overflow-hidden rounded-md border border-muted/80">
+        <span class="absolute right-[15%] top-[15%] size-1/5 rounded-full bg-muted/80"></span>
+        <span class="absolute -bottom-1/4 left-[5%] size-3/4 rotate-45 border-l border-t border-muted/80"></span>
+        <span class="absolute -bottom-1/4 right-0 size-1/2 rotate-45 border-l border-t border-muted/80"></span>
+      </span>
+    </div>
+
+    <!-- Overlay Content -->
+    <div class="absolute inset-0 flex items-center z-10 pointer-events-none">
+      <div class="w-full max-w-content mx-auto px-4 lg:px-6 flex items-center">
+        <div class="max-w-[200px] sm:max-w-[320px] md:max-w-[420px] flex flex-col items-start select-none">
+          <div class="h-6 sm:h-8 md:h-10 w-44 sm:w-64 bg-content/85 rounded-xs mb-2"></div>
+          <div class="h-6 sm:h-8 md:h-10 w-36 sm:w-52 bg-primary rounded-xs mb-4"></div>
+          <div role="button" tabindex="0" class="inline-flex items-center justify-center bg-surface border border-outline/40 text-primary px-5 sm:px-7 py-2 sm:py-3 rounded-full shadow-sm pointer-events-auto cursor-pointer hover:bg-accent transition-colors">
+            <div class="h-3 w-20 bg-primary/80 rounded-xs"></div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+</section>
+```
+
+### JavaScript
+
+```javascript
+$(function() {
+  $('section').on('click', '[role="button"]', function(e) {
+    e.preventDefault();
+    $(this).trigger('promotion-navigate');
+  });
+});
+```

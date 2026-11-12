@@ -1,0 +1,106 @@
+## Overview
+
+Flash sale and limited-time marketing section, integrating animated countdown timer blocks, promotional badges, flash cards with sold percentage progress, and View All CTA.
+
+### Regions
+Functional regions are annotated directly in the component code implementation via English comments.
+
+
+### Dimensions & Responsiveness
+- Follows Tailwind centered container（`w-full max-w-content mx-auto px-4 lg:px-6`） with max content width 1200px centered.
+- Desktop (1024px+): 3~4 flash cards side by side.
+- Mobile (under 768px): 2 compact cards with smooth horizontal swipe.
+
+### Attributes & Props
+| Attribute | Description | Type | Default |
+| --- | --- | --- | --- |
+| `limit` | Max items displayed | `number` | `4` |
+| `endTime` | Target end timestamp | `string` | `'2026-12-31'` |
+
+### Events
+- `flashsale-navigate`: Dispatched when clicking View All button.
+- `product-navigate`: Dispatched when clicking flash card.
+
+## Code
+
+### HTML
+
+```html
+<section class="py-6 md:py-8 font-sans text-content bg-surface">
+  <div class="w-full max-w-content mx-auto px-4 lg:px-6">
+    <div class="flex flex-col md:flex-row gap-4 md:gap-6 items-stretch">
+      <!-- Countdown Left Banner (1/3) -->
+      <div class="w-full md:w-1/3 bg-primary p-5 sm:p-6 rounded-xl text-white flex flex-col justify-between shadow-xs">
+        <div>
+          <div class="h-6 w-36 bg-white/90 rounded-xs mb-4"></div>
+          <div class="flex gap-2.5 sm:gap-3">
+            <div class="text-center">
+              <div class="bg-white text-gray-900 rounded-lg p-2 min-w-[42px] sm:min-w-[48px] font-bold text-base sm:text-lg">00</div>
+              <div class="h-2 w-8 bg-white/70 rounded-xs mx-auto mt-1.5"></div>
+            </div>
+            <div class="text-center">
+              <div class="bg-white text-gray-900 rounded-lg p-2 min-w-[42px] sm:min-w-[48px] font-bold text-base sm:text-lg">00</div>
+              <div class="h-2 w-8 bg-white/70 rounded-xs mx-auto mt-1.5"></div>
+            </div>
+            <div class="text-center">
+              <div class="bg-white text-gray-900 rounded-lg p-2 min-w-[42px] sm:min-w-[48px] font-bold text-base sm:text-lg">00</div>
+              <div class="h-2 w-8 bg-white/70 rounded-xs mx-auto mt-1.5"></div>
+            </div>
+          </div>
+        </div>
+        <div role="button" tabindex="0" class="h-9 sm:h-10 w-32 sm:w-36 bg-white text-primary rounded-full flex items-center justify-center font-bold text-sm cursor-pointer mt-6 shadow-xs">
+          <div class="h-3 w-16 bg-primary rounded-xs"></div>
+        </div>
+      </div>
+      <!-- Products Right Swiper (2/3) -->
+      <div class="w-full md:w-2/3 min-w-0 relative">
+        <div class="swiper flash-sale-swiper-07 overflow-hidden">
+          <div class="swiper-wrapper py-1">
+            
+            <div class="swiper-slide !h-auto">
+              <flashcard-01 product-id="nusa-01"></flashcard-01>
+            </div>
+            
+            <div class="swiper-slide !h-auto">
+              <flashcard-01 product-id="nusa-02"></flashcard-01>
+            </div>
+            
+            <div class="swiper-slide !h-auto">
+              <flashcard-01 product-id="nusa-03"></flashcard-01>
+            </div>
+
+            <div class="swiper-slide !h-auto">
+              <flashcard-01 product-id="nusa-04"></flashcard-01>
+            </div>
+            
+          </div>
+        </div>
+        <div class="swiper-button-next flash-sale-next-07 !size-8 md:!size-9 after:!text-sm md:after:!text-base !text-primary bg-surface/90 border border-outline/30 rounded-full shadow-xs !right-1"></div>
+        <div class="swiper-button-prev flash-sale-prev-07 !size-8 md:!size-9 after:!text-sm md:after:!text-base !text-primary bg-surface/90 border border-outline/30 rounded-full shadow-xs !left-1"></div>
+      </div>
+    </div>
+  </div>
+</section>
+```
+
+### JavaScript
+
+```javascript
+$(function() {
+  if (typeof Swiper !== 'undefined' && $('.flash-sale-swiper-07').length) {
+    new Swiper('.flash-sale-swiper-07', {
+      slidesPerView: 2,
+      spaceBetween: 12,
+      navigation: {
+        nextEl: '.flash-sale-next-07',
+        prevEl: '.flash-sale-prev-07'
+      },
+      breakpoints: {
+        640: { slidesPerView: 2.5, spaceBetween: 14 },
+        768: { slidesPerView: 3, spaceBetween: 16 },
+        1024: { slidesPerView: 3, spaceBetween: 16 }
+      }
+    });
+  }
+});
+```

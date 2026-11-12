@@ -1,0 +1,20 @@
+{
+  "name": "website-builder-beta",
+  "interface": {
+    "displayName": "Website Builder Beta"
+  },
+  "plugins": [
+    {
+      "name": "codex-website-builder",
+      "source": {
+        "source": "local",
+        "path": "./codex-website-builder"
+      },
+      "policy": {
+        "installation": "AVAILABLE",
+        "authentication": "ON_INSTALL"
+      },
+      "category": "Developer Tools"
+    }
+  ]
+}

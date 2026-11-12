@@ -1,0 +1,80 @@
+## Overview
+
+E-commerce trust guarantees and customer service highlights section, showcasing official genuine authenticity, free express delivery, hassle-free returns, and 24/7 live support in equal grid columns.
+
+### Regions
+Functional regions are annotated directly in the component code implementation via English comments.
+
+
+### Dimensions & Responsiveness
+- Follows Tailwind centered container（`w-full max-w-content mx-auto px-4 lg:px-6`） with max content width 1200px centered.
+- Desktop (1024px+): 3~4 equal columns horizontally aligned with generous padding.
+- Mobile (under 768px): Single column vertical stacking or compact 2-column grid.
+
+### Attributes & Props
+| Attribute | Description | Type | Default |
+| --- | --- | --- | --- |
+| `columns` | Number of service feature columns | `number` | `4` |
+
+### Events
+- `service-click`: Dispatched when clicking service card to view detailed policy.
+
+## Code
+
+### HTML
+
+```html
+<section class="w-full py-10 md:py-6 my-6 bg-accent/30 font-sans text-content">
+  <div class="w-full max-w-content mx-auto px-4 lg:px-6">
+    <!-- Region: Service Value Badges Grid -->
+
+    <div class="grid grid-cols-2 md:grid-cols-4 gap-0 md:gap-6 justify-center items-stretch">
+      
+      <div class="flex flex-col items-center justify-center text-center p-4 border-b md:border-b-0 border-outline/30 odd:border-r md:odd:border-r-0 hover:-translate-y-1 transition-transform duration-300">
+        <div class="h-14 md:h-16 w-16 bg-surface rounded-lg flex items-center justify-center mb-3 border border-outline/20">
+          <span class="relative inline-flex items-center justify-center size-8 md:size-10 rounded-sm bg-accent/60 text-muted border border-outline/30">
+    <span class="size-1/2 rounded-full border border-muted"></span>
+  </span>
+        </div>
+        <div class="h-4 w-28 bg-accent rounded-xs"></div>
+      </div>
+      
+      <div class="flex flex-col items-center justify-center text-center p-4 border-b md:border-b-0 border-outline/30 odd:border-r md:odd:border-r-0 hover:-translate-y-1 transition-transform duration-300">
+        <div class="h-14 md:h-16 w-16 bg-surface rounded-lg flex items-center justify-center mb-3 border border-outline/20">
+          <span class="relative inline-flex items-center justify-center size-8 md:size-10 rounded-sm bg-accent/60 text-muted border border-outline/30">
+    <span class="size-1/2 rounded-full border border-muted"></span>
+  </span>
+        </div>
+        <div class="h-4 w-28 bg-accent rounded-xs"></div>
+      </div>
+      
+      <div class="flex flex-col items-center justify-center text-center p-4 border-b md:border-b-0 border-outline/30 odd:border-r md:odd:border-r-0 hover:-translate-y-1 transition-transform duration-300">
+        <div class="h-14 md:h-16 w-16 bg-surface rounded-lg flex items-center justify-center mb-3 border border-outline/20">
+          <span class="relative inline-flex items-center justify-center size-8 md:size-10 rounded-sm bg-accent/60 text-muted border border-outline/30">
+    <span class="size-1/2 rounded-full border border-muted"></span>
+  </span>
+        </div>
+        <div class="h-4 w-28 bg-accent rounded-xs"></div>
+      </div>
+      
+      <div class="flex flex-col items-center justify-center text-center p-4 border-b md:border-b-0 border-outline/30 odd:border-r md:odd:border-r-0 hover:-translate-y-1 transition-transform duration-300">
+        <div class="h-14 md:h-16 w-16 bg-surface rounded-lg flex items-center justify-center mb-3 border border-outline/20">
+          <span class="relative inline-flex items-center justify-center size-8 md:size-10 rounded-sm bg-accent/60 text-muted border border-outline/30">
+    <span class="size-1/2 rounded-full border border-muted"></span>
+  </span>
+        </div>
+        <div class="h-4 w-28 bg-accent rounded-xs"></div>
+      </div>
+      
+    </div>
+  </div>
+</section>
+```
+
+### JavaScript
+
+```javascript
+$(function() {
+  // Services-05 static presentation
+});
+```

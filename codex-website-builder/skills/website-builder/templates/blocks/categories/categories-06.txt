@@ -1,0 +1,151 @@
+## Overview
+
+Category showcase and navigation block, integrating section title, round/square category thumbnail cards, and item counter badges with smooth hover micro-interactions.
+
+### Regions
+Functional regions are annotated directly in the component code implementation via English comments.
+
+
+### Dimensions & Responsiveness
+- Follows Tailwind centered container（`w-full max-w-content mx-auto px-4 lg:px-6`） with max content width 1200px centered.
+- Desktop (1024px+): 4~6 column circular or square cards evenly distributed.
+- Mobile (under 768px): Adapts to 3 compact columns or horizontal swipe slider.
+
+### Attributes & Props
+| Attribute | Description | Type | Default |
+| --- | --- | --- | --- |
+| `limit` | Max categories displayed | `number` | `6` |
+
+### Events
+- `category-navigate`: Dispatched when clicking a category card, providing category ID.
+
+## Code
+
+### HTML
+
+```html
+<section class="py-8 bg-accent/40 font-sans text-content">
+  <div class="w-full max-w-content mx-auto px-4 lg:px-6">
+    <div class="swiper category-swiper-06 overflow-hidden w-full">
+      <div class="swiper-wrapper py-1">
+        
+        <div class="swiper-slide !h-auto">
+          <div role="button" tabindex="0" class="block bg-surface p-3.5 rounded-xl border border-outline/20 hover:border-primary shadow-2xs hover:shadow-xs transition-all cursor-pointer select-none">
+            <div class="flex items-center space-x-3">
+              <div class="size-12 flex-shrink-0 rounded-full bg-accent/60 flex items-center justify-center border border-outline/20">
+                <span class="relative inline-flex items-center justify-center size-6 rounded-sm bg-accent/60 text-muted border border-outline/30">
+    <span class="size-1/2 rounded-full border border-muted"></span>
+  </span>
+              </div>
+              <div class="flex-1 min-w-0">
+                <div class="h-4 w-20 bg-accent rounded-xs mb-1"></div>
+                <div class="h-3 w-12 bg-muted/50 rounded-xs"></div>
+              </div>
+            </div>
+          </div>
+        </div>
+        
+        <div class="swiper-slide !h-auto">
+          <div role="button" tabindex="0" class="block bg-surface p-3.5 rounded-xl border border-outline/20 hover:border-primary shadow-2xs hover:shadow-xs transition-all cursor-pointer select-none">
+            <div class="flex items-center space-x-3">
+              <div class="size-12 flex-shrink-0 rounded-full bg-accent/60 flex items-center justify-center border border-outline/20">
+                <span class="relative inline-flex items-center justify-center size-6 rounded-sm bg-accent/60 text-muted border border-outline/30">
+    <span class="size-1/2 rounded-full border border-muted"></span>
+  </span>
+              </div>
+              <div class="flex-1 min-w-0">
+                <div class="h-4 w-20 bg-accent rounded-xs mb-1"></div>
+                <div class="h-3 w-12 bg-muted/50 rounded-xs"></div>
+              </div>
+            </div>
+          </div>
+        </div>
+        
+        <div class="swiper-slide !h-auto">
+          <div role="button" tabindex="0" class="block bg-surface p-3.5 rounded-xl border border-outline/20 hover:border-primary shadow-2xs hover:shadow-xs transition-all cursor-pointer select-none">
+            <div class="flex items-center space-x-3">
+              <div class="size-12 flex-shrink-0 rounded-full bg-accent/60 flex items-center justify-center border border-outline/20">
+                <span class="relative inline-flex items-center justify-center size-6 rounded-sm bg-accent/60 text-muted border border-outline/30">
+    <span class="size-1/2 rounded-full border border-muted"></span>
+  </span>
+              </div>
+              <div class="flex-1 min-w-0">
+                <div class="h-4 w-20 bg-accent rounded-xs mb-1"></div>
+                <div class="h-3 w-12 bg-muted/50 rounded-xs"></div>
+              </div>
+            </div>
+          </div>
+        </div>
+        
+        <div class="swiper-slide !h-auto">
+          <div role="button" tabindex="0" class="block bg-surface p-3.5 rounded-xl border border-outline/20 hover:border-primary shadow-2xs hover:shadow-xs transition-all cursor-pointer select-none">
+            <div class="flex items-center space-x-3">
+              <div class="size-12 flex-shrink-0 rounded-full bg-accent/60 flex items-center justify-center border border-outline/20">
+                <span class="relative inline-flex items-center justify-center size-6 rounded-sm bg-accent/60 text-muted border border-outline/30">
+    <span class="size-1/2 rounded-full border border-muted"></span>
+  </span>
+              </div>
+              <div class="flex-1 min-w-0">
+                <div class="h-4 w-20 bg-accent rounded-xs mb-1"></div>
+                <div class="h-3 w-12 bg-muted/50 rounded-xs"></div>
+              </div>
+            </div>
+          </div>
+        </div>
+        
+        <div class="swiper-slide !h-auto">
+          <div role="button" tabindex="0" class="block bg-surface p-3.5 rounded-xl border border-outline/20 hover:border-primary shadow-2xs hover:shadow-xs transition-all cursor-pointer select-none">
+            <div class="flex items-center space-x-3">
+              <div class="size-12 flex-shrink-0 rounded-full bg-accent/60 flex items-center justify-center border border-outline/20">
+                <span class="relative inline-flex items-center justify-center size-6 rounded-sm bg-accent/60 text-muted border border-outline/30">
+    <span class="size-1/2 rounded-full border border-muted"></span>
+  </span>
+              </div>
+              <div class="flex-1 min-w-0">
+                <div class="h-4 w-20 bg-accent rounded-xs mb-1"></div>
+                <div class="h-3 w-12 bg-muted/50 rounded-xs"></div>
+              </div>
+            </div>
+          </div>
+        </div>
+        
+        <div class="swiper-slide !h-auto">
+          <div role="button" tabindex="0" class="block bg-surface p-3.5 rounded-xl border border-outline/20 hover:border-primary shadow-2xs hover:shadow-xs transition-all cursor-pointer select-none">
+            <div class="flex items-center space-x-3">
+              <div class="size-12 flex-shrink-0 rounded-full bg-accent/60 flex items-center justify-center border border-outline/20">
+                <span class="relative inline-flex items-center justify-center size-6 rounded-sm bg-accent/60 text-muted border border-outline/30">
+    <span class="size-1/2 rounded-full border border-muted"></span>
+  </span>
+              </div>
+              <div class="flex-1 min-w-0">
+                <div class="h-4 w-20 bg-accent rounded-xs mb-1"></div>
+                <div class="h-3 w-12 bg-muted/50 rounded-xs"></div>
+              </div>
+            </div>
+          </div>
+        </div>
+        
+      </div>
+    </div>
+  </div>
+</section>
+```
+
+### JavaScript
+
+```javascript
+$(function() {
+  if (typeof Swiper !== 'undefined' && $('.category-swiper-06').length) {
+    new Swiper('.category-swiper-06', {
+      slidesPerView: 2,
+      spaceBetween: 14,
+      breakpoints: {
+        640: { slidesPerView: 3, spaceBetween: 16 },
+        768: { slidesPerView: 4, spaceBetween: 18 },
+        1024: { slidesPerView: 5, spaceBetween: 20 },
+        1280: { slidesPerView: 6, spaceBetween: 24 }
+      }
+    });
+  }
+});
+```

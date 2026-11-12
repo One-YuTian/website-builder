@@ -1,0 +1,5 @@
+interface:
+  display_name: "网站验收"
+  short_description: "website-acceptance"
+policy:
+  allow_implicit_invocation: false

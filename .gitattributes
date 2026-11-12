@@ -1,0 +1,2 @@
+codex-website-builder/scripts/launch-node text eol=lf
+codex-website-builder/scripts/*.cmd text eol=crlf

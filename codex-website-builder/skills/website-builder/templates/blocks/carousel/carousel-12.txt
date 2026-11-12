@@ -1,0 +1,136 @@
+## Overview
+
+Full-width hero visual carousel showcase block, supporting multi-aspect ratio scaling, touch drag gestures, auto-rotation timer, bottom dot pagination indicators, and left/right navigation arrows, with dedicated breakpoint viewport adaptation.
+
+### Regions
+Functional regions are annotated directly in the component code implementation via English comments.
+
+
+### Dimensions & Responsiveness
+- Follows global design system, outer container uses Tailwind centered container（`w-full max-w-content mx-auto px-4 lg:px-6`） with PC max content width 1200px centered.
+- Desktop (1024px+): Fixed height 500px~550px with stable text overlay alignment.
+- Mobile (under 1024px): Adapts to 16:9 or 50:21 aspect ratio with smooth swipe touch gestures.
+
+### Attributes & Props
+| Attribute | Description | Type | Default |
+| --- | --- | --- | --- |
+| `stageSelector` | Mount container selector | `string` | `'#carousel-stage'` |
+| `interval` | Auto-play interval in milliseconds | `number` | `5000` |
+| `paused` | Whether auto-rotation is paused | `boolean` | `false` |
+
+### Events
+- `carousel-navigate`: Dispatched when clicking a carousel slide banner.
+- `carousel-change`: Dispatched when slide transition finishes, providing current active index.
+
+## Code
+
+### HTML
+
+```html
+<section class="bg-surface font-sans text-content py-4 sm:py-6">
+  <div class="w-full max-w-content mx-auto px-4 lg:px-6">
+    <!-- Desktop: Two-Column Side-by-Side Banners -->
+    <div class="hidden md:grid grid-cols-2 gap-6">
+      <!-- Region: Primary Promotional Banner - Featured hero showcase -->
+
+      <div data-region="banner-card-1" role="button" tabindex="0" class="relative h-64 lg:h-96 rounded-xl overflow-hidden bg-accent group cursor-pointer border border-outline/30 focus:outline-none focus:ring-2 focus:ring-primary">
+        <div class="absolute inset-0 flex items-center justify-center bg-accent">
+          <span class="relative block aspect-[6/5] w-16 lg:w-20 overflow-hidden rounded-sm border border-muted">
+            <span class="absolute right-[15%] top-[15%] size-1/5 rounded-full bg-muted"></span>
+            <span class="absolute -bottom-1/4 left-[5%] size-3/4 rotate-45 border-l border-t border-muted"></span>
+            <span class="absolute -bottom-1/4 right-0 size-1/2 rotate-45 border-l border-t border-muted"></span>
+          </span>
+        </div>
+        <div class="absolute inset-0 bg-gradient-to-t from-black/70 via-black/30 to-transparent flex items-end p-6 lg:p-8">
+          <div class="w-full flex flex-col gap-2.5">
+            <div class="h-7 lg:h-9 w-3/4 max-w-xs bg-white/90 rounded-sm"></div>
+            <div class="h-4 w-full max-w-sm bg-white/70 rounded-sm"></div>
+          </div>
+        </div>
+      </div>
+      <!-- Region: Secondary Promotional Banner - Supporting campaign offer -->
+
+      <div data-region="banner-card-2" role="button" tabindex="0" class="relative h-64 lg:h-96 rounded-xl overflow-hidden bg-accent group cursor-pointer border border-outline/30 focus:outline-none focus:ring-2 focus:ring-primary">
+        <div class="absolute inset-0 flex items-center justify-center bg-accent">
+          <span class="relative block aspect-[6/5] w-16 lg:w-20 overflow-hidden rounded-sm border border-muted">
+            <span class="absolute right-[15%] top-[15%] size-1/5 rounded-full bg-muted"></span>
+            <span class="absolute -bottom-1/4 left-[5%] size-3/4 rotate-45 border-l border-t border-muted"></span>
+            <span class="absolute -bottom-1/4 right-0 size-1/2 rotate-45 border-l border-t border-muted"></span>
+          </span>
+        </div>
+        <div class="absolute inset-0 bg-gradient-to-t from-black/70 via-black/30 to-transparent flex items-end p-6 lg:p-8">
+          <div class="w-full flex flex-col gap-2.5">
+            <div class="h-7 lg:h-9 w-2/3 max-w-xs bg-white/90 rounded-sm"></div>
+            <div class="h-4 w-5/6 max-w-sm bg-white/70 rounded-sm"></div>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- Mobile: Swiper Fade Banner Slider -->
+    <div class="block md:hidden">
+      <div class="swiper banner-swiper-12 relative h-64 rounded-xl overflow-hidden bg-accent border border-outline/30">
+        <div class="swiper-wrapper h-full">
+          <div class="swiper-slide !h-full relative">
+            <div class="w-full h-full flex items-center justify-center bg-accent">
+              <span class="relative block aspect-[6/5] w-14 overflow-hidden rounded-sm border border-muted">
+                <span class="absolute right-[15%] top-[15%] size-1/5 rounded-full bg-muted"></span>
+                <span class="absolute -bottom-1/4 left-[5%] size-3/4 rotate-45 border-l border-t border-muted"></span>
+                <span class="absolute -bottom-1/4 right-0 size-1/2 rotate-45 border-l border-t border-muted"></span>
+              </span>
+            </div>
+            <div class="absolute inset-0 bg-gradient-to-t from-black/70 via-black/30 to-transparent flex items-end p-6">
+              <div class="w-full flex flex-col gap-2">
+                <div class="h-6 w-3/4 bg-white/90 rounded-sm"></div>
+                <div class="h-3.5 w-full bg-white/70 rounded-sm"></div>
+              </div>
+            </div>
+          </div>
+          <div class="swiper-slide !h-full relative">
+            <div class="w-full h-full flex items-center justify-center bg-accent">
+              <span class="relative block aspect-[6/5] w-14 overflow-hidden rounded-sm border border-muted">
+                <span class="absolute right-[15%] top-[15%] size-1/5 rounded-full bg-muted"></span>
+                <span class="absolute -bottom-1/4 left-[5%] size-3/4 rotate-45 border-l border-t border-muted"></span>
+                <span class="absolute -bottom-1/4 right-0 size-1/2 rotate-45 border-l border-t border-muted"></span>
+              </span>
+            </div>
+            <div class="absolute inset-0 bg-gradient-to-t from-black/70 via-black/30 to-transparent flex items-end p-6">
+              <div class="w-full flex flex-col gap-2">
+                <div class="h-6 w-2/3 bg-white/90 rounded-sm"></div>
+                <div class="h-3.5 w-4/5 bg-white/70 rounded-sm"></div>
+              </div>
+            </div>
+          </div>
+        </div>
+        <div class="swiper-pagination !bottom-2 !z-30"></div>
+      </div>
+    </div>
+  </div>
+</section>
+```
+
+### JavaScript
+
+```javascript
+$(function() {
+  if (typeof Swiper !== 'undefined') {
+    if ($('.banner-swiper-12').length) {
+      new Swiper('.banner-swiper-12', {
+        loop: true,
+        autoplay: {
+          delay: 3000,
+          disableOnInteraction: false
+        },
+        effect: 'fade',
+        fadeEffect: {
+          crossFade: true
+        },
+        pagination: {
+          el: '.banner-swiper-12 .swiper-pagination',
+          clickable: true
+        }
+      });
+    }
+  }
+});
+```

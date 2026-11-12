@@ -1,0 +1,113 @@
+## Overview
+
+Category showcase and navigation block, integrating section title, round/square category thumbnail cards, and item counter badges with smooth hover micro-interactions.
+
+### Regions
+Functional regions are annotated directly in the component code implementation via English comments.
+
+
+### Dimensions & Responsiveness
+- Follows Tailwind centered container（`w-full max-w-content mx-auto px-4 lg:px-6`） with max content width 1200px centered.
+- Desktop (1024px+): 4~6 column circular or square cards evenly distributed.
+- Mobile (under 768px): Adapts to 3 compact columns or horizontal swipe slider.
+
+### Attributes & Props
+| Attribute | Description | Type | Default |
+| --- | --- | --- | --- |
+| `limit` | Max categories displayed | `number` | `6` |
+
+### Events
+- `category-navigate`: Dispatched when clicking a category card, providing category ID.
+
+## Code
+
+### HTML
+
+```html
+<section class="py-10 md:py-14 font-sans text-content bg-surface">
+  <div class="w-full max-w-content mx-auto px-4 lg:px-6">
+    <div class="h-7 md:h-9 w-48 bg-accent rounded-sm mx-auto mb-8 text-center"></div>
+    <!-- Region: Category Entrance Cards Grid -->
+
+    <div class="grid grid-cols-2 md:grid-cols-4 lg:grid-cols-5 gap-4 md:gap-6">
+    <!-- Item 1 (visible all) -->
+    <div role="button" tabindex="0" class="group bg-surface rounded-xl border border-outline/20 shadow-2xs hover:shadow-md p-6 text-center transition-all cursor-pointer">
+      <div class="mb-4">
+        <div class="size-16 mx-auto rounded-full bg-accent/60 flex items-center justify-center border border-outline/20 group-hover:scale-105 transition-transform">
+          <span class="relative inline-flex items-center justify-center size-8 rounded-sm bg-accent/60 text-muted border border-outline/30">
+    <span class="size-1/2 rounded-full border border-muted"></span>
+  </span>
+        </div>
+      </div>
+      <div class="h-4 w-20 bg-accent rounded-xs mx-auto"></div>
+    </div>
+
+    <!-- Item 2 (visible all) -->
+    <div role="button" tabindex="0" class="group bg-surface rounded-xl border border-outline/20 shadow-2xs hover:shadow-md p-6 text-center transition-all cursor-pointer">
+      <div class="mb-4">
+        <div class="size-16 mx-auto rounded-full bg-accent/60 flex items-center justify-center border border-outline/20 group-hover:scale-105 transition-transform">
+          <span class="relative inline-flex items-center justify-center size-8 rounded-sm bg-accent/60 text-muted border border-outline/30">
+    <span class="size-1/2 rounded-full border border-muted"></span>
+  </span>
+        </div>
+      </div>
+      <div class="h-4 w-20 bg-accent rounded-xs mx-auto"></div>
+    </div>
+
+    <!-- Item 3 (visible all) -->
+    <div role="button" tabindex="0" class="group bg-surface rounded-xl border border-outline/20 shadow-2xs hover:shadow-md p-6 text-center transition-all cursor-pointer">
+      <div class="mb-4">
+        <div class="size-16 mx-auto rounded-full bg-accent/60 flex items-center justify-center border border-outline/20 group-hover:scale-105 transition-transform">
+          <span class="relative inline-flex items-center justify-center size-8 rounded-sm bg-accent/60 text-muted border border-outline/30">
+    <span class="size-1/2 rounded-full border border-muted"></span>
+  </span>
+        </div>
+      </div>
+      <div class="h-4 w-20 bg-accent rounded-xs mx-auto"></div>
+    </div>
+
+    <!-- Item 4 (visible all) -->
+    <div role="button" tabindex="0" class="group bg-surface rounded-xl border border-outline/20 shadow-2xs hover:shadow-md p-6 text-center transition-all cursor-pointer">
+      <div class="mb-4">
+        <div class="size-16 mx-auto rounded-full bg-accent/60 flex items-center justify-center border border-outline/20 group-hover:scale-105 transition-transform">
+          <span class="relative inline-flex items-center justify-center size-8 rounded-sm bg-accent/60 text-muted border border-outline/30">
+    <span class="size-1/2 rounded-full border border-muted"></span>
+  </span>
+        </div>
+      </div>
+      <div class="h-4 w-20 bg-accent rounded-xs mx-auto"></div>
+    </div>
+
+    <!-- Item 5 (HIDDEN on mobile and tablet md:, ONLY visible on desktop lg:) -->
+    <div role="button" tabindex="0" class="group hidden lg:block bg-surface rounded-xl border border-outline/20 shadow-2xs hover:shadow-md p-6 text-center transition-all cursor-pointer">
+      <div class="mb-4">
+        <div class="size-16 mx-auto rounded-full bg-accent/60 flex items-center justify-center border border-outline/20 group-hover:scale-105 transition-transform">
+          <span class="relative inline-flex items-center justify-center size-8 rounded-sm bg-accent/60 text-muted border border-outline/30">
+    <span class="size-1/2 rounded-full border border-muted"></span>
+  </span>
+        </div>
+      </div>
+      <div class="h-4 w-20 bg-accent rounded-xs mx-auto"></div>
+    </div>
+  </div>
+
+  <!-- Bottom CTA: Visible on mobile and tablet md:, HIDDEN on desktop lg: -->
+  <div class="text-center mt-8 lg:hidden">
+    <div role="button" tabindex="0" class="inline-flex items-center justify-center bg-primary text-white px-6 py-3 rounded-lg font-medium hover:bg-primary/90 transition shadow-xs cursor-pointer">
+      <div class="h-3.5 w-32 bg-white/95 rounded-xs"></div>
+    </div>
+  </div>
+  </div>
+</section>
+```
+
+### JavaScript
+
+```javascript
+$(function() {
+  $('[data-region="categories-grid"]').on('click', '[role="button"]', function(e) {
+    e.preventDefault();
+    $(this).trigger('category-navigate');
+  });
+});
+```

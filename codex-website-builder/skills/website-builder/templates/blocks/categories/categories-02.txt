@@ -1,0 +1,255 @@
+## Overview
+
+Category showcase and navigation block, integrating section title, round/square category thumbnail cards, and item counter badges with smooth hover micro-interactions.
+
+### Regions
+Functional regions are annotated directly in the component code implementation via English comments.
+
+
+### Dimensions & Responsiveness
+- Follows Tailwind centered container（`w-full max-w-content mx-auto px-4 lg:px-6`） with max content width 1200px centered.
+- Desktop (1024px+): 4~6 column circular or square cards evenly distributed.
+- Mobile (under 768px): Adapts to 3 compact columns or horizontal swipe slider.
+
+### Attributes & Props
+| Attribute | Description | Type | Default |
+| --- | --- | --- | --- |
+| `limit` | Max categories displayed | `number` | `6` |
+
+### Events
+- `category-navigate`: Dispatched when clicking a category card, providing category ID.
+
+## Code
+
+### HTML
+
+```html
+<section class="py-8 md:py-12 bg-surface font-sans text-content">
+  <div class="w-full max-w-content mx-auto px-4 lg:px-6">
+    <div class="flex items-center justify-between mb-6 pb-2 border-b border-outline/20">
+      <div class="h-7 w-32 bg-accent rounded-xs"></div>
+      <div class="h-4 w-20 bg-primary/70 rounded-xs"></div>
+    </div>
+    <!-- Desktop Categories Grid (Exactly 6 items: 2 rows of 3, hidden on mobile) -->
+    <!-- Region: Category Entrance Cards Grid -->
+
+    <div class="hidden md:grid md:grid-cols-3 gap-4 lg:gap-6">
+      
+      <div role="button" tabindex="0" class="group relative h-48 rounded-lg overflow-hidden cursor-pointer bg-accent/60 border border-outline/20 flex flex-col justify-end p-4 hover:shadow-md transition-all">
+        <div class="absolute inset-0 flex items-center justify-center p-6 opacity-60 group-hover:scale-105 transition-transform duration-300">
+          <span class="relative block aspect-[6/5] w-1/2 overflow-hidden rounded-sm border border-muted">
+    <span class="absolute right-[15%] top-[15%] size-1/5 rounded-full bg-muted"></span>
+    <span class="absolute -bottom-1/4 left-[5%] size-3/4 rotate-45 border-l border-t border-muted"></span>
+    <span class="absolute -bottom-1/4 right-0 size-1/2 rotate-45 border-l border-t border-muted"></span>
+  </span>
+        </div>
+        <div class="absolute inset-0 bg-gradient-to-t from-black/70 via-black/30 to-transparent"></div>
+        <div class="relative z-10">
+          <div class="h-4.5 w-28 bg-white/95 rounded-xs mb-1.5"></div>
+          <div class="h-3 w-40 max-w-full bg-white/75 rounded-xs"></div>
+        </div>
+      </div>
+      
+      <div role="button" tabindex="0" class="group relative h-48 rounded-lg overflow-hidden cursor-pointer bg-accent/60 border border-outline/20 flex flex-col justify-end p-4 hover:shadow-md transition-all">
+        <div class="absolute inset-0 flex items-center justify-center p-6 opacity-60 group-hover:scale-105 transition-transform duration-300">
+          <span class="relative block aspect-[6/5] w-1/2 overflow-hidden rounded-sm border border-muted">
+    <span class="absolute right-[15%] top-[15%] size-1/5 rounded-full bg-muted"></span>
+    <span class="absolute -bottom-1/4 left-[5%] size-3/4 rotate-45 border-l border-t border-muted"></span>
+    <span class="absolute -bottom-1/4 right-0 size-1/2 rotate-45 border-l border-t border-muted"></span>
+  </span>
+        </div>
+        <div class="absolute inset-0 bg-gradient-to-t from-black/70 via-black/30 to-transparent"></div>
+        <div class="relative z-10">
+          <div class="h-4.5 w-28 bg-white/95 rounded-xs mb-1.5"></div>
+          <div class="h-3 w-40 max-w-full bg-white/75 rounded-xs"></div>
+        </div>
+      </div>
+      
+      <div role="button" tabindex="0" class="group relative h-48 rounded-lg overflow-hidden cursor-pointer bg-accent/60 border border-outline/20 flex flex-col justify-end p-4 hover:shadow-md transition-all">
+        <div class="absolute inset-0 flex items-center justify-center p-6 opacity-60 group-hover:scale-105 transition-transform duration-300">
+          <span class="relative block aspect-[6/5] w-1/2 overflow-hidden rounded-sm border border-muted">
+    <span class="absolute right-[15%] top-[15%] size-1/5 rounded-full bg-muted"></span>
+    <span class="absolute -bottom-1/4 left-[5%] size-3/4 rotate-45 border-l border-t border-muted"></span>
+    <span class="absolute -bottom-1/4 right-0 size-1/2 rotate-45 border-l border-t border-muted"></span>
+  </span>
+        </div>
+        <div class="absolute inset-0 bg-gradient-to-t from-black/70 via-black/30 to-transparent"></div>
+        <div class="relative z-10">
+          <div class="h-4.5 w-28 bg-white/95 rounded-xs mb-1.5"></div>
+          <div class="h-3 w-40 max-w-full bg-white/75 rounded-xs"></div>
+        </div>
+      </div>
+      
+      <div role="button" tabindex="0" class="group relative h-48 rounded-lg overflow-hidden cursor-pointer bg-accent/60 border border-outline/20 flex flex-col justify-end p-4 hover:shadow-md transition-all">
+        <div class="absolute inset-0 flex items-center justify-center p-6 opacity-60 group-hover:scale-105 transition-transform duration-300">
+          <span class="relative block aspect-[6/5] w-1/2 overflow-hidden rounded-sm border border-muted">
+    <span class="absolute right-[15%] top-[15%] size-1/5 rounded-full bg-muted"></span>
+    <span class="absolute -bottom-1/4 left-[5%] size-3/4 rotate-45 border-l border-t border-muted"></span>
+    <span class="absolute -bottom-1/4 right-0 size-1/2 rotate-45 border-l border-t border-muted"></span>
+  </span>
+        </div>
+        <div class="absolute inset-0 bg-gradient-to-t from-black/70 via-black/30 to-transparent"></div>
+        <div class="relative z-10">
+          <div class="h-4.5 w-28 bg-white/95 rounded-xs mb-1.5"></div>
+          <div class="h-3 w-40 max-w-full bg-white/75 rounded-xs"></div>
+        </div>
+      </div>
+      
+      <div role="button" tabindex="0" class="group relative h-48 rounded-lg overflow-hidden cursor-pointer bg-accent/60 border border-outline/20 flex flex-col justify-end p-4 hover:shadow-md transition-all">
+        <div class="absolute inset-0 flex items-center justify-center p-6 opacity-60 group-hover:scale-105 transition-transform duration-300">
+          <span class="relative block aspect-[6/5] w-1/2 overflow-hidden rounded-sm border border-muted">
+    <span class="absolute right-[15%] top-[15%] size-1/5 rounded-full bg-muted"></span>
+    <span class="absolute -bottom-1/4 left-[5%] size-3/4 rotate-45 border-l border-t border-muted"></span>
+    <span class="absolute -bottom-1/4 right-0 size-1/2 rotate-45 border-l border-t border-muted"></span>
+  </span>
+        </div>
+        <div class="absolute inset-0 bg-gradient-to-t from-black/70 via-black/30 to-transparent"></div>
+        <div class="relative z-10">
+          <div class="h-4.5 w-28 bg-white/95 rounded-xs mb-1.5"></div>
+          <div class="h-3 w-40 max-w-full bg-white/75 rounded-xs"></div>
+        </div>
+      </div>
+      
+      <div role="button" tabindex="0" class="group relative h-48 rounded-lg overflow-hidden cursor-pointer bg-accent/60 border border-outline/20 flex flex-col justify-end p-4 hover:shadow-md transition-all">
+        <div class="absolute inset-0 flex items-center justify-center p-6 opacity-60 group-hover:scale-105 transition-transform duration-300">
+          <span class="relative block aspect-[6/5] w-1/2 overflow-hidden rounded-sm border border-muted">
+    <span class="absolute right-[15%] top-[15%] size-1/5 rounded-full bg-muted"></span>
+    <span class="absolute -bottom-1/4 left-[5%] size-3/4 rotate-45 border-l border-t border-muted"></span>
+    <span class="absolute -bottom-1/4 right-0 size-1/2 rotate-45 border-l border-t border-muted"></span>
+  </span>
+        </div>
+        <div class="absolute inset-0 bg-gradient-to-t from-black/70 via-black/30 to-transparent"></div>
+        <div class="relative z-10">
+          <div class="h-4.5 w-28 bg-white/95 rounded-xs mb-1.5"></div>
+          <div class="h-3 w-40 max-w-full bg-white/75 rounded-xs"></div>
+        </div>
+      </div>
+      
+    </div>
+    <!-- Mobile Categories Swiper (Strictly hidden on md: and above) -->
+    <div class="md:hidden">
+      <div class="swiper categories-swiper-02 overflow-hidden">
+        <div class="swiper-wrapper py-1">
+          
+          <div class="swiper-slide !w-[65%] sm:!w-[48%]">
+            <div role="button" tabindex="0" class="group relative h-40 rounded-lg overflow-hidden cursor-pointer bg-accent/60 border border-outline/20 flex flex-col justify-end p-3.5">
+              <div class="absolute inset-0 flex items-center justify-center p-4 opacity-60">
+                <span class="relative block aspect-[6/5] w-1/2 overflow-hidden rounded-sm border border-muted">
+    <span class="absolute right-[15%] top-[15%] size-1/5 rounded-full bg-muted"></span>
+    <span class="absolute -bottom-1/4 left-[5%] size-3/4 rotate-45 border-l border-t border-muted"></span>
+    <span class="absolute -bottom-1/4 right-0 size-1/2 rotate-45 border-l border-t border-muted"></span>
+  </span>
+              </div>
+              <div class="absolute inset-0 bg-gradient-to-t from-black/70 via-black/30 to-transparent"></div>
+              <div class="relative z-10">
+                <div class="h-4 w-24 bg-white/95 rounded-xs mb-1"></div>
+                <div class="h-3 w-32 max-w-full bg-white/75 rounded-xs"></div>
+              </div>
+            </div>
+          </div>
+          
+          <div class="swiper-slide !w-[65%] sm:!w-[48%]">
+            <div role="button" tabindex="0" class="group relative h-40 rounded-lg overflow-hidden cursor-pointer bg-accent/60 border border-outline/20 flex flex-col justify-end p-3.5">
+              <div class="absolute inset-0 flex items-center justify-center p-4 opacity-60">
+                <span class="relative block aspect-[6/5] w-1/2 overflow-hidden rounded-sm border border-muted">
+    <span class="absolute right-[15%] top-[15%] size-1/5 rounded-full bg-muted"></span>
+    <span class="absolute -bottom-1/4 left-[5%] size-3/4 rotate-45 border-l border-t border-muted"></span>
+    <span class="absolute -bottom-1/4 right-0 size-1/2 rotate-45 border-l border-t border-muted"></span>
+  </span>
+              </div>
+              <div class="absolute inset-0 bg-gradient-to-t from-black/70 via-black/30 to-transparent"></div>
+              <div class="relative z-10">
+                <div class="h-4 w-24 bg-white/95 rounded-xs mb-1"></div>
+                <div class="h-3 w-32 max-w-full bg-white/75 rounded-xs"></div>
+              </div>
+            </div>
+          </div>
+          
+          <div class="swiper-slide !w-[65%] sm:!w-[48%]">
+            <div role="button" tabindex="0" class="group relative h-40 rounded-lg overflow-hidden cursor-pointer bg-accent/60 border border-outline/20 flex flex-col justify-end p-3.5">
+              <div class="absolute inset-0 flex items-center justify-center p-4 opacity-60">
+                <span class="relative block aspect-[6/5] w-1/2 overflow-hidden rounded-sm border border-muted">
+    <span class="absolute right-[15%] top-[15%] size-1/5 rounded-full bg-muted"></span>
+    <span class="absolute -bottom-1/4 left-[5%] size-3/4 rotate-45 border-l border-t border-muted"></span>
+    <span class="absolute -bottom-1/4 right-0 size-1/2 rotate-45 border-l border-t border-muted"></span>
+  </span>
+              </div>
+              <div class="absolute inset-0 bg-gradient-to-t from-black/70 via-black/30 to-transparent"></div>
+              <div class="relative z-10">
+                <div class="h-4 w-24 bg-white/95 rounded-xs mb-1"></div>
+                <div class="h-3 w-32 max-w-full bg-white/75 rounded-xs"></div>
+              </div>
+            </div>
+          </div>
+          
+          <div class="swiper-slide !w-[65%] sm:!w-[48%]">
+            <div role="button" tabindex="0" class="group relative h-40 rounded-lg overflow-hidden cursor-pointer bg-accent/60 border border-outline/20 flex flex-col justify-end p-3.5">
+              <div class="absolute inset-0 flex items-center justify-center p-4 opacity-60">
+                <span class="relative block aspect-[6/5] w-1/2 overflow-hidden rounded-sm border border-muted">
+    <span class="absolute right-[15%] top-[15%] size-1/5 rounded-full bg-muted"></span>
+    <span class="absolute -bottom-1/4 left-[5%] size-3/4 rotate-45 border-l border-t border-muted"></span>
+    <span class="absolute -bottom-1/4 right-0 size-1/2 rotate-45 border-l border-t border-muted"></span>
+  </span>
+              </div>
+              <div class="absolute inset-0 bg-gradient-to-t from-black/70 via-black/30 to-transparent"></div>
+              <div class="relative z-10">
+                <div class="h-4 w-24 bg-white/95 rounded-xs mb-1"></div>
+                <div class="h-3 w-32 max-w-full bg-white/75 rounded-xs"></div>
+              </div>
+            </div>
+          </div>
+          
+          <div class="swiper-slide !w-[65%] sm:!w-[48%]">
+            <div role="button" tabindex="0" class="group relative h-40 rounded-lg overflow-hidden cursor-pointer bg-accent/60 border border-outline/20 flex flex-col justify-end p-3.5">
+              <div class="absolute inset-0 flex items-center justify-center p-4 opacity-60">
+                <span class="relative block aspect-[6/5] w-1/2 overflow-hidden rounded-sm border border-muted">
+    <span class="absolute right-[15%] top-[15%] size-1/5 rounded-full bg-muted"></span>
+    <span class="absolute -bottom-1/4 left-[5%] size-3/4 rotate-45 border-l border-t border-muted"></span>
+    <span class="absolute -bottom-1/4 right-0 size-1/2 rotate-45 border-l border-t border-muted"></span>
+  </span>
+              </div>
+              <div class="absolute inset-0 bg-gradient-to-t from-black/70 via-black/30 to-transparent"></div>
+              <div class="relative z-10">
+                <div class="h-4 w-24 bg-white/95 rounded-xs mb-1"></div>
+                <div class="h-3 w-32 max-w-full bg-white/75 rounded-xs"></div>
+              </div>
+            </div>
+          </div>
+          
+          <div class="swiper-slide !w-[65%] sm:!w-[48%]">
+            <div role="button" tabindex="0" class="group relative h-40 rounded-lg overflow-hidden cursor-pointer bg-accent/60 border border-outline/20 flex flex-col justify-end p-3.5">
+              <div class="absolute inset-0 flex items-center justify-center p-4 opacity-60">
+                <span class="relative block aspect-[6/5] w-1/2 overflow-hidden rounded-sm border border-muted">
+    <span class="absolute right-[15%] top-[15%] size-1/5 rounded-full bg-muted"></span>
+    <span class="absolute -bottom-1/4 left-[5%] size-3/4 rotate-45 border-l border-t border-muted"></span>
+    <span class="absolute -bottom-1/4 right-0 size-1/2 rotate-45 border-l border-t border-muted"></span>
+  </span>
+              </div>
+              <div class="absolute inset-0 bg-gradient-to-t from-black/70 via-black/30 to-transparent"></div>
+              <div class="relative z-10">
+                <div class="h-4 w-24 bg-white/95 rounded-xs mb-1"></div>
+                <div class="h-3 w-32 max-w-full bg-white/75 rounded-xs"></div>
+              </div>
+            </div>
+          </div>
+          
+        </div>
+      </div>
+    </div>
+  </div>
+</section>
+```
+
+### JavaScript
+
+```javascript
+$(function() {
+  if (typeof Swiper !== 'undefined' && $('.categories-swiper-02').length) {
+    new Swiper('.categories-swiper-02', {
+      slidesPerView: 'auto',
+      spaceBetween: 12,
+      freeMode: true
+    });
+  }
+});
+```

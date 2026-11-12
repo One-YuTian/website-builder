@@ -1,0 +1,68 @@
+## Overview
+
+About Us corporate brand page, integrating full-width hero banner, brand founding story narrative, key metrics dashboard, milestone timeline, and core team member showcase.
+
+### Regions
+Functional regions are annotated directly in the component code implementation via English comments.
+
+
+### Dimensions & Responsiveness
+- Follows Tailwind centered container（`w-full max-w-content mx-auto px-4 lg:px-6`） with PC max content width 1200px centered.
+- Desktop (1024px+): Magazine style multi-column layout with generous whitespace.
+- Mobile (under 1024px): Adapts to single vertical column with 2-column stats grid.
+
+### Attributes & Props
+| Attribute | Description | Type | Default |
+| --- | --- | --- | --- |
+| `theme` | Theme mode | `'light' \| 'dark'` | `'light'` |
+
+### Events
+- `about-navigate`: Dispatched when clicking team social link or CTA.
+
+## Code
+
+### HTML
+
+```html
+<section class="bg-surface font-sans text-content py-12 sm:py-16">
+  <div class="w-full max-w-content mx-auto px-4 lg:px-6 space-y-10">
+    <!-- Region: Header - Section title and introductory summary -->
+
+    <div data-region="header" class="text-center">
+      <div class="h-[1.8em] w-40 rounded-sm bg-accent mx-auto"></div>
+    </div>
+
+    <!-- Region: Brand Narrative - Historical background and brand philosophy -->
+
+
+    <div data-region="narrative" class="max-w-4xl mx-auto space-y-6 px-4">
+      <div class="space-y-2.5">
+        <div class="h-[0.8em] w-full rounded-sm bg-accent"></div>
+        <div class="h-[0.8em] w-full rounded-sm bg-accent"></div>
+        <div class="h-[0.8em] w-4/5 rounded-sm bg-accent"></div>
+      </div>
+      <div class="space-y-2.5">
+        <div class="h-[0.8em] w-full rounded-sm bg-accent"></div>
+        <div class="h-[0.8em] w-5/6 rounded-sm bg-accent"></div>
+      </div>
+      <div class="space-y-2.5">
+        <div class="h-[0.8em] w-full rounded-sm bg-accent"></div>
+        <div class="h-[0.8em] w-full rounded-sm bg-accent"></div>
+        <div class="h-[0.8em] w-3/4 rounded-sm bg-accent"></div>
+      </div>
+      <div class="space-y-2.5">
+        <div class="h-[0.8em] w-full rounded-sm bg-accent"></div>
+        <div class="h-[0.8em] w-4/5 rounded-sm bg-accent"></div>
+      </div>
+    </div>
+  </div>
+</section>
+```
+
+### JavaScript
+
+```javascript
+$(function() {
+  // Page interaction support
+});
+```

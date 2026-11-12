@@ -1,0 +1,189 @@
+## Overview
+
+E-commerce trust guarantees and customer service highlights section, showcasing official genuine authenticity, free express delivery, hassle-free returns, and 24/7 live support in equal grid columns.
+
+### Regions
+Functional regions are annotated directly in the component code implementation via English comments.
+
+
+### Dimensions & Responsiveness
+- Follows Tailwind centered container（`w-full max-w-content mx-auto px-4 lg:px-6`） with max content width 1200px centered.
+- Desktop (1024px+): 3~4 equal columns horizontally aligned with generous padding.
+- Mobile (under 768px): Single column vertical stacking or compact 2-column grid.
+
+### Attributes & Props
+| Attribute | Description | Type | Default |
+| --- | --- | --- | --- |
+| `columns` | Number of service feature columns | `number` | `4` |
+
+### Events
+- `service-click`: Dispatched when clicking service card to view detailed policy.
+
+## Code
+
+### HTML
+
+```html
+<section class="bg-surface py-6 sm:py-8 font-sans text-content border-y border-outline/20">
+  <div class="w-full max-w-content mx-auto px-4 lg:px-6">
+    <!-- Mobile & Tablet Swiper (Wrapped in lg:hidden so swiper display:block does not override it) -->
+    <div class="lg:hidden">
+      <div class="swiper benefits-swiper-04 h-12 overflow-hidden">
+      <div class="swiper-wrapper">
+        
+        <div class="swiper-slide !w-auto flex items-center pr-6">
+          <div class="flex items-center space-x-3 whitespace-nowrap">
+            <div class="size-9 rounded-sm bg-accent/60 flex items-center justify-center flex-shrink-0 border border-outline/20">
+              <span class="relative inline-flex items-center justify-center size-6 rounded-sm bg-accent/60 text-muted border border-outline/30">
+    <span class="size-1/2 rounded-full border border-muted"></span>
+  </span>
+            </div>
+            <div class="flex flex-col gap-1">
+              <div class="h-3.5 w-20 bg-accent rounded-xs"></div>
+              <div class="h-2.5 w-24 bg-muted/60 rounded-xs"></div>
+            </div>
+          </div>
+        </div>
+        
+        <div class="swiper-slide !w-auto flex items-center pr-6">
+          <div class="flex items-center space-x-3 whitespace-nowrap">
+            <div class="size-9 rounded-sm bg-accent/60 flex items-center justify-center flex-shrink-0 border border-outline/20">
+              <span class="relative inline-flex items-center justify-center size-6 rounded-sm bg-accent/60 text-muted border border-outline/30">
+    <span class="size-1/2 rounded-full border border-muted"></span>
+  </span>
+            </div>
+            <div class="flex flex-col gap-1">
+              <div class="h-3.5 w-20 bg-accent rounded-xs"></div>
+              <div class="h-2.5 w-24 bg-muted/60 rounded-xs"></div>
+            </div>
+          </div>
+        </div>
+        
+        <div class="swiper-slide !w-auto flex items-center pr-6">
+          <div class="flex items-center space-x-3 whitespace-nowrap">
+            <div class="size-9 rounded-sm bg-accent/60 flex items-center justify-center flex-shrink-0 border border-outline/20">
+              <span class="relative inline-flex items-center justify-center size-6 rounded-sm bg-accent/60 text-muted border border-outline/30">
+    <span class="size-1/2 rounded-full border border-muted"></span>
+  </span>
+            </div>
+            <div class="flex flex-col gap-1">
+              <div class="h-3.5 w-20 bg-accent rounded-xs"></div>
+              <div class="h-2.5 w-24 bg-muted/60 rounded-xs"></div>
+            </div>
+          </div>
+        </div>
+        
+        <div class="swiper-slide !w-auto flex items-center pr-6">
+          <div class="flex items-center space-x-3 whitespace-nowrap">
+            <div class="size-9 rounded-sm bg-accent/60 flex items-center justify-center flex-shrink-0 border border-outline/20">
+              <span class="relative inline-flex items-center justify-center size-6 rounded-sm bg-accent/60 text-muted border border-outline/30">
+    <span class="size-1/2 rounded-full border border-muted"></span>
+  </span>
+            </div>
+            <div class="flex flex-col gap-1">
+              <div class="h-3.5 w-20 bg-accent rounded-xs"></div>
+              <div class="h-2.5 w-24 bg-muted/60 rounded-xs"></div>
+            </div>
+          </div>
+        </div>
+        
+        <div class="swiper-slide !w-auto flex items-center pr-6">
+          <div class="flex items-center space-x-3 whitespace-nowrap">
+            <div class="size-9 rounded-sm bg-accent/60 flex items-center justify-center flex-shrink-0 border border-outline/20">
+              <span class="relative inline-flex items-center justify-center size-6 rounded-sm bg-accent/60 text-muted border border-outline/30">
+    <span class="size-1/2 rounded-full border border-muted"></span>
+  </span>
+            </div>
+            <div class="flex flex-col gap-1">
+              <div class="h-3.5 w-20 bg-accent rounded-xs"></div>
+              <div class="h-2.5 w-24 bg-muted/60 rounded-xs"></div>
+            </div>
+          </div>
+        </div>
+        
+      </div>
+    </div>
+    </div>
+    <!-- Desktop Grid (Strict single row of 5 columns, NO 2-row wrapping) -->
+    <!-- Region: Service Value Badges Grid -->
+
+    <div class="hidden lg:grid lg:grid-cols-5 lg:gap-6 items-center justify-between">
+      
+      <div class="flex items-center justify-center space-x-3 p-2 rounded-lg whitespace-nowrap">
+        <div class="size-10 rounded-lg bg-accent/60 flex items-center justify-center flex-shrink-0 border border-outline/20">
+          <span class="relative inline-flex items-center justify-center size-7 rounded-sm bg-accent/60 text-muted border border-outline/30">
+    <span class="size-1/2 rounded-full border border-muted"></span>
+  </span>
+        </div>
+        <div class="flex flex-col gap-1 text-left min-w-0">
+          <div class="h-3.5 w-20 bg-accent rounded-xs"></div>
+          <div class="h-2.5 w-24 bg-muted/60 rounded-xs"></div>
+        </div>
+      </div>
+      
+      <div class="flex items-center justify-center space-x-3 p-2 rounded-lg whitespace-nowrap">
+        <div class="size-10 rounded-lg bg-accent/60 flex items-center justify-center flex-shrink-0 border border-outline/20">
+          <span class="relative inline-flex items-center justify-center size-7 rounded-sm bg-accent/60 text-muted border border-outline/30">
+    <span class="size-1/2 rounded-full border border-muted"></span>
+  </span>
+        </div>
+        <div class="flex flex-col gap-1 text-left min-w-0">
+          <div class="h-3.5 w-20 bg-accent rounded-xs"></div>
+          <div class="h-2.5 w-24 bg-muted/60 rounded-xs"></div>
+        </div>
+      </div>
+      
+      <div class="flex items-center justify-center space-x-3 p-2 rounded-lg whitespace-nowrap">
+        <div class="size-10 rounded-lg bg-accent/60 flex items-center justify-center flex-shrink-0 border border-outline/20">
+          <span class="relative inline-flex items-center justify-center size-7 rounded-sm bg-accent/60 text-muted border border-outline/30">
+    <span class="size-1/2 rounded-full border border-muted"></span>
+  </span>
+        </div>
+        <div class="flex flex-col gap-1 text-left min-w-0">
+          <div class="h-3.5 w-20 bg-accent rounded-xs"></div>
+          <div class="h-2.5 w-24 bg-muted/60 rounded-xs"></div>
+        </div>
+      </div>
+      
+      <div class="flex items-center justify-center space-x-3 p-2 rounded-lg whitespace-nowrap">
+        <div class="size-10 rounded-lg bg-accent/60 flex items-center justify-center flex-shrink-0 border border-outline/20">
+          <span class="relative inline-flex items-center justify-center size-7 rounded-sm bg-accent/60 text-muted border border-outline/30">
+    <span class="size-1/2 rounded-full border border-muted"></span>
+  </span>
+        </div>
+        <div class="flex flex-col gap-1 text-left min-w-0">
+          <div class="h-3.5 w-20 bg-accent rounded-xs"></div>
+          <div class="h-2.5 w-24 bg-muted/60 rounded-xs"></div>
+        </div>
+      </div>
+      
+      <div class="flex items-center justify-center space-x-3 p-2 rounded-lg whitespace-nowrap">
+        <div class="size-10 rounded-lg bg-accent/60 flex items-center justify-center flex-shrink-0 border border-outline/20">
+          <span class="relative inline-flex items-center justify-center size-7 rounded-sm bg-accent/60 text-muted border border-outline/30">
+    <span class="size-1/2 rounded-full border border-muted"></span>
+  </span>
+        </div>
+        <div class="flex flex-col gap-1 text-left min-w-0">
+          <div class="h-3.5 w-20 bg-accent rounded-xs"></div>
+          <div class="h-2.5 w-24 bg-muted/60 rounded-xs"></div>
+        </div>
+      </div>
+      
+    </div>
+  </div>
+</section>
+```
+
+### JavaScript
+
+```javascript
+$(function() {
+  if (typeof Swiper !== 'undefined' && $('.benefits-swiper-04').length) {
+    new Swiper('.benefits-swiper-04', {
+      slidesPerView: 'auto',
+      spaceBetween: 16,
+      freeMode: true
+    });
+  }
+});
+```

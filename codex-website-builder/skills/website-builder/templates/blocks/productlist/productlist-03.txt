@@ -1,0 +1,104 @@
+## Overview
+
+Core e-commerce product shelf grid block, integrating section title, fast category filter tabs, 4~5 column responsive product card matrix, and bottom View All CTA.
+
+### Regions
+Functional regions are annotated directly in the component code implementation via English comments.
+
+
+### Dimensions & Responsiveness
+- Outer container strictly follows Tailwind centered container（`w-full max-w-content mx-auto px-4 lg:px-6`） with PC max content width 1200px centered.
+- Desktop (1024px+): 4~5 column grid layout with 16px~24px gutters.
+- Tablet (768px~1023px): Adapts to 3-column grid.
+- Mobile (under 768px): Adapts to 2 compact columns with 12px gap.
+
+### Attributes & Props
+| Attribute | Description | Type | Default |
+| --- | --- | --- | --- |
+| `containerId` | Mount container selector ID | `string` | `'product-grid-01'` |
+| `limit` | Max product cards rendered | `number` | `8` |
+
+### Events
+- `product-navigate`: Dispatched when clicking an individual product card to view PDP.
+- `filter-change`: Dispatched when switching category filter tabs.
+
+## Code
+
+### HTML
+
+```html
+<section class="py-8 sm:py-12 bg-accent/20 font-sans text-content">
+  <div class="w-full max-w-content mx-auto px-4 lg:px-6">
+    <!-- Region: Section Header - Block title and view-all link -->
+
+    <div data-region="section-title" class="mb-6 sm:mb-8 flex items-center justify-center">
+      <span class="block h-[0.75em] w-48 sm:w-64 rounded-sm bg-accent text-2xl font-bold"></span>
+    </div>
+    <div class="relative px-8">
+      <div class="swiper popular-products-swiper overflow-hidden">
+        <div id="product-slider-03" class="swiper-wrapper"></div>
+      </div>
+      <div class="swiper-button-prev !left-0 !text-primary !size-7 after:!text-base"></div>
+      <div class="swiper-button-next !right-0 !text-primary !size-7 after:!text-base"></div>
+    </div>
+  </div>
+</section>
+```
+
+### JavaScript
+
+```javascript
+$(function() {
+  const $container = $('#product-slider-03');
+  if ($container.length) {
+    const products = [
+      { id: 'product-01', discounted: true },
+      { id: 'product-02', discounted: false },
+      { id: 'product-03', discounted: true },
+      { id: 'product-04', discounted: false },
+      { id: 'product-05', discounted: true },
+      { id: 'product-06', discounted: false },
+      { id: 'product-07', discounted: true },
+      { id: 'product-08', discounted: false }
+    ];
+
+    $container.empty();
+    for (let i = 0; i < products.length; i++) {
+      const p = products[i];
+      const $slide = $('<div class="swiper-slide"></div>');
+      const $card = $('<card-01></card-01>').attr('product-id', p.id);
+      if (p.discounted) {
+        $card.attr('discounted', '');
+      }
+      $slide.append($card);
+      $container.append($slide);
+    }
+  }
+
+  if (typeof Swiper !== 'undefined' && $('.popular-products-swiper').length) {
+    new Swiper('.popular-products-swiper', {
+      slidesPerView: 2,
+      spaceBetween: 12,
+      loop: true,
+      navigation: {
+        nextEl: '.swiper-button-next',
+        prevEl: '.swiper-button-prev'
+      },
+      breakpoints: {
+        640: {
+          slidesPerView: 3,
+          spaceBetween: 16
+        },
+        768: {
+          slidesPerView: 4,
+          spaceBetween: 20
+        },
+        1024: {
+          slidesPerView: 5,
+          spaceBetween: 24
+        }
+      }
+    });
+  }
+});
+```

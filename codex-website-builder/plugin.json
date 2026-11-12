@@ -1,0 +1,18 @@
+{
+  "$schema": "https://agent-plugins.org/schemas/1.0.0/plugin.schema.json",
+  "name": "codex-website-builder",
+  "version": "0.7.9-beta.1",
+  "description": "Build ecommerce websites with the bundled skill, reuse thread projects, and preview page generation live.",
+  "extensions": {
+    "com.openai": {
+      "interface": {
+        "displayName": "Website Builder",
+        "shortDescription": "会话建站与实时画布",
+        "capabilities": [
+          "Interactive"
+        ],
+        "defaultPrompt": "根据我的需求生成完整电商网站，在当前会话项目中逐页预览。"
+      }
+    }
+  }
+}

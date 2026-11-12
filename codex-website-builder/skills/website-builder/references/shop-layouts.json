@@ -1,0 +1,43 @@
+{
+  "shop-01": {
+    "summary": "Header + toolbar + grid, no sidebar; 2/sm:3/lg:4 columns.",
+    "columns": "grid-cols-2 sm:grid-cols-3 lg:grid-cols-4",
+    "regions": [
+      "page-header",
+      "toolbar",
+      "products-grid"
+    ],
+    "mobile": "Two columns, wrapping toolbar, no filter drawer"
+  },
+  "shop-02": {
+    "summary": "lg:w-64 sidebar + toolbar + grid; 2/sm:3 columns, desktop stays 3.",
+    "columns": "grid-cols-2 sm:grid-cols-3",
+    "regions": [
+      "sidebar",
+      "toolbar",
+      "products-grid"
+    ],
+    "mobile": "mobile-filters-toggle expands filters-sidebar"
+  },
+  "shop-04": {
+    "summary": "lg:w-64 sidebar + toolbar + grid, no page header; 2/sm:3/lg:4 columns.",
+    "columns": "grid-cols-2 sm:grid-cols-3 lg:grid-cols-4",
+    "regions": [
+      "sidebar",
+      "toolbar",
+      "products-grid"
+    ],
+    "mobile": "mobile-filter-drawer overlay, desktop sidebar hidden below lg"
+  },
+  "shop-12": {
+    "summary": "Header + lg:w-64 sidebar + toolbar + grid/list switch; 2/sm:3 columns, desktop stays 3.",
+    "columns": "grid-cols-2 sm:grid-cols-3",
+    "regions": [
+      "page-header",
+      "sidebar",
+      "toolbar",
+      "products-grid"
+    ],
+    "mobile": "mobileFilterDrawer overlay; preserve gridView/listView and card view-mode"
+  }
+}

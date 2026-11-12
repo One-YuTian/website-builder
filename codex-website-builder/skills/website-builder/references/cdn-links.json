@@ -1,0 +1,15 @@
+{
+  "tailwind": "https://cdn.tailwindcss.com",
+  "cloudflare": {
+    "jquery": "https://cdnjs.cloudflare.com/ajax/libs/jquery/3.7.1/jquery.min.js",
+    "swiperJs": "https://cdnjs.cloudflare.com/ajax/libs/Swiper/10.3.1/swiper-bundle.min.js",
+    "swiperCss": "https://cdnjs.cloudflare.com/ajax/libs/Swiper/10.3.1/swiper-bundle.min.css",
+    "bootstrapIcons": "https://cdnjs.cloudflare.com/ajax/libs/bootstrap-icons/1.11.3/font/bootstrap-icons.min.css",
+    "fontAwesome": "https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.2/css/all.min.css"
+  },
+  "googleFonts": {
+    "preconnect1": "https://fonts.googleapis.com",
+    "preconnect2": "https://fonts.gstatic.com",
+    "notoSansSc": "https://fonts.googleapis.com/css2?family=Noto+Sans+SC:wght@300;400;500;600;700&display=swap"
+  }
+}

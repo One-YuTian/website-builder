@@ -1,0 +1,240 @@
+## Overview
+
+Flash sale and limited-time marketing section, integrating animated countdown timer blocks, promotional badges, flash cards with sold percentage progress, and View All CTA.
+
+### Regions
+Functional regions are annotated directly in the component code implementation via English comments.
+
+
+### Dimensions & Responsiveness
+- Follows Tailwind centered container（`w-full max-w-content mx-auto px-4 lg:px-6`） with max content width 1200px centered.
+- Desktop (1024px+): 3~4 flash cards side by side.
+- Mobile (under 768px): 2 compact cards with smooth horizontal swipe.
+
+### Attributes & Props
+| Attribute | Description | Type | Default |
+| --- | --- | --- | --- |
+| `limit` | Max items displayed | `number` | `4` |
+| `endTime` | Target end timestamp | `string` | `'2026-12-31'` |
+
+### Events
+- `flashsale-navigate`: Dispatched when clicking View All button.
+- `product-navigate`: Dispatched when clicking flash card.
+
+## Code
+
+### HTML
+
+```html
+<section class="w-full py-8 md:py-16 bg-accent/30 border-y border-outline/30 relative font-sans text-content">
+  <div class="w-full max-w-content mx-auto px-4 lg:px-6">
+    <div class="flex items-center justify-between mb-4 sm:mb-6 md:mb-8">
+      <div class="h-6 sm:h-8 md:h-9 w-36 sm:w-44 bg-accent rounded-sm"></div>
+    </div>
+    <div class="relative">
+      <div class="swiper super-deals-swiper-03 overflow-hidden">
+        <div class="swiper-wrapper py-2">
+          
+          <!-- Card 1 -->
+          <div class="swiper-slide !h-auto">
+            <div class="bg-surface rounded-2xl border border-outline/30 hover:border-primary transition-colors overflow-hidden flex flex-col justify-between cursor-pointer w-full h-full shadow-xs">
+              <!-- Top Banner Box -->
+              <div class="w-full border-b border-outline/20 p-3 sm:p-4 md:p-5 relative overflow-hidden flex items-center justify-between min-h-[110px] sm:min-h-[140px] md:min-h-[180px] bg-accent/40">
+                <div class="w-[55%] flex items-center justify-center relative z-10">
+                  <span class="relative block aspect-[6/5] w-full max-w-[120px] sm:max-w-[160px] overflow-hidden rounded-sm border border-muted bg-accent/60">
+                    <span class="absolute right-[15%] top-[15%] size-1/5 rounded-full bg-muted"></span>
+                    <span class="absolute -bottom-1/4 left-[5%] size-3/4 rotate-45 border-l border-t border-muted"></span>
+                    <span class="absolute -bottom-1/4 right-0 size-1/2 rotate-45 border-l border-t border-muted"></span>
+                  </span>
+                </div>
+                <div class="w-[45%] flex flex-col items-end justify-center text-right pl-2 relative z-10 select-none">
+                  <div class="h-2.5 sm:h-3 w-8 sm:w-10 bg-accent rounded-xs mb-1"></div>
+                  <div class="text-primary font-black text-2xl sm:text-3xl md:text-4xl lg:text-5xl leading-none tracking-tight">
+                    -31<span class="text-xs sm:text-sm md:text-lg font-extrabold ml-0.5">%</span>
+                  </div>
+                  <div class="h-2.5 sm:h-3 w-10 sm:w-12 bg-primary/40 rounded-xs mt-1"></div>
+                </div>
+              </div>
+              <!-- Bottom Content -->
+              <div class="p-3 sm:p-4 md:p-5 flex flex-col flex-1 justify-between bg-surface">
+                <div class="mb-3 sm:mb-4">
+                  <div class="h-4 sm:h-5 w-3/4 bg-accent rounded-xs mb-2"></div>
+                  <div class="h-2.5 sm:h-3 w-full bg-accent/70 rounded-xs mb-1.5"></div>
+                  <div class="h-2.5 sm:h-3 w-2/3 bg-accent/60 rounded-xs"></div>
+                </div>
+                <div>
+                  <div role="button" tabindex="0" class="inline-flex items-center justify-center bg-primary text-white text-[11px] sm:text-xs md:text-sm font-bold py-1.5 px-3.5 sm:py-2 sm:px-5 rounded-full transition-colors cursor-pointer shadow-xs active:scale-95">
+                    <div class="h-2.5 sm:h-3 w-14 sm:w-20 bg-white/90 rounded-xs"></div>
+                  </div>
+                </div>
+              </div>
+            </div>
+          </div>
+
+          <!-- Card 2 -->
+          <div class="swiper-slide !h-auto">
+            <div class="bg-surface rounded-2xl border border-outline/30 hover:border-primary transition-colors overflow-hidden flex flex-col justify-between cursor-pointer w-full h-full shadow-xs">
+              <div class="w-full border-b border-outline/20 p-3 sm:p-4 md:p-5 relative overflow-hidden flex items-center justify-between min-h-[110px] sm:min-h-[140px] md:min-h-[180px] bg-accent/40">
+                <div class="w-[55%] flex items-center justify-center relative z-10">
+                  <span class="relative block aspect-[6/5] w-full max-w-[120px] sm:max-w-[160px] overflow-hidden rounded-sm border border-muted bg-accent/60">
+                    <span class="absolute right-[15%] top-[15%] size-1/5 rounded-full bg-muted"></span>
+                    <span class="absolute -bottom-1/4 left-[5%] size-3/4 rotate-45 border-l border-t border-muted"></span>
+                    <span class="absolute -bottom-1/4 right-0 size-1/2 rotate-45 border-l border-t border-muted"></span>
+                  </span>
+                </div>
+                <div class="w-[45%] flex flex-col items-end justify-center text-right pl-2 relative z-10 select-none">
+                  <div class="h-2.5 sm:h-3 w-8 sm:w-10 bg-accent rounded-xs mb-1"></div>
+                  <div class="text-primary font-black text-2xl sm:text-3xl md:text-4xl lg:text-5xl leading-none tracking-tight">
+                    -25<span class="text-xs sm:text-sm md:text-lg font-extrabold ml-0.5">%</span>
+                  </div>
+                  <div class="h-2.5 sm:h-3 w-10 sm:w-12 bg-primary/40 rounded-xs mt-1"></div>
+                </div>
+              </div>
+              <div class="p-3 sm:p-4 md:p-5 flex flex-col flex-1 justify-between bg-surface">
+                <div class="mb-3 sm:mb-4">
+                  <div class="h-4 sm:h-5 w-3/4 bg-accent rounded-xs mb-2"></div>
+                  <div class="h-2.5 sm:h-3 w-full bg-accent/70 rounded-xs mb-1.5"></div>
+                  <div class="h-2.5 sm:h-3 w-2/3 bg-accent/60 rounded-xs"></div>
+                </div>
+                <div>
+                  <div role="button" tabindex="0" class="inline-flex items-center justify-center bg-primary text-white text-[11px] sm:text-xs md:text-sm font-bold py-1.5 px-3.5 sm:py-2 sm:px-5 rounded-full transition-colors cursor-pointer shadow-xs active:scale-95">
+                    <div class="h-2.5 sm:h-3 w-14 sm:w-20 bg-white/90 rounded-xs"></div>
+                  </div>
+                </div>
+              </div>
+            </div>
+          </div>
+
+          <!-- Card 3 -->
+          <div class="swiper-slide !h-auto">
+            <div class="bg-surface rounded-2xl border border-outline/30 hover:border-primary transition-colors overflow-hidden flex flex-col justify-between cursor-pointer w-full h-full shadow-xs">
+              <div class="w-full border-b border-outline/20 p-3 sm:p-4 md:p-5 relative overflow-hidden flex items-center justify-between min-h-[110px] sm:min-h-[140px] md:min-h-[180px] bg-accent/40">
+                <div class="w-[55%] flex items-center justify-center relative z-10">
+                  <span class="relative block aspect-[6/5] w-full max-w-[120px] sm:max-w-[160px] overflow-hidden rounded-sm border border-muted bg-accent/60">
+                    <span class="absolute right-[15%] top-[15%] size-1/5 rounded-full bg-muted"></span>
+                    <span class="absolute -bottom-1/4 left-[5%] size-3/4 rotate-45 border-l border-t border-muted"></span>
+                    <span class="absolute -bottom-1/4 right-0 size-1/2 rotate-45 border-l border-t border-muted"></span>
+                  </span>
+                </div>
+                <div class="w-[45%] flex flex-col items-end justify-center text-right pl-2 relative z-10 select-none">
+                  <div class="h-2.5 sm:h-3 w-8 sm:w-10 bg-accent rounded-xs mb-1"></div>
+                  <div class="text-primary font-black text-2xl sm:text-3xl md:text-4xl lg:text-5xl leading-none tracking-tight">
+                    -18<span class="text-xs sm:text-sm md:text-lg font-extrabold ml-0.5">%</span>
+                  </div>
+                  <div class="h-2.5 sm:h-3 w-10 sm:w-12 bg-primary/40 rounded-xs mt-1"></div>
+                </div>
+              </div>
+              <div class="p-3 sm:p-4 md:p-5 flex flex-col flex-1 justify-between bg-surface">
+                <div class="mb-3 sm:mb-4">
+                  <div class="h-4 sm:h-5 w-3/4 bg-accent rounded-xs mb-2"></div>
+                  <div class="h-2.5 sm:h-3 w-full bg-accent/70 rounded-xs mb-1.5"></div>
+                  <div class="h-2.5 sm:h-3 w-2/3 bg-accent/60 rounded-xs"></div>
+                </div>
+                <div>
+                  <div role="button" tabindex="0" class="inline-flex items-center justify-center bg-primary text-white text-[11px] sm:text-xs md:text-sm font-bold py-1.5 px-3.5 sm:py-2 sm:px-5 rounded-full transition-colors cursor-pointer shadow-xs active:scale-95">
+                    <div class="h-2.5 sm:h-3 w-14 sm:w-20 bg-white/90 rounded-xs"></div>
+                  </div>
+                </div>
+              </div>
+            </div>
+          </div>
+
+          <!-- Card 4 -->
+          <div class="swiper-slide !h-auto">
+            <div class="bg-surface rounded-2xl border border-outline/30 hover:border-primary transition-colors overflow-hidden flex flex-col justify-between cursor-pointer w-full h-full shadow-xs">
+              <div class="w-full border-b border-outline/20 p-3 sm:p-4 md:p-5 relative overflow-hidden flex items-center justify-between min-h-[110px] sm:min-h-[140px] md:min-h-[180px] bg-accent/40">
+                <div class="w-[55%] flex items-center justify-center relative z-10">
+                  <span class="relative block aspect-[6/5] w-full max-w-[120px] sm:max-w-[160px] overflow-hidden rounded-sm border border-muted bg-accent/60">
+                    <span class="absolute right-[15%] top-[15%] size-1/5 rounded-full bg-muted"></span>
+                    <span class="absolute -bottom-1/4 left-[5%] size-3/4 rotate-45 border-l border-t border-muted"></span>
+                    <span class="absolute -bottom-1/4 right-0 size-1/2 rotate-45 border-l border-t border-muted"></span>
+                  </span>
+                </div>
+                <div class="w-[45%] flex flex-col items-end justify-center text-right pl-2 relative z-10 select-none">
+                  <div class="h-2.5 sm:h-3 w-8 sm:w-10 bg-accent rounded-xs mb-1"></div>
+                  <div class="text-primary font-black text-2xl sm:text-3xl md:text-4xl lg:text-5xl leading-none tracking-tight">
+                    -40<span class="text-xs sm:text-sm md:text-lg font-extrabold ml-0.5">%</span>
+                  </div>
+                  <div class="h-2.5 sm:h-3 w-10 sm:w-12 bg-primary/40 rounded-xs mt-1"></div>
+                </div>
+              </div>
+              <div class="p-3 sm:p-4 md:p-5 flex flex-col flex-1 justify-between bg-surface">
+                <div class="mb-3 sm:mb-4">
+                  <div class="h-4 sm:h-5 w-3/4 bg-accent rounded-xs mb-2"></div>
+                  <div class="h-2.5 sm:h-3 w-full bg-accent/70 rounded-xs mb-1.5"></div>
+                  <div class="h-2.5 sm:h-3 w-2/3 bg-accent/60 rounded-xs"></div>
+                </div>
+                <div>
+                  <div role="button" tabindex="0" class="inline-flex items-center justify-center bg-primary text-white text-[11px] sm:text-xs md:text-sm font-bold py-1.5 px-3.5 sm:py-2 sm:px-5 rounded-full transition-colors cursor-pointer shadow-xs active:scale-95">
+                    <div class="h-2.5 sm:h-3 w-14 sm:w-20 bg-white/90 rounded-xs"></div>
+                  </div>
+                </div>
+              </div>
+            </div>
+          </div>
+
+          <!-- Card 5 -->
+          <div class="swiper-slide !h-auto">
+            <div class="bg-surface rounded-2xl border border-outline/30 hover:border-primary transition-colors overflow-hidden flex flex-col justify-between cursor-pointer w-full h-full shadow-xs">
+              <div class="w-full border-b border-outline/20 p-3 sm:p-4 md:p-5 relative overflow-hidden flex items-center justify-between min-h-[110px] sm:min-h-[140px] md:min-h-[180px] bg-accent/40">
+                <div class="w-[55%] flex items-center justify-center relative z-10">
+                  <span class="relative block aspect-[6/5] w-full max-w-[120px] sm:max-w-[160px] overflow-hidden rounded-sm border border-muted bg-accent/60">
+                    <span class="absolute right-[15%] top-[15%] size-1/5 rounded-full bg-muted"></span>
+                    <span class="absolute -bottom-1/4 left-[5%] size-3/4 rotate-45 border-l border-t border-muted"></span>
+                    <span class="absolute -bottom-1/4 right-0 size-1/2 rotate-45 border-l border-t border-muted"></span>
+                  </span>
+                </div>
+                <div class="w-[45%] flex flex-col items-end justify-center text-right pl-2 relative z-10 select-none">
+                  <div class="h-2.5 sm:h-3 w-8 sm:w-10 bg-accent rounded-xs mb-1"></div>
+                  <div class="text-primary font-black text-2xl sm:text-3xl md:text-4xl lg:text-5xl leading-none tracking-tight">
+                    -50<span class="text-xs sm:text-sm md:text-lg font-extrabold ml-0.5">%</span>
+                  </div>
+                  <div class="h-2.5 sm:h-3 w-10 sm:w-12 bg-primary/40 rounded-xs mt-1"></div>
+                </div>
+              </div>
+              <div class="p-3 sm:p-4 md:p-5 flex flex-col flex-1 justify-between bg-surface">
+                <div class="mb-3 sm:mb-4">
+                  <div class="h-4 sm:h-5 w-3/4 bg-accent rounded-xs mb-2"></div>
+                  <div class="h-2.5 sm:h-3 w-full bg-accent/70 rounded-xs mb-1.5"></div>
+                  <div class="h-2.5 sm:h-3 w-2/3 bg-accent/60 rounded-xs"></div>
+                </div>
+                <div>
+                  <div role="button" tabindex="0" class="inline-flex items-center justify-center bg-primary text-white text-[11px] sm:text-xs md:text-sm font-bold py-1.5 px-3.5 sm:py-2 sm:px-5 rounded-full transition-colors cursor-pointer shadow-xs active:scale-95">
+                    <div class="h-2.5 sm:h-3 w-14 sm:w-20 bg-white/90 rounded-xs"></div>
+                  </div>
+                </div>
+              </div>
+            </div>
+          </div>
+          
+        </div>
+      </div>
+      <div class="swiper-button-next super-deals-next-03 !size-8 md:!size-9 after:!text-sm md:after:!text-base !text-primary bg-surface/90 border border-outline/30 rounded-full shadow-xs !right-1"></div>
+      <div class="swiper-button-prev super-deals-prev-03 !size-8 md:!size-9 after:!text-sm md:after:!text-base !text-primary bg-surface/90 border border-outline/30 rounded-full shadow-xs !left-1"></div>
+    </div>
+  </div>
+</section>
+```
+
+### JavaScript
+
+```javascript
+$(function() {
+  if (typeof Swiper !== 'undefined' && $('.super-deals-swiper-03').length) {
+    new Swiper('.super-deals-swiper-03', {
+      slidesPerView: 2,
+      spaceBetween: 12,
+      watchOverflow: true,
+      navigation: {
+        nextEl: '.super-deals-next-03',
+        prevEl: '.super-deals-prev-03'
+      },
+      breakpoints: {
+        640: { slidesPerView: 2, spaceBetween: 16 },
+        768: { slidesPerView: 3, spaceBetween: 20 },
+        1024: { slidesPerView: 3, spaceBetween: 24 }
+      }
+    });
+  }
+});
+```

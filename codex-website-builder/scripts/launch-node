@@ -1,0 +1,13 @@
+#!/bin/sh
+set -eu
+launcher_dir=$(CDPATH= cd -- "$(dirname -- "$0")" && pwd)
+if [ "$#" -eq 0 ]; then set -- "$launcher_dir/../dist/server/index.js"; fi
+cache_root=${XDG_CACHE_HOME:-${HOME:-}/.cache}
+resources=${CODEX_ELECTRON_RESOURCES_PATH:-}
+cli_path=${CODEX_CLI_PATH:-}
+cli_resources=${cli_path%/*}
+for candidate in "${CODEX_MCP_NODE_PATH:-}" "${CODEX_BROWSER_USE_NODE_PATH:-}" "$resources/cua_node/bin/node" "$cli_resources/cua_node/bin/node" "$cache_root/codex-runtimes/codex-primary-runtime/dependencies/node/bin/node"; do
+  if [ -n "$candidate" ] && [ -x "$candidate" ]; then exec "$candidate" "$@"; fi
+done
+printf '%s\n' 'Website Builder: Codex managed Node runtime unavailable. Update/restart Codex or set CODEX_MCP_NODE_PATH.' >&2
+exit 127
