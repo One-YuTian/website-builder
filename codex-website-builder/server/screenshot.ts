@@ -9,7 +9,8 @@ import { proxyResource } from './resource-proxy';
 
 const mime: Record<string, string> = { '.html':'text/html', '.js':'text/javascript', '.mjs':'text/javascript', '.css':'text/css', '.json':'application/json', '.png':'image/png', '.jpg':'image/jpeg', '.jpeg':'image/jpeg', '.webp':'image/webp', '.avif':'image/avif', '.gif':'image/gif', '.svg':'image/svg+xml', '.ico':'image/x-icon', '.woff':'font/woff', '.woff2':'font/woff2', '.ttf':'font/ttf' };
 
-export async function screenshotPage(store: ProjectStore, input: {thread_id:string;project_id:string;path:string;width?:number}) {
+export async function screenshotPage(store: ProjectStore, input: {thread_id:string;project_id:string;path:string;width?:number;thumbnail?:boolean;signal?:AbortSignal}) {
+  if(input.signal?.aborted)throw Error('截图已取消');
   const view = await store.get(input.thread_id);
   if (!view || view.project.id !== input.project_id) throw new Error('当前会话项目不匹配');
   const planned = view.project.pages.find(page => page.path === input.path.split(/[?#]/)[0]);
@@ -37,10 +38,12 @@ export async function screenshotPage(store: ProjectStore, input: {thread_id:stri
   const origin = `http://127.0.0.1:${(service.address() as import('node:net').AddressInfo).port}`;
   let browser: any;
   let timer: ReturnType<typeof setTimeout> | undefined;
+  let cancel: (()=>void) | undefined;
   try {
     browser = await chromium.launch({channel:'chrome',headless:true});
+    if(input.signal?.aborted)throw Error('截图已取消');
     const work = async () => {
-      const page = await browser.newPage({viewport:{width,height:900},deviceScaleFactor:1});
+      const page = await browser.newPage({viewport:{width,height:input.thumbnail?width:900},deviceScaleFactor:1});
       page.setDefaultTimeout(15000);
       const failures = new Set<string>();
       page.on('pageerror',(error:Error)=>failures.add(error.message));
@@ -94,13 +97,23 @@ export async function screenshotPage(store: ProjectStore, input: {thread_id:stri
       }
       if(stable<4)throw Error('页面布局尚未稳定');
       if(failures.size)throw Error(`页面未完整渲染：${[...failures].slice(0,5).join('; ')}`);
-      const bytes: Buffer = await page.screenshot({fullPage:true,type:'png',animations:'disabled'});
+      let bytes: Buffer = await page.screenshot(input.thumbnail?{clip:{x:0,y:0,width,height:width},type:'png',animations:'disabled'}:{fullPage:true,type:'png',animations:'disabled'});
+      if(input.thumbnail) {
+        const data = await page.evaluate(async (values:number[]) => {
+          const image = await createImageBitmap(new Blob([new Uint8Array(values)],{type:'image/png'}));
+          const canvas=document.createElement('canvas');canvas.width=256;canvas.height=256;
+          canvas.getContext('2d')!.drawImage(image,0,0,256,256);image.close();
+          return canvas.toDataURL('image/png').split(',')[1];
+        },Array.from(bytes));
+        bytes=Buffer.from(data,'base64');
+      }
       const path = join(view.metadataDirectory,'artifacts/screenshots',`${input.path.split(/[?#]/)[0].replace(/[^a-zA-Z0-9_-]/g,'-')}-${width}-${Date.now()}-${randomBytes(3).toString('hex')}.png`);
       await mkdir(dirname(path),{recursive:true}); await writeFile(path,bytes);
       return {path,width,page:input.path,bytes};
     };
-    return await Promise.race([work(), new Promise<never>((_,reject)=>{timer=setTimeout(()=>reject(Error('完整页面截图超时：未获得加载完成的稳定页面')),60000);})]);
+    return await Promise.race([work(), new Promise<never>((_,reject)=>{timer=setTimeout(()=>reject(Error('完整页面截图超时：未获得加载完成的稳定页面')),60000);}),new Promise<never>((_,reject)=>{cancel=()=>reject(Error('截图已取消'));input.signal?.addEventListener('abort',cancel,{once:true});})]);
   } finally {
+    if(cancel)input.signal?.removeEventListener('abort',cancel);
     if(timer)clearTimeout(timer);
     if(browser)await browser.close();
     service.closeAllConnections(); await new Promise<void>(resolve=>service.close(()=>resolve()));

@@ -14,14 +14,21 @@ import {resourceChunk} from './resource-proxy';
 import { prepareCommerce } from './commerce';
 import { screenshotPage } from './screenshot';
 import { importProducts } from './product-import';
+import { dataPaths } from './data-paths';
+import { projectManager } from './project-manager';
+import { migrateLegacyData } from './migrate-data';
 
 const uri = 'ui://codex-website-builder/canvas';
+const sidebarIcon = await readFile(new URL('../../assets/icon.png', import.meta.url));
 const html = await readFile(new URL('../ui/index.html', import.meta.url), 'utf8');
-const projects = new ProjectStore((process.env.WEBSITE_BUILDER_PROJECT_ROOT || '${PLUGIN_ROOT}/project').replaceAll('${PLUGIN_ROOT}',fileURLToPath(new URL('../../',import.meta.url))));
+const paths = dataPaths();
+await migrateLegacyData(paths.project);
+const projects = new ProjectStore(paths.project);
+const manager = projectManager(projects);
 const syncProject = projectService(projects);
-const preview = await createPreview(html, (process.env.WEBSITE_BUILDER_ROOT || '${PLUGIN_ROOT}/reference').replaceAll('${PLUGIN_ROOT}',fileURLToPath(new URL('../../',import.meta.url))), 'www.noventrad.com', syncProject);
+const preview = await createPreview(html, paths.reference, 'www.noventrad.com', syncProject, manager.run);
 const skillRoot = (process.env.WEBSITE_BUILDER_SKILL_ROOT || resolve('skills/website-builder')).replaceAll('${PLUGIN_ROOT}',fileURLToPath(new URL('../../',import.meta.url)));
-const server = new McpServer({ name: 'codex-website-builder', version: '0.7.9-beta.3' });
+const server = new McpServer({ name: 'codex-website-builder', version: '0.7.9-beta.3', icons: [{ src: `data:image/png;base64,${sidebarIcon.toString('base64')}`, mimeType: 'image/png', sizes: ['200x200'] }] });
 const csp = { connectDomains: ['data:', 'blob:'], resourceDomains: ['data:', 'blob:'], frameDomains: ['blob:', 'data:'], baseUriDomains: ['https://website-builder.invalid'] };
 const legacyCsp = { connect_domains: csp.connectDomains, resource_domains: csp.resourceDomains, frame_domains: csp.frameDomains, base_uri_domains: csp.baseUriDomains };
 registerAppResource(server, 'canvas', uri, { _meta: { ui: { csp }, 'openai/widgetCSP': legacyCsp } }, async () => ({
@@ -38,6 +45,16 @@ registerAppTool(server, 'open_canvas', {
   annotations: { readOnlyHint: true, destructiveHint: false, openWorldHint: false },
   _meta: { ui: { resourceUri: uri }, 'openai/ui': { entrypoints: [{ type: 'global' }] } },
 }, async () => ({ content: [{ type: 'text', text: '网站展示画布已打开。' }] }));
+server.registerTool('website_panel_context', {
+  description: '查询当前真实会话的 Website Builder 面板位置。详情页返回 project_id 和项目信息，主界面返回项目列表。多个面板时传 panel_id 精确查询；不得用其他会话或全局最近项目替代。',
+  inputSchema: { thread_id: z.string().optional(), panel_id: z.string().optional() },
+  annotations: { readOnlyHint: true, destructiveHint: false, openWorldHint: false },
+}, async input => { try { const value=await manager.run({...input,action:'context'});return {content:[{type:'text',text:JSON.stringify(value)}]}; } catch(error) { return {isError:true,content:[{type:'text',text:(error as Error).message}]}; } });
+server.registerTool('website_projects', {
+  description: '管理全局 SQLite 项目：list 列出项目，open/create 绑定当前会话和面板，home 返回主界面，delete 软删除（保留文件），resources 列出资源，attach 复制用户明确提供的图片/文件到项目资源目录。panel_id 来自面板上下文；thread_id 必须是真实当前会话 ID。',
+  inputSchema: { action:z.enum(['list','open','create','bind','home','delete','restore','resources','attach','folder']).default('list'), panel_id:z.string().optional(),thread_id:z.string().optional(),project_id:z.string().optional(),name:z.string().max(200).optional(),source_path:z.string().optional() },
+  annotations: { readOnlyHint:false,destructiveHint:false,openWorldHint:false },
+}, async input => { try {const value=await manager.run(input);return {content:[{type:'text',text:JSON.stringify(value)}],_meta:{manager:value}};} catch(error) {return {isError:true,content:[{type:'text',text:(error as Error).message}]};} });
 server.registerTool('read_website', {
   description: '读取配置根目录内的网站页面与内嵌资源，仅供画布 UI 使用。',
   inputSchema: { directory: z.string().default('www.noventrad.com') },
@@ -137,14 +154,17 @@ server.registerTool('website_screenshot', {
 },async input=>{try{const result=await screenshotPage(projects,input);return{content:[{type:'text' as const,text:JSON.stringify({path:result.path,page:result.page,width:result.width,fullPage:true})},{type:'image' as const,mimeType:'image/png',data:result.bytes.toString('base64')}]};}catch(error){return{isError:true,content:[{type:'text' as const,text:(error as Error).message}]};}});
 server.registerTool('project_sync',{
   description:'UI-only long poll: return project state and changed ready-page payloads; no full-site reload or model context.',
-  inputSchema:{since:z.string().optional(),known:z.record(z.string(),z.number()).optional(),thread_id:z.string().optional(),wait_ms:z.number().int().min(0).max(20000).default(20000)},
+  inputSchema:{since:z.string().optional(),known:z.record(z.string(),z.number()).optional(),thread_id:z.string().optional(),project_id:z.string().optional(),wait_ms:z.number().int().min(0).max(20000).default(20000)},
   annotations:{readOnlyHint:true,destructiveHint:false,openWorldHint:false},_meta:{ui:{visibility:['app']}},
-},async input=>{try{return{content:[],_meta:{sync:await syncProject({since:input.since,known:input.known,threadId:input.thread_id,waitMs:input.wait_ms})}};}catch(error){return{isError:true,content:[{type:'text',text:(error as Error).message}]};}});
+},async input=>{try{return{content:[],_meta:{sync:await syncProject({since:input.since,known:input.known,threadId:input.thread_id,projectId:input.project_id,waitMs:input.wait_ms})}};}catch(error){return{isError:true,content:[{type:'text',text:(error as Error).message}]};}});
+const shutdown = async () => { preview.service.closeAllConnections(); preview.service.close(); await manager.close(); };
+process.once('SIGTERM', () => { void shutdown().finally(()=>process.exit(0)); });
+process.once('SIGINT', () => { void shutdown().finally(()=>process.exit(0)); });
 if (process.argv.includes('--preview')) {
   console.log(preview.url);
 } else {
   const transport = new StdioServerTransport();
-  server.server.onclose = () => { preview.service.closeAllConnections(); preview.service.close(); };
+  server.server.onclose = () => { void shutdown(); };
   await server.connect(transport);
-  process.stdin.once('end', () => { preview.service.closeAllConnections(); preview.service.close(); });
+  process.stdin.once('end', () => { void shutdown(); });
 }

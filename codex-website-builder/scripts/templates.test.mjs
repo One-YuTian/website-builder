@@ -97,12 +97,14 @@ try {
     }
   }
   await call('website_project', { thread_id: state.thread_id, project_id: state.project_id });
+  env.CODEX_THREAD_ID=state.thread_id;
   preview = spawn(process.execPath, ['dist/server/index.js', '--preview'], { env, stdio: ['ignore', 'pipe', 'pipe'] });
   const url = await new Promise((done, reject) => { preview.stdout.once('data', data => done(data.toString().trim())); preview.once('error', reject); });
   browser = await chromium.launch({ channel: 'chrome', headless: true });
   const page = await browser.newPage(); const errors = [];
   page.on('pageerror', error => errors.push(error.message));
   await page.goto(url);
+  await page.locator('[data-project-id="'+state.project_id+'"] .project-open').click();
   await page.locator('iframe').waitFor();
   const frame = await (await page.locator('iframe').elementHandle()).contentFrame();
   await frame.waitForFunction(() => !!document.querySelector('.mobile-banner-swiper-14')?.swiper);

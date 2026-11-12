@@ -8,6 +8,8 @@
       "interface": {
         "displayName": "Website Builder",
         "shortDescription": "会话建站与实时画布",
+        "logo": "./assets/logo.png",
+        "composerIcon": "./assets/icon2.png",
         "capabilities": [
           "Interactive"
         ],

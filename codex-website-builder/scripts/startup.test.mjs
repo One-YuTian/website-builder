@@ -14,7 +14,7 @@ const isolated = await mkdtemp(join(tmpdir(), 'website-startup-'));
 for (const scenario of ['actual-config', 'missing-reference']) {
   const reference = join(isolated, 'unavailable-reference');
   const client = new Client({ name: `startup-${scenario}`, version: '1' });
-  const env = { ...process.env, ...configuredEnv, ...(scenario === 'missing-reference' ? {
+  const env = { ...process.env, ...configuredEnv, WEBSITE_BUILDER_DATA_DIR: join(isolated, scenario), ...(scenario === 'missing-reference' ? {
     WEBSITE_BUILDER_ROOT: reference,
     WEBSITE_BUILDER_PROJECT_ROOT: join(isolated, 'projects'),
   } : {}) };
@@ -45,7 +45,10 @@ for (const scenario of ['actual-config', 'missing-reference']) {
       await assert.rejects(stat(reference), { code: 'ENOENT' });
     } else {
       // Optional reference library need not exist in a fresh installation.
-      assert.ok((await stat(configuredEnv.WEBSITE_BUILDER_PROJECT_ROOT)).isDirectory());
+      const opened = await client.callTool({ name: 'website_project', arguments: { thread_id: 'startup-actual', pages: [{ path: 'index.html', title: 'Home' }] } });
+      assert.ok(!opened.isError, JSON.stringify(opened));
+      assert.equal(JSON.parse(opened.content[0].text).directory, join(env.WEBSITE_BUILDER_DATA_DIR, 'project', JSON.parse(opened.content[0].text).project_id));
+      assert.ok((await stat(join(env.WEBSITE_BUILDER_DATA_DIR, 'project'))).isDirectory());
     }
     console.log(`PASS: ${scenario}: MCP handshake, tool discovery and canvas resource${scenario === 'missing-reference' ? ', isolated project write and sync without creating reference directory' : ''}`);
   } finally { await client.close(); }

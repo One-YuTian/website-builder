@@ -7,12 +7,19 @@ import { prepareCommerce } from './commerce';
 import { screenshotPage } from './screenshot';
 import { importProducts } from './product-import';
 import { formatSource } from './format-source';
+import { dataPaths } from './data-paths';
+import { migrateLegacyData } from './migrate-data';
+import { projectManager } from './project-manager';
 
 try {
   let text='';for await(const chunk of process.stdin)text+=chunk;
   const input=JSON.parse(text);
   const config=JSON.parse(await readFile(new URL('../../mcp.json',import.meta.url),'utf8')).mcpServers['website-builder'].env||{};
-  const store=new ProjectStore((process.env.WEBSITE_BUILDER_PROJECT_ROOT||config.WEBSITE_BUILDER_PROJECT_ROOT||fileURLToPath(new URL('../../project/',import.meta.url))).replaceAll('${PLUGIN_ROOT}',fileURLToPath(new URL('../../',import.meta.url))));
+  await migrateLegacyData(dataPaths().project);
+  const store=new ProjectStore(dataPaths().project);
+  if(input.action==='projects'||input.action==='panel_context') {
+    console.log(JSON.stringify(await projectManager(store).run({...input,action:input.action==='panel_context'?'context':input.mode||'list'})));process.exit(0);
+  }
   const thread=input.thread_id||process.env.CODEX_THREAD_ID||process.env.CODEX_SESSION_ID;
   const skillRoot=(process.env.WEBSITE_BUILDER_SKILL_ROOT||config.WEBSITE_BUILDER_SKILL_ROOT||fileURLToPath(new URL('../../skills/website-builder/',import.meta.url))).replaceAll('${PLUGIN_ROOT}',fileURLToPath(new URL('../../',import.meta.url)));
   let view;

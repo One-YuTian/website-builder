@@ -95,7 +95,7 @@ const PageFrame = memo(function PageFrame({ page, storage, index, width, selecte
   </article>;
 });
 
-export function WebsiteCanvas({ background }: { background: ReactNode }) {
+export function WebsiteCanvas({ background, projectId: pinnedProjectId, threadId, onHome, onFolder, onProject }: { background: ReactNode; projectId?:string; threadId?:string; onHome?:()=>void; onFolder?:()=>void; onProject?:(id:string)=>void }) {
   const config = window.__WEBSITE_BUILDER__;
   const [site, setSite] = useState<SiteManifest | null>(null);
   const [directory, setDirectory] = useState('');
@@ -163,8 +163,8 @@ export function WebsiteCanvas({ background }: { background: ReactNode }) {
       while(!stopped){
         try{
           let value:any;
-          if(hostApp){const result=await hostApp.callServerTool({name:'project_sync',arguments:{since,known,wait_ms:probed?20000:0}},{signal:controller.signal,timeout:25000});if(result.isError)throw new Error('项目状态读取失败');value=result._meta?.sync;}
-          else if(config!.projectApi){const url=new URL(config!.projectApi);url.searchParams.set('since',since);url.searchParams.set('known',JSON.stringify(known));url.searchParams.set('wait',probed?'20000':'0');const response=await fetch(url,{signal:controller.signal});if(!response.ok)throw new Error('项目状态读取失败');value=await response.json();}
+          if(hostApp){const result=await hostApp.callServerTool({name:'project_sync',arguments:{since,known,thread_id:threadId,project_id:pinnedProjectId,wait_ms:probed?20000:0}},{signal:controller.signal,timeout:25000});if(result.isError)throw new Error('项目状态读取失败');value=result._meta?.sync;}
+          else if(config!.projectApi){const url=new URL(config!.projectApi);url.searchParams.set('since',since);url.searchParams.set('known',JSON.stringify(known));url.searchParams.set('wait',probed?'20000':'0');if(threadId)url.searchParams.set('thread_id',threadId);if(pinnedProjectId)url.searchParams.set('project_id',pinnedProjectId);const response=await fetch(url,{signal:controller.signal});if(!response.ok)throw new Error('项目状态读取失败');value=await response.json();}
           else return;
           if(stopped)return;
           if(!value)throw new Error('项目状态响应无效');
@@ -193,12 +193,13 @@ export function WebsiteCanvas({ background }: { background: ReactNode }) {
       }
     }
     void run();return()=>{stopped=true;controller.abort();};
-  },[config]);
+  },[config,pinnedProjectId,threadId]);
   const refreshView=async()=>{
     if(projectMode.current){setNotice('项目预览已实时同步；生成完成后会自动更新。');return;}
     if(site)await load(directory);
   };
   const switchProject=async(id:string)=>{
+    if(onProject){onProject(id);return;}
     if(!site?.threadId||!hostApp){setNotice('请在当前会话中指定要打开的项目');return;}
     const result=await hostApp.callServerTool({name:'website_project',arguments:{action:'open',thread_id:site.threadId,project_id:id}});
     if(result.isError)setNotice('无法打开该项目');
@@ -271,8 +272,9 @@ export function WebsiteCanvas({ background }: { background: ReactNode }) {
             <button aria-label="页面目录" aria-expanded={popover === 'pages'} className={popover === 'pages' ? 'open' : ''} onClick={() => setPopover(popover === 'pages' ? null : 'pages')}><Icon name="pages" /></button>
             <button aria-label="刷新网站" disabled={loading} onClick={() => void refreshView()}><Icon name="refresh" /></button>
             <span className="rail-divider" />
+            {onFolder&&<button aria-label="打开项目目录" title="打开项目目录" onClick={onFolder}><Icon name="folder"/></button>}
             <button aria-label="画布缩放" aria-expanded={popover === 'zoom'} className={popover === 'zoom' ? 'open' : ''} onClick={() => setPopover(popover === 'zoom' ? null : 'zoom')}><Icon name="zoom" /></button>
-            <button aria-label="重置视图" onClick={() => setView({ x: 28, y: 30, zoom: .26 })}><Icon name="reset" /></button>
+            <button aria-label="返回主界面" title="Home" onClick={onHome}><Icon name="reset" /></button>
           </nav>
           {popover && <div className={`tool-popover ${popover}`} role="dialog" aria-label={popover === 'width' ? '页面宽度设置' : popover === 'pages' ? '网站页面目录' : '画布缩放设置'} onPointerDown={event => event.stopPropagation()}>
             <div className="popover-heading"><strong>{popover === 'width' ? '页面宽度' : popover === 'pages' ? `网站页面 · ${site?.pages.length ?? 0}` : '画布缩放'}</strong><button aria-label="关闭工具面板" onClick={() => setPopover(null)}>×</button></div>

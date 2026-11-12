@@ -1,6 +1,6 @@
 import assert from 'node:assert/strict';
 import {createServer} from 'node:http';
-import {mkdtemp,mkdir,writeFile,readFile,readdir} from 'node:fs/promises';
+import {mkdtemp,mkdir,writeFile,readFile,readdir,cp} from 'node:fs/promises';
 import {createHash} from 'node:crypto';
 import {tmpdir} from 'node:os';
 import {join,resolve} from 'node:path';
@@ -30,10 +30,14 @@ const external=createServer((req,res)=>{const path=new URL(req.url,origin).pathn
 await writeFile(join(folder,'site/data.js'),`window.productData=[{main_image:'/catalog/item.webp'}];window.productImageUrl=value=>/^[a-z]+:/i.test(value)?'':new URL(value,'${origin}').href;`);
 const original=`<!doctype html><html><head><link rel="stylesheet" href="${origin}/style" integrity="sha256-obsolete" crossorigin="anonymous"></head><body><h1>Proxy test</h1><script src="data.js"></script><script>const wrapper=document.createElement('div');wrapper.innerHTML='<img id="card-image" src="'+productImageUrl(productData[0].main_image)+'">';document.body.append(wrapper);const host=document.createElement('div');host.id='shadow-host';const shadow=host.attachShadow({mode:'open'});shadow.innerHTML='<img id="shadow-image" src="${origin}/image">';document.body.append(host);wrapper.insertAdjacentHTML('beforeend','<img id="adjacent-image" src="${origin}/image">');</script><img id="static" src="${origin}/redirect"><img id="responsive" srcset="${origin}/image 1x, ${origin}/other-image 2x"><div id="background" style="width:20px;height:20px;background-image:url('${origin}/image')"></div><script src="${origin}/script" integrity="sha256-obsolete"></script></body></html>`;
 const file=join(folder,'site/index.html');await writeFile(file,original);const before=createHash('sha256').update(original).digest('hex');
-const env={...process.env,WEBSITE_BUILDER_ROOT:folder,WEBSITE_BUILDER_PROJECT_ROOT:join(folder,'project'),WEBSITE_BUILDER_PROXY_ALLOW_LOCAL:'1'};
+const env={...process.env,CODEX_THREAD_ID:'proxy-thread',WEBSITE_BUILDER_ROOT:folder,WEBSITE_BUILDER_PROJECT_ROOT:join(folder,'project'),WEBSITE_BUILDER_PROXY_ALLOW_LOCAL:'1'};
 const client=new Client({name:'proxy-test',version:'1'});const transport=new StdioClientTransport({command:process.execPath,args:[resolve('dist/server/index.js')],env});
 try{
  await client.connect(transport);
+ const projectResult=await client.callTool({name:'website_project',arguments:{thread_id:'proxy-thread',name:'Proxy fixture',pages:[{path:'index.html',title:'Proxy'}]}});
+ const project=JSON.parse(projectResult.content[0].text);
+ await cp(join(folder,'site'),project.directory,{recursive:true});
+ const finished=await client.callTool({name:'website_project',arguments:{thread_id:'proxy-thread',action:'finish'}});assert.ok(!finished.isError);
  const ui=await client.readResource({uri:'ui://codex-website-builder/canvas'});assert.deepEqual(ui.contents[0]._meta.ui.csp.resourceDomains,['data:','blob:']);
  let offset=0,size=0;while(size<1300000){const result=await client.callTool({name:'proxy_resource',arguments:{url:`${origin}/large`,offset}});assert.ok(!result.isError);const value=result._meta.resource;assert.ok(value.base64.length<750000);size+=Buffer.from(value.base64,'base64').length;offset=value.next;}assert.equal(size,1300000);assert.equal(hits['/large'],1);
  const failed=await client.callTool({name:'proxy_resource',arguments:{url:`${origin}/missing`}});assert.ok(failed.isError);
@@ -41,7 +45,7 @@ try{
  browser=await chromium.launch({channel:'chrome',headless:true});const page=await browser.newPage();const direct=[],errors=[],violations=[];
  page.on('pageerror',error=>errors.push(error.message));page.on('console',message=>{if(message.type()==='error'){if(message.text().includes('Content Security Policy'))violations.push(message.text());console.log(message.text());}});page.on('requestfailed',request=>console.log('requestfailed',request.url(),request.failure()));await page.route(`${origin}/**`,route=>{direct.push(route.request().url());return route.abort();});
  await page.route('**/canvas',async route=>{const response=await route.fetch();await route.fulfill({response,headers:{...response.headers(),'content-security-policy':`default-src 'self' blob: data:; script-src 'unsafe-inline' 'unsafe-eval' data: blob:; style-src 'unsafe-inline' data: blob:; img-src data: blob:; font-src data: blob:; connect-src http://127.0.0.1:${new URL(url).port} data: blob:; frame-src blob: data:;`}});});
- await page.goto(url.replace('localhost','127.0.0.1'));await page.getByRole('button',{name:'页面目录',exact:true}).click();await page.locator('#site-directory').fill('site');await page.getByRole('button',{name:'识别网站',exact:true}).click();
+ await page.goto(url.replace('localhost','127.0.0.1'));await page.locator('[data-project-id="'+project.project_id+'"] .project-open').click();
  const frame=page.frameLocator('iframe[title="index.html"]');try{await frame.locator('h1').waitFor({timeout:10000});}catch(error){console.log({body:await page.locator('body').innerText(),hits,errors});throw error;}
  await frame.locator('body').evaluate(()=>Promise.race([new Promise(resolve=>{const timer=setInterval(()=>{if(window.staticScript&&window.dynamicScript&&window.fetchValue&&window.xhrValue&&window.moduleValue===73){clearInterval(timer);resolve();}},50);}),new Promise((_,reject)=>setTimeout(()=>reject(new Error('Proxy script/fetch/XHR/module timeout')),10000))]));
  for(const id of ['static','dynamic','responsive','card-image','shadow-image','adjacent-image'])try{await frame.locator('#'+id).evaluate(image=>new Promise((done,reject)=>{if(image.complete&&image.naturalWidth)return done();image.onload=done;image.onerror=()=>reject(new Error(image.id+' failed'));setTimeout(()=>image.naturalWidth?done():reject(new Error(image.id+' timed out')),5000);}));}catch(error){console.log(await frame.locator('#'+id).evaluate(image=>({html:image.outerHTML,currentSrc:image.currentSrc})),await page.locator('body').innerText(),hits);throw error;}

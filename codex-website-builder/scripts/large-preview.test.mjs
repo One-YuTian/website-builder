@@ -48,6 +48,7 @@ try{
   assert.ok(Buffer.concat(chunks).toString('base64').length>3800000,'fixture exceeds old per-page transfer cap');
   assert.ok(large.includes('.banner'));
   assert.ok((await client.callTool({name:'proxy_resource',arguments:{url:'https://website-builder.invalid/preview-assets/missing',offset:0}})).isError);
+  env.CODEX_THREAD_ID=state.thread_id;
   preview=spawn(process.execPath,['dist/server/index.js','--preview'],{env,stdio:['ignore','pipe','pipe']});
   const url=await new Promise((resolve,reject)=>{preview.stdout.once('data',data=>resolve(data.toString().trim()));preview.once('error',reject);});
   browser=await chromium.launch({channel:'chrome',headless:true});
@@ -61,6 +62,7 @@ try{
     return route.continue();
   });
   await page.goto(url);
+  await page.locator('[data-project-id="'+state.project_id+'"] .project-open').click();
   await page.waitForFunction(()=>document.querySelectorAll('.page-caption[data-ready="true"]').length===2);
   for(const file of ['index.html','large.html']){
     const frame=page.frameLocator(`iframe[title="${file}"]`);

@@ -1,8 +1,8 @@
 import { StrictMode, useEffect, useRef } from 'react';
 import { createRoot } from 'react-dom/client';
 import './style.css';
-import { WebsiteCanvas } from './WebsiteCanvas';
-declare global { interface Window { __WEBSITE_BUILDER__?: { api: string; projectApi?:string; resourceApi?:string; origin: string; defaultDirectory: string } } }
+import { ProjectManager } from './ProjectManager';
+declare global { interface Window { __WEBSITE_BUILDER__?: { api: string; projectApi?:string; managerApi?:string; resourceApi?:string; origin: string; defaultDirectory: string } } }
 
 function DotCanvas() {
   const ref = useRef<HTMLCanvasElement>(null);
@@ -63,4 +63,4 @@ function DotCanvas() {
   return <div className="dot-background" aria-hidden="true"><canvas ref={ref} /></div>;
 }
 
-createRoot(document.getElementById('root')!).render(<StrictMode><WebsiteCanvas background={<DotCanvas />} /></StrictMode>);
+createRoot(document.getElementById('root')!).render(<StrictMode><ProjectManager background={<DotCanvas />} /></StrictMode>);

@@ -15,12 +15,14 @@ const natural = (a: string, b: string) => a.localeCompare(b, 'en', { numeric: tr
 
 // All filesystem reads are restricted to the configured website root, including symlinks.
 export async function contained(root: string, path: string) {
-  const target = await realpath(resolve(root, path));
-  if (!inside(root, target)) throw new Error('目录超出已配置的网站根目录');
+  const base = await realpath(root);
+  const target = await realpath(resolve(base, path));
+  if (!inside(base, target)) throw new Error('目录超出已配置的网站根目录');
   return target;
 }
 
 export async function scanSite(root: string, directory: string, prefix: string): Promise<SiteManifest> {
+  root = await realpath(root);
   const site = await contained(root, directory);
   if (!(await stat(site)).isDirectory()) throw new Error('请选择网站目录');
   const documents = new Map<string, string>();
@@ -158,7 +160,7 @@ export async function compileProjectPage(root:string,directory:string,path:strin
   return instrument(await snapshotCompiler(base,site,vendor,assets)(path),true);
 }
 
-export async function createPreview(ui: string, configuredRoot: string, defaultDirectory = 'www.noventrad.com', projectSync?: (input:{since?:string;known?:Record<string,number>;waitMs?:number})=>Promise<unknown>) {
+export async function createPreview(ui: string, configuredRoot: string, defaultDirectory = 'www.noventrad.com', projectSync?: (input:{since?:string;known?:Record<string,number>;waitMs?:number;threadId?:string;projectId?:string})=>Promise<unknown>, manageProjects?: (input:any)=>Promise<unknown>) {
   // The reference library is optional. Resolve it only when explicitly read;
   // an unavailable drive must not prevent project tools or the canvas starting.
   const referenceRoot = () => realpath(configuredRoot);
@@ -185,7 +187,7 @@ export async function createPreview(ui: string, configuredRoot: string, defaultD
   let origin = '';
   const service = createServer(async (req, res) => {
     try {
-      if (req.method !== 'GET') { res.writeHead(405).end(); return; }
+      if (req.method !== 'GET' && req.method !== 'POST') { res.writeHead(405).end(); return; }
       const url = new URL(req.url!, origin);
       const prefix = `/${token}`;
       if (!url.pathname.startsWith(prefix + '/')) { res.writeHead(404).end(); return; }
@@ -193,6 +195,12 @@ export async function createPreview(ui: string, configuredRoot: string, defaultD
       res.setHeader('Access-Control-Allow-Origin', '*');
       res.setHeader('X-Content-Type-Options', 'nosniff');
       const route = url.pathname.slice(prefix.length);
+      if(route === '/api/projects' && manageProjects) {
+        if(req.method !== 'POST') {res.writeHead(405).end();return;}
+        let body='';for await(const chunk of req){body+=chunk;if(body.length>1000000)throw Error('请求过大');}
+        res.setHeader('Content-Type','application/json');res.end(JSON.stringify(await manageProjects(JSON.parse(body))));return;
+      }
+      if(req.method !== 'GET') {res.writeHead(405).end();return;}
       if(route==='/api/resource'){
         const resource=await resourceChunk(url.searchParams.get('url')||'',Math.max(0,Number(url.searchParams.get('offset')||0)),url.searchParams.get('raw')==='true');
         res.setHeader('Content-Type','application/json');res.end(JSON.stringify(resource));return;
@@ -206,7 +214,7 @@ export async function createPreview(ui: string, configuredRoot: string, defaultD
         res.setHeader('Content-Type', 'application/json'); res.end(JSON.stringify(manifest)); return;
       }
       if(route === '/api/project-sync' && projectSync) {
-        const value=await projectSync({since:url.searchParams.get('since')||'none',known:JSON.parse(url.searchParams.get('known')||'{}'),waitMs:Number(url.searchParams.get('wait')||'20000')});
+        const value=await projectSync({since:url.searchParams.get('since')||'none',known:JSON.parse(url.searchParams.get('known')||'{}'),waitMs:Number(url.searchParams.get('wait')||'20000'),threadId:url.searchParams.get('thread_id')||undefined,projectId:url.searchParams.get('project_id')||undefined});
         res.setHeader('Content-Type','application/json');res.end(JSON.stringify(value));return;
       }
       if (route.startsWith('/vendor/')) {
@@ -250,7 +258,7 @@ export async function createPreview(ui: string, configuredRoot: string, defaultD
   const port = (service.address() as import('node:net').AddressInfo).port;
   origin = `http://127.0.0.1:${port}`;
   function render() {
-    const config = JSON.stringify({ api: `${origin}/${token}/api/site`, projectApi: `${origin}/${token}/api/project-sync`, resourceApi:`${origin}/${token}/api/resource`, origin, defaultDirectory }).replaceAll('<', '\\u003c');
+    const config = JSON.stringify({ api: `${origin}/${token}/api/site`, projectApi: `${origin}/${token}/api/project-sync`, managerApi: `${origin}/${token}/api/projects`, resourceApi:`${origin}/${token}/api/resource`, origin, defaultDirectory }).replaceAll('<', '\\u003c');
     return ui.replace('</head>', `<script>window.__WEBSITE_BUILDER__=${config};<\/script></head>`);
   }
   // Separate origin prevents website scripts from accessing the standalone canvas.

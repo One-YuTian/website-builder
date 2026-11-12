@@ -5,6 +5,7 @@ export default defineConfig({
   format: ['esm'],
   platform: 'node',
   target: 'node22',
+  removeNodeProtocol: false,
   outDir: 'dist/server',
   clean: true,
   // Installed plugins cannot rely on pnpm's development symlinks.

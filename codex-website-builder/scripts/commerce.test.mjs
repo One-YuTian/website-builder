@@ -153,12 +153,14 @@ try {
   const previous = await readFile(join(state.directory, 'js/app.js'), 'utf8');
   assert.ok((await client.callTool({ name: 'website_write', arguments: { thread_id: state.thread_id, project_id: state.project_id, files: [{ path: 'js/app.js', content: 'function {' }] } })).isError);
   assert.equal(await readFile(join(state.directory, 'js/app.js'), 'utf8'), previous);
+  env.CODEX_THREAD_ID=state.thread_id;
   preview = spawn(process.execPath, ['dist/server/index.js', '--preview'], { env, stdio: ['ignore', 'pipe', 'pipe'] });
   const url = await new Promise((done, reject) => { preview.stdout.once('data', data => done(data.toString().trim())); preview.once('error', reject); });
   browser = await chromium.launch({ channel: 'chrome', headless: true });
   const page = await browser.newPage(); const errors = [];
   page.on('pageerror', error => errors.push(error.message));
   await page.goto(url);
+  await page.locator('[data-project-id="'+state.project_id+'"] .project-open').click();
   await page.frameLocator('iframe[title="index.html"]').locator('header-component').filter({ hasText: 'products:24 cart:0' }).waitFor();
   const index = await (await page.locator('iframe[title="index.html"]').elementHandle()).contentFrame();
   const shop = page.frameLocator('iframe[title="shop.html"]');

@@ -8,7 +8,7 @@ import {StdioClientTransport} from '@modelcontextprotocol/sdk/client/stdio.js';
 import {chromium} from '@playwright/test';
 const sandbox=await mkdtemp(join(tmpdir(),'website-project-test-'));
 const settings=JSON.parse(await readFile('mcp.json','utf8')).mcpServers['website-builder'];
-const env={...process.env, WEBSITE_BUILDER_PREVIEW_VENDOR_FIXTURES:'1',...settings.env,WEBSITE_BUILDER_ROOT:sandbox,WEBSITE_BUILDER_PROJECT_ROOT:join(sandbox,'project'),WEBSITE_BUILDER_SKILL_ROOT:resolve('skills/website-builder')};
+const env={...process.env, CODEX_THREAD_ID:'test-ui-thread', WEBSITE_BUILDER_PREVIEW_VENDOR_FIXTURES:'1',...settings.env,WEBSITE_BUILDER_ROOT:sandbox,WEBSITE_BUILDER_PROJECT_ROOT:join(sandbox,'project'),WEBSITE_BUILDER_SKILL_ROOT:resolve('skills/website-builder')};
 const client=new Client({name:'project-test',version:'1'});
 const transport=new StdioClientTransport({command:process.execPath,args:[resolve('dist/server/index.js')],cwd:resolve('.'),env});
 let browser,preview;
@@ -23,7 +23,7 @@ try{
  const empty=await browser.newPage();const demoRequests=[];empty.on('request',request=>{if(request.url().includes('/api/site'))demoRequests.push(request.url());});
  await empty.goto(url,{waitUntil:'domcontentloaded'});await empty.waitForTimeout(700);
  assert.equal(await empty.locator('.page-panel,iframe').count(),0);assert.deepEqual(demoRequests,[]);
- await empty.getByRole('button',{name:'刷新网站',exact:true}).click();await empty.waitForTimeout(300);assert.deepEqual(demoRequests,[]);
+ await empty.getByRole('heading',{name:'Website Builder',exact:true}).waitFor();assert.deepEqual(demoRequests,[]);
  await empty.close();
  const failed=await browser.newPage();await failed.route('**/api/project-sync*',route=>route.fulfill({status:503,body:'unavailable'}));failed.on('request',request=>{if(request.url().includes('/api/site'))demoRequests.push(request.url());});
  await failed.goto(url,{waitUntil:'domcontentloaded'});await failed.waitForTimeout(700);assert.equal(await failed.locator('.page-panel,iframe').count(),0);assert.deepEqual(demoRequests,[]);await failed.close();
@@ -64,7 +64,7 @@ try{
  // UI observes a second server process writing the shared project; unfinished files stay hidden.
  const ui=await project({thread_id:'test-ui-thread',new_project:true,name:'Live Store',pages:[{path:'index.html',title:'Home'},{path:'shop.html',title:'Shop'},{path:'about.html',title:'About'}]});
  const page=await browser.newPage({viewport:{width:1440,height:950}});
- const errors=[];page.on('pageerror',error=>errors.push(error.message));await page.goto(url,{waitUntil:'domcontentloaded'});await page.locator('.page-panel').nth(2).waitFor();
+ const errors=[];page.on('pageerror',error=>errors.push(error.message));await page.goto(url,{waitUntil:'domcontentloaded'});try{await page.locator('.project-open').filter({hasText:'Live Store'}).click();}catch(error){console.log(await page.locator('body').innerText());throw error;}await page.locator('.page-panel').nth(2).waitFor();
  assert.equal(await page.locator('iframe').count(),0);assert.equal(await page.locator('.page-loader').count(),3);
  await write(ui,[{path:'index.html',content:'<html><body>not finished',fragment:false}]);await page.waitForTimeout(400);assert.equal(await page.locator('iframe').count(),0);
  // One completed page appears while other pages are unfinished; no task-level finish.

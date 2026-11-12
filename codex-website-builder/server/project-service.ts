@@ -12,10 +12,19 @@ export function compactProject(view:ProjectView) {
 }
 export function projectService(store:ProjectStore) {
   const cache=new Map<string,{version:number;gzip:string}>();
-  return async function sync(input:{since?:string;known?:Record<string,number>;threadId?:string;waitMs?:number}) {
-    let view=await store.reconcile(input.threadId);const known=input.known||{};
+  return async function sync(input:{since?:string;known?:Record<string,number>;threadId?:string;projectId?:string;waitMs?:number}) {
+    const load=async()=>{
+      if(!input.projectId)return store.reconcile(input.threadId);
+      if(!input.threadId){const view=await store.get(undefined,input.projectId);return view?{...view,threadId:'',revision:`${view.project.id}::${view.project.revision}`}:null;}
+      const binding=await store.get(input.threadId);
+      return binding?.project.id===input.projectId?store.reconcile(input.threadId):store.get(input.threadId,input.projectId);
+    };
+    let view=await load();const known=input.known||{};
     const missing=view?.project.pages.some(page=>page.status==='ready'&&known[page.path]!==page.version);
-    if(!missing&&(view?.revision||'none')===(input.since||'none'))view=await store.wait(input.since||'none',input.threadId,input.waitMs??20000);
+    if(!missing&&(view?.revision||'none')===(input.since||'none')) {
+      if(!input.projectId)view=await store.wait(input.since||'none',input.threadId,input.waitMs??20000);
+      else {const deadline=Date.now()+Math.min(input.waitMs??20000,20000);while(Date.now()<deadline && view?.revision===input.since){await new Promise(resolve=>setTimeout(resolve,250));view=await load();}}
+    }
     if(!view)return{revision:'none',unchanged:true};
     if(!missing&&view.revision===input.since)return{revision:view.revision,unchanged:true};
     const manifest:SiteManifest={directory:view.project.id,name:view.project.name,projectId:view.project.id,threadId:view.threadId,revision:view.revision,order:'项目页面计划',warnings:[],pages:view.project.pages.map(page=>({...page,url:`https://website-builder.invalid/files/${view!.project.id}/${page.path.split('/').map(encodeURIComponent).join('/')}`}))};

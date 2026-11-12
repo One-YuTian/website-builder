@@ -30,10 +30,12 @@ try {
   const before = (await call('project_sync', { thread_id: project.thread_id, wait_ms: 0 }))._meta.sync;
   const known = Object.fromEntries(before.manifest.pages.map(page => [page.path, page.version]));
   assert.ok(gunzipSync(Buffer.from(before.pages['index.html'], 'base64')).toString().includes('data:image/svg+xml;base64,'));
+  env.CODEX_THREAD_ID=project.thread_id;
   preview = spawn(process.execPath, ['dist/server/index.js', '--preview'], { env, stdio: ['ignore', 'pipe', 'pipe'], windowsHide: true });
   const url = await new Promise((resolve, reject) => { preview.stdout.once('data', bytes => resolve(bytes.toString().trim())); preview.once('error', reject); });
   browser = await chromium.launch({ channel: 'chrome', headless: true });
   const page = await browser.newPage(); await page.goto(url);
+  await page.locator('[data-project-id="'+project.project_id+'"] .project-open').click();
   const frame = page.frameLocator('iframe[title="index.html"]');
   await frame.locator('#hero').waitFor();
   await frame.locator('#hero').evaluate(image => new Promise(resolve => image.complete ? resolve() : image.addEventListener('load', resolve, { once: true })));

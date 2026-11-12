@@ -6,6 +6,7 @@ import { formatSource } from './format-source';
 import { fileURLToPath } from 'node:url';
 import { regionMarkers, type TemplateBinding } from './template-source';
 import { readTemplates } from './templates';
+import { ProjectDatabase } from './database';
 
 export type PageState = 'queued'|'generating'|'ready'|'error';
 export interface ProjectPage { path: string; title: string; status: PageState; version: number; error?: string; generationHash?: string; resourceSignature?: string }
@@ -28,12 +29,13 @@ async function atomic(file: string, value: string) {
 export class ProjectStore {
   readonly skillRoot = (process.env.WEBSITE_BUILDER_SKILL_ROOT || fileURLToPath(new URL('../../skills/website-builder/', import.meta.url))).replaceAll('${PLUGIN_ROOT}', fileURLToPath(new URL('../../', import.meta.url)));
   readonly stateRoot: string;
-  constructor(readonly root: string) { this.root=resolve(root);this.stateRoot=join(dirname(this.root),'.builder-state'); }
+  readonly database: ProjectDatabase;
+  constructor(readonly root: string) { this.root=resolve(root);this.stateRoot=join(dirname(this.root),'.builder-state');this.database=new ProjectDatabase(dirname(this.root),this.root,this.stateRoot); }
   private binding(thread: string) { if(!thread.trim())throw new Error('需要当前真实 thread_id，不能使用共享匿名会话');return join(this.stateRoot,'threads',createHash('sha256').update(thread).digest('hex')+'.json'); }
   private folder(id: string) { if(!idPattern.test(id))throw new Error('项目 ID 无效');return join(this.root,id); }
   metadataDirectory(id: string) { this.folder(id); return join(this.stateRoot,'projects',id); }
   private manifest(id: string) { return join(this.metadataDirectory(id),'project.json'); }
-  private async loadProject(id:string) { return await json<WebsiteProject>(this.manifest(id)) || await json<WebsiteProject>(join(this.folder(id),'.website-builder.json')); }
+  private async loadProject(id:string) { return this.database.project(id); }
   private async lock<T>(key: string, run: ()=>Promise<T>): Promise<T> {
     await mkdir(join(this.stateRoot,'locks'),{recursive:true});const file=join(this.stateRoot,'locks',createHash('sha256').update(key).digest('hex')+'.lock');
     let handle: Awaited<ReturnType<typeof open>> | undefined;
@@ -41,16 +43,16 @@ export class ProjectStore {
     if(!handle)throw new Error('项目正在写入，请稍后重试');
     try{return await run();}finally{await handle.close();await unlink(file).catch(()=>{});}
   }
-  private async save(project: WebsiteProject) {project.revision=randomUUID();project.updatedAt=new Date().toISOString();await atomic(this.manifest(project.id),JSON.stringify(project,null,2));}
+  private async save(project: WebsiteProject) {project.revision=randomUUID();project.updatedAt=new Date().toISOString();this.database.save(project);await atomic(this.manifest(project.id),JSON.stringify(project,null,2));}
   async get(threadId?: string, projectId?: string): Promise<ProjectView | null> {
-    const binding = threadId ? await json<{projectId:string;threadId:string}>(this.binding(threadId)) : await json<{projectId:string;threadId:string}>(join(this.stateRoot,'active.json'));
+    const binding = this.database.binding(threadId);
     const id=projectId || binding?.projectId;if(!id)return null;
-    const project=await this.loadProject(id);if(!project)throw new Error('项目不存在');
+    const project=await this.loadProject(id);if(!project){if(!projectId)return null;throw new Error('项目不存在或已删除');}
     const base=await realpath(this.root),folder=await realpath(this.folder(id)),rel=relative(base,folder);if(rel==='..'||rel.startsWith(`..${sep}`)||isAbsolute(rel))throw new Error('项目目录不能指向外部');
     const currentThread=threadId || binding?.threadId || '';
     return {project,threadId:currentThread,directory:this.folder(id),metadataDirectory:this.metadataDirectory(id),revision:`${id}:${currentThread}:${project.revision}`};
   }
-  async list() {await mkdir(this.root,{recursive:true});const projects=[];for(const entry of await readdir(this.root,{withFileTypes:true})){if(!entry.isDirectory()||!idPattern.test(entry.name))continue;const project=await this.loadProject(entry.name);if(project)projects.push({id:project.id,name:project.name,updatedAt:project.updatedAt});}return projects.sort((a,b)=>b.updatedAt.localeCompare(a.updatedAt));}
+  async list() {await mkdir(this.root,{recursive:true});return this.database.list();}
   async templateUsage() {
     const usage:Record<string,{projects:number;lastUsed?:string}>={};
     for(const project of await this.list()) {
@@ -62,19 +64,24 @@ export class ProjectStore {
     }
     return usage;
   }
+  async createProject(input: {name?:string;brief?:string;language?:string;pages?:{path:string;title:string}[]}) {
+    const id=randomBytes(8).toString('hex').match(/.{4}/g)!.join('-');
+    const pages=(input.pages || DEFAULT_PAGES).map(page=>({...page,path:this.path(page.path,true),status:'queued' as const,version:0}));
+    if(new Set(pages.map(page=>page.path)).size!==pages.length)throw new Error('页面路径重复');
+    const project:WebsiteProject={id,name:input.name||'Ecommerce website',brief:input.brief||'',language:input.language||'en',revision:'',pages,updatedAt:''};
+    await mkdir(this.folder(id),{recursive:true});await this.save(project);
+    return {project,threadId:'',directory:this.folder(id),metadataDirectory:this.metadataDirectory(id),revision:`${id}::${project.revision}`};
+  }
   async open(input: {threadId:string;projectId?:string;newProject?:boolean;name?:string;brief?:string;language?:string;pages?:{path:string;title:string}[]}) {
     return this.lock(`thread:${input.threadId}`,async()=>{
       let view = input.newProject ? null : await this.get(input.threadId,input.projectId);
       if(!view) {
         if(input.projectId)throw new Error('指定项目不存在，不会用相同名字创建替代项目');
-        const id=randomBytes(8).toString('hex').match(/.{4}/g)!.join('-');
-        const pages=(input.pages || DEFAULT_PAGES).map(page=>({...page,path:this.path(page.path,true),status:'queued' as const,version:0}));
-        if(new Set(pages.map(page=>page.path)).size!==pages.length)throw new Error('页面路径重复');
-        const project:WebsiteProject={id,name:input.name||'Ecommerce website',brief:input.brief||'',language:input.language||'en',revision:'',pages,updatedAt:''};
-        await mkdir(this.folder(id),{recursive:true});await this.save(project);
-        view={project,threadId:input.threadId,directory:this.folder(id),metadataDirectory:this.metadataDirectory(id),revision:`${id}:${input.threadId}:${project.revision}`};
+        const created=await this.createProject(input);
+        view={...created,threadId:input.threadId,revision:`${created.project.id}:${input.threadId}:${created.project.revision}`};
       }
       const binding={threadId:input.threadId,projectId:view.project.id};
+      this.database.setActive(binding);
       await atomic(this.binding(input.threadId),JSON.stringify(binding));await atomic(join(this.stateRoot,'active.json'),JSON.stringify(binding));
       return view;
     });
@@ -123,9 +130,9 @@ export class ProjectStore {
         const url=match[1].replaceAll('&amp;','&');if(/^(?:[a-z]+:|\/\/|#)/i.test(url))continue;
         try{
           const value=decodeURIComponent(url.split(/[?#]/)[0]);
-          const base=/\.m?js$/i.test(path)?dirname(resolve(view.directory,page)):dirname(file);
-          const target=value.startsWith('/')?resolve(view.directory,value.slice(1)):resolve(base,value);
-          const rel=relative(view.directory,target).split(sep).join('/');this.path(rel);await visit(rel);
+          const directory=/\.m?js$/i.test(path)?dirname(resolve(base,page)):dirname(file);
+          const target=value.startsWith('/')?resolve(base,value.slice(1)):resolve(directory,value);
+          const rel=relative(base,target).split(sep).join('/');this.path(rel);await visit(rel);
         }catch{hash.update(':invalid-reference');}
       }
     };
@@ -185,7 +192,9 @@ export class ProjectStore {
         const enhanced=await formatSource(path,injectSharedUI(html,path));if(enhanced!==html){await atomic(file,enhanced);html=enhanced;}
         for(const match of html.matchAll(/\b(?:src|href)\s*=\s*["']([^"']+\.(?:js|css))(?:\?[^"']*)?["']/gi)){
           if(/^(?:[a-z]+:|\/\/)/i.test(match[1]))continue;
-          const relativePath=relative(view.directory,resolve(dirname(file),match[1])).split(sep).join('/');await stat(await this.target(view.project.id,relativePath));
+          // Keep both operands in the configured path namespace (e.g. macOS
+          // /var vs /private/var); target() still validates realpath containment.
+          const relativePath=relative(view.directory,resolve(dirname(resolve(view.directory,path)),match[1])).split(sep).join('/');await stat(await this.target(view.project.id,relativePath));
         }
         page.status='ready';page.version++;delete page.error;delete page.generationHash;
       } catch(error){page.status='error';page.error=(error as Error).message;page.version++;delete page.generationHash;}

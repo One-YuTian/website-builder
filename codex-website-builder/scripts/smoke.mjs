@@ -27,6 +27,8 @@ for (const name of fixturePages) await writeFile(join(fixture, `${name}.html`), 
 await cp(resolve(process.argv[2] ?? 'dist'), join(isolated, 'dist'), { recursive: true });
 await cp('package.json', join(isolated, 'package.json'));
 await cp('scripts',join(isolated,'scripts'),{recursive:true});
+await mkdir(join(isolated, 'assets'), { recursive: true });
+await cp('assets/icon.png', join(isolated, 'assets/icon.png'));
 const config = mcp.mcpServers['website-builder'];
 assert.ok(config.command==='./scripts/launch-node');
 const expand = value => value.replaceAll('${PLUGIN_ROOT}', isolated);
@@ -37,6 +39,7 @@ try {
   const { tools } = await client.listTools();
   const tool = tools.find(tool => tool.name === 'open_canvas');
   assert.ok(tool);
+  assert.deepEqual(client.getServerVersion().icons, [{ src: `data:image/png;base64,${(await readFile('assets/icon.png')).toString('base64')}`, mimeType: 'image/png', sizes: ['200x200'] }]);
   assert.equal(tool._meta['openai/ui'].entrypoints[0].type, 'global');
   const result = await client.callTool({ name: 'open_canvas', arguments: {} });
   assert.ok(!result.isError);
