@@ -17,6 +17,8 @@ echo Website Builder: Codex managed Node runtime unavailable. Update/restart Cod
 exit /b 127
 :run
 if "%~1"=="" (
+  rem Avoid locking the versioned plugin directory while the MCP server runs.
+  cd /d "%SystemRoot%"
   "%BUILDER_NODE%" "%~dp0..\dist\server\index.js"
 ) else (
   "%BUILDER_NODE%" %*
