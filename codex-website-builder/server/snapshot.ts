@@ -47,7 +47,7 @@ export function snapshotCompiler(root: string, site: string, vendor: string, ven
   const cache = new Map<string, Promise<string>>();
   let documentFile = '';
   const missing = 'data:image/svg+xml;base64,' + Buffer.from('<svg xmlns="http://www.w3.org/2000/svg" width="300" height="200"><rect width="100%" height="100%" fill="#f4f5f4"/><path d="M122 120l20-24 16 16 18-28 20 36z" fill="#d1d8d3"/></svg>').toString('base64');
-  async function asset(url: string, from: string, external=false): Promise<string> {
+  async function asset(url: string, from: string, external=false, preserveMissing=false): Promise<string> {
     const decoded = url.replaceAll('&amp;', '&');
     if (/^(data:|blob:|#)/i.test(decoded)) return decoded;
     let file: string;
@@ -58,10 +58,13 @@ export function snapshotCompiler(root: string, site: string, vendor: string, ven
         const resource=await proxyResource(remote);return `data:${resource.mime};base64,${resource.bytes.toString('base64')}`;
       }
       file = resolve(vendor, vendors[remote]);
-    } else file = decoded.startsWith('/') ? resolve(site, decoded.slice(1).split(/[?#]/)[0]) : resolve(dirname(from), decoded.split(/[?#]/)[0]);
+    } else {
+      const path=decodeURIComponent(decoded.split(/[?#]/)[0]);
+      file = path.startsWith('/') ? resolve(site,path.slice(1)) : resolve(dirname(from),path);
+    }
     const type = types[extname(file).toLowerCase()];
     if (!type) return url;
-    const cacheKey=`${external?'embedded':'lazy'}:${file}`;
+    const cacheKey=`${external?'embedded':'lazy'}:${preserveMissing?'literal':'resource'}:${file}`;
     if (!cache.has(cacheKey)) cache.set(cacheKey, (async () => {
       try {
         const safe = await contained(file.startsWith(vendor) ? vendor : root, file);
@@ -72,10 +75,13 @@ export function snapshotCompiler(root: string, site: string, vendor: string, ven
         if (/\.css$/i.test(file)) bytes = Buffer.from(await transform(bytes.toString('utf8'), safe, true));
         else if (/\.js$/i.test(file) && !file.startsWith(vendor)) {
           // URL strings in classic scripts resolve against the document, unlike CSS URLs.
-          bytes = Buffer.from(await transform(previewScript(bytes.toString('utf8')), documentFile || safe));
+          bytes = Buffer.from(await transform(previewScript(bytes.toString('utf8')), documentFile || safe, false, true));
         }
         return `data:${type};base64,${bytes.toString('base64')}`;
       } catch {
+        // Product JSON literals are inputs to the site's CDN formatter, not
+        // local document resources. Never turn them into placeholder data URIs.
+        if(preserveMissing&&type.startsWith('image/'))return url;
         // Product paths are served by the original site's CDN, not its local HTML folder.
         if(type.startsWith('image/') && decoded.startsWith('/img/') && basename(site) === 'www.noventrad.com') return `https://cdn.noventrad.com${decoded}`;
         return type.startsWith('image/') ? missing : `data:${type};base64,`;
@@ -83,13 +89,13 @@ export function snapshotCompiler(root: string, site: string, vendor: string, ven
     })());
     return cache.get(cacheKey)!;
   }
-  async function transform(text: string, from: string, css = false): Promise<string> {
+  async function transform(text: string, from: string, css = false, script = false): Promise<string> {
     if (css) {
       text=await replaceAsync(text,/@import\s+(['"])([^'"]+)\1/gi,async match=>`@import url("${await asset(match[2],from,true)}")`);
       text = await replaceAsync(text, /url\(\s*(['"]?)([^)'"\s]+)\1\s*\)/gi, async match => `url("${await asset(match[2], from,true)}")`);
     }
     if(!css)text=await replaceAsync(text,/(\b(?:from|import)\s*)(['"])((?:https?:)?\/\/[^'"]+)\2/g,async match=>`${match[1]}${match[2]}${await asset(match[3],from,true)}${match[2]}`);
-    return replaceAsync(text, /(["'`])((?:https?:\/\/|\.{0,2}\/)?[^"'`\s<>]*\.(?:js|css|png|jpe?g|webp|avif|gif|svg|ico|woff2?|ttf|otf|mp4|mp3)(?:[?#][^"'`\s<>]*)?)\1/gi, async match => `${match[1]}${await asset(match[2], from)}${match[1]}`);
+    return replaceAsync(text, /(["'`])((?:https?:\/\/|\.{0,2}\/)?[^"'`\s<>]*\.(?:js|css|png|jpe?g|webp|avif|gif|svg|ico|woff2?|ttf|otf|mp4|mp3)(?:[?#][^"'`\s<>]*)?)\1/gi, async match => `${match[1]}${await asset(match[2], from, false, script)}${match[1]}`);
   }
   return async (path: string) => {
     const file = await contained(root, resolve(site, path));
@@ -123,7 +129,7 @@ export function snapshotCompiler(root: string, site: string, vendor: string, ven
     });
     // CDN Tailwind is extensionless, so handle it explicitly before inline scripts.
     for (const remote of (process.env.WEBSITE_BUILDER_PREVIEW_VENDOR_FIXTURES==='1'?Object.keys(vendors):[])) html = html.replaceAll(remote.replaceAll('&','&amp;'), await asset(remote, file)).replaceAll(remote, await asset(remote, file));
-    html = await replaceAsync(html, /<script\b([^>]*)>([\s\S]*?)<\/script>/gi, async match => `<script${match[1]}>${await transform(previewScript(match[2]), file)}</script>`);
+    html = await replaceAsync(html, /<script\b([^>]*)>([\s\S]*?)<\/script>/gi, async match => `<script${match[1]}>${await transform(previewScript(match[2]), file, false, true)}</script>`);
     html = await replaceAsync(html, /<style\b([^>]*)>([\s\S]*?)<\/style>/gi, async match => `<style${match[1]}>${await transform(match[2], file, true)}</style>`);
     html=await replaceAsync(html,/\bstyle\s*=\s*(["'])([\s\S]*?)\1/gi,async match=>/url\(/i.test(match[2])?`style=${match[1]}${(await transform(match[2],file,true)).replaceAll(match[1],match[1]==='"'?'&quot;':'&#39;')}${match[1]}`:match[0]);
     // Images/media are transferred lazily over the UI proxy channel, keeping

@@ -3,14 +3,12 @@
   "mcpServers": {
     "website-builder": {
       "type": "stdio",
-      "command": "node",
-      "args": [
-        "${PLUGIN_ROOT}/dist/server/index.js"
-      ],
+      "command": "./scripts/launch-node",
+      "args": [],
       "cwd": "${PLUGIN_ROOT}",
       "env": {
-        "WEBSITE_BUILDER_ROOT": "Q:/Projects/DEMO/codex-website-development/website",
-        "WEBSITE_BUILDER_PROJECT_ROOT": "Q:/Projects/DEMO/codex-website-development/codex-website-builder/project",
+        "WEBSITE_BUILDER_ROOT": "${PLUGIN_ROOT}/reference",
+        "WEBSITE_BUILDER_PROJECT_ROOT": "${PLUGIN_ROOT}/project",
         "WEBSITE_BUILDER_SKILL_ROOT": "${PLUGIN_ROOT}/skills/website-builder"
       }
     }

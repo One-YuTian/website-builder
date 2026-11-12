@@ -26,10 +26,11 @@ const links = fixturePages.map(name => `<a href="${name}.html">${name}</a>`).joi
 for (const name of fixturePages) await writeFile(join(fixture, `${name}.html`), `<!doctype html><html><head><link rel="stylesheet" href="css/style.css"></head><body>${links}<script src="js/demo.js"></script></body></html>`);
 await cp(resolve(process.argv[2] ?? 'dist'), join(isolated, 'dist'), { recursive: true });
 await cp('package.json', join(isolated, 'package.json'));
+await cp('scripts',join(isolated,'scripts'),{recursive:true});
 const config = mcp.mcpServers['website-builder'];
-assert.equal(config.command, 'node');
+assert.ok(config.command==='./scripts/launch-node');
 const expand = value => value.replaceAll('${PLUGIN_ROOT}', isolated);
-const transport = new StdioClientTransport({ command: process.execPath, args: config.args.map(expand), cwd: expand(config.cwd), env: { ...process.env, WEBSITE_BUILDER_PREVIEW_VENDOR_FIXTURES:'1', ...config.env, WEBSITE_BUILDER_ROOT: referenceRoot, WEBSITE_BUILDER_PROJECT_ROOT: join(isolated, 'projects') } });
+const transport = new StdioClientTransport({ command: process.platform==='win32'?'cmd.exe':resolve(expand(config.cwd),config.command), args: process.platform==='win32'?['/d','/c',resolve(expand(config.cwd),config.command)+'.cmd',...config.args.map(expand)]:config.args.map(expand), cwd: expand(config.cwd), env: { ...process.env, WEBSITE_BUILDER_PREVIEW_VENDOR_FIXTURES:'1', ...Object.fromEntries(Object.entries(config.env).map(([k,v])=>[k,expand(v)])), WEBSITE_BUILDER_ROOT: referenceRoot, WEBSITE_BUILDER_PROJECT_ROOT: join(isolated, 'projects') } });
 try {
   await client.connect(transport);
   assert.equal(client.getServerVersion().version, manifest.version);

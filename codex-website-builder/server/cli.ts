@@ -12,7 +12,7 @@ try {
   let text='';for await(const chunk of process.stdin)text+=chunk;
   const input=JSON.parse(text);
   const config=JSON.parse(await readFile(new URL('../../mcp.json',import.meta.url),'utf8')).mcpServers['website-builder'].env||{};
-  const store=new ProjectStore(process.env.WEBSITE_BUILDER_PROJECT_ROOT||config.WEBSITE_BUILDER_PROJECT_ROOT||fileURLToPath(new URL('../../project/',import.meta.url)));
+  const store=new ProjectStore((process.env.WEBSITE_BUILDER_PROJECT_ROOT||config.WEBSITE_BUILDER_PROJECT_ROOT||fileURLToPath(new URL('../../project/',import.meta.url))).replaceAll('${PLUGIN_ROOT}',fileURLToPath(new URL('../../',import.meta.url))));
   const thread=input.thread_id||process.env.CODEX_THREAD_ID||process.env.CODEX_SESSION_ID;
   const skillRoot=(process.env.WEBSITE_BUILDER_SKILL_ROOT||config.WEBSITE_BUILDER_SKILL_ROOT||fileURLToPath(new URL('../../skills/website-builder/',import.meta.url))).replaceAll('${PLUGIN_ROOT}',fileURLToPath(new URL('../../',import.meta.url)));
   let view;

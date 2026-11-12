@@ -24,6 +24,18 @@ export const proxyRuntime=String.raw`<script>
  XMLHttpRequest.prototype.send=function(body){const state=network.get(this);if(!state)return nativeSend.call(this,body);const xhr=this;request(state.url,true).then(async value=>{if(state.cancelled)return;const response=await nativeFetch(value.data),buffer=await response.arrayBuffer(),text=new TextDecoder().decode(buffer);const result=xhr.responseType==='arraybuffer'?buffer:xhr.responseType==='blob'?new Blob([buffer],{type:value.mime}):xhr.responseType==='json'?JSON.parse(text):text;for(const [key,data]of Object.entries({readyState:4,status:value.status,statusText:'OK',responseURL:state.url,response:result,responseText:text}))Object.defineProperty(xhr,key,{configurable:true,value:data});xhr.getResponseHeader=name=>name.toLowerCase()==='content-type'?value.mime:null;xhr.getAllResponseHeaders=()=>'content-type: '+value.mime+'\r\n';xhr.dispatchEvent(new Event('readystatechange'));xhr.dispatchEvent(new ProgressEvent('load'));xhr.dispatchEvent(new ProgressEvent('loadend'));}).catch(error=>{if(state.cancelled)return;fail(error);xhr.dispatchEvent(new ProgressEvent('error'));xhr.dispatchEvent(new ProgressEvent('loadend'));});};
  XMLHttpRequest.prototype.abort=function(){const state=network.get(this);if(state)state.cancelled=true;return nativeAbort.call(this);};
  const nativeSet=Element.prototype.setAttribute,versions=new WeakMap();
+ // MutationObserver runs after insertion, too late to prevent an img request.
+ // Neutralize network attributes in HTML strings before the browser parses them.
+ const markup=value=>String(value).replace(/<(?:img|source|video|audio|track|input|object|embed)\b[^>]*>/gi,tag=>tag.replace(/(\s)(src|srcset|poster|data)\s*=\s*(["'])([^"']+)\3/gi,(attribute,space,name,quote,url)=>{
+  const target=name.toLowerCase()==='srcset'?/(?:^|,\s*)\s*(?:https?:)?\/\//i.test(url):remote(url.replaceAll('&amp;','&'));
+  return target?space+'data-wb-'+name+'='+quote+url+quote:attribute;
+ }));
+ for(const type of [Element,typeof ShadowRoot==='undefined'?null:ShadowRoot]){
+  if(!type)continue;const descriptor=Object.getOwnPropertyDescriptor(type.prototype,'innerHTML');
+  if(descriptor?.set)Object.defineProperty(type.prototype,'innerHTML',{...descriptor,set(value){descriptor.set.call(this,markup(value));if(this.querySelectorAll)this.querySelectorAll('*').forEach(scan);}});
+ }
+ const adjacent=Element.prototype.insertAdjacentHTML;
+ Element.prototype.insertAdjacentHTML=function(position,value){return adjacent.call(this,position,markup(value));};
  const resourceAttribute=(element,name)=>['src','srcset','poster','data'].includes(name)&&/^(IMG|SOURCE|VIDEO|AUDIO|TRACK|INPUT|SCRIPT|IFRAME|EMBED|OBJECT)$/.test(element.tagName)||name==='href'&&element.tagName==='LINK';
  const rewriteList=async value=>{
   const items=[];let index=0;
@@ -52,6 +64,9 @@ export const proxyRuntime=String.raw`<script>
   const style=element.getAttribute('style');if(style&&externalCSS(style)&&cssCache.get(element)!==style){cssCache.set(element,style);css(style).then(value=>nativeSet.call(element,'style',value)).catch(fail);}
   if(element.tagName==='STYLE'&&externalCSS(element.textContent)&&cssCache.get(element)!==element.textContent){const text=element.textContent;cssCache.set(element,text);css(text).then(value=>element.textContent=value).catch(fail);}
  };
- new MutationObserver(records=>{for(const record of records){scan(record.target);if(record.type!=='attributes')for(const node of record.addedNodes){scan(node);if(node.querySelectorAll)node.querySelectorAll('*').forEach(scan);}}}).observe(document.documentElement,{subtree:true,childList:true,attributes:true,attributeFilter:['src','srcset','href','poster','data','style']});
+ const observe=root=>new MutationObserver(records=>{for(const record of records){scan(record.target);if(record.type!=='attributes')for(const node of record.addedNodes){scan(node);if(node.querySelectorAll)node.querySelectorAll('*').forEach(scan);}}}).observe(root,{subtree:true,childList:true,attributes:true,attributeFilter:['src','srcset','href','poster','data','style']});
+ observe(document.documentElement);
+ const attach=Element.prototype.attachShadow;
+ Element.prototype.attachShadow=function(options){const root=attach.call(this,options);observe(root);return root;};
  document.querySelectorAll('*').forEach(scan);
 })();</script>`;

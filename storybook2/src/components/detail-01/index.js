@@ -52,9 +52,32 @@ $(function() {
 
     $('.tab-panel').addClass('hidden');
     $('#' + tab + '-panel').removeClass('hidden');
+    setTimeout(updateCollapsibles, 50);
   });
 
-  // Collapsible sections (Description, Specifications, Reviews)
+  // Dynamic collapsible panels (Description, Specifications, Reviews)
+  function updateCollapsibles() {
+    $('.collapsible-content').each(function() {
+      const $content = $(this);
+      const $container = $content.closest('.relative');
+      const $fade = $container.find('.collapsible-fade');
+      const $toggle = $container.find('.collapsible-toggle');
+      // Only show toggle and fade overlay if content height exceeds the container threshold
+      if (this.scrollHeight > this.clientHeight + 4) {
+        $toggle.removeClass('hidden').addClass('flex');
+        if (!$content.hasClass('max-h-none')) {
+          $fade.removeClass('hidden');
+        }
+      } else if (!$content.hasClass('max-h-none')) {
+        $toggle.addClass('hidden').removeClass('flex');
+        $fade.addClass('hidden');
+      }
+    });
+  }
+
+  setTimeout(updateCollapsibles, 50);
+
+  // Bidirectional toggle support (Expand / Collapse)
   $('.collapsible-toggle').on('click', function() {
     const $toggle = $(this);
     const $container = $toggle.closest('.relative');
@@ -65,11 +88,11 @@ $(function() {
 
     if (isExpanded) {
       $content.removeClass('max-h-none overflow-visible');
-      $fade.removeClass('opacity-0 pointer-events-none');
+      $fade.removeClass('opacity-0 pointer-events-none hidden');
       $chevron.removeClass('-rotate-135').addClass('rotate-45');
     } else {
       $content.addClass('max-h-none overflow-visible');
-      $fade.addClass('opacity-0 pointer-events-none');
+      $fade.addClass('opacity-0 pointer-events-none hidden');
       $chevron.removeClass('rotate-45').addClass('-rotate-135');
     }
   });

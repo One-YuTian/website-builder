@@ -3,7 +3,7 @@
   "version": "1.0.0",
   "type": "module",
   "scripts": {
-    "docs:generate": "node scripts/generate-docs.mjs",
+    "docs:generate": "node ../storybook2/scripts/build-examples.mjs && node scripts/generate-docs.mjs",
     "dev": "npm run docs:generate && astro dev --port 4321",
     "build": "npm run docs:generate && astro build",
     "preview": "astro preview --port 4321"

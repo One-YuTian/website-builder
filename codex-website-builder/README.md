@@ -226,3 +226,17 @@ begin记录原文件指纹，跨进程同步可识别直接写出的新完整HTM
 主SKILL及相关文案/图片/展示参考新增：加购默认不打开购物车；注册提供用户名/邮箱/手机号/密码；品牌、support邮箱和版权默认依网站域名统一；商品详情图片不额外留边；店铺采用正式品牌语境，不输出演示/模拟/本地运行告示。实现限制和虚构联系资料说明保留在交付说明或metadata_directory，不能为追求真实感编造经营事实、能力或承诺。
 
 这些仅约束后续生成提示，不增加校验器、扫描、ready门禁、统一接口或运行时代码，不批量修改已生成网站。同步修正文案技能旧有example.com邮箱与页面演示联系提示要求。见CHANGELOG-0.7.8.md。
+
+## 0.7.9-beta.1 跨平台托管Node与beta分发
+
+MCP入口改为scripts/launch-node与Windows同名.cmd启动器，优先读取Codex的CODEX_MCP_NODE_PATH及托管运行时目录，不使用系统PATH中的Node。启动器无参数启动服务器，也可传入同包脚本路径。macOS使用LF与可执行位，Windows使用CMD companion；运行时缺失以stderr明确报错，不自动安装依赖。
+
+项目目录默认${PLUGIN_ROOT}/project，参考库默认${PLUGIN_ROOT}/reference（可选），技能默认${PLUGIN_ROOT}/skills/website-builder，CLI同样展开插件根目录，不写入开发机绝对路径。升级会切换到新版本插件根目录下的project，旧Q盘项目不移动/删除；如需跨版本固定目录，可通过WEBSITE_BUILDER_PROJECT_ROOT覆盖。
+
+beta为仅安装内容的分支，含codex-website-builder的dist/skills/启动器/清单与必要资源，以及.agents/plugins/marketplace.json和兼容.codex-plugin/marketplace.json，市场source.path为./codex-website-builder；不包含node_modules、生产项目、管理状态或测试报告。仓库市场安装应选择beta ref。
+
+Windows托管Node v24启动、MCP工具/画布及独立14页预览通过；macOS实际宿主未实测。运行时定位模式参考OpenAI Codex Security官方启动器： https://github.com/openai/codex-security/blob/main/plugins/codex-security/scripts/launch_codex_security_mcp 。
+
+## 0.7.9-beta.2 MCP配置修正
+
+严格MCP格式只接收type/command/args/env/cwd；移除legacy env_vars，command使用./scripts/launch-node，不在可执行令牌中使用PLUGIN_ROOT占位。双平台启动器及根目录project保留。详见CHANGELOG-0.7.9-beta.2.md。

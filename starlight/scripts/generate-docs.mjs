@@ -360,10 +360,9 @@ ${markupJs.trim()}
 
 fs.writeFileSync(path.join(contentDocsDir, 'guides/theme.mdx'), themeMdx, 'utf8');
 
-// 7. Synchronize LLM templates to website-builder skill templates across all directories
+// 7. Synchronize LLM templates to local agent skill templates (excluding codex-website-builder per user request)
 const targetSkillDirs = [
-  path.resolve(rootDir, '.agents/skills/website-builder/templates'),
-  path.resolve(rootDir, 'codex-website-builder/skills/website-builder/templates')
+  path.resolve(rootDir, '.agents/skills/website-builder/templates')
 ];
 
 for (const targetDir of targetSkillDirs) {

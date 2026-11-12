@@ -6,6 +6,8 @@ import { Client } from '@modelcontextprotocol/sdk/client/index.js';
 import { StdioClientTransport } from '@modelcontextprotocol/sdk/client/stdio.js';
 
 const config = JSON.parse(await readFile('mcp.json', 'utf8')).mcpServers['website-builder'];
+assert.deepEqual(Object.keys(config).sort(), ['args','command','cwd','env','type']);
+assert.equal(config.command,'./scripts/launch-node');
 const expand = value => value.replaceAll('${PLUGIN_ROOT}', resolve('.'));
 const configuredEnv = Object.fromEntries(Object.entries(config.env).map(([key, value]) => [key, expand(value)]));
 const isolated = await mkdtemp(join(tmpdir(), 'website-startup-'));
@@ -17,7 +19,7 @@ for (const scenario of ['actual-config', 'missing-reference']) {
     WEBSITE_BUILDER_PROJECT_ROOT: join(isolated, 'projects'),
   } : {}) };
   try {
-    await client.connect(new StdioClientTransport({ command: process.execPath, args: config.args.map(expand), cwd: expand(config.cwd), env }));
+    await client.connect(new StdioClientTransport({ command: process.platform==='win32'?'cmd.exe':resolve(expand(config.cwd),config.command), args: process.platform==='win32'?['/d','/c',resolve(expand(config.cwd),config.command)+'.cmd',...config.args.map(expand)]:config.args.map(expand), cwd: expand(config.cwd), env }));
     assert.equal(client.getServerVersion().version, JSON.parse(await readFile('package.json', 'utf8')).version);
     const { tools } = await client.listTools();
     assert.ok(tools.some(tool => tool.name === 'website_write'));
@@ -42,7 +44,7 @@ for (const scenario of ['actual-config', 'missing-reference']) {
       assert.ok(unavailable.isError, 'missing references fail only the explicit reference request');
       await assert.rejects(stat(reference), { code: 'ENOENT' });
     } else {
-      assert.ok((await stat(configuredEnv.WEBSITE_BUILDER_ROOT)).isDirectory());
+      // Optional reference library need not exist in a fresh installation.
       assert.ok((await stat(configuredEnv.WEBSITE_BUILDER_PROJECT_ROOT)).isDirectory());
     }
     console.log(`PASS: ${scenario}: MCP handshake, tool discovery and canvas resource${scenario === 'missing-reference' ? ', isolated project write and sync without creating reference directory' : ''}`);

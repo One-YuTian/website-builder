@@ -8,7 +8,7 @@ import { regionMarkers, type TemplateBinding } from './template-source';
 import { readTemplates } from './templates';
 
 export type PageState = 'queued'|'generating'|'ready'|'error';
-export interface ProjectPage { path: string; title: string; status: PageState; version: number; error?: string; generationHash?: string }
+export interface ProjectPage { path: string; title: string; status: PageState; version: number; error?: string; generationHash?: string; resourceSignature?: string }
 export interface WebsiteProject { id: string; name: string; brief: string; language: string; revision: string; pages: ProjectPage[]; updatedAt: string }
 export interface ProjectView { project: WebsiteProject; threadId: string; directory: string; metadataDirectory: string; revision: string }
 export const DEFAULT_PAGES = ['index','shop','product','wishlist','checkout','login','register','about','contact','terms','privacy','return'].map(name=>({path:`${name}.html`,title:name}));
@@ -107,6 +107,30 @@ export class ProjectStore {
     const source=await readFile(await this.target(id,path)).catch(error=>{if(error.code==='ENOENT')return null;throw error;});
     return source?createHash('sha256').update(source).digest('hex'):'';
   }
+  private async resourceSignature(view:ProjectView,page:string) {
+    const hash=createHash('sha256'),visited=new Set<string>(),base=await realpath(view.directory);
+    const visit=async(path:string):Promise<void>=>{
+      if(visited.has(path))return;visited.add(path);hash.update(path);
+      let file:string;
+      try{
+        file=await realpath(resolve(view.directory,path));const rel=relative(base,file);
+        if(rel==='..'||rel.startsWith(`..${sep}`)||isAbsolute(rel))throw new Error('Resource outside project');
+        const info=await stat(file);hash.update(`${info.size}:${info.mtimeMs}`);
+      }catch{hash.update(':missing');return;}
+      if(!/\.(?:html?|js|mjs|css)$/i.test(path))return;
+      const source=await readFile(file,'utf8');
+      for(const match of source.matchAll(/(?:\b(?:src|href|srcset)\s*=\s*["']|url\(\s*["']?|["'`])([^"'`\s<>)]*\.(?:js|mjs|css|png|jpe?g|webp|avif|gif|svg|ico|woff2?|ttf|otf|mp4|mp3|json)(?:[?#][^"'`\s<>)]*)?)/gi)){
+        const url=match[1].replaceAll('&amp;','&');if(/^(?:[a-z]+:|\/\/|#)/i.test(url))continue;
+        try{
+          const value=decodeURIComponent(url.split(/[?#]/)[0]);
+          const base=/\.m?js$/i.test(path)?dirname(resolve(view.directory,page)):dirname(file);
+          const target=value.startsWith('/')?resolve(view.directory,value.slice(1)):resolve(base,value);
+          const rel=relative(view.directory,target).split(sep).join('/');this.path(rel);await visit(rel);
+        }catch{hash.update(':invalid-reference');}
+      }
+    };
+    await visit(page);return hash.digest('hex');
+  }
   // Direct-file generation may finish without a tool callback. Only a complete,
   // changed document can leave generating; begin must not redisplay the old file.
   async reconcile(threadId?:string) {
@@ -114,6 +138,10 @@ export class ProjectStore {
     const candidates=async(current:ProjectView)=>{
       const paths:string[]=[];
       for(const page of current.project.pages){
+        if(page.status==='ready'||page.status==='error'&&page.resourceSignature){
+          if(page.resourceSignature!==await this.resourceSignature(current,page.path))paths.push(page.path);
+          continue;
+        }
         if(page.status!=='generating'||page.generationHash===undefined)continue;
         const source=await readFile(await this.target(current.project.id,page.path),'utf8').catch(()=>null);
         if(source&&/<html\b/i.test(source)&&/<body\b/i.test(source)&&/<\/body>/i.test(source)&&/<\/html>\s*$/i.test(source)&&createHash('sha256').update(source).digest('hex')!==page.generationHash)paths.push(page.path);
@@ -161,6 +189,7 @@ export class ProjectStore {
         }
         page.status='ready';page.version++;delete page.error;delete page.generationHash;
       } catch(error){page.status='error';page.error=(error as Error).message;page.version++;delete page.generationHash;}
+      page.resourceSignature=await this.resourceSignature(view,path);
     }
   }
   async finish(threadId:string,paths:string[]) {return this.update(threadId,async view=>{await this.complete(view,paths.length?paths:view.project.pages.filter(page=>page.status!=='ready').map(page=>page.path));});}

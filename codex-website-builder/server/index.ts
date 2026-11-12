@@ -17,11 +17,11 @@ import { importProducts } from './product-import';
 
 const uri = 'ui://codex-website-builder/canvas';
 const html = await readFile(new URL('../ui/index.html', import.meta.url), 'utf8');
-const projects = new ProjectStore(process.env.WEBSITE_BUILDER_PROJECT_ROOT || resolve('project'));
+const projects = new ProjectStore((process.env.WEBSITE_BUILDER_PROJECT_ROOT || '${PLUGIN_ROOT}/project').replaceAll('${PLUGIN_ROOT}',fileURLToPath(new URL('../../',import.meta.url))));
 const syncProject = projectService(projects);
-const preview = await createPreview(html, process.env.WEBSITE_BUILDER_ROOT || resolve('../website'), 'www.noventrad.com', syncProject);
+const preview = await createPreview(html, (process.env.WEBSITE_BUILDER_ROOT || '${PLUGIN_ROOT}/reference').replaceAll('${PLUGIN_ROOT}',fileURLToPath(new URL('../../',import.meta.url))), 'www.noventrad.com', syncProject);
 const skillRoot = (process.env.WEBSITE_BUILDER_SKILL_ROOT || resolve('skills/website-builder')).replaceAll('${PLUGIN_ROOT}',fileURLToPath(new URL('../../',import.meta.url)));
-const server = new McpServer({ name: 'codex-website-builder', version: '0.7.8' });
+const server = new McpServer({ name: 'codex-website-builder', version: '0.7.9-beta.3' });
 const csp = { connectDomains: ['data:', 'blob:'], resourceDomains: ['data:', 'blob:'], frameDomains: ['blob:', 'data:'], baseUriDomains: ['https://website-builder.invalid'] };
 const legacyCsp = { connect_domains: csp.connectDomains, resource_domains: csp.resourceDomains, frame_domains: csp.frameDomains, base_uri_domains: csp.baseUriDomains };
 registerAppResource(server, 'canvas', uri, { _meta: { ui: { csp }, 'openai/widgetCSP': legacyCsp } }, async () => ({

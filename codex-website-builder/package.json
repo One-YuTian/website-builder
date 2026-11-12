@@ -1,6 +1,6 @@
 {
   "name": "codex-website-builder",
-  "version": "0.7.8",
+  "version": "0.7.9-beta.3",
   "private": true,
   "type": "module",
   "packageManager": "pnpm@10.18.0",
@@ -11,7 +11,7 @@
     "start": "node dist/server/index.js",
     "test": "node scripts/smoke.mjs",
     "test:visual": "node scripts/visual.mjs",
-    "prepare:plugin": "pnpm build && pnpm test && pnpm test:projects && pnpm test:proxy && pnpm test:commerce && pnpm test:templates && pnpm test:features && pnpm test:large-preview && pnpm test:ui && pnpm test:cdn && pnpm test:imports && pnpm test:output && pnpm test:startup",
+    "prepare:plugin": "pnpm build && pnpm test && pnpm test:projects && pnpm test:proxy && pnpm test:commerce && pnpm test:templates && pnpm test:features && pnpm test:large-preview && pnpm test:ui && pnpm test:cdn && pnpm test:imports && pnpm test:output && pnpm test:startup && pnpm test:preview-assets",
     "install:plugin": "powershell -NoProfile -File scripts/install-plugin.ps1",
     "test:projects": "node scripts/projects.test.mjs",
     "test:proxy": "node scripts/proxy.test.mjs",
@@ -24,7 +24,8 @@
     "test:cdn": "node scripts/cdn.test.mjs",
     "test:imports": "node scripts/import-products.test.mjs",
     "test:output": "node scripts/output.test.mjs",
-    "test:startup": "node scripts/startup.test.mjs"
+    "test:startup": "node scripts/startup.test.mjs",
+    "test:preview-assets": "node scripts/preview-assets.test.mjs"
   },
   "dependencies": {
     "@modelcontextprotocol/ext-apps": "^1.7.5",
