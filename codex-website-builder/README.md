@@ -236,3 +236,7 @@ MCP入口改为scripts/launch-node与Windows同名.cmd启动器，优先读取Co
 beta为仅安装内容的分支，含codex-website-builder的dist/skills/启动器/清单与必要资源，以及.agents/plugins/marketplace.json和兼容.codex-plugin/marketplace.json，市场source.path为./codex-website-builder；不包含node_modules、生产项目、管理状态或测试报告。仓库市场安装应选择beta ref。
 
 Windows托管Node v24启动、MCP工具/画布及独立14页预览通过；macOS实际宿主未实测。运行时定位模式参考OpenAI Codex Security官方启动器： https://github.com/openai/codex-security/blob/main/plugins/codex-security/scripts/launch_codex_security_mcp 。
+
+## 0.7.9-beta.2 MCP配置修正
+
+严格MCP格式只接收type/command/args/env/cwd；移除legacy env_vars，command使用./scripts/launch-node，不在可执行令牌中使用PLUGIN_ROOT占位。双平台启动器及根目录project保留。详见CHANGELOG-0.7.9-beta.2.md。

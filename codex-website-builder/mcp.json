@@ -3,24 +3,14 @@
   "mcpServers": {
     "website-builder": {
       "type": "stdio",
-      "command": "${PLUGIN_ROOT}/scripts/launch-node",
+      "command": "./scripts/launch-node",
       "args": [],
       "cwd": "${PLUGIN_ROOT}",
       "env": {
         "WEBSITE_BUILDER_ROOT": "${PLUGIN_ROOT}/reference",
         "WEBSITE_BUILDER_PROJECT_ROOT": "${PLUGIN_ROOT}/project",
         "WEBSITE_BUILDER_SKILL_ROOT": "${PLUGIN_ROOT}/skills/website-builder"
-      },
-      "env_vars": [
-        "CODEX_MCP_NODE_PATH",
-        "CODEX_BROWSER_USE_NODE_PATH",
-        "CODEX_ELECTRON_RESOURCES_PATH",
-        "CODEX_CLI_PATH",
-        "XDG_CACHE_HOME",
-        "HOME",
-        "USERPROFILE",
-        "LOCALAPPDATA"
-      ]
+      }
     }
   }
 }
