@@ -10,7 +10,7 @@ import {
   readTemplates,
   resourceChunk,
   screenshotPage
-} from "./chunk-CYRWKVMF.js";
+} from "./chunk-TRKZCECT.js";
 import {
   $ZodObject,
   $ZodType,
@@ -17062,7 +17062,7 @@ var projects = new ProjectStore((process.env.WEBSITE_BUILDER_PROJECT_ROOT || "${
 var syncProject = projectService(projects);
 var preview = await createPreview(html, (process.env.WEBSITE_BUILDER_ROOT || "${PLUGIN_ROOT}/reference").replaceAll("${PLUGIN_ROOT}", fileURLToPath(new URL("../../", import.meta.url))), "www.noventrad.com", syncProject);
 var skillRoot = (process.env.WEBSITE_BUILDER_SKILL_ROOT || resolve("skills/website-builder")).replaceAll("${PLUGIN_ROOT}", fileURLToPath(new URL("../../", import.meta.url)));
-var server = new McpServer({ name: "codex-website-builder", version: "0.7.9-beta.2" });
+var server = new McpServer({ name: "codex-website-builder", version: "0.7.9-beta.3" });
 var csp = { connectDomains: ["data:", "blob:"], resourceDomains: ["data:", "blob:"], frameDomains: ["blob:", "data:"], baseUriDomains: ["https://website-builder.invalid"] };
 var legacyCsp = { connect_domains: csp.connectDomains, resource_domains: csp.resourceDomains, frame_domains: csp.frameDomains, base_uri_domains: csp.baseUriDomains };
 N3(server, "canvas", uri, { _meta: { ui: { csp }, "openai/widgetCSP": legacyCsp } }, async () => ({

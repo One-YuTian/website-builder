@@ -7,7 +7,7 @@ import {
   prepareCommerce,
   readTemplates,
   screenshotPage
-} from "./chunk-CYRWKVMF.js";
+} from "./chunk-TRKZCECT.js";
 import "./chunk-WPQ5MXLX.js";
 
 // server/cli.ts

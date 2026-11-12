@@ -6306,6 +6306,18 @@ var proxyRuntime = String.raw`<script>
  XMLHttpRequest.prototype.send=function(body){const state=network.get(this);if(!state)return nativeSend.call(this,body);const xhr=this;request(state.url,true).then(async value=>{if(state.cancelled)return;const response=await nativeFetch(value.data),buffer=await response.arrayBuffer(),text=new TextDecoder().decode(buffer);const result=xhr.responseType==='arraybuffer'?buffer:xhr.responseType==='blob'?new Blob([buffer],{type:value.mime}):xhr.responseType==='json'?JSON.parse(text):text;for(const [key,data]of Object.entries({readyState:4,status:value.status,statusText:'OK',responseURL:state.url,response:result,responseText:text}))Object.defineProperty(xhr,key,{configurable:true,value:data});xhr.getResponseHeader=name=>name.toLowerCase()==='content-type'?value.mime:null;xhr.getAllResponseHeaders=()=>'content-type: '+value.mime+'\r\n';xhr.dispatchEvent(new Event('readystatechange'));xhr.dispatchEvent(new ProgressEvent('load'));xhr.dispatchEvent(new ProgressEvent('loadend'));}).catch(error=>{if(state.cancelled)return;fail(error);xhr.dispatchEvent(new ProgressEvent('error'));xhr.dispatchEvent(new ProgressEvent('loadend'));});};
  XMLHttpRequest.prototype.abort=function(){const state=network.get(this);if(state)state.cancelled=true;return nativeAbort.call(this);};
  const nativeSet=Element.prototype.setAttribute,versions=new WeakMap();
+ // MutationObserver runs after insertion, too late to prevent an img request.
+ // Neutralize network attributes in HTML strings before the browser parses them.
+ const markup=value=>String(value).replace(/<(?:img|source|video|audio|track|input|object|embed)\b[^>]*>/gi,tag=>tag.replace(/(\s)(src|srcset|poster|data)\s*=\s*(["'])([^"']+)\3/gi,(attribute,space,name,quote,url)=>{
+  const target=name.toLowerCase()==='srcset'?/(?:^|,\s*)\s*(?:https?:)?\/\//i.test(url):remote(url.replaceAll('&amp;','&'));
+  return target?space+'data-wb-'+name+'='+quote+url+quote:attribute;
+ }));
+ for(const type of [Element,typeof ShadowRoot==='undefined'?null:ShadowRoot]){
+  if(!type)continue;const descriptor=Object.getOwnPropertyDescriptor(type.prototype,'innerHTML');
+  if(descriptor?.set)Object.defineProperty(type.prototype,'innerHTML',{...descriptor,set(value){descriptor.set.call(this,markup(value));if(this.querySelectorAll)this.querySelectorAll('*').forEach(scan);}});
+ }
+ const adjacent=Element.prototype.insertAdjacentHTML;
+ Element.prototype.insertAdjacentHTML=function(position,value){return adjacent.call(this,position,markup(value));};
  const resourceAttribute=(element,name)=>['src','srcset','poster','data'].includes(name)&&/^(IMG|SOURCE|VIDEO|AUDIO|TRACK|INPUT|SCRIPT|IFRAME|EMBED|OBJECT)$/.test(element.tagName)||name==='href'&&element.tagName==='LINK';
  const rewriteList=async value=>{
   const items=[];let index=0;
@@ -6334,7 +6346,10 @@ var proxyRuntime = String.raw`<script>
   const style=element.getAttribute('style');if(style&&externalCSS(style)&&cssCache.get(element)!==style){cssCache.set(element,style);css(style).then(value=>nativeSet.call(element,'style',value)).catch(fail);}
   if(element.tagName==='STYLE'&&externalCSS(element.textContent)&&cssCache.get(element)!==element.textContent){const text=element.textContent;cssCache.set(element,text);css(text).then(value=>element.textContent=value).catch(fail);}
  };
- new MutationObserver(records=>{for(const record of records){scan(record.target);if(record.type!=='attributes')for(const node of record.addedNodes){scan(node);if(node.querySelectorAll)node.querySelectorAll('*').forEach(scan);}}}).observe(document.documentElement,{subtree:true,childList:true,attributes:true,attributeFilter:['src','srcset','href','poster','data','style']});
+ const observe=root=>new MutationObserver(records=>{for(const record of records){scan(record.target);if(record.type!=='attributes')for(const node of record.addedNodes){scan(node);if(node.querySelectorAll)node.querySelectorAll('*').forEach(scan);}}}).observe(root,{subtree:true,childList:true,attributes:true,attributeFilter:['src','srcset','href','poster','data','style']});
+ observe(document.documentElement);
+ const attach=Element.prototype.attachShadow;
+ Element.prototype.attachShadow=function(options){const root=attach.call(this,options);observe(root);return root;};
  document.querySelectorAll('*').forEach(scan);
 })();</script>`;
 
@@ -6678,7 +6693,7 @@ function snapshotCompiler(root, site, vendor, vendors) {
   const cache2 = /* @__PURE__ */ new Map();
   let documentFile = "";
   const missing = "data:image/svg+xml;base64," + Buffer.from('<svg xmlns="http://www.w3.org/2000/svg" width="300" height="200"><rect width="100%" height="100%" fill="#f4f5f4"/><path d="M122 120l20-24 16 16 18-28 20 36z" fill="#d1d8d3"/></svg>').toString("base64");
-  async function asset(url, from, external = false) {
+  async function asset(url, from, external = false, preserveMissing = false) {
     const decoded = url.replaceAll("&amp;", "&");
     if (/^(data:|blob:|#)/i.test(decoded)) return decoded;
     let file;
@@ -6693,7 +6708,7 @@ function snapshotCompiler(root, site, vendor, vendors) {
     } else file = decoded.startsWith("/") ? resolve3(site, decoded.slice(1).split(/[?#]/)[0]) : resolve3(dirname2(from), decoded.split(/[?#]/)[0]);
     const type = types2[extname2(file).toLowerCase()];
     if (!type) return url;
-    const cacheKey = `${external ? "embedded" : "lazy"}:${file}`;
+    const cacheKey = `${external ? "embedded" : "lazy"}:${preserveMissing ? "literal" : "resource"}:${file}`;
     if (!cache2.has(cacheKey)) cache2.set(cacheKey, (async () => {
       try {
         const safe = await contained(file.startsWith(vendor) ? vendor : root, file);
@@ -6701,23 +6716,24 @@ function snapshotCompiler(root, site, vendor, vendors) {
         let bytes = await readFile5(safe);
         if (/\.css$/i.test(file)) bytes = Buffer.from(await transform(bytes.toString("utf8"), safe, true));
         else if (/\.js$/i.test(file) && !file.startsWith(vendor)) {
-          bytes = Buffer.from(await transform(previewScript(bytes.toString("utf8")), documentFile || safe));
+          bytes = Buffer.from(await transform(previewScript(bytes.toString("utf8")), documentFile || safe, false, true));
         }
         return `data:${type};base64,${bytes.toString("base64")}`;
       } catch {
+        if (preserveMissing && type.startsWith("image/")) return url;
         if (type.startsWith("image/") && decoded.startsWith("/img/") && basename2(site) === "www.noventrad.com") return `https://cdn.noventrad.com${decoded}`;
         return type.startsWith("image/") ? missing : `data:${type};base64,`;
       }
     })());
     return cache2.get(cacheKey);
   }
-  async function transform(text2, from, css = false) {
+  async function transform(text2, from, css = false, script = false) {
     if (css) {
       text2 = await replaceAsync(text2, /@import\s+(['"])([^'"]+)\1/gi, async (match) => `@import url("${await asset(match[2], from, true)}")`);
       text2 = await replaceAsync(text2, /url\(\s*(['"]?)([^)'"\s]+)\1\s*\)/gi, async (match) => `url("${await asset(match[2], from, true)}")`);
     }
     if (!css) text2 = await replaceAsync(text2, /(\b(?:from|import)\s*)(['"])((?:https?:)?\/\/[^'"]+)\2/g, async (match) => `${match[1]}${match[2]}${await asset(match[3], from, true)}${match[2]}`);
-    return replaceAsync(text2, /(["'`])((?:https?:\/\/|\.{0,2}\/)?[^"'`\s<>]*\.(?:js|css|png|jpe?g|webp|avif|gif|svg|ico|woff2?|ttf|otf|mp4|mp3)(?:[?#][^"'`\s<>]*)?)\1/gi, async (match) => `${match[1]}${await asset(match[2], from)}${match[1]}`);
+    return replaceAsync(text2, /(["'`])((?:https?:\/\/|\.{0,2}\/)?[^"'`\s<>]*\.(?:js|css|png|jpe?g|webp|avif|gif|svg|ico|woff2?|ttf|otf|mp4|mp3)(?:[?#][^"'`\s<>]*)?)\1/gi, async (match) => `${match[1]}${await asset(match[2], from, false, script)}${match[1]}`);
   }
   return async (path) => {
     const file = await contained(root, resolve3(site, path));
@@ -6748,7 +6764,7 @@ function snapshotCompiler(root, site, vendor, vendors) {
       return `srcset=${match[1]}${candidates.join(", ")}${match[1]}`;
     });
     for (const remote of process.env.WEBSITE_BUILDER_PREVIEW_VENDOR_FIXTURES === "1" ? Object.keys(vendors) : []) html = html.replaceAll(remote.replaceAll("&", "&amp;"), await asset(remote, file)).replaceAll(remote, await asset(remote, file));
-    html = await replaceAsync(html, /<script\b([^>]*)>([\s\S]*?)<\/script>/gi, async (match) => `<script${match[1]}>${await transform(previewScript(match[2]), file)}</script>`);
+    html = await replaceAsync(html, /<script\b([^>]*)>([\s\S]*?)<\/script>/gi, async (match) => `<script${match[1]}>${await transform(previewScript(match[2]), file, false, true)}</script>`);
     html = await replaceAsync(html, /<style\b([^>]*)>([\s\S]*?)<\/style>/gi, async (match) => `<style${match[1]}>${await transform(match[2], file, true)}</style>`);
     html = await replaceAsync(html, /\bstyle\s*=\s*(["'])([\s\S]*?)\1/gi, async (match) => /url\(/i.test(match[2]) ? `style=${match[1]}${(await transform(match[2], file, true)).replaceAll(match[1], match[1] === '"' ? "&quot;" : "&#39;")}${match[1]}` : match[0]);
     html = html.replace(/<(?:img|source|video|audio|track|input|object|embed)\b[^>]*>/gi, (tag) => tag.replace(/\b(src|srcset|poster|data)\s*=\s*(["'])([^"']+)\2/gi, (attribute, name, quote, value) => /^(?:https?:)?\/\//i.test(value) ? `data-wb-${name}=${quote}${value}${quote}` : attribute));
