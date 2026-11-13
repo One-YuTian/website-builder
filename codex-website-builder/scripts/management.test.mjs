@@ -85,6 +85,18 @@ try {
    document.querySelector('#app').srcdoc=html;
  },html);
  const app=page.frameLocator('#app');
+ if(globalEntry){
+   await app.getByRole('complementary',{name:'项目目录',exact:true}).waitFor();
+   const launch=await call('open_canvas',{thread_id:'manager-thread'});
+   assert.equal(launch.structuredContent.canvas_launch.thread_id,'manager-thread');
+   await page.evaluate(params=>document.querySelector('#app').contentWindow.postMessage({jsonrpc:'2.0',method:'ui/notifications/tool-result',params},'*'),launch);
+   await app.locator('.canvas-world').waitFor();
+   await app.locator('iframe[title="index.html"]').waitFor();
+   await app.getByRole('button',{name:'返回主界面',exact:true}).click();
+   await page.waitForTimeout(5200);
+   assert.equal(await app.locator('.tool-rail').count(),0,'manual home survives background refresh');
+ }
+ if(!globalEntry){await app.locator('.canvas-world').waitFor();await app.getByRole('button',{name:'返回主界面',exact:true}).click();}
  await app.getByRole('complementary',{name:'项目目录',exact:true}).waitFor();
  await app.locator('.project-open').filter({hasText:'Forest studio'}).waitFor();
  assert.equal(await app.locator('.tool-rail').count(),0,'global entry opens the library, even with an active project');
@@ -118,7 +130,7 @@ try {
  const standalone=await browser.newPage();
  const standaloneUrl=new URL(bootstrap.api);standaloneUrl.hostname='localhost';standaloneUrl.pathname=standaloneUrl.pathname.replace('/api/site','/canvas');
  await standalone.goto(standaloneUrl.href);
- await standalone.locator(`[data-project-id="${first.project_id}"] .project-open`).click();
+ if(globalEntry)await standalone.locator(`[data-project-id="${first.project_id}"] .project-open`).click();
  await standalone.locator('.page-caption[data-ready="true"]').waitFor();
  await standalone.getByRole('button',{name:'返回主界面',exact:true}).click();
  await standalone.getByRole('complementary',{name:'项目目录',exact:true}).waitFor();

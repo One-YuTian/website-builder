@@ -160,7 +160,7 @@ try {
   const page = await browser.newPage(); const errors = [];
   page.on('pageerror', error => errors.push(error.message));
   await page.goto(url);
-  await page.locator('[data-project-id="'+state.project_id+'"] .project-open').click();
+  await page.locator('.canvas-world').waitFor();
   await page.frameLocator('iframe[title="index.html"]').locator('header-component').filter({ hasText: 'products:24 cart:0' }).waitFor();
   const index = await (await page.locator('iframe[title="index.html"]').elementHandle()).contentFrame();
   const shop = page.frameLocator('iframe[title="shop.html"]');

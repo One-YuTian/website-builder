@@ -25,6 +25,12 @@ export class ProjectDatabase {
         UNIQUE(project_id,path)
       );
       CREATE TABLE IF NOT EXISTS settings (key TEXT PRIMARY KEY, value TEXT NOT NULL);
+      CREATE TABLE IF NOT EXISTS image_tasks (
+        project_id TEXT NOT NULL REFERENCES projects(id), path TEXT NOT NULL,
+        name TEXT NOT NULL, width INTEGER NOT NULL, height INTEGER NOT NULL,
+        status TEXT NOT NULL, error TEXT NOT NULL DEFAULT '', baseline TEXT NOT NULL DEFAULT '',
+        PRIMARY KEY(project_id,path)
+      );
       PRAGMA user_version=1;`);
     // Import older JSON stores once. Existing rows (including tombstones) always win.
     const read = (file: string) => { try { return JSON.parse(readFileSync(file, 'utf8')); } catch (error) { if ((error as NodeJS.ErrnoException).code === 'ENOENT') return null; throw error; } };

@@ -97,6 +97,7 @@ try {
    document.querySelector('#app').srcdoc=html;
  },html);
  const app=page.frameLocator('#app');
+ if(!globalEntry){await app.locator('.canvas-world').waitFor();await app.getByRole('button',{name:'返回主界面',exact:true}).click();}
  await app.getByRole('complementary',{name:'项目目录',exact:true}).waitFor();
  assert.equal(await app.getByRole('heading',{name:'Website Builder',exact:true}).count(),0);
  assert.equal(await app.locator('.project-home').evaluate(el=>getComputedStyle(el,'::before').position),'fixed');
@@ -119,6 +120,29 @@ try {
  await app.getByLabel('搜索项目').fill('Forest studio');assert.equal(await app.locator('.project-row').count(),1);await app.getByLabel('搜索项目').fill('');
  await app.getByRole('button',{name:/Forest studio/}).first().click();
  await app.locator('.page-caption[data-ready="true"]').waitFor({timeout:30000});
+ const imageTask=async(action,extra={})=>json('website_images',{thread_id:'manager-thread',project_id:first.project_id,action,path:'assets/brand/generated.png',width:1200,height:600,...extra});
+ await imageTask('begin');
+ const pendingAsset=app.locator('[data-asset="assets/brand/generated.png"]');
+ await pendingAsset.getByRole('status').filter({hasText:'图片生成中'}).waitFor();
+ assert.equal(await pendingAsset.getAttribute('aria-busy'),'true');
+ assert.ok(await pendingAsset.getByRole('button').isDisabled());
+ assert.ok((await client.callTool({name:'website_images',arguments:{thread_id:'another-thread',project_id:first.project_id,action:'begin',path:'bad.png'}})).isError);
+ assert.ok((await client.callTool({name:'website_images',arguments:{thread_id:'manager-thread',project_id:first.project_id,action:'begin',path:'../bad.png'}})).isError);
+ assert.ok((await client.callTool({name:'website_images',arguments:{thread_id:'manager-thread',project_id:first.project_id,action:'finish',path:'assets/brand/generated.png'}})).isError);
+ const observer=new Client({name:'image-task-observer',version:'1'});
+ try{await observer.connect(new StdioClientTransport({command:process.execPath,args:[resolve('dist/server/index.js')],env}));const observed=await observer.callTool({name:'website_projects',arguments:{action:'images',panel_id:'manager-panel',thread_id:'manager-thread',project_id:first.project_id}});assert.ok(observed._meta.manager.images.some(image=>image.path==='assets/brand/generated.png'&&image.status==='generating'));}finally{await observer.close();}
+ await imageTask('fail',{error:'Test generation failed'});
+ await pendingAsset.getByRole('status').filter({hasText:'Test generation failed'}).waitFor();
+ await imageTask('begin');await pendingAsset.getByRole('status').filter({hasText:'图片生成中'}).waitFor();
+ await writeFile(join(first.directory,'assets/brand/generated.png'),imageBytes);
+ await pendingAsset.locator('img').waitFor();await pendingAsset.locator('.asset-caption').filter({hasText:'1 × 1'}).waitFor();
+ assert.equal(await pendingAsset.getAttribute('data-status'),'ready');
+ await imageTask('finish');
+ await imageTask('begin');await pendingAsset.getByRole('status').filter({hasText:'图片生成中'}).waitFor();
+ assert.equal(await pendingAsset.locator('img').count(),0,'regeneration hides the previous result');
+ assert.ok((await client.callTool({name:'website_images',arguments:{thread_id:'manager-thread',project_id:first.project_id,action:'finish',path:'assets/brand/generated.png'}})).isError,'old image cannot complete regeneration');
+ await writeFile(join(first.directory,'assets/brand/generated.png'),imageBytes);
+ await imageTask('finish');await pendingAsset.locator('img').waitFor();
  await app.locator('[data-asset="assets/brand/logo.png"] img').waitFor();
  assert.equal(await app.locator('.page-stage').evaluate(el=>getComputedStyle(el,'::before').position),'fixed');
  assert.equal(await app.locator('.canvas-world').evaluate(el=>el.firstElementChild.className),'asset-gallery');
@@ -204,7 +228,7 @@ try {
  const standalone=await browser.newPage();
  const standaloneUrl=new URL(bootstrap.api);standaloneUrl.hostname='localhost';standaloneUrl.pathname=standaloneUrl.pathname.replace('/api/site','/canvas');
  await standalone.goto(standaloneUrl.href);
- await standalone.locator(`[data-project-id="${first.project_id}"] .project-open`).click();
+ if(globalEntry)await standalone.locator(`[data-project-id="${first.project_id}"] .project-open`).click();
  await standalone.locator('.page-caption[data-ready="true"]').waitFor();
  await standalone.context().grantPermissions(['clipboard-read','clipboard-write'],{origin:new URL(standaloneUrl.href).origin});
  await standalone.locator('[data-asset="assets/brand/logo.png"] img').waitFor();

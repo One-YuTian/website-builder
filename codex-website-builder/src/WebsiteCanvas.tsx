@@ -139,9 +139,9 @@ export function WebsiteCanvas({ background, projectId: pinnedProjectId, panelId,
   const [assets,setAssets]=useState<CanvasAsset[]>([]);
   const captureCurrent=useCallback((html:string,path:string,width:number)=>capturePage({panel_id:panelId!,thread_id:threadId,project_id:pinnedProjectId!,path,width},html),[panelId,threadId,pinnedProjectId]);
   useEffect(()=>{
-    if(!pinnedProjectId||!panelId)return;let stopped=false;
-    const load=()=>manageProjects({action:'images',panel_id:panelId,thread_id:threadId,project_id:pinnedProjectId}).then(value=>{if(!stopped)setAssets(value.images||[]);}).catch(error=>{if(!stopped)setNotice(error.message);});
-    void load();const timer=setInterval(()=>void load(),5000);return()=>{stopped=true;clearInterval(timer);};
+    if(!pinnedProjectId||!panelId)return;let stopped=false,inflight=false;
+    const load=async()=>{if(inflight||stopped)return;inflight=true;try{const value=await manageProjects({action:'images',panel_id:panelId,thread_id:threadId,project_id:pinnedProjectId});if(!stopped)setAssets(value.images||[]);}catch(error){if(!stopped)setNotice((error as Error).message);}finally{inflight=false;}};
+    void load();const timer=setInterval(()=>void load(),2000);return()=>{stopped=true;clearInterval(timer);};
   },[pinnedProjectId,panelId,threadId]);
   const load = useCallback(async (directory: string) => {
     const id = ++sequence.current;

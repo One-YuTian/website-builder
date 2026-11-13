@@ -1,7 +1,7 @@
 import { useCallback, useEffect, useRef, useState, type ReactNode } from 'react';
 import { WebsiteCanvas } from './WebsiteCanvas';
 import { manageProjects } from './project-api';
-import { hostApp, hostReady } from './bridge';
+import { hostApp, hostReady, getLaunchThread } from './bridge';
 import { Icon } from './Icons';
 
 type Project = {id:string;name:string;displayName?:string;updatedAt:string;thumbnail?:string};
@@ -21,6 +21,7 @@ export function ProjectManager({background}:{background:ReactNode}) {
   const [busy,setBusy]=useState(false);
   const [deleted,setDeleted]=useState<string|null>(null);
   const thread=useRef<string|undefined>(undefined);
+  const navigation=useRef(0);
   const current=useRef<Detail|null>(null);current.current=detail;
   const request=useCallback((input:Record<string,unknown>)=>manageProjects({panel_id:panelId,thread_id:thread.current,...input}),[panelId]);
   const publish=useCallback(async(value:any)=>{
@@ -34,12 +35,20 @@ export function ProjectManager({background}:{background:ReactNode}) {
   },[request,publish]);
   useEffect(()=>{
     let stopped=false;
-    const start=async()=>{try{await refresh();if(!stopped){await request({action:'home'});await publish({page:'home'});}}catch(error){if(!stopped)setError((error as Error).message);}};
+    const start=async()=>{const revision=++navigation.current;try{
+      const launched=getLaunchThread();if(launched)thread.current=launched;
+      const value=await request({action:'resume'});
+      if(stopped||revision!==navigation.current)return;
+      if(value.page==='project'){thread.current=value.thread_id||undefined;current.current=value;setDetail(value);}
+      else {current.current=null;setDetail(null);}
+      await refresh();if(!stopped&&revision===navigation.current)await publish(value);
+    }catch(error){if(!stopped&&revision===navigation.current)setError((error as Error).message);}};
+    const launched=()=>void start();window.addEventListener('website-builder:launch',launched);
     void start();const timer=setInterval(()=>void refresh().catch(error=>setError((error as Error).message)),5000);
-    return()=>{stopped=true;clearInterval(timer);};
+    return()=>{stopped=true;navigation.current++;clearInterval(timer);window.removeEventListener('website-builder:launch',launched);};
   },[refresh,request,publish]);
-  const home=async()=>{try{await request({action:'home'});setDetail(null);setError('');await refresh();await publish({page:'home'});}catch(error){setError((error as Error).message);}};
-  const open=async(id:string)=>{setBusy(true);try{const value=await request({action:'open',project_id:id});setDetail(value);setError('');await publish(value);}catch(error){setError((error as Error).message);}finally{setBusy(false);}};
+  const home=async()=>{navigation.current++;try{await request({action:'home'});current.current=null;setDetail(null);setError('');await refresh();await publish({page:'home'});}catch(error){setError((error as Error).message);}};
+  const open=async(id:string)=>{navigation.current++;setBusy(true);try{const value=await request({action:'open',project_id:id});current.current=value;setDetail(value);setError('');await publish(value);}catch(error){setError((error as Error).message);}finally{setBusy(false);}};
   const remove=async(id:string)=>{setBusy(true);try{await request({action:'delete',project_id:id});setDeleted(id);if(detail?.project_id===id)setDetail(null);await refresh();setError('');}catch(error){setError((error as Error).message);}finally{setBusy(false);}};
   const groups=new Map<string,Project[]>();
   for(const project of projects.filter(project=>`${project.displayName||''} ${project.name}`.toLowerCase().includes(query.toLowerCase()))) {

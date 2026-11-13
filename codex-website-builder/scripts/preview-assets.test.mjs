@@ -35,7 +35,7 @@ try {
   const url = await new Promise((resolve, reject) => { preview.stdout.once('data', bytes => resolve(bytes.toString().trim())); preview.once('error', reject); });
   browser = await chromium.launch({ channel: 'chrome', headless: true });
   const page = await browser.newPage(); await page.goto(url);
-  await page.locator('[data-project-id="'+project.project_id+'"] .project-open').click();
+  await page.locator('.canvas-world').waitFor();
   const frame = page.frameLocator('iframe[title="index.html"]');
   await frame.locator('#hero').waitFor();
   await frame.locator('#hero').evaluate(image => new Promise(resolve => image.complete ? resolve() : image.addEventListener('load', resolve, { once: true })));

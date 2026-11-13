@@ -63,3 +63,4 @@
 .asset-panel{min-width:320px;max-width:960px;justify-self:start}
 .asset-surface{height:auto;min-height:0;display:flex;align-items:flex-start;justify-content:flex-start}
 .asset-surface img{width:auto;height:auto;max-width:100%;max-height:600px;object-position:left top}
+.asset-placeholder{position:relative;flex:none;display:grid;place-items:center;overflow:hidden;border-radius:6px;color:#65766e}.asset-placeholder>span{position:relative;z-index:3;font-size:18px}.asset-placeholder.is-error{background:#f7eae5;color:#975838}.asset-panel[aria-busy=true] .asset-surface img{display:none}

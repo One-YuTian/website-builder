@@ -64,7 +64,7 @@ try{
  // UI observes a second server process writing the shared project; unfinished files stay hidden.
  const ui=await project({thread_id:'test-ui-thread',new_project:true,name:'Live Store',pages:[{path:'index.html',title:'Home'},{path:'shop.html',title:'Shop'},{path:'about.html',title:'About'}]});
  const page=await browser.newPage({viewport:{width:1440,height:950}});
- const errors=[];page.on('pageerror',error=>errors.push(error.message));await page.goto(url,{waitUntil:'domcontentloaded'});try{await page.locator('.project-open').filter({hasText:'Live Store'}).click();}catch(error){console.log(await page.locator('body').innerText());throw error;}await page.locator('.page-panel').nth(2).waitFor();
+ const errors=[];page.on('pageerror',error=>errors.push(error.message));await page.goto(url,{waitUntil:'domcontentloaded'});try{await page.locator('.canvas-world').waitFor();}catch(error){console.log(await page.locator('body').innerText());throw error;}await page.locator('.page-panel').nth(2).waitFor();
  assert.equal(await page.locator('iframe').count(),0);assert.equal(await page.locator('.page-loader').count(),3);
  await write(ui,[{path:'index.html',content:'<html><body>not finished',fragment:false}]);await page.waitForTimeout(400);assert.equal(await page.locator('iframe').count(),0);
  // One completed page appears while other pages are unfinished; no task-level finish.

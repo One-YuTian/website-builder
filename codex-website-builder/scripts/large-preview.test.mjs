@@ -62,7 +62,7 @@ try{
     return route.continue();
   });
   await page.goto(url);
-  await page.locator('[data-project-id="'+state.project_id+'"] .project-open').click();
+  await page.locator('.canvas-world').waitFor();
   await page.waitForFunction(()=>document.querySelectorAll('.page-caption[data-ready="true"]').length===2);
   for(const file of ['index.html','large.html']){
     const frame=page.frameLocator(`iframe[title="${file}"]`);

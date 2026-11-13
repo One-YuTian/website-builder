@@ -28,7 +28,7 @@ const manager = projectManager(projects);
 const syncProject = projectService(projects);
 const preview = await createPreview(html, paths.reference, 'www.noventrad.com', syncProject, manager.run);
 const skillRoot = (process.env.WEBSITE_BUILDER_SKILL_ROOT || resolve('skills/website-builder')).replaceAll('${PLUGIN_ROOT}',fileURLToPath(new URL('../../',import.meta.url)));
-const server = new McpServer({ name: 'codex-website-builder', version: '0.8.0', icons: [{ src: `data:image/png;base64,${sidebarIcon.toString('base64')}`, mimeType: 'image/png', sizes: ['200x200'] }] });
+const server = new McpServer({ name: 'codex-website-builder', version: '0.8.1', icons: [{ src: `data:image/png;base64,${sidebarIcon.toString('base64')}`, mimeType: 'image/png', sizes: ['200x200'] }] });
 const csp = { connectDomains: ['data:', 'blob:'], resourceDomains: ['data:', 'blob:'], frameDomains: ['blob:', 'data:'], baseUriDomains: ['https://website-builder.invalid'] };
 const legacyCsp = { connect_domains: csp.connectDomains, resource_domains: csp.resourceDomains, frame_domains: csp.frameDomains, base_uri_domains: csp.baseUriDomains };
 registerAppResource(server, 'canvas', uri, { _meta: { ui: { csp }, 'openai/widgetCSP': legacyCsp } }, async () => ({
@@ -40,11 +40,11 @@ registerAppResource(server, 'canvas', uri, { _meta: { ui: { csp }, 'openai/widge
 }));
 registerAppTool(server, 'open_canvas', {
   title: 'Website Builder',
-  description: '打开网站生成与实时预览画布。没有打开项目时画布为空。建站、改页或重生成时先使用内置 website-builder SKILL，以 website_project 复用当前会话项目；仅用户明确选择网站目录时展示参考站点。',
-  inputSchema: {},
+  description: '打开网站生成与实时预览画布。对话任务先以website_project复用当前项目，再传当前真实thread_id打开画布，自动进入该会话项目详情；没有会话绑定项目时进入首页，不使用全局最近项目。建站、改页或重生成时先使用内置website-builder SKILL；仅用户明确选择网站目录时展示参考站点。',
+  inputSchema: {thread_id:z.string().optional()},
   annotations: { readOnlyHint: true, destructiveHint: false, openWorldHint: false },
   _meta: { ui: { resourceUri: uri }, 'openai/ui': { entrypoints: [{ type: 'global' }] } },
-}, async () => ({ content: [{ type: 'text', text: '网站展示画布已打开。' }] }));
+}, async input => ({ content: [{ type: 'text', text: '网站展示画布已打开。' }],structuredContent:{canvas_launch:{thread_id:input.thread_id||process.env.CODEX_THREAD_ID||process.env.CODEX_SESSION_ID||null}} }));
 server.registerTool('website_panel_context', {
   description: '查询当前真实会话的 Website Builder 面板位置。详情页返回 project_id 和项目信息，主界面返回项目列表。多个面板时传 panel_id 精确查询；不得用其他会话或全局最近项目替代。',
   inputSchema: { thread_id: z.string().optional(), panel_id: z.string().optional() },
@@ -52,9 +52,14 @@ server.registerTool('website_panel_context', {
 }, async input => { try { const value=await manager.run({...input,action:'context'});return {content:[{type:'text',text:JSON.stringify(value)}]}; } catch(error) { return {isError:true,content:[{type:'text',text:(error as Error).message}]}; } });
 server.registerTool('website_projects', {
   description: '管理全局 SQLite 项目：list 列出项目，open/create 绑定当前会话和面板，home 返回主界面，delete 软删除（保留文件），resources 列出资源，attach 复制用户明确提供的图片/文件到项目资源目录。panel_id 来自面板上下文；thread_id 必须是真实当前会话 ID。',
-  inputSchema: { action:z.enum(['list','open','create','bind','home','delete','restore','resources','attach','folder','images','capture']).default('list'), panel_id:z.string().optional(),thread_id:z.string().optional(),project_id:z.string().optional(),name:z.string().max(200).optional(),source_path:z.string().optional(),path:z.string().optional(),width:z.number().int().min(320).max(2560).optional(),capture_id:z.string().optional(),chunk:z.string().max(512000).optional(),offset:z.number().int().nonnegative().optional(),final:z.boolean().optional() },
+  inputSchema: { action:z.enum(['list','resume','open','create','bind','home','delete','restore','resources','attach','folder','images','capture']).default('list'), panel_id:z.string().optional(),thread_id:z.string().optional(),project_id:z.string().optional(),name:z.string().max(200).optional(),source_path:z.string().optional(),path:z.string().optional(),width:z.number().int().min(320).max(2560).optional(),capture_id:z.string().optional(),chunk:z.string().max(512000).optional(),offset:z.number().int().nonnegative().optional(),final:z.boolean().optional() },
   annotations: { readOnlyHint:false,destructiveHint:false,openWorldHint:false },
 }, async input => { try {const value=await manager.run(input);return {content:[{type:'text',text:JSON.stringify(value)}],_meta:{manager:value}};} catch(error) {return {isError:true,content:[{type:'text',text:(error as Error).message}]};} });
+server.registerTool('website_images', {
+  description:'Track generated website images. Before calling imagegen register each intended project-relative output with begin and actual dimensions; after copying the final image call finish. Call fail with an honest reason if generation fails. Persistent UI placeholders update automatically when files arrive. Only the current thread project is allowed; never write fake placeholder image files.',
+  inputSchema:{thread_id:z.string(),project_id:z.string(),action:z.enum(['begin','finish','fail']),path:z.string(),name:z.string().max(200).optional(),width:z.number().int().min(1).max(32768).optional(),height:z.number().int().min(1).max(32768).optional(),error:z.string().max(1000).optional()},
+  annotations:{readOnlyHint:false,destructiveHint:false,openWorldHint:false},
+},async input=>{try{return{content:[{type:'text',text:JSON.stringify(await manager.imageTask(input))}]};}catch(error){return{isError:true,content:[{type:'text',text:(error as Error).message}]};}});
 server.registerTool('read_website', {
   description: '读取配置根目录内的网站页面与内嵌资源，仅供画布 UI 使用。',
   inputSchema: { directory: z.string().default('www.noventrad.com') },
