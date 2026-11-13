@@ -19,6 +19,7 @@ const origin=`http://127.0.0.1:${upstream.address().port}`;
 const client=new Client({name:'online-cdn-test',version:'1'});
 try{
  await cp('dist',join(root,'dist'),{recursive:true});await writeFile(join(root,'package.json'),JSON.stringify({type:'module'}));
+ await mkdir(join(root,'assets'),{recursive:true});await cp('assets/icon.png',join(root,'assets/icon.png'));
  const vendor=join(root,'dist/vendor'),manifest=JSON.parse(await readFile(join(vendor,'manifest.json'),'utf8'));
  // Conflicting bundled replacements must not override online sources by default.
  manifest[origin+'/library.js']='jquery.js';manifest[origin+'/font.css']='swiper.css';

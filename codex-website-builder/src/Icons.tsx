@@ -1,5 +1,7 @@
-export function Icon({ name }: { name: 'select'|'hand'|'fit'|'width'|'pages'|'refresh'|'zoom'|'reset'|'folder'|'search'|'trash'|'send' }) {
+export function Icon({ name }: { name: 'select'|'hand'|'fit'|'width'|'pages'|'refresh'|'zoom'|'reset'|'folder'|'search'|'trash'|'send'|'copy'|'images' }) {
   const paths = {
+    copy:<><rect x="8" y="8" width="12" height="13" rx="2"/><path d="M16 8V3H3v13h5"/></>,
+    images:<><rect x="3" y="4" width="18" height="16" rx="2"/><circle cx="8" cy="9" r="1.5"/><path d="m3 16 5-4 4 3 4-5 5 6"/></>,
     folder: <path d="M3 7V5h7l2 2h9v13H3z"/>,
     search: <><circle cx="10" cy="10" r="6"/><path d="m15 15 6 6"/></>,
     trash: <><path d="M3 6h18M9 6V3h6v3M5 6l1 15h12l1-15M10 10v7m4-7v7"/></>,

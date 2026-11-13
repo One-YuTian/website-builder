@@ -85,7 +85,7 @@ try {
    document.querySelector('#app').srcdoc=html;
  },html);
  const app=page.frameLocator('#app');
- await app.getByRole('heading',{name:'Website Builder',exact:true}).waitFor();
+ await app.getByRole('complementary',{name:'项目目录',exact:true}).waitFor();
  await app.locator('.project-open').filter({hasText:'Forest studio'}).waitFor();
  assert.equal(await app.locator('.tool-rail').count(),0,'global entry opens the library, even with an active project');
  await app.getByLabel('搜索项目').fill('Forest');assert.equal(await app.locator('.project-row').count(),1);await app.getByLabel('搜索项目').fill('');
@@ -121,7 +121,7 @@ try {
  await standalone.locator(`[data-project-id="${first.project_id}"] .project-open`).click();
  await standalone.locator('.page-caption[data-ready="true"]').waitFor();
  await standalone.getByRole('button',{name:'返回主界面',exact:true}).click();
- await standalone.getByRole('heading',{name:'Website Builder',exact:true}).waitFor();
+ await standalone.getByRole('complementary',{name:'项目目录',exact:true}).waitFor();
  await standalone.close();
  await app.getByRole('button',{name:'删除项目 Forest studio',exact:true}).click();
  await app.getByRole('button',{name:'删除项目 Forest studio',exact:true}).waitFor({state:'hidden'});

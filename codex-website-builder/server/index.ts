@@ -28,12 +28,12 @@ const manager = projectManager(projects);
 const syncProject = projectService(projects);
 const preview = await createPreview(html, paths.reference, 'www.noventrad.com', syncProject, manager.run);
 const skillRoot = (process.env.WEBSITE_BUILDER_SKILL_ROOT || resolve('skills/website-builder')).replaceAll('${PLUGIN_ROOT}',fileURLToPath(new URL('../../',import.meta.url)));
-const server = new McpServer({ name: 'codex-website-builder', version: '0.7.9-beta.3', icons: [{ src: `data:image/png;base64,${sidebarIcon.toString('base64')}`, mimeType: 'image/png', sizes: ['200x200'] }] });
+const server = new McpServer({ name: 'codex-website-builder', version: '0.8.0', icons: [{ src: `data:image/png;base64,${sidebarIcon.toString('base64')}`, mimeType: 'image/png', sizes: ['200x200'] }] });
 const csp = { connectDomains: ['data:', 'blob:'], resourceDomains: ['data:', 'blob:'], frameDomains: ['blob:', 'data:'], baseUriDomains: ['https://website-builder.invalid'] };
 const legacyCsp = { connect_domains: csp.connectDomains, resource_domains: csp.resourceDomains, frame_domains: csp.frameDomains, base_uri_domains: csp.baseUriDomains };
 registerAppResource(server, 'canvas', uri, { _meta: { ui: { csp }, 'openai/widgetCSP': legacyCsp } }, async () => ({
   contents: [{ uri, mimeType: RESOURCE_MIME_TYPE, text: preview.render(), _meta: {
-    ui: { csp },
+    ui: { csp, permissions:{clipboardWrite:{}} },
     'openai/widgetCSP': legacyCsp,
     'openai/ui': { preferredDisplayMode: 'fullscreen', availableDisplayModes: ['fullscreen'] },
   } }],
@@ -52,7 +52,7 @@ server.registerTool('website_panel_context', {
 }, async input => { try { const value=await manager.run({...input,action:'context'});return {content:[{type:'text',text:JSON.stringify(value)}]}; } catch(error) { return {isError:true,content:[{type:'text',text:(error as Error).message}]}; } });
 server.registerTool('website_projects', {
   description: '管理全局 SQLite 项目：list 列出项目，open/create 绑定当前会话和面板，home 返回主界面，delete 软删除（保留文件），resources 列出资源，attach 复制用户明确提供的图片/文件到项目资源目录。panel_id 来自面板上下文；thread_id 必须是真实当前会话 ID。',
-  inputSchema: { action:z.enum(['list','open','create','bind','home','delete','restore','resources','attach','folder']).default('list'), panel_id:z.string().optional(),thread_id:z.string().optional(),project_id:z.string().optional(),name:z.string().max(200).optional(),source_path:z.string().optional() },
+  inputSchema: { action:z.enum(['list','open','create','bind','home','delete','restore','resources','attach','folder','images','capture']).default('list'), panel_id:z.string().optional(),thread_id:z.string().optional(),project_id:z.string().optional(),name:z.string().max(200).optional(),source_path:z.string().optional(),path:z.string().optional(),width:z.number().int().min(320).max(2560).optional(),capture_id:z.string().optional(),chunk:z.string().max(512000).optional(),offset:z.number().int().nonnegative().optional(),final:z.boolean().optional() },
   annotations: { readOnlyHint:false,destructiveHint:false,openWorldHint:false },
 }, async input => { try {const value=await manager.run(input);return {content:[{type:'text',text:JSON.stringify(value)}],_meta:{manager:value}};} catch(error) {return {isError:true,content:[{type:'text',text:(error as Error).message}]};} });
 server.registerTool('read_website', {

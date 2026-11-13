@@ -9,9 +9,9 @@ import { proxyResource } from './resource-proxy';
 
 const mime: Record<string, string> = { '.html':'text/html', '.js':'text/javascript', '.mjs':'text/javascript', '.css':'text/css', '.json':'application/json', '.png':'image/png', '.jpg':'image/jpeg', '.jpeg':'image/jpeg', '.webp':'image/webp', '.avif':'image/avif', '.gif':'image/gif', '.svg':'image/svg+xml', '.ico':'image/x-icon', '.woff':'font/woff', '.woff2':'font/woff2', '.ttf':'font/ttf' };
 
-export async function screenshotPage(store: ProjectStore, input: {thread_id:string;project_id:string;path:string;width?:number;thumbnail?:boolean;signal?:AbortSignal}) {
+export async function screenshotPage(store: ProjectStore, input: {thread_id?:string;project_id:string;path:string;width?:number;thumbnail?:boolean;signal?:AbortSignal;snapshot?:string}) {
   if(input.signal?.aborted)throw Error('截图已取消');
-  const view = await store.get(input.thread_id);
+  const view = await store.get(input.thread_id,input.thread_id?undefined:input.project_id);
   if (!view || view.project.id !== input.project_id) throw new Error('当前会话项目不匹配');
   const planned = view.project.pages.find(page => page.path === input.path.split(/[?#]/)[0]);
   if (!planned || planned.status !== 'ready') throw new Error('页面不存在或尚未生成完成');
@@ -28,6 +28,11 @@ export async function screenshotPage(store: ProjectStore, input: {thread_id:stri
       const url = new URL(req.url!, 'http://localhost');
       if (req.method !== 'GET' || !url.pathname.startsWith(prefix)) { res.writeHead(404).end(); return; }
       const name = decodeURIComponent(url.pathname.slice(prefix.length));
+      if(input.snapshot&&name===input.path.split(/[?#]/)[0]) {
+        res.setHeader('Content-Type','text/html; charset=utf-8');
+        res.setHeader('Content-Security-Policy',"script-src 'none'; object-src 'none'; base-uri 'none'");
+        res.end(input.snapshot.replace(/<base\b[^>]*>/gi,''));return;
+      }
       if (name.split('/').some(part => part.startsWith('.')) || name.includes('\\')) throw Error('不可读取此路径');
       const file = await contained(view.directory, name);
       res.setHeader('Content-Type', mime[extname(file)] || 'application/octet-stream');
@@ -60,12 +65,13 @@ export async function screenshotPage(store: ProjectStore, input: {thread_id:stri
         } catch(error) { failures.add((error as Error).message); await route.abort(); }
       });
       await page.goto(origin + prefix + input.path,{waitUntil:'load',timeout:30000});
+      if(input.snapshot)await page.addStyleTag({content:'*,*::before,*::after{animation:none!important;transition:none!important;caret-color:transparent!important;scroll-behavior:auto!important}'});
       // Applications with async data/rendering must publish this promise in app.js.
-      await page.evaluate(async () => {
-        await (window as any).websiteReady;
-        await Promise.all([...new Set([...document.querySelectorAll('*')].map(el=>el.localName).filter(name=>name.includes('-')))].map(name=>customElements.whenDefined(name)));
+      await page.evaluate(async (snapshot:boolean) => {
+        if(!snapshot){await (window as any).websiteReady;
+        await Promise.all([...new Set([...document.querySelectorAll('*')].map(el=>el.localName).filter(name=>name.includes('-')))].map(name=>customElements.whenDefined(name)));}
         await document.fonts.ready;
-      });
+      },!!input.snapshot);
       await page.waitForLoadState('networkidle',{timeout:15000});
       await page.evaluate(async () => {
         document.querySelectorAll('img').forEach(image=>image.loading='eager');

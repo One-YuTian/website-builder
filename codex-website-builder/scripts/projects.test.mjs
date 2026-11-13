@@ -23,7 +23,7 @@ try{
  const empty=await browser.newPage();const demoRequests=[];empty.on('request',request=>{if(request.url().includes('/api/site'))demoRequests.push(request.url());});
  await empty.goto(url,{waitUntil:'domcontentloaded'});await empty.waitForTimeout(700);
  assert.equal(await empty.locator('.page-panel,iframe').count(),0);assert.deepEqual(demoRequests,[]);
- await empty.getByRole('heading',{name:'Website Builder',exact:true}).waitFor();assert.deepEqual(demoRequests,[]);
+ await empty.getByRole('complementary',{name:'项目目录',exact:true}).waitFor();assert.deepEqual(demoRequests,[]);
  await empty.close();
  const failed=await browser.newPage();await failed.route('**/api/project-sync*',route=>route.fulfill({status:503,body:'unavailable'}));failed.on('request',request=>{if(request.url().includes('/api/site'))demoRequests.push(request.url());});
  await failed.goto(url,{waitUntil:'domcontentloaded'});await failed.waitForTimeout(700);assert.equal(await failed.locator('.page-panel,iframe').count(),0);assert.deepEqual(demoRequests,[]);await failed.close();

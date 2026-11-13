@@ -71,7 +71,7 @@ export async function scanSite(root: string, directory: string, prefix: string):
 
 // Injected only into the served response; the reference website is never modified.
 function instrument(html: string, embedded = false) {
-  const script = `<style>html{height:auto!important;min-height:0!important;scrollbar-width:thin;scrollbar-color:transparent transparent!important}html[data-wb-scrolling]{scrollbar-color:rgba(75,100,87,.48) transparent!important}html::-webkit-scrollbar{width:7px;height:7px}html::-webkit-scrollbar-track{background:transparent}html::-webkit-scrollbar-thumb{background:transparent;border-radius:8px}html[data-wb-scrolling]::-webkit-scrollbar-thumb{background:rgba(75,100,87,.48)}html::-webkit-scrollbar-button{display:none}body{min-height:0!important}</style><script>
+  const script = `<style>html,body,body *{-webkit-user-select:none!important;user-select:none!important}html{height:auto!important;min-height:0!important;scrollbar-width:thin;scrollbar-color:transparent transparent!important}html[data-wb-scrolling]{scrollbar-color:rgba(75,100,87,.48) transparent!important}html::-webkit-scrollbar{width:7px;height:7px}html::-webkit-scrollbar-track{background:transparent}html::-webkit-scrollbar-thumb{background:transparent;border-radius:8px}html[data-wb-scrolling]::-webkit-scrollbar-thumb{background:rgba(75,100,87,.48)}html::-webkit-scrollbar-button{display:none}body{min-height:0!important}</style><script>
 (() => {
   const virtualUrl = ${embedded ? '"__WEBSITE_BUILDER_VIRTUAL_URL__"' : 'location.href'};
   window.__websiteBuilderLocation = new URL(virtualUrl);

@@ -29,3 +29,37 @@
 .project-home .project-prompt textarea:focus,.project-home .project-prompt textarea:focus-visible{outline:none;box-shadow:none}
 
 .project-prompt textarea:disabled{cursor:default;opacity:1;-webkit-text-fill-color:#777c83}.project-prompt>button:disabled{cursor:not-allowed}
+
+/* Floating library surfaces and a shared foreground fade. */
+.project-home{position:relative;padding:42px 18px;gap:24px;grid-template-columns:312px minmax(0,1fr);background:#f1f3f3 radial-gradient(circle,rgba(151,168,161,.55) .55px,transparent .8px) 0 0/10px 10px}
+.project-home::before,.page-stage::before{content:'';position:fixed;inset:0 0 auto;height:92px;background:linear-gradient(180deg,rgba(255,255,255,.98),rgba(255,255,255,.8) 24%,rgba(255,255,255,.34) 64%,rgba(255,255,255,0));pointer-events:none;z-index:8}
+.project-sidebar{position:relative;z-index:2;border:1px solid rgba(184,192,197,.65);border-radius:24px;padding:24px 17px;background:rgba(223,227,230,.55);backdrop-filter:blur(24px) saturate(1.25);-webkit-backdrop-filter:blur(24px) saturate(1.25);box-shadow:inset 0 1px 0 #ffffffad,0 8px 28px #34413c06}
+.project-compose{background:transparent;padding:30px;isolation:isolate}.project-compose-inner{width:min(1020px,100%)}.project-compose h2{font-size:clamp(26px,3.1vw,46px);font-weight:500;text-align:left;margin-bottom:30px;letter-spacing:-1.3px}
+.project-search{background:rgba(189,196,201,.38)}.project-description strong{max-width:180px}.project-description time{font-variant-numeric:tabular-nums}
+.project-prompt{min-height:220px;background:linear-gradient(125deg,#dce9f165,#e2e4e887 54%);border:1px solid #bfc8cfad;backdrop-filter:blur(26px) saturate(1.3);-webkit-backdrop-filter:blur(26px) saturate(1.3);box-shadow:inset 0 1px 0 #ffffff8c,0 8px 32px #34413c05;border-radius:26px}
+.page-heading{display:flex;gap:calc(12px / var(--canvas-scale));align-items:flex-start}.page-heading .page-label{flex:1;min-width:0}.page-copy{height:calc(24px / var(--canvas-scale));width:calc(24px / var(--canvas-scale));padding:calc(4px / var(--canvas-scale));border:0;background:transparent;color:#536660;border-radius:calc(5px / var(--canvas-scale));flex:none}.page-copy svg{width:100%;height:100%}
+.asset-gallery{grid-column:1/-1;display:grid;gap:90px 72px;padding:0 0 90px;width:max-content}.asset-gallery>h2{grid-column:1/-1;font-size:calc(17px / var(--canvas-scale));font-weight:500;display:flex;gap:calc(12px / var(--canvas-scale));align-items:center;color:#4c5c59}.asset-gallery>h2 span{font-size:calc(11px / var(--canvas-scale));color:#87958e}
+.asset-panel{cursor:default}.asset-label{height:calc(35px / var(--canvas-scale));display:flex;align-items:center;gap:calc(12px / var(--canvas-scale));font-size:calc(11px / var(--canvas-scale));color:#4c5c59}.asset-label>span{flex:1;display:flex;align-items:center;gap:calc(7px / var(--canvas-scale));min-width:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}.asset-label svg{width:calc(15px / var(--canvas-scale));height:calc(15px / var(--canvas-scale));flex-shrink:0}.asset-label button{border:0;background:transparent;padding:calc(4px / var(--canvas-scale));display:flex}
+.asset-surface{height:600px;display:grid;place-items:center;border-radius:0;padding:0;background:transparent;box-shadow:none;overflow:hidden}.asset-surface img{max-width:100%;max-height:100%;width:100%;height:100%;min-width:0;min-height:0;object-fit:contain;display:block}.asset-surface p{font-size:18px;color:#65766e}.asset-caption{padding-top:calc(7px / var(--canvas-scale));font-size:calc(10px / var(--canvas-scale));color:#89988f}
+@media(max-width:900px){.project-home{grid-template-columns:260px minmax(0,1fr);gap:12px;padding:28px 12px}.project-compose{padding:22px}.project-compose h2{font-size:28px}.project-description strong{max-width:145px}}
+@media(max-width:560px){.project-home{display:flex;flex-direction:column;gap:14px;padding:20px 12px}.project-sidebar{border:1px solid #bcc6c9a1;border-radius:20px;flex:1;padding:18px 12px;gap:16px}.project-compose{padding:0;overflow:visible;flex-shrink:0}.project-prompt{min-height:150px;padding:16px 18px}.project-prompt textarea{min-height:64px;height:64px}.project-description strong{max-width:230px}.project-home::before{height:56px}}
+
+.project-groups{scrollbar-width:none;scrollbar-gutter:auto}
+.project-groups::-webkit-scrollbar{display:none;width:0;height:0}
+
+/* Keep the library anchored at the top and lift the composer above center. */
+.project-manager,.project-manager *{-webkit-user-select:none!important;user-select:none!important}
+.project-sidebar{justify-content:flex-start;align-self:stretch}.project-groups{align-content:start}
+@media(min-width:561px){.project-home{padding-top:18px;padding-bottom:18px}.project-compose-inner{transform:translateY(clamp(-88px,-7vh,-40px))}}
+
+/* Compact library, above the foreground fade; images retain their own proportions. */
+.project-sidebar{z-index:9;padding-left:8px;padding-right:8px}
+/* A continuous full-width fade avoids a hard seam beside the raised library. */
+.project-home::before{clip-path:none}
+.project-open{padding-left:8px;padding-right:4px}.project-groups h2{padding-left:8px;padding-right:8px}
+.project-search input:focus,.project-search input:focus-visible,.project-prompt textarea:focus,.project-prompt textarea:focus-visible{outline:none;border:0;box-shadow:none}
+.project-delete:hover{background:transparent;color:#34383d}
+.asset-gallery{justify-items:start;align-items:start}
+.asset-panel{min-width:320px;max-width:960px;justify-self:start}
+.asset-surface{height:auto;min-height:0;display:flex;align-items:flex-start;justify-content:flex-start}
+.asset-surface img{width:auto;height:auto;max-width:100%;max-height:600px;object-position:left top}

@@ -79,6 +79,7 @@ try {
   browser=await chromium.launch({channel:'chrome',headless:true});
   const page=await browser.newPage({viewport:{width:1500,height:1000}});
   await page.goto(bootstrap.origin+new URL(bootstrap.api).pathname.replace('/api/site','/canvas'));
+  await page.locator(`[data-project-id="${ids.project_id}"] .project-open`).click();
   await page.locator('.page-panel').nth(7).waitFor();
   await page.waitForFunction(()=>document.querySelector('.canvas-world').dataset.columns==='5');
   const positions=await page.locator('.page-panel').evaluateAll(nodes=>nodes.map(node=>({x:node.offsetLeft,y:node.offsetTop})));

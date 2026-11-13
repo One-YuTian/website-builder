@@ -2,7 +2,7 @@ import { hostApp, hostReady } from './bridge';
 export async function manageProjects(input: Record<string, unknown>) {
   if(hostApp) {
     await hostReady;
-    const result=await hostApp.callServerTool({name:'website_projects',arguments:input});
+    const result=await hostApp.callServerTool({name:'website_projects',arguments:input},{timeout:90000});
     if(result.isError)throw Error(result.content?.filter(item=>item.type==='text').map(item=>'text' in item?item.text:'').join(' ')||'项目操作失败');
     return result._meta?.manager as any;
   }

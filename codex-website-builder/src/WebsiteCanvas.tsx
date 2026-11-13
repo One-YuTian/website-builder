@@ -3,6 +3,9 @@ import type { SiteManifest, SitePage } from '../server/preview';
 import { hostApp, hostReady } from './bridge';
 import { Icon } from './Icons';
 import {readResource} from './resources';
+import {manageProjects} from './project-api';
+import {CanvasImage,type CanvasAsset} from './CanvasImage';
+import {copyPNG,capturePage} from './clipboard';
 
 type View = { x: number; y: number; zoom: number };
 type Wheel = { dx: number; dy: number; zoom: boolean; x: number; y: number };
@@ -13,10 +16,11 @@ async function decodePagePayload(value: string | {resource:string}) {
   return new Response(new Blob([bytes]).stream().pipeThrough(new DecompressionStream('gzip'))).text();
 }
 
-const PageFrame = memo(function PageFrame({ page, storage, index, width, selected, select, wheel, notify }: {
+const PageFrame = memo(function PageFrame({ page, storage, index, width, selected, select, wheel, notify, capture }: {
   page: SitePage; index: number; width: number; selected: boolean; select: (path: string) => void;
   wheel: (value: Wheel) => void; notify: (text: string) => void;
   storage: { current: Record<string, string> };
+  capture?:(html:string,path:string,width:number)=>Promise<Blob>;
 }) {
   const iframe = useRef<HTMLIFrameElement>(null);
   const acknowledged = useRef(false);
@@ -29,6 +33,16 @@ const PageFrame = memo(function PageFrame({ page, storage, index, width, selecte
   const currentUrl = page.url;
   const [src, setSrc] = useState('');
   const pending = !!page.status && page.status !== 'ready';
+  const captures=useRef(new Map<string,{resolve:(html:string)=>void;reject:(error:Error)=>void;timer:ReturnType<typeof setTimeout>}>());
+  const [copying,setCopying]=useState(false);
+  const copy=()=>{
+    if(!capture||!iframe.current)return;setCopying(true);
+    void copyPNG(async()=>{
+      const id=crypto.randomUUID();
+      const html=await new Promise<string>((resolve,reject)=>{const timer=setTimeout(()=>{captures.current.delete(id);reject(Error('当前页面尚未完整加载，截图超时'));},60000);captures.current.set(id,{resolve,reject,timer});iframe.current!.contentWindow!.postMessage({type:'website-builder:capture',id},'*');});
+      return capture(html,page.path,width);
+    },notify).finally(()=>setCopying(false));
+  };
   const snapshot = pending ? undefined : page.html;
   useEffect(() => {
     acknowledged.current=false;if(loadTimer.current)clearTimeout(loadTimer.current);
@@ -44,6 +58,10 @@ const PageFrame = memo(function PageFrame({ page, storage, index, width, selecte
     const receive = (event: MessageEvent) => {
       if (event.source !== iframe.current?.contentWindow || event.origin !== 'null') return;
       const data = event.data;
+      if(data?.type==='website-builder:capture-result'){
+        const pending=captures.current.get(data.id);if(!pending)return;clearTimeout(pending.timer);captures.current.delete(data.id);
+        data.error?pending.reject(Error(data.error)):pending.resolve(data.html);return;
+      }
       if(data?.type==='website-builder:resource'&&typeof data.url==='string'&&Number.isSafeInteger(data.id)){
         const source=event.source as Window;
         void readResource(data.url,!!data.raw).then(value=>source.postMessage({type:'website-builder:resource-result',id:data.id,...value},'*')).catch(error=>source.postMessage({type:'website-builder:resource-result',id:data.id,error:(error as Error).message},'*'));
@@ -76,10 +94,11 @@ const PageFrame = memo(function PageFrame({ page, storage, index, width, selecte
   }, [page.url, page.path, width, wheel, notify, select, storage]);
   useEffect(() => { iframe.current?.contentWindow?.postMessage({ type: 'website-builder:measure', capped: height > maxHeight }, '*'); }, [width, page.url, height, maxHeight]);
   useEffect(() => () => { if(loadTimer.current)clearTimeout(loadTimer.current); }, []);
+  useEffect(()=>()=>{for(const pending of captures.current.values()){clearTimeout(pending.timer);pending.reject(Error('页面已关闭'));}captures.current.clear();},[]);
   return <article className={`page-panel ${selected ? 'is-selected' : ''}`} data-page={page.path} style={{ width }}>
-    <button className="page-label" onClick={() => select(page.path)} title={`${page.path} - ${page.title}`}>
+    <div className="page-heading"><button className="page-label" onClick={() => select(page.path)} title={`${page.path} - ${page.title}`}>
       <span className="page-icon"><Icon name="pages" /></span><span className="page-title">{page.path} - {page.title}</span><span className="page-number">{String(index + 1).padStart(2, '0')}</span>
-    </button>
+    </button>{capture&&<button className="page-copy" aria-label={`复制 ${page.path} 完整截图`} title="复制当前页面完整截图" disabled={!ready||copying} onClick={copy}><Icon name="copy"/></button>}</div>
     <div className={`frame-glass ${ready ? 'is-ready' : 'is-loading'}`} style={{ height: viewportHeight }}>
     {!ready && <div className="page-loader" role="progressbar" aria-label={`正在加载 ${page.path}`} />}
     {src && <iframe ref={iframe} title={page.path} src={src} sandbox="allow-scripts allow-forms" scrolling="auto" style={{ width, height: viewportHeight }} onLoad={() => {
@@ -95,7 +114,7 @@ const PageFrame = memo(function PageFrame({ page, storage, index, width, selecte
   </article>;
 });
 
-export function WebsiteCanvas({ background, projectId: pinnedProjectId, threadId, onHome, onFolder, onProject }: { background: ReactNode; projectId?:string; threadId?:string; onHome?:()=>void; onFolder?:()=>void; onProject?:(id:string)=>void }) {
+export function WebsiteCanvas({ background, projectId: pinnedProjectId, panelId, threadId, onHome, onFolder, onProject }: { background: ReactNode; projectId?:string;panelId?:string; threadId?:string; onHome?:()=>void; onFolder?:()=>void; onProject?:(id:string)=>void }) {
   const config = window.__WEBSITE_BUILDER__;
   const [site, setSite] = useState<SiteManifest | null>(null);
   const [directory, setDirectory] = useState('');
@@ -117,6 +136,13 @@ export function WebsiteCanvas({ background, projectId: pinnedProjectId, threadId
   const sequence = useRef(0);
   const projectMode=useRef(false);
   const [projectList,setProjectList]=useState<{id:string;name:string}[]>([]);
+  const [assets,setAssets]=useState<CanvasAsset[]>([]);
+  const captureCurrent=useCallback((html:string,path:string,width:number)=>capturePage({panel_id:panelId!,thread_id:threadId,project_id:pinnedProjectId!,path,width},html),[panelId,threadId,pinnedProjectId]);
+  useEffect(()=>{
+    if(!pinnedProjectId||!panelId)return;let stopped=false;
+    const load=()=>manageProjects({action:'images',panel_id:panelId,thread_id:threadId,project_id:pinnedProjectId}).then(value=>{if(!stopped)setAssets(value.images||[]);}).catch(error=>{if(!stopped)setNotice(error.message);});
+    void load();const timer=setInterval(()=>void load(),5000);return()=>{stopped=true;clearInterval(timer);};
+  },[pinnedProjectId,panelId,threadId]);
   const load = useCallback(async (directory: string) => {
     const id = ++sequence.current;
     setLoading(true); setError(''); setNotice('');
@@ -209,7 +235,7 @@ export function WebsiteCanvas({ background, projectId: pinnedProjectId, threadId
       const bounds = stage.current?.getBoundingClientRect(); if (!bounds) return;
       const x = event.x - bounds.left, y = event.y - bounds.top;
       setView(current => {
-        const zoom = clamp(current.zoom * Math.exp(-event.dy * .002), .02, 1.5);
+        const zoom = clamp(current.zoom * Math.exp(-event.dy * .002), .00001, 1.5);
         return { x: x - (x - current.x) * zoom / current.zoom, y: y - (y - current.y) * zoom / current.zoom, zoom };
       });
     } else setView(current => ({ ...current, x: current.x - event.dx, y: current.y - event.dy }));
@@ -231,12 +257,26 @@ export function WebsiteCanvas({ background, projectId: pinnedProjectId, threadId
     if (panel) setView(current => ({ ...current, x: 28 - panel.offsetLeft * current.zoom, y: 30 - panel.offsetTop * current.zoom }));
   };
   const fitAll = () => {
-    const count = site?.pages.length ?? 0, viewport = stage.current; if (!count || !viewport) return;
-    if (!world.current) return;
-    const rows = Math.ceil(count / columns), fixedLabels = rows * 52;
-    const scalableHeight = Math.max(1, world.current.offsetHeight - fixedLabels / view.zoom);
-    const zoom = Math.min((viewport.clientWidth - 120) / world.current.offsetWidth, (viewport.clientHeight - 70 - fixedLabels) / scalableHeight);
-    setView({ x: 28, y: 30, zoom: clamp(zoom, .02, 1) });
+    const viewport=stage.current,content=world.current;if(!viewport||!content?.children.length)return;
+    setPopover(null);
+    const bounds=viewport.getBoundingClientRect(),rail=viewport.querySelector('.tool-rail')?.getBoundingClientRect();
+    const left=28,right=rail?bounds.right-rail.left+16:28,top=Math.min(104,viewport.clientHeight*.2);
+    const availableWidth=Math.max(1,viewport.clientWidth-left-right);
+    const previous=content.style.getPropertyValue('--canvas-scale');
+    try {
+      // Labels keep a constant screen size during ordinary zoom. Measure their
+      // actual layout at each candidate instead of subtracting guessed row sizes.
+      const measure=(zoom:number)=>{
+        content.style.setProperty('--canvas-scale',String(Math.max(zoom,.02)));
+        const width=Math.max(content.offsetWidth,content.scrollWidth),height=Math.max(content.offsetHeight,content.scrollHeight);
+        return{width,height,fits:width*zoom<=availableWidth};
+      };
+      let low=.00001,high=1.5;
+      if(measure(high).fits)low=high;
+      else for(let attempt=0;attempt<30;attempt++){const middle=(low+high)/2;if(measure(middle).fits)low=middle;else high=middle;}
+      const size=measure(low);
+      setView({x:left+(availableWidth-size.width*low)/2,y:top,zoom:low});
+    }finally{if(previous)content.style.setProperty('--canvas-scale',previous);else content.style.removeProperty('--canvas-scale');}
   };
   const move = (direction: number) => setSite(current => {
     if (!current) return current;
@@ -250,7 +290,7 @@ export function WebsiteCanvas({ background, projectId: pinnedProjectId, threadId
         {error && <div className="message error" role="alert">{error}</div>}
         {notice && <div className="message" role="status">{notice}<button aria-label="关闭提示" onClick={() => setNotice('')}>×</button></div>}
         <div ref={stage} className={`page-stage ${panMode ? 'pan-mode' : ''} ${dragging ? 'dragging' : ''}`} aria-label="可平移缩放的网页画布" aria-busy={loading}
-          style={{ '--canvas-scale': view.zoom, backgroundPosition: `${view.x}px ${view.y}px` } as CSSProperties}
+          style={{ '--canvas-scale': Math.max(view.zoom,.02), backgroundPosition: `${view.x}px ${view.y}px` } as CSSProperties}
           onPointerDown={event => {
             if (event.button !== 1 && !panMode && event.target !== event.currentTarget && !(event.target as HTMLElement).classList.contains('canvas-world')) return;
             if (event.button !== 0 && event.button !== 1) return;
@@ -262,7 +302,8 @@ export function WebsiteCanvas({ background, projectId: pinnedProjectId, threadId
           {background}
           {!site && loading && <div className="empty-state"><div className="canvas-loader" role="progressbar" aria-label="正在载入网站页面" /></div>}
           <div ref={world} className="canvas-world" data-columns={columns} style={{ gridTemplateColumns: `repeat(${columns}, max-content)`, transform: `translate(${view.x}px, ${view.y}px) scale(${view.zoom})` }}>
-            {site?.pages.map((page, index) => <PageFrame key={`${site.directory}/${page.path}`} page={page} storage={storage} index={index} width={widths[page.path] ?? width} selected={selected === page.path} select={setSelected} wheel={wheel} notify={setNotice} />)}
+            {assets.length>0&&<div className="asset-gallery" style={{gridTemplateColumns:`repeat(${columns},max-content)`}}>{assets.map(asset=><CanvasImage key={asset.id} asset={asset} notify={setNotice}/>)}</div>}
+            {site?.pages.map((page, index) => <PageFrame key={`${site.directory}/${page.path}`} page={page} storage={storage} index={index} width={widths[page.path] ?? width} selected={selected === page.path} select={setSelected} wheel={wheel} notify={setNotice} capture={panelId&&pinnedProjectId?captureCurrent:undefined} />)}
           </div>
           <nav className="tool-rail" aria-label="画布工具栏" onPointerDown={event => event.stopPropagation()}>
             <button aria-label="选择与交互" aria-pressed={!panMode} className={!panMode ? 'active' : ''} onClick={() => setPanMode(false)}><Icon name="select" /></button>
@@ -280,7 +321,7 @@ export function WebsiteCanvas({ background, projectId: pinnedProjectId, threadId
             <div className="popover-heading"><strong>{popover === 'width' ? '页面宽度' : popover === 'pages' ? `网站页面 · ${site?.pages.length ?? 0}` : '画布缩放'}</strong><button aria-label="关闭工具面板" onClick={() => setPopover(null)}>×</button></div>
             {popover === 'width' && <><label>统一宽度<select aria-label="统一宽度" value={width} onChange={event => { setWidth(Number(event.target.value)); setWidths({}); }}><option value="375">手机 · 375 px</option><option value="768">平板 · 768 px</option><option value="1280">桌面 · 1280 px</option><option value="1440">宽屏 · 1440 px</option></select></label><p className="selected-file">当前：{selected}</p><label>单页宽度<input aria-label="当前页面宽度" type="number" min="320" max="2560" value={widths[selected] ?? width} onChange={event => { const value = event.target.valueAsNumber; if (value >= 320 && value <= 2560) setWidths(current => ({ ...current, [selected]: value })); }} />px</label><div className="order-buttons"><button aria-label="页面前移" onClick={() => move(-1)}>← 前移</button><button aria-label="页面后移" onClick={() => move(1)}>后移 →</button></div></>}
             {popover === 'pages' && <>{site?.projectId?<><label>当前项目<select aria-label="当前项目" value={site.projectId} onChange={event=>void switchProject(event.target.value)}>{projectList.map(project=><option key={project.id} value={project.id}>{project.name}</option>)}</select></label><p className="resource-note">在会话中描述需求即可生成网站；指定页面可单独修改或重新生成。</p></>:<form onSubmit={event => { event.preventDefault(); void load(directory); }}><label htmlFor="site-directory">网站目录</label><input id="site-directory" value={directory} onChange={event => setDirectory(event.target.value)} /><button disabled={loading}>识别网站</button></form>}<div className="page-list">{site?.pages.map((page,index) => <button className={selected === page.path ? 'current' : ''} key={page.path} onClick={() => focusPage(page.path)}>{String(index+1).padStart(2,'0')}<span>{page.path}</span>{page.status&&page.status!=='ready'?<small>{page.status==='queued'?'待生成':page.status==='generating'?'生成中':'失败'}</small>:null}</button>)}</div>{site?.warnings.map(text => <p className="resource-note" key={text}>{text}</p>)}</>}
-            {popover === 'zoom' && <><div className="zoom-row"><button aria-label="缩小画布" onClick={() => changeZoom(clamp(view.zoom / 1.25, .02, 1.5))}>−</button><span>{Math.round(view.zoom*100)}%</span><button aria-label="放大画布" onClick={() => changeZoom(clamp(view.zoom*1.25,.02,1.5))}>+</button></div><input aria-label="缩放比例" type="range" min="2" max="150" value={view.zoom*100} onChange={event => changeZoom(Number(event.target.value)/100)} /><button className="full-button" onClick={fitAll}>所有页面适合画布</button></>}
+            {popover === 'zoom' && <><div className="zoom-row"><button aria-label="缩小画布" onClick={() => changeZoom(clamp(view.zoom / 1.25, .00001, 1.5))}>−</button><span>{view.zoom<.01?Number((view.zoom*100).toPrecision(2)):Math.round(view.zoom*100)}%</span><button aria-label="放大画布" onClick={() => changeZoom(clamp(view.zoom*1.25,.00001,1.5))}>+</button></div><input aria-label="缩放比例" type="range" min="0.001" max="150" step="0.001" value={view.zoom*100} onChange={event => changeZoom(Number(event.target.value)/100)} /><button className="full-button" onClick={fitAll}>所有页面适合画布</button></>}
           </div>}
           <div className="canvas-help">空白处拖动画布 · 滚轮平移 · Ctrl / ⌘ + 滚轮缩放 · 页面内直接交互</div>
         </div>

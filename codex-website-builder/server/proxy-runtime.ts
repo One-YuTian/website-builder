@@ -1,7 +1,9 @@
 // Injected into preview bytes only, before any website scripts execute.
 export const proxyRuntime=String.raw`<script>
 (()=>{
- const requests=new Map(),cached=new Map();let sequence=0;
+ const lockInteractions=root=>{const block=event=>{event.preventDefault();event.stopImmediatePropagation();};root.addEventListener('selectstart',block,true);root.addEventListener('contextmenu',block,true);};
+ lockInteractions(window);
+ const requests=new Map(),cached=new Map(),originalURLs=new Map();let sequence=0;
  const remote=value=>{try{const url=new URL(String(value),window.__websiteBuilderLocation);return /^https?:$/.test(url.protocol)&&(url.hostname!=='website-builder.invalid'||url.pathname.startsWith('/preview-assets/'))?url.href:null;}catch{return null;}};
  const request=(url,raw=false)=>{
   const key=(raw?'raw:':'asset:')+url;if(cached.has(key))return cached.get(key);
@@ -10,7 +12,38 @@ export const proxyRuntime=String.raw`<script>
  };
  addEventListener('message',event=>{if(event.source!==parent||event.data?.type!=='website-builder:resource-result')return;const pending=requests.get(event.data.id);if(!pending)return;clearTimeout(pending.timer);requests.delete(event.data.id);if(event.data.error)pending.reject(new Error(event.data.error));else pending.resolve(event.data);});
  const fail=error=>parent.postMessage({type:'website-builder:resource-error',error:String(error.message||error)},'*');
- const dataURI=async url=>(await request(url)).data;
+ const dataURI=async url=>{const value=(await request(url)).data;originalURLs.set(value,url);return value;};
+ addEventListener('message',async event=>{
+  if(event.source!==parent||event.data?.type!=='website-builder:capture')return;
+  const id=event.data.id;
+  try{
+   await window.websiteReady;
+   await Promise.all([...new Set([...document.querySelectorAll('*')].map(element=>element.localName).filter(name=>name.includes('-')))].map(name=>customElements.whenDefined(name)));
+   document.querySelectorAll('img').forEach(image=>image.loading='eager');
+   await Promise.all([...cached.values()]);await document.fonts.ready;
+   await Promise.all([...document.images].map(image=>image.decode()));
+   const clone=new DOMParser().parseFromString(document.documentElement.outerHTML,'text/html');
+   const mirror=(source,target)=>{
+    const originals=[...source.querySelectorAll('*')],copies=[...target.querySelectorAll('*')];
+    originals.forEach((element,index)=>{const copy=copies[index];if(!copy)return;
+     if(element instanceof HTMLInputElement){copy.setAttribute('value',element.type==='password'?'•'.repeat(element.value.length):element.value);element.checked?copy.setAttribute('checked',''):copy.removeAttribute('checked');}
+     if(element instanceof HTMLTextAreaElement)copy.textContent=element.value;
+     if(element instanceof HTMLSelectElement)[...copy.options].forEach((option,i)=>element.options[i].selected?option.setAttribute('selected',''):option.removeAttribute('selected'));
+     if(element instanceof HTMLDetailsElement)element.open?copy.setAttribute('open',''):copy.removeAttribute('open');
+     if(element.tagName==='STYLE'){try{if(element.sheet)copy.textContent=[...element.sheet.cssRules].map(rule=>rule.cssText).join('\n');}catch{}}
+     if(element.shadowRoot){const fragment=new DOMParser().parseFromString('<body>'+element.shadowRoot.innerHTML+'</body>','text/html');mirror(element.shadowRoot,fragment.body);const template=clone.createElement('template');template.setAttribute('shadowrootmode','open');template.content.append(...fragment.body.childNodes);copy.prepend(template);}
+     if(element instanceof HTMLCanvasElement){const image=clone.createElement('img');for(const attr of copy.attributes)image.setAttribute(attr.name,attr.value);image.src=element.toDataURL('image/png');image.width=element.width;image.height=element.height;copy.replaceWith(image);}
+     for(const attribute of [...copy.attributes]){
+      if(/^on/i.test(attribute.name))copy.removeAttribute(attribute.name);
+      else {let value=attribute.value;for(const [data,url]of originalURLs)if(value.includes(data))value=value.replaceAll(data,url);copy.setAttribute(attribute.name,value);}
+     }
+    });
+   };
+   mirror(document,clone);
+   clone.querySelectorAll('script,iframe,object,embed,link[rel="icon"],meta[http-equiv="refresh"]').forEach(element=>element.remove());
+   parent.postMessage({type:'website-builder:capture-result',id,html:'<!doctype html>'+clone.documentElement.outerHTML},'*');
+  }catch(error){parent.postMessage({type:'website-builder:capture-result',id,error:String(error.message||error)},'*');}
+ });
  window.__websiteBuilderImport=async url=>import(await dataURI(remote(url)||url));
  const nativeFetch=window.fetch.bind(window);
  window.fetch=async(input,options={})=>{
@@ -67,6 +100,6 @@ export const proxyRuntime=String.raw`<script>
  const observe=root=>new MutationObserver(records=>{for(const record of records){scan(record.target);if(record.type!=='attributes')for(const node of record.addedNodes){scan(node);if(node.querySelectorAll)node.querySelectorAll('*').forEach(scan);}}}).observe(root,{subtree:true,childList:true,attributes:true,attributeFilter:['src','srcset','href','poster','data','style']});
  observe(document.documentElement);
  const attach=Element.prototype.attachShadow;
- Element.prototype.attachShadow=function(options){const root=attach.call(this,options);observe(root);return root;};
+ Element.prototype.attachShadow=function(options){const root=attach.call(this,options);observe(root);lockInteractions(root);return root;};
  document.querySelectorAll('*').forEach(scan);
 })();</script>`;
