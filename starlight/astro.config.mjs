@@ -82,6 +82,10 @@ export default defineConfig({
               label: 'Footer',
               autogenerate: { directory: 'components/footer' },
             },
+            {
+              label: 'Toast',
+              autogenerate: { directory: 'components/toast' },
+            },
           ],
         },
         {
@@ -122,6 +126,10 @@ export default defineConfig({
           label: 'PAGES',
           collapsed: false,
           items: [
+            {
+              label: 'Home',
+              autogenerate: { directory: 'pages/home' },
+            },
             {
               label: 'Shop',
               autogenerate: { directory: 'pages/shop' },

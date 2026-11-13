@@ -157,6 +157,8 @@ for (const entry of catalog) {
   else if (entry.id.startsWith('detail-')) previewHeight = '1200px';
   else if (entry.id.startsWith('about-')) previewHeight = '850px';
   else if (entry.id.startsWith('contact-')) previewHeight = '800px';
+  else if (entry.id.startsWith('toast-')) previewHeight = '450px';
+  else if (entry.id.startsWith('home-')) previewHeight = '1200px';
 
   // --- MDX Document (Interactive preview + Bilingual English & Chinese tabs + Actual Annotated Code) ---
   let mdx = `---
@@ -360,9 +362,10 @@ ${markupJs.trim()}
 
 fs.writeFileSync(path.join(contentDocsDir, 'guides/theme.mdx'), themeMdx, 'utf8');
 
-// 7. Synchronize LLM templates to local agent skill templates (excluding codex-website-builder per user request)
+// 7. Synchronize LLM templates to local agent skill templates
 const targetSkillDirs = [
-  path.resolve(rootDir, '.agents/skills/website-builder/templates')
+  path.resolve(rootDir, '.agents/skills/website-builder/templates'),
+  path.resolve(rootDir, 'codex-website-builder/skills/website-builder/templates')
 ];
 
 for (const targetDir of targetSkillDirs) {

@@ -27,6 +27,64 @@ async function runtimeFor(entry, variant) {
     definitions.push([entry.id, implName, `src/components/${entry.id}/index.js`]);
   }
 
+  let extraBlockDefs = '';
+  if (entry.id.startsWith('home-')) {
+    definitions.push(['card-01', 'Card', 'src/components/card-01/index.js']);
+    definitions.push(['flashcard-01', 'FlashCard', 'src/components/flashcard-01/index.js']);
+
+    try {
+      const homeTpl = await fs.readFile(new URL(`../src/components/${entry.id}/template.html`, import.meta.url), 'utf8');
+      const childTags = [...new Set([...homeTpl.matchAll(/<([a-z0-9]+-[0-9]+)\b/g)].map(m => m[1]))];
+
+      for (const tag of childTags) {
+        const indexUrl = new URL(`../src/components/${tag}/index.js`, import.meta.url);
+        const tplUrl = new URL(`../src/components/${tag}/template.html`, import.meta.url);
+
+        let isClass = false;
+        let compJs = '';
+        try {
+          compJs = await fs.readFile(indexUrl, 'utf8');
+          isClass = compJs.includes('extends HTMLElement');
+        } catch(e) {}
+
+        if (isClass) {
+          const exportedName = tag.startsWith('header-') ? 'Header'
+            : tag.startsWith('footer-') ? 'Footer'
+            : tag.startsWith('card-') ? 'Card'
+            : tag.startsWith('flashcard-') ? 'FlashCard'
+            : tag.split('-')[0].charAt(0).toUpperCase() + tag.split('-')[0].slice(1);
+          const localName = `${exportedName}_${tag.replace('-', '_')}`;
+          definitions.push([tag, localName, `src/components/${tag}/index.js`, exportedName]);
+        } else {
+          let tpl = '';
+          try { tpl = await fs.readFile(tplUrl, 'utf8'); } catch(e) {}
+          extraBlockDefs += `
+if (!customElements.get('${tag}')) {
+  customElements.define('${tag}', class extends HTMLElement {
+    connectedCallback() {
+      this.classList.add('block', 'w-full', 'min-w-0');
+      if (!this.firstElementChild) {
+        this.innerHTML = ${JSON.stringify(tpl)};
+        Promise.all([initializeResources(), loadJQuery(), loadSwiper()]).then(([res, $, Swiper]) => {
+          window.$ = $;
+          window.jQuery = $;
+          if (Swiper) window.Swiper = Swiper;
+          try {
+            ${compJs}
+          } catch (err) {
+            console.error('Error running block script for ${tag}:', err);
+          }
+        });
+      }
+    }
+  });
+}
+`;
+        }
+      }
+    } catch(e) {}
+  }
+
   let blockScript = '';
   if (isBlock) {
     blockScript = await fs.readFile(new URL(`../src/components/${entry.id}/index.js`, import.meta.url), 'utf8');
@@ -34,14 +92,16 @@ async function runtimeFor(entry, variant) {
 
   // Deduplicate imports by name
   const uniqueImports = new Map();
-  for (const [, name, path] of definitions) {
-    if (!uniqueImports.has(name)) {
-      uniqueImports.set(name, `import { ${name} } from ${JSON.stringify(modulePath(path))};`);
+  for (const [, localName, path, exportedName] of definitions) {
+    if (!uniqueImports.has(localName)) {
+      const exp = exportedName || localName;
+      const specifier = exp === localName ? localName : `${exp} as ${localName}`;
+      uniqueImports.set(localName, `import { ${specifier} } from ${JSON.stringify(modulePath(path))};`);
     }
   }
   const imports = Array.from(uniqueImports.values()).join('\n');
   const customElementsDef = definitions.map(([tag, name]) => `[${JSON.stringify(tag)},${name}]`).join(',');
-  const source = `${imports}\nimport { initializeResources, loadJQuery, loadSwiper } from ${JSON.stringify(modulePath('src/runtime/resources.js'))};\nfor (const [tag, implementation] of [${customElementsDef}]) if (!customElements.get(tag)) customElements.define(tag, implementation);\nPromise.all([initializeResources(), loadJQuery(), loadSwiper()]).then(([result, $, Swiper]) => {\n  document.documentElement.dataset.exampleReady = String(result.ready);\n  const eventKey = Symbol.for('components.demo.events');\n  if (!document[eventKey]) {\n    document[eventKey] = true;\n    $(document).on('product-navigate footer-navigate header-navigate carousel-navigate', function(event) { console.log(event.originalEvent.detail); });\n  }\n  ${blockScript}\n}).catch(() => { document.documentElement.dataset.exampleReady = 'false'; });`;
+  const source = `${imports}\nimport { initializeResources, loadJQuery, loadSwiper } from ${JSON.stringify(modulePath('src/runtime/resources.js'))};\nfor (const [tag, implementation] of [${customElementsDef}]) if (!customElements.get(tag)) customElements.define(tag, implementation);\n${extraBlockDefs}\nPromise.all([initializeResources(), loadJQuery(), loadSwiper()]).then(([result, $, Swiper]) => {\n  window.$ = $;\n  window.jQuery = $;\n  if (Swiper) window.Swiper = Swiper;\n  document.documentElement.dataset.exampleReady = String(result.ready);\n  const eventKey = Symbol.for('components.demo.events');\n  if (!document[eventKey]) {\n    document[eventKey] = true;\n    $(document).on('product-navigate footer-navigate header-navigate carousel-navigate', function(event) { console.log(event.originalEvent.detail); });\n  }\n  ${blockScript}\n}).catch(() => { document.documentElement.dataset.exampleReady = 'false'; });`;
 
   const result = await build({ configFile: false, root, publicDir: false, logLevel: 'silent', plugins: [{ name: 'inline-component-example', resolveId(id) { if (id.endsWith('component-example')) return '\0component-example'; }, load(id) { if (id === '\0component-example') return source; } }], build: { write: false, minify: false, target: 'es2022', lib: { entry: 'component-example', name: 'ComponentExample', formats: ['iife'] } } });
   return (Array.isArray(result) ? result : [result]).flatMap(item => item.output).find(item => item.type === 'chunk').code;
