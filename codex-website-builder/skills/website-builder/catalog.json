@@ -558,5 +558,166 @@
     "category": "ordersuccess",
     "file": "pages/ordersuccess/ordersuccess-01.txt",
     "summary": "OrderSuccess-01: Native Web Component specification, annotated regions, and responsive template."
+  },
+  {
+    "id": "toast-01",
+    "group": "components",
+    "category": "toast",
+    "file": "components/toast/toast-01.txt",
+    "summary": "Toast-01: Native Web Component specification, annotated regions, and responsive template."
+  },
+  {
+    "id": "home-01",
+    "group": "pages",
+    "category": "home",
+    "file": "pages/home/home-01.txt",
+    "summary": "Home-01: Native Web Component specification, annotated regions, and responsive template."
+  },
+  {
+    "id": "home-02",
+    "group": "pages",
+    "category": "home",
+    "file": "pages/home/home-02.txt",
+    "summary": "Home-02: Native Web Component specification, annotated regions, and responsive template."
+  },
+  {
+    "id": "home-03",
+    "group": "pages",
+    "category": "home",
+    "file": "pages/home/home-03.txt",
+    "summary": "Home-03: Native Web Component specification, annotated regions, and responsive template."
+  },
+  {
+    "id": "home-04",
+    "group": "pages",
+    "category": "home",
+    "file": "pages/home/home-04.txt",
+    "summary": "Home-04: Native Web Component specification, annotated regions, and responsive template."
+  },
+  {
+    "id": "home-05",
+    "group": "pages",
+    "category": "home",
+    "file": "pages/home/home-05.txt",
+    "summary": "Home-05: Native Web Component specification, annotated regions, and responsive template."
+  },
+  {
+    "id": "home-06",
+    "group": "pages",
+    "category": "home",
+    "file": "pages/home/home-06.txt",
+    "summary": "Home-06: Native Web Component specification, annotated regions, and responsive template."
+  },
+  {
+    "id": "home-07",
+    "group": "pages",
+    "category": "home",
+    "file": "pages/home/home-07.txt",
+    "summary": "Home-07: Native Web Component specification, annotated regions, and responsive template."
+  },
+  {
+    "id": "home-08",
+    "group": "pages",
+    "category": "home",
+    "file": "pages/home/home-08.txt",
+    "summary": "Home-08: Native Web Component specification, annotated regions, and responsive template."
+  },
+  {
+    "id": "home-09",
+    "group": "pages",
+    "category": "home",
+    "file": "pages/home/home-09.txt",
+    "summary": "Home-09: Native Web Component specification, annotated regions, and responsive template."
+  },
+  {
+    "id": "home-10",
+    "group": "pages",
+    "category": "home",
+    "file": "pages/home/home-10.txt",
+    "summary": "Home-10: Native Web Component specification, annotated regions, and responsive template."
+  },
+  {
+    "id": "home-11",
+    "group": "pages",
+    "category": "home",
+    "file": "pages/home/home-11.txt",
+    "summary": "Home-11: Native Web Component specification, annotated regions, and responsive template."
+  },
+  {
+    "id": "home-12",
+    "group": "pages",
+    "category": "home",
+    "file": "pages/home/home-12.txt",
+    "summary": "Home-12: Native Web Component specification, annotated regions, and responsive template."
+  },
+  {
+    "id": "home-13",
+    "group": "pages",
+    "category": "home",
+    "file": "pages/home/home-13.txt",
+    "summary": "Home-13: Native Web Component specification, annotated regions, and responsive template."
+  },
+  {
+    "id": "home-16",
+    "group": "pages",
+    "category": "home",
+    "file": "pages/home/home-16.txt",
+    "summary": "Home-16: Native Web Component specification, annotated regions, and responsive template."
+  },
+  {
+    "id": "home-17",
+    "group": "pages",
+    "category": "home",
+    "file": "pages/home/home-17.txt",
+    "summary": "Home-17: Native Web Component specification, annotated regions, and responsive template."
+  },
+  {
+    "id": "home-19",
+    "group": "pages",
+    "category": "home",
+    "file": "pages/home/home-19.txt",
+    "summary": "Home-19: Native Web Component specification, annotated regions, and responsive template."
+  },
+  {
+    "id": "home-20",
+    "group": "pages",
+    "category": "home",
+    "file": "pages/home/home-20.txt",
+    "summary": "Home-20: Native Web Component specification, annotated regions, and responsive template."
+  },
+  {
+    "id": "home-21",
+    "group": "pages",
+    "category": "home",
+    "file": "pages/home/home-21.txt",
+    "summary": "Home-21: Native Web Component specification, annotated regions, and responsive template."
+  },
+  {
+    "id": "home-22",
+    "group": "pages",
+    "category": "home",
+    "file": "pages/home/home-22.txt",
+    "summary": "Home-22: Native Web Component specification, annotated regions, and responsive template."
+  },
+  {
+    "id": "home-23",
+    "group": "pages",
+    "category": "home",
+    "file": "pages/home/home-23.txt",
+    "summary": "Home-23: Native Web Component specification, annotated regions, and responsive template."
+  },
+  {
+    "id": "home-25",
+    "group": "pages",
+    "category": "home",
+    "file": "pages/home/home-25.txt",
+    "summary": "Home-25: Native Web Component specification, annotated regions, and responsive template."
+  },
+  {
+    "id": "home-26",
+    "group": "pages",
+    "category": "home",
+    "file": "pages/home/home-26.txt",
+    "summary": "Home-26: Native Web Component specification, annotated regions, and responsive template."
   }
 ]

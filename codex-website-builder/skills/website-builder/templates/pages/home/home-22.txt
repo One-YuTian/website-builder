@@ -1,0 +1,63 @@
+## Overview
+
+Collectible toys and building blocks homepage assembled from collectible toys navigation header, limited model hero carousel, IP series category tiles, mechanical brick kits grid, building contest promo banner, figures & blind boxes grid, and footer.
+
+### Component Chain
+`home-22: header-02 -> carousel-01 -> categories-06 -> productlist-02 -> promotion-01 -> productlist-01 -> footer-02`
+
+### Included Components
+| Component | Custom Element | Role & Function |
+| --- | --- | --- |
+| `Header-02` | `<header-02>` | Collectible toys navigation header with announcement bar and shortcuts |
+| `Carousel-01` | `<carousel-01>` | Hero responsive banner carousel for limited-edition figures and bricks |
+| `Categories-06` | `<categories-06>` | Collectible IP and theme series category tiles (mecha, architecture, supercar) |
+| `ProductList-02` | `<productlist-02>` | Mechanical power and advanced building block kits grid |
+| `Promotion-01` | `<promotion-01>` | Builders festival and speed-building contest promotional banner |
+| `ProductList-01` | `<productlist-01>` | Figures, blind boxes, and collectible accessories showcase grid |
+| `Footer-02` | `<footer-02>` | Toy collectors community and missing-part replacement warranty footer |
+
+### Dimensions & Responsiveness
+- Aligned to global content width (`w-full max-w-content mx-auto px-4 lg:px-6`).
+- Mobile: Fully responsive stacked layout with native touch carousel gestures.
+
+## Code
+
+### HTML
+
+```html
+<div class="home-page w-full min-h-screen bg-surface font-sans text-content flex flex-col">
+  <!-- Component: Header-02 - Collectible toys navigation header with announcement bar and shortcuts -->
+  <header-02 class="block w-full sticky top-0 z-40"></header-02>
+
+  <main class="flex-1 w-full space-y-8 sm:space-y-12 pb-12">
+    <!-- Component: Carousel-01 - Hero responsive banner carousel for limited-edition figures and bricks -->
+    <carousel-01 class="block w-full"></carousel-01>
+
+    <!-- Component: Categories-06 - Collectible IP and theme series category tiles (mecha, architecture, supercar) -->
+    <categories-06 class="block w-full"></categories-06>
+
+    <!-- Component: ProductList-02 - Mechanical power and advanced building block kits grid -->
+    <productlist-02 class="block w-full"></productlist-02>
+
+    <!-- Component: Promotion-01 - Builders festival and speed-building contest promotional banner -->
+    <promotion-01 class="block w-full"></promotion-01>
+
+    <!-- Component: ProductList-01 - Figures, blind boxes, and collectible accessories showcase grid -->
+    <productlist-01 class="block w-full"></productlist-01>
+  </main>
+
+  <!-- Component: Footer-02 - Toy collectors community and missing-part replacement warranty footer -->
+  <footer-02 class="block w-full"></footer-02>
+</div>
+```
+
+### JavaScript
+
+```javascript
+document.addEventListener('DOMContentLoaded', function() {
+  // Page-level event coordination for Home-22
+  document.addEventListener('product-navigate', function(e) {
+    console.log('Home-22 Product Navigation:', e.detail);
+  });
+});
+```

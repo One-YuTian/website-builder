@@ -1,0 +1,409 @@
+## Overview
+
+Global toast notification component for website messaging, supporting success, error, warning, and info feedback types. Provides auto-dismiss timers, pause-on-hover/focus, manual dismiss, and a global `window.Toast` caller facade.
+
+### Regions
+Functional regions are annotated directly in the component code implementation via English comments.
+
+### Dimensions & Responsiveness
+- Desktop: Floated at top-right corner with max-width 384px (`max-w-sm`), stacking up to 4 concurrent cards.
+- Mobile: Fluid width `calc(100vw - 2rem)` with safe screen gutters.
+
+### Attributes & Props
+| Attribute | Description | Type | Default |
+| --- | --- | --- | --- |
+| `position` | Fixed overlay stack position | `string` | `'top-right'` |
+| `max-toasts` | Maximum number of simultaneous toast cards | `number` | `4` |
+
+### Global API (window.Toast)
+- `Toast.show(options | message)`: Triggers a custom notification and returns its unique ID.
+- `Toast.success(message, options)`: Dispatches a success status toast.
+- `Toast.error(message, options)`: Dispatches an error alert toast.
+- `Toast.warning(message, options)`: Dispatches a warning status toast.
+- `Toast.info(message, options)`: Dispatches an info status toast.
+- `Toast.dismiss(id)`: Immediately dismisses the specified toast item.
+- `Toast.clear()`: Clears all active toast notifications.
+
+### Events
+- `toast-show`: Dispatched when a toast card is added and rendered.
+- `toast-dismiss`: Dispatched when a toast card is dismissed and removed.
+
+## Code
+
+### HTML
+
+```html
+<!-- Region: Toast Preview Container - Interactive showcase with trigger controls and notification stack -->
+<div class="toast-preview-container w-full min-h-[380px] p-6 sm:p-8 bg-surface rounded-2xl border border-outline/30 flex flex-col justify-between relative overflow-hidden font-sans text-content">
+  <!-- Region: Trigger Controls - Quick action buttons to test different toast types in interactive preview -->
+  <div data-region="trigger-controls" class="space-y-4">
+    <div class="space-y-1.5">
+      <span class="block h-[1.25em] w-48 rounded-sm bg-accent text-xl font-bold"></span>
+      <span class="block h-[0.75em] w-72 rounded-sm bg-accent"></span>
+    </div>
+
+    <div class="flex flex-wrap gap-2.5 pt-2">
+      <button type="button" data-toast-trigger="success" class="px-4 py-2 rounded-lg bg-emerald-600 text-white text-xs font-semibold hover:bg-emerald-700 transition-colors cursor-pointer shadow-xs">
+        <span class="block h-[0.75em] w-14 rounded-xs bg-white/90 mx-auto"></span>
+      </button>
+      <button type="button" data-toast-trigger="error" class="px-4 py-2 rounded-lg bg-rose-600 text-white text-xs font-semibold hover:bg-rose-700 transition-colors cursor-pointer shadow-xs">
+        <span class="block h-[0.75em] w-12 rounded-xs bg-white/90 mx-auto"></span>
+      </button>
+      <button type="button" data-toast-trigger="warning" class="px-4 py-2 rounded-lg bg-amber-600 text-white text-xs font-semibold hover:bg-amber-700 transition-colors cursor-pointer shadow-xs">
+        <span class="block h-[0.75em] w-14 rounded-xs bg-white/90 mx-auto"></span>
+      </button>
+      <button type="button" data-toast-trigger="info" class="px-4 py-2 rounded-lg bg-primary text-white text-xs font-semibold hover:opacity-90 transition-opacity cursor-pointer shadow-xs">
+        <span class="block h-[0.75em] w-10 rounded-xs bg-white/90 mx-auto"></span>
+      </button>
+    </div>
+  </div>
+
+  <!-- Region: Toast Stack - Fixed overlay container hosting stacked notification cards -->
+  <div data-region="toast-stack" class="relative sm:absolute sm:top-6 sm:right-6 w-full max-w-sm space-y-3 pointer-events-none mt-6 sm:mt-0">
+    <!-- Region: Toast Notification Card - Success feedback notification -->
+    <div data-region="toast-card" data-type="success" class="pointer-events-auto flex items-start gap-3 p-4 rounded-xl bg-surface border border-emerald-500/30 shadow-lg shadow-emerald-500/5 transition-all">
+      <div class="size-6 rounded-full bg-emerald-500/15 text-emerald-600 flex items-center justify-center shrink-0 mt-0.5">
+        <svg class="size-3.5" fill="none" stroke="currentColor" stroke-width="2.5" viewBox="0 0 24 24" aria-hidden="true">
+          <path stroke-linecap="round" stroke-linejoin="round" d="M4.5 12.75l6 6 9-13.5"></path>
+        </svg>
+      </div>
+      <div class="flex-1 min-w-0 space-y-1">
+        <span class="block h-[0.85em] w-24 rounded-xs bg-content/85 font-semibold"></span>
+        <span class="block h-[0.7em] w-48 rounded-xs bg-muted/60"></span>
+      </div>
+      <button type="button" aria-label="Dismiss notification" class="text-muted hover:text-content transition-colors cursor-pointer p-0.5 rounded-sm shrink-0">
+        <span class="text-base leading-none">&times;</span>
+      </button>
+    </div>
+
+    <!-- Region: Toast Notification Card - Information announcement notification -->
+    <div data-region="toast-card" data-type="info" class="pointer-events-auto flex items-start gap-3 p-4 rounded-xl bg-surface border border-outline/40 shadow-lg transition-all">
+      <div class="size-6 rounded-full bg-primary/15 text-primary flex items-center justify-center shrink-0 mt-0.5">
+        <svg class="size-3.5" fill="none" stroke="currentColor" stroke-width="2.5" viewBox="0 0 24 24" aria-hidden="true">
+          <path stroke-linecap="round" stroke-linejoin="round" d="M11.25 11.25l.041-.02a.75.75 0 011.063.852l-.708 2.836a.75.75 0 001.063.853l.041-.021M21 12a9 9 0 11-18 0 9 9 0 0118 0zm-9-3.75h.008v.008H12V8.25z"></path>
+        </svg>
+      </div>
+      <div class="flex-1 min-w-0 space-y-1">
+        <span class="block h-[0.85em] w-20 rounded-xs bg-content/85 font-semibold"></span>
+        <span class="block h-[0.7em] w-40 rounded-xs bg-muted/60"></span>
+      </div>
+      <button type="button" aria-label="Dismiss notification" class="text-muted hover:text-content transition-colors cursor-pointer p-0.5 rounded-sm shrink-0">
+        <span class="text-base leading-none">&times;</span>
+      </button>
+    </div>
+  </div>
+</div>
+```
+
+### JavaScript
+
+```javascript
+class Toast extends HTMLElement {
+  static observedAttributes = ['position', 'max-toasts'];
+
+  constructor() {
+    super();
+    this.items = [];
+    this.timers = new Map();
+    this.sequence = 0;
+    this._bound = false;
+  }
+
+  get position() { return this.getAttribute('position') || 'top-right'; }
+  set position(val) { this.setAttribute('position', val); }
+
+  get maxToasts() { return Number(this.getAttribute('max-toasts')) || 4; }
+  set maxToasts(val) { this.setAttribute('max-toasts', String(val)); }
+
+  connectedCallback() {
+    this.classList.add('block', 'w-full', 'min-w-0');
+    this.render();
+    this.bindEvents();
+    this.registerGlobalFacade();
+  }
+
+  disconnectedCallback() {
+    this.timers.forEach(timer => clearTimeout(timer));
+    this.timers.clear();
+    if (window.Toast && window.Toast._instance === this) {
+      delete window.Toast._instance;
+    }
+  }
+
+  escapeHtml(val) {
+    return String(val || '').replace(/[&<>"']/g, char => ({
+      '&': '&amp;',
+      '<': '&lt;',
+      '>': '&gt;',
+      '"': '&quot;',
+      "'": '&#39;'
+    })[char]);
+  }
+
+  getTypeConfig(type) {
+    switch (type) {
+      case 'success':
+        return {
+          icon: '<svg class="size-4" fill="none" stroke="currentColor" stroke-width="2.5" viewBox="0 0 24 24" aria-hidden="true"><path stroke-linecap="round" stroke-linejoin="round" d="M4.5 12.75l6 6 9-13.5"></path></svg>',
+          badgeClass: 'bg-emerald-500/15 text-emerald-600',
+          borderClass: 'border-emerald-500/30 shadow-emerald-500/5',
+          ariaLive: 'polite',
+          role: 'status'
+        };
+      case 'error':
+        return {
+          icon: '<svg class="size-4" fill="none" stroke="currentColor" stroke-width="2.5" viewBox="0 0 24 24" aria-hidden="true"><path stroke-linecap="round" stroke-linejoin="round" d="M6 18L18 6M6 6l12 12"></path></svg>',
+          badgeClass: 'bg-rose-500/15 text-rose-600',
+          borderClass: 'border-rose-500/30 shadow-rose-500/5',
+          ariaLive: 'assertive',
+          role: 'alert'
+        };
+      case 'warning':
+        return {
+          icon: '<svg class="size-4" fill="none" stroke="currentColor" stroke-width="2.5" viewBox="0 0 24 24" aria-hidden="true"><path stroke-linecap="round" stroke-linejoin="round" d="M12 9v3.75m-9.303 3.376c-.866 1.5.217 3.374 1.948 3.374h14.71c1.73 0 2.813-1.874 1.948-3.374L13.949 3.378c-.866-1.5-3.032-1.5-3.898 0L2.697 16.126zM12 15.75h.007v.008H12v-.008z"></path></svg>',
+          badgeClass: 'bg-amber-500/15 text-amber-600',
+          borderClass: 'border-amber-500/30 shadow-amber-500/5',
+          ariaLive: 'polite',
+          role: 'status'
+        };
+      default:
+        return {
+          icon: '<svg class="size-4" fill="none" stroke="currentColor" stroke-width="2.5" viewBox="0 0 24 24" aria-hidden="true"><path stroke-linecap="round" stroke-linejoin="round" d="M11.25 11.25l.041-.02a.75.75 0 011.063.852l-.708 2.836a.75.75 0 001.063.853l.041-.021M21 12a9 9 0 11-18 0 9 9 0 0118 0zm-9-3.75h.008v.008H12V8.25z"></path></svg>',
+          badgeClass: 'bg-primary/15 text-primary',
+          borderClass: 'border-outline/40 shadow-xs',
+          ariaLive: 'polite',
+          role: 'status'
+        };
+    }
+  }
+
+  show(options = {}) {
+    if (typeof options === 'string') options = { message: options };
+    const id = options.id || `toast-${++this.sequence}`;
+    const type = options.type || 'info';
+    const duration = options.duration !== undefined ? Number(options.duration) : 4000;
+    const title = options.title || '';
+    const message = options.message || '';
+
+    const item = { id, type, title, message, duration };
+
+    // Evict oldest if exceeding max-toasts
+    if (this.items.length >= this.maxToasts) {
+      this.dismiss(this.items[0].id);
+    }
+
+    this.items.push(item);
+    this.renderLiveStack();
+
+    if (duration > 0) {
+      this.armTimer(item);
+    }
+
+    this.dispatchEvent(new CustomEvent('toast-show', {
+      detail: item,
+      bubbles: true,
+      composed: true
+    }));
+
+    return id;
+  }
+
+  success(message, options = {}) { return this.show({ ...options, message, type: 'success' }); }
+  error(message, options = {}) { return this.show({ ...options, message, type: 'error' }); }
+  warning(message, options = {}) { return this.show({ ...options, message, type: 'warning' }); }
+  info(message, options = {}) { return this.show({ ...options, message, type: 'info' }); }
+
+  armTimer(item) {
+    this.clearTimer(item.id);
+    this.timers.set(item.id, setTimeout(() => {
+      this.dismiss(item.id);
+    }, item.duration));
+  }
+
+  clearTimer(id) {
+    if (this.timers.has(id)) {
+      clearTimeout(this.timers.get(id));
+      this.timers.delete(id);
+    }
+  }
+
+  dismiss(id) {
+    this.clearTimer(id);
+    this.items = this.items.filter(item => item.id !== id);
+    this.renderLiveStack();
+    this.dispatchEvent(new CustomEvent('toast-dismiss', {
+      detail: { id },
+      bubbles: true,
+      composed: true
+    }));
+  }
+
+  clear() {
+    this.timers.forEach(timer => clearTimeout(timer));
+    this.timers.clear();
+    this.items = [];
+    this.renderLiveStack();
+  }
+
+  renderLiveStack() {
+    const stack = this.querySelector('[data-region="live-toast-stack"]');
+    if (!stack) return;
+
+    if (!this.items.length) {
+      stack.innerHTML = '';
+      return;
+    }
+
+    stack.innerHTML = this.items.map(item => {
+      const config = this.getTypeConfig(item.type);
+      return `
+        <div data-toast-item="${this.escapeHtml(item.id)}"
+             data-type="${this.escapeHtml(item.type)}"
+             role="${config.role}"
+             aria-live="${config.ariaLive}"
+             aria-atomic="true"
+             class="pointer-events-auto flex items-start gap-3 p-4 rounded-xl bg-surface border ${config.borderClass} shadow-xl transition-all duration-300 transform translate-y-0 opacity-100">
+          <div class="size-6 rounded-full ${config.badgeClass} flex items-center justify-center shrink-0 mt-0.5">
+            ${config.icon}
+          </div>
+          <div class="flex-1 min-w-0 space-y-1">
+            ${item.title ? `<div class="text-sm font-semibold text-content leading-tight break-words">${this.escapeHtml(item.title)}</div>` : ''}
+            ${item.message ? `<div class="text-xs text-muted leading-relaxed break-words">${this.escapeHtml(item.message)}</div>` : '<div class="space-y-1 pt-0.5"><span class="block h-[0.7em] w-3/4 rounded-xs bg-muted/60"></span></div>'}
+          </div>
+          <button type="button" aria-label="Dismiss notification" data-toast-close="${this.escapeHtml(item.id)}" class="text-muted hover:text-content transition-colors cursor-pointer p-0.5 rounded-sm shrink-0">
+            <span class="text-base leading-none">&times;</span>
+          </button>
+        </div>
+      `;
+    }).join('');
+  }
+
+  bindEvents() {
+    this.addEventListener('click', (e) => {
+      // Handle close button
+      const closeBtn = e.target.closest('[data-toast-close]');
+      if (closeBtn && this.contains(closeBtn)) {
+        const id = closeBtn.getAttribute('data-toast-close');
+        this.dismiss(id);
+        return;
+      }
+
+      // Handle interactive demo trigger buttons
+      const trigger = e.target.closest('[data-toast-trigger]');
+      if (trigger && this.contains(trigger)) {
+        const type = trigger.getAttribute('data-toast-trigger');
+        const samples = {
+          success: { title: 'Action Completed', message: 'Item successfully saved to your preferences.' },
+          error: { title: 'Network Disruption', message: 'Unable to process checkout. Please try again.' },
+          warning: { title: 'Inventory Limited', message: 'Only 2 units remaining in current stock.' },
+          info: { title: 'Session Notice', message: 'New promotion discount automatically applied.' }
+        };
+        const sample = samples[type] || samples.info;
+        this.show({ type, title: sample.title, message: sample.message, duration: 4000 });
+      }
+    });
+
+    // Pause timers on hover / focus
+    this.addEventListener('mouseover', (e) => {
+      const row = e.target.closest('[data-toast-item]');
+      if (row && this.contains(row) && !row.contains(e.relatedTarget)) {
+        this.clearTimer(row.dataset.toastItem);
+      }
+    });
+
+    this.addEventListener('focusin', (e) => {
+      const row = e.target.closest('[data-toast-item]');
+      if (row && this.contains(row)) {
+        this.clearTimer(row.dataset.toastItem);
+      }
+    });
+
+    // Resume timers on mouseout / blur
+    this.addEventListener('mouseout', (e) => {
+      const row = e.target.closest('[data-toast-item]');
+      if (row && this.contains(row) && !row.contains(e.relatedTarget)) {
+        const item = this.items.find(i => i.id === row.dataset.toastItem);
+        if (item && item.duration > 0) this.armTimer(item);
+      }
+    });
+
+    this.addEventListener('focusout', (e) => {
+      const row = e.target.closest('[data-toast-item]');
+      if (row && this.contains(row) && !row.contains(e.relatedTarget)) {
+        const item = this.items.find(i => i.id === row.dataset.toastItem);
+        if (item && item.duration > 0) this.armTimer(item);
+      }
+    });
+  }
+
+  registerGlobalFacade() {
+    window.Toast = {
+      _instance: this,
+      show: (message, options) => {
+        if (typeof message === 'object') return this.show(message);
+        return this.show({ ...options, message });
+      },
+      success: (message, options) => this.success(message, options),
+      error: (message, options) => this.error(message, options),
+      warning: (message, options) => this.warning(message, options),
+      info: (message, options) => this.info(message, options),
+      dismiss: (id) => this.dismiss(id),
+      clear: () => this.clear()
+    };
+  }
+
+  render() {
+    this.innerHTML = `
+      <section class="toast-wrapper w-full p-6 sm:p-8 bg-surface rounded-2xl border border-outline/30 relative font-sans text-content">
+        <!-- Region: Trigger Controls - Interactive preview buttons -->
+        <div data-region="trigger-controls" class="space-y-4 mb-6">
+          <div class="space-y-1">
+            <span class="block h-[1.25em] w-48 rounded-sm bg-accent text-xl font-bold"></span>
+            <span class="block h-[0.75em] w-72 rounded-sm bg-accent"></span>
+          </div>
+
+          <div class="flex flex-wrap gap-2.5 pt-1">
+            <button type="button" data-toast-trigger="success" class="px-3.5 py-2 rounded-lg bg-emerald-600 text-white text-xs font-semibold hover:bg-emerald-700 transition-colors cursor-pointer shadow-xs flex items-center gap-1.5">
+              <svg class="size-3.5" fill="none" stroke="currentColor" stroke-width="2.5" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M4.5 12.75l6 6 9-13.5"></path></svg>
+              <span>Success</span>
+            </button>
+            <button type="button" data-toast-trigger="error" class="px-3.5 py-2 rounded-lg bg-rose-600 text-white text-xs font-semibold hover:bg-rose-700 transition-colors cursor-pointer shadow-xs flex items-center gap-1.5">
+              <svg class="size-3.5" fill="none" stroke="currentColor" stroke-width="2.5" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M6 18L18 6M6 6l12 12"></path></svg>
+              <span>Error</span>
+            </button>
+            <button type="button" data-toast-trigger="warning" class="px-3.5 py-2 rounded-lg bg-amber-600 text-white text-xs font-semibold hover:bg-amber-700 transition-colors cursor-pointer shadow-xs flex items-center gap-1.5">
+              <svg class="size-3.5" fill="none" stroke="currentColor" stroke-width="2.5" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M12 9v3.75m-9.303 3.376c-.866 1.5.217 3.374 1.948 3.374h14.71c1.73 0 2.813-1.874 1.948-3.374L13.949 3.378c-.866-1.5-3.032-1.5-3.898 0L2.697 16.126zM12 15.75h.007v.008H12v-.008z"></path></svg>
+              <span>Warning</span>
+            </button>
+            <button type="button" data-toast-trigger="info" class="px-3.5 py-2 rounded-lg bg-primary text-white text-xs font-semibold hover:opacity-90 transition-opacity cursor-pointer shadow-xs flex items-center gap-1.5">
+              <svg class="size-3.5" fill="none" stroke="currentColor" stroke-width="2.5" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M11.25 11.25l.041-.02a.75.75 0 011.063.852l-.708 2.836a.75.75 0 001.063.853l.041-.021M21 12a9 9 0 11-18 0 9 9 0 0118 0zm-9-3.75h.008v.008H12V8.25z"></path></svg>
+              <span>Info</span>
+            </button>
+          </div>
+        </div>
+
+        <!-- Region: Live Toast Stack - Render area for dynamic active toasts -->
+        <div data-region="live-toast-stack" class="space-y-3 max-w-sm ml-auto pointer-events-none">
+          <!-- Sample Skeleton Toast Card -->
+          <div data-region="toast-card" data-type="success" class="pointer-events-auto flex items-start gap-3 p-4 rounded-xl bg-surface border border-emerald-500/30 shadow-lg shadow-emerald-500/5 transition-all">
+            <div class="size-6 rounded-full bg-emerald-500/15 text-emerald-600 flex items-center justify-center shrink-0 mt-0.5">
+              <svg class="size-3.5" fill="none" stroke="currentColor" stroke-width="2.5" viewBox="0 0 24 24" aria-hidden="true"><path stroke-linecap="round" stroke-linejoin="round" d="M4.5 12.75l6 6 9-13.5"></path></svg>
+            </div>
+            <div class="flex-1 min-w-0 space-y-1">
+              <span class="block h-[0.85em] w-24 rounded-xs bg-content/85 font-semibold"></span>
+              <span class="block h-[0.7em] w-48 rounded-xs bg-muted/60"></span>
+            </div>
+            <button type="button" aria-label="Dismiss notification" class="text-muted hover:text-content transition-colors cursor-pointer p-0.5 rounded-sm shrink-0">
+              <span class="text-base leading-none">&times;</span>
+            </button>
+          </div>
+        </div>
+      </section>
+    `;
+  }
+}
+
+if (!customElements.get('toast-01')) {
+  customElements.define('toast-01', Toast);
+}
+```

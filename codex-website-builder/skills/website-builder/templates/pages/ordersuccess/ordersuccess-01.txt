@@ -31,7 +31,9 @@ Functional regions are annotated directly in the component code implementation v
 
       <div data-region="success-header" class="text-center mb-8 sm:mb-10 flex flex-col items-center">
         <div class="size-20 rounded-full bg-emerald-500/15 border border-emerald-500/30 flex items-center justify-center mb-5 text-emerald-600 shadow-xs">
-          <span class="text-4xl font-bold leading-none">✓</span>
+          <svg class="size-10" fill="none" stroke="currentColor" stroke-width="2.5" viewBox="0 0 24 24" aria-hidden="true">
+            <path stroke-linecap="round" stroke-linejoin="round" d="M4.5 12.75l6 6 9-13.5"></path>
+          </svg>
         </div>
         <div class="h-8 sm:h-9 w-64 sm:w-80 bg-content/85 rounded-xs mb-3"></div>
         <div class="h-4 w-48 bg-muted/60 rounded-xs"></div>
@@ -110,15 +112,21 @@ Functional regions are annotated directly in the component code implementation v
           <div class="space-y-3 text-xs text-muted border-t md:border-t-0 md:border-l md:pl-6 border-outline/20 pt-4 md:pt-0">
             <div class="h-3.5 w-24 bg-content/80 rounded-xs mb-3"></div>
             <div class="flex items-center gap-2.5">
-              <span class="size-4 rounded-full bg-accent/60 flex items-center justify-center text-[10px]">⏱</span>
+              <span class="size-4 rounded-full bg-accent/60 flex items-center justify-center">
+                <span class="size-1.5 rounded-full bg-muted"></span>
+              </span>
               <div class="h-3 w-40 bg-content/70 rounded-xs"></div>
             </div>
             <div class="flex items-center gap-2.5">
-              <span class="size-4 rounded-full bg-accent/60 flex items-center justify-center text-[10px]">🚚</span>
+              <span class="size-4 rounded-full bg-accent/60 flex items-center justify-center">
+                <span class="size-1.5 rounded-full bg-muted"></span>
+              </span>
               <div class="h-3 w-36 bg-content/70 rounded-xs"></div>
             </div>
             <div class="flex items-center gap-2.5">
-              <span class="size-4 rounded-full bg-accent/60 flex items-center justify-center text-[10px]">📅</span>
+              <span class="size-4 rounded-full bg-accent/60 flex items-center justify-center">
+                <span class="size-1.5 rounded-full bg-muted"></span>
+              </span>
               <div class="h-3 w-32 bg-content/70 rounded-xs"></div>
             </div>
           </div>

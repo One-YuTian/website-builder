@@ -1,0 +1,59 @@
+## Overview
+
+Vibrant lifestyle and trendy department marketplace homepage assembled from modern navigation header, hero carousel, circular category icons, promotional campaign banner, featured product feed, and footer.
+
+### Component Chain
+`home-05: header-05 -> carousel-01 -> categories-01 -> promotion-01 -> productlist-01 -> footer-01`
+
+### Included Components
+| Component | Custom Element | Role & Function |
+| --- | --- | --- |
+| `Header-05` | `<header-05>` | Modern marketplace navigation header with search bar and category menu |
+| `Carousel-01` | `<carousel-01>` | Hero responsive banner carousel with touch swipe |
+| `Categories-01` | `<categories-01>` | Circular icon-based category navigation block for rapid department navigation |
+| `Promotion-01` | `<promotion-01>` | Category-specific promotional banner showcasing thematic deals |
+| `ProductList-01` | `<productlist-01>` | Curated products grid showcase with add-to-cart actions |
+| `Footer-01` | `<footer-01>` | Global site footer with sitemap links and newsletter signup |
+
+### Dimensions & Responsiveness
+- Aligned to global content width (`w-full max-w-content mx-auto px-4 lg:px-6`).
+- Mobile: Fully responsive stacked layout with native touch carousel gestures.
+
+## Code
+
+### HTML
+
+```html
+<div class="home-page w-full min-h-screen bg-surface font-sans text-content flex flex-col">
+  <!-- Component: Header-05 - Modern marketplace navigation header with search bar and category menu -->
+  <header-05 class="block w-full sticky top-0 z-40"></header-05>
+
+  <main class="flex-1 w-full space-y-8 sm:space-y-12 pb-12">
+    <!-- Component: Carousel-01 - Hero responsive banner carousel with touch swipe -->
+    <carousel-01 class="block w-full"></carousel-01>
+
+    <!-- Component: Categories-01 - Circular icon-based category navigation block for rapid department navigation -->
+    <categories-01 class="block w-full"></categories-01>
+
+    <!-- Component: Promotion-01 - Category-specific promotional banner showcasing thematic deals -->
+    <promotion-01 class="block w-full"></promotion-01>
+
+    <!-- Component: ProductList-01 - Curated products grid showcase with add-to-cart actions -->
+    <productlist-01 class="block w-full"></productlist-01>
+  </main>
+
+  <!-- Component: Footer-01 - Global site footer with sitemap links and newsletter signup -->
+  <footer-01 class="block w-full"></footer-01>
+</div>
+```
+
+### JavaScript
+
+```javascript
+document.addEventListener('DOMContentLoaded', function() {
+  // Page-level event coordination for Home-05
+  document.addEventListener('product-navigate', function(e) {
+    console.log('Home-05 Product Navigation:', e.detail);
+  });
+});
+```

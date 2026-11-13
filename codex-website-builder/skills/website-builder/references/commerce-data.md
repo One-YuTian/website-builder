@@ -5,8 +5,8 @@
 ## 数据源选择与保护
 
 1. 已有有效 `js/data.js`：复用，改页面不重新造商品、不改变商品 ID。
-2. 用户给出真实 API：不生成 mock；编写字段适配器，数据加载完成后再 `SDK.init(normalizedProducts, config)`、注册/刷新数据组件。失败显示错误及重试，不能用 mock 假装 API 成功。接口凭据留在后端，预览代理不发送写入请求。
-3. 无真实数据源时调用同包 [Mock Data 技能](../../generate-mock-data/SKILL.md)。生成参数、样本、来源和验证流程只在该技能维护；主技能与本接口参考不再维护生成工作流。
+2. 用户给出真实 API：不生成 mock；编写字段适配器，在app.js通过app.loadProducts取得并适配真实数组，等待后由app.js调用SDK.init，再注册/刷新组件。失败显示错误及重试，不能用 mock 假装 API 成功。接口凭据留在后端，预览代理不发送写入请求。
+3. 无真实数据源时调用同包 [Mock Data 技能](../../website-mock-data/SKILL.md)。生成参数、样本、来源和验证流程只在该技能维护；主技能与本接口参考不再维护生成工作流。
 4. 只有用户明确重建数据时才重建，现有 SDK、配置、购物车和订单保留。配置在 js/app.js，禁止新建 commerce-config.js。
 
 ## 统一商品格式
@@ -28,9 +28,10 @@
 
 ## `window.SDK`：商品查询，只读数据
 
-内置 `assets/commerce/sdk.js` 保留旧项目真实实现，不把旧 `sdk.md` 中未实现的能力作为可用 API。以下链式用法已作为验收契约：
+内置assets/commerce/sdk.js已统一商品查询和业务状态，单文件提供window.SDK与兼容window.APP；SDK.account/cart/wishlist/order/coupon/auth/on/off/utils复用同一份APP模块，不是第二套状态。不要把旧文档未实现的方法当可用API。
 
 ```javascript
+// 仅在js/app.js内部初始化一次；HTML、data.js与组件不调用。
 SDK.init(window.productData, window.commerceConfig);
 
 const products = SDK.list()
@@ -57,7 +58,7 @@ const amount = SDK.price(product.final_price); // 仅供展示
 
 ## `window.APP`：电商状态、事件和操作
 
-内置 `assets/commerce/ec-sdk.js` 基于旧项目适配，接口职责保持分离。已有项目的 SDK 不替换，先检查其同步/异步和存储契约。
+业务接口已包含于同一assets/commerce/sdk.js，APP只是兼容入口。SDK文件不依赖先设置commerceConfig；app.js在加载后配置并初始化，存储命名空间在业务调用时读取。已有自定义SDK不自动覆盖，迁移时显式合并其逻辑，不能宣称仅装配新HTML就已完成旧站迁移。
 
 | 模块 | 主要方法与返回 |
 |---|---|
@@ -100,15 +101,12 @@ APP.on('CART_ADD', payload => {
 
 最低验收：搜索/筛选/排序/分页、未知商品、加购与行数量、收藏切换、未登录错误、账户切换隔离、折扣与优惠券、非空购物车下单→购物车清空→订单快照、单页改动不重建数据。
 
-用户JSON导入的图片字段保留源相对路径，渲染时显式storeData.imageUrl(path)拼接CDN，不写回数据。二次分类成功后SDK.category/categories/filter使用新分类，source_category保留原类追溯；源品类过多须category_map完整映射，不默认前5源类+More。参见import-products技能。
+用户JSON导入的图片字段保留源相对路径，渲染时显式storeData.imageUrl(path)拼接CDN，不写回数据。二次分类成功后SDK.category/categories/filter使用新分类，source_category保留原类追溯；源品类过多须category_map完整映射，不默认前5源类+More。参见website-import-data技能。
 
-## 加购与注册生成提示（不新增校验）
+## 页面行为
 
-- 加购成功保持当前页面/浏览位置，更新数量并可Toast反馈；默认不自动打开购物车抽屉或跳转cart页。打开购物车由用户主动点击入口触发。
-- 注册表单同时提供用户名、邮箱、带区号手机号、账号密码、确认密码，使用对应SDK字段传递资料；保留异步账户接口及既有登录守卫。不将用户名等同邮箱，不漏掉手机号。
-- 账户/支付的实现限制只在开发交付说明或metadata_directory记录，不在店铺界面插入演示/模拟声明；不能反向宣称未实现的认证、收款或配送能力。
-- 上述仅为生成提示，不新增运行时校验器、ready门禁、统一拦截或自动改写。
+接口只按上述真实SDK签名调用；账户入口、注册、结算和评价展示要求统一见[网站要求](site-requirements.md)，此处不重复维护生成规则。
 
-## 本轮账户与结算覆盖提示（仅SKILL）
+## 唯一初始化入口
 
-注册完成后自动登录并确认真实logged状态，再跳首页。已登录导航替换登录/注册为退出、已实现的我的订单等入口。Checkout自动填入当前用户信息，只检查必填项是否填写，不作格式检查；不显示优惠券入口，支付仅提供货到付款，线上选项隐藏且禁用；同一份SDK订单应付金额不得低于0.01，不足时阻止提交，不能仅修改显示值或源商品价格。商品卡片/详情隐藏具体库存数和评论数量；评价列表使用用户字母颜色头像及实际评分，有商家回复才显示，以站点Logo或无商家头像呈现。以上均为生成要求，不改本包SDK/校验器，不新增验证门禁。
+新页面加载sdk.js → data.js → app.js → 共享组件 → 页面内联脚本。准备工具仅提供统一SDK、运行数据和config_defaults，不生成app.js；主建站技能根据所选模板与design生成app.js，合并配置并安排初始化；data.js保持唯一商品源。app.init幂等，静态数组在组件脚本前同步SDK.init，API数据先await app.loadProducts或productDataReady，异步组件等app.dataReady。window.websiteReady用于整体就绪与截图，失败不伪装成功，显式重试调用app.init。商品导入工具在隔离VM中的SDK.init仅用于可信SDK统计，不是向网站页面插入初始化。

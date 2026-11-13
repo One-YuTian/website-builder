@@ -1,0 +1,63 @@
+## Overview
+
+Mobile communications and smart devices hub homepage assembled from dual-layer tech header, mobile hardware hero carousel, brand zones & device categories, wearables & TWS flash sale, official inspection service bar, smart devices grid, and footer.
+
+### Component Chain
+`home-23: header-03 -> carousel-28 -> categories-07 -> flashsale-08 -> services-05 -> productlist-01 -> footer-01`
+
+### Included Components
+| Component | Custom Element | Role & Function |
+| --- | --- | --- |
+| `Header-03` | `<header-03>` | Smart communication hub dual-layer navigation header with deep search |
+| `Carousel-28` | `<carousel-28>` | Mobile hardware and 5G smartphones hero banner carousel |
+| `Categories-07` | `<categories-07>` | Brand zones and device category shortcuts (phones, tablets, smartwatches) |
+| `FlashSale-08` | `<flashsale-08>` | Wearables and TWS earbuds limited-time countdown flash sale |
+| `Services-05` | `<services-05>` | Official device inspection report, national warranty, and return service bar |
+| `ProductList-01` | `<productlist-01>` | Featured smart mobile devices and accessories showcase grid |
+| `Footer-01` | `<footer-01>` | Official communication hub service footer with newsletter signup |
+
+### Dimensions & Responsiveness
+- Aligned to global content width (`w-full max-w-content mx-auto px-4 lg:px-6`).
+- Mobile: Fully responsive stacked layout with native touch carousel gestures.
+
+## Code
+
+### HTML
+
+```html
+<div class="home-page w-full min-h-screen bg-surface font-sans text-content flex flex-col">
+  <!-- Component: Header-03 - Smart communication hub dual-layer navigation header with deep search -->
+  <header-03 class="block w-full sticky top-0 z-40"></header-03>
+
+  <main class="flex-1 w-full space-y-8 sm:space-y-12 pb-12">
+    <!-- Component: Carousel-28 - Mobile hardware and 5G smartphones hero banner carousel -->
+    <carousel-28 class="block w-full"></carousel-28>
+
+    <!-- Component: Categories-07 - Brand zones and device category shortcuts (phones, tablets, smartwatches) -->
+    <categories-07 class="block w-full"></categories-07>
+
+    <!-- Component: FlashSale-08 - Wearables and TWS earbuds limited-time countdown flash sale -->
+    <flashsale-08 class="block w-full"></flashsale-08>
+
+    <!-- Component: Services-05 - Official device inspection report, national warranty, and return service bar -->
+    <services-05 class="block w-full"></services-05>
+
+    <!-- Component: ProductList-01 - Featured smart mobile devices and accessories showcase grid -->
+    <productlist-01 class="block w-full"></productlist-01>
+  </main>
+
+  <!-- Component: Footer-01 - Official communication hub service footer with newsletter signup -->
+  <footer-01 class="block w-full"></footer-01>
+</div>
+```
+
+### JavaScript
+
+```javascript
+document.addEventListener('DOMContentLoaded', function() {
+  // Page-level event coordination for Home-23
+  document.addEventListener('product-navigate', function(e) {
+    console.log('Home-23 Product Navigation:', e.detail);
+  });
+});
+```

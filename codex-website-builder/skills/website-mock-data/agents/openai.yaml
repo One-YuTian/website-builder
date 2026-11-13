@@ -1,0 +1,3 @@
+interface:
+  display_name: "网站商品模拟"
+  short_description: "无商品数据或API时生成符合SDK的商品样本，准备分类与价格并保留已有数据。"

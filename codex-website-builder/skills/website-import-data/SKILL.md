@@ -1,8 +1,8 @@
 ---
-name: import-products
-description: 用户提供商品JSON内容或JSON文件时，通过工具和sdk.js适配读取、统计商品与分类、规划5–6个主要分类、拼接相对图片CDN；不能识别时转Mock工作流，不改源数据。
+name: website-import-data
+description: 通过SDK导入商品JSON，统计商品与分类，完成二次归类和图片CDN适配。
 ---
-# 商品JSON导入与读取
+# 网站商品导入
 
 用户提供商品JSON内容或JSON文件时优先使用本技能，不能让Agent直接cat/Get-Content/readFile整份商品JSON到上下文，再凭少量样本猜总量或自写查询。先复用website_project的真实thread_id/project_id；源JSON只由下述工具/脚本读取，不执行JSON中的代码，也不把原始数据源复制进生产目录。
 
@@ -32,10 +32,12 @@ SDK成功导入后，SDK.categories()、SDK.get(id).category、SDK.list/filter�
 
 ## 成功、回退与生图
 
-import成功只把js/data.js这一份运行商品视图及缺失SDK/app起点写入生产目录；来源记录与分类审查保存在metadata_directory，不新增原始JSON或读取脚本到网站。现有app.js合并缺失config_defaults，不覆盖主题或账户/订单状态。源数据不变，source_category保留原类、category提供二次类；图片路径不预拼接。输出代码经插件本地Prettier统一格式化，原JSON不参与格式化。
+import成功只把js/data.js这一份运行商品视图及缺失sdk.js写入生产目录，不生成app.js；主建站技能随所选模板生成app.js，接入返回的config_defaults；来源记录与分类审查保存在metadata_directory，不新增原始JSON或读取脚本到网站。现有app.js合并缺失config_defaults，不覆盖主题或账户/订单状态。源数据不变，source_category保留原类、category提供二次类；图片路径不预拼接。输出代码经插件本地Prettier统一格式化，原JSON不参与格式化。
 
-mode:mock、fallback:true表示无法识别JSON/核心字段，不代表成功：接续调用同包 [Mock Data技能](../generate-mock-data/SKILL.md)，按站点需求执行Mock流程并明确数据来源已回退。工具不会用坏导入覆盖现有运行商品，也不会凭空捏造商品样本；路径权限/项目不匹配等操作错误先解决，不以Mock掩盖。
+mode:mock、fallback:true表示无法识别JSON/核心字段，不代表成功：接续调用同包 [Mock Data技能](../website-mock-data/SKILL.md)，按站点需求执行Mock流程并明确数据来源已回退。工具不会用坏导入覆盖现有运行商品，也不会凭空捏造商品样本；路径权限/项目不匹配等操作错误先解决，不以Mock掩盖。
 
 商品图可作为 [网站图片生成技能](../website-image-generator/SKILL.md) 生成Banner、分类场景图的真实参考素材：先按需要取有代表性的商品图片并查看，用imagegen的引用图流程生成场景/构图，不是生成或替换商品目录本身的商品图。保护商品外观、颜色和品牌事实，不添加虚构功能/认证/价格；Banner、分类图、About各自主题仍须区分。只有实际使用的最终场景成品进入生产assets。
 
 完成时返回真实商品数、原分类数、主要展示分类、图片基址、回退状态与输出路径；页面通过SDK读取。核对SDK.get真实ID、分组数量与过滤结果、金额、相对图拼接及源JSON散列未变。
+
+运行时仅使用一份js/sdk.js（同时提供SDK和兼容APP），依次加载sdk.js、data.js、app.js。SDK.init仅位于app.js，静态数据先同步初始化再注册组件，异步数据与页面就绪按[SDK契约](../website-builder/references/commerce-data.md)执行；不要在HTML或data.js重复初始化。已有自定义文件保留并按本轮授权显式合并，不批量改写已有网站。

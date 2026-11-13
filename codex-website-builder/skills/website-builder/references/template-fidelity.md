@@ -2,6 +2,8 @@
 
 模板还原度只作为 SKILL 的创作指导，不进行自动打分或门禁。页面生成成功由 HTML 完整性与本地依赖是否就绪判断；设计和交互仍由 Agent 通过真实渲染检查。
 
+以下结构要求针对最终选定的独立组件/页面。Home默认沿用所选链，Header/Footer可换，主体变更按[Home生成硬约束](home-composition.md)限制，不等于整页可自由重画，其伪代码不作为实现依据；Toast需移除演示按钮和骨架展示，仅实现实际通知组件。
+
 ## 1. 先设计整站，再复用模板
 
 按 [整站视觉设计](visual-design.md) 决定配色、内容宽度与亮暗策略，再选相容模板。严格按选定模板的区域、父子层级、列数、对齐和响应式分支填充真实内容，不借业务完整性臆造侧栏或其他模板外区域。保真仍只在SKILL中指导，不做自动门禁。主题色、字体、全局 maxWidth、圆角与板块组合由 Agent 统一决定，不要求照搬演示默认值或启用所有亮暗变体。不能只顾组件相似而忽略整站协调。
@@ -20,10 +22,13 @@ code 可以用 ids 批量读取；targets/bind 与来源标记仅用于可选追
 
 只保留选定模板确有需要且无法由标准 utility 表达的原有 CSS/第三方组件必要样式；不能以“共享CSS”“减少类名”“品牌定制”为由绕过。模板原有 CSS 作为来源可核对的例外，不扩展成新的布局系统。JS 运行时测量、Swiper 内部样式和根字号切换不属于作者重画布局的 CSS。
 
-`tailwind.config` **只能定义一次，在 js/app.js 最顶部**，通过 `window.tailwind.config` 挂载；严禁创建/引入独立 tailwind.config.js，也不在页面重写 theme。head 顺序必须是：
+`tailwind.config` **只能定义一次，在 js/app.js 最顶部**，通过 `window.tailwind.config` 挂载；严禁创建/引入独立 tailwind.config.js，也不在页面重写 theme。Tailwind先加载，app.js必须在统一SDK及data之后、组件之前：
 
 ```html
 <script src="https://cdn.tailwindcss.com"></script>
+<!-- 以下按序放正文末尾；不要在head另引一遍app.js -->
+<script src="js/sdk.js"></script>
+<script src="js/data.js"></script>
 <script src="js/app.js"></script>
 ```
 

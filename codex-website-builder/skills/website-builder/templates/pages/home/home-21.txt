@@ -1,0 +1,63 @@
+## Overview
+
+Kids educational toys and baby lifestyle paradise homepage assembled from modern playful header, fun educational hero carousel, child safety guarantee bar, age-grouped category navigation, building blocks grid, parent-child lifestyle picks, and footer.
+
+### Component Chain
+`home-21: header-05 -> carousel-01 -> services-04 -> categories-05 -> productlist-02 -> productlist-03 -> footer-01`
+
+### Included Components
+| Component | Custom Element | Role & Function |
+| --- | --- | --- |
+| `Header-05` | `<header-05>` | Kids & baby lifestyle navigation header with age and department filters |
+| `Carousel-01` | `<carousel-01>` | Fun educational toys hero carousel with vibrant visuals |
+| `Services-04` | `<services-04>` | Child safety, non-toxic materials, and certified eco-friendly guarantee service bar |
+| `Categories-05` | `<categories-05>` | Age-grouped and developmental milestone toy category tiles |
+| `ProductList-02` | `<productlist-02>` | Bestselling educational building blocks and early learning toys grid |
+| `ProductList-03` | `<productlist-03>` | Parent-child interactive games and daily baby care products showcase |
+| `Footer-01` | `<footer-01>` | Baby care & toy store trusted origin and safety footer |
+
+### Dimensions & Responsiveness
+- Aligned to global content width (`w-full max-w-content mx-auto px-4 lg:px-6`).
+- Mobile: Fully responsive stacked layout with native touch carousel gestures.
+
+## Code
+
+### HTML
+
+```html
+<div class="home-page w-full min-h-screen bg-surface font-sans text-content flex flex-col">
+  <!-- Component: Header-05 - Kids & baby lifestyle navigation header with age and department filters -->
+  <header-05 class="block w-full sticky top-0 z-40"></header-05>
+
+  <main class="flex-1 w-full space-y-8 sm:space-y-12 pb-12">
+    <!-- Component: Carousel-01 - Fun educational toys hero carousel with vibrant visuals -->
+    <carousel-01 class="block w-full"></carousel-01>
+
+    <!-- Component: Services-04 - Child safety, non-toxic materials, and certified eco-friendly guarantee service bar -->
+    <services-04 class="block w-full"></services-04>
+
+    <!-- Component: Categories-05 - Age-grouped and developmental milestone toy category tiles -->
+    <categories-05 class="block w-full"></categories-05>
+
+    <!-- Component: ProductList-02 - Bestselling educational building blocks and early learning toys grid -->
+    <productlist-02 class="block w-full"></productlist-02>
+
+    <!-- Component: ProductList-03 - Parent-child interactive games and daily baby care products showcase -->
+    <productlist-03 class="block w-full"></productlist-03>
+  </main>
+
+  <!-- Component: Footer-01 - Baby care & toy store trusted origin and safety footer -->
+  <footer-01 class="block w-full"></footer-01>
+</div>
+```
+
+### JavaScript
+
+```javascript
+document.addEventListener('DOMContentLoaded', function() {
+  // Page-level event coordination for Home-21
+  document.addEventListener('product-navigate', function(e) {
+    console.log('Home-21 Product Navigation:', e.detail);
+  });
+});
+```

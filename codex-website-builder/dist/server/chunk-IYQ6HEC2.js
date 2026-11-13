@@ -5806,15 +5806,15 @@ async function readTemplates(skillRoot, input) {
   if (!input.ids?.length || input.ids.length > 12) throw new Error("\u6BCF\u6B21\u53EA\u8BFB\u53D6\u672C\u8F6E\u8981\u4F7F\u7528\u7684 1\u201312 \u4E2A\u6A21\u677F");
   return Promise.all(selected.map(async (item) => {
     const text2 = await readFile2(join(skillRoot, "templates", item.file), "utf8");
-    if (input.mode === "doc") return { id: item.id, doc: overview(text2, shopLayouts[item.id]) };
-    const section = input.section || "all", result = { id: item.id, overview: overview(text2, shopLayouts[item.id]), usage: "Use this source and region map as the implementation reference. Fidelity is SKILL guidance only; no automatic similarity score or readiness gate. Source bindings are optional traceability. Agent decides a coherent site design and validates actual rendering and interactions." };
+    if (input.mode === "doc" || item.category === "home") return { id: item.id, doc: overview(text2, shopLayouts[item.id]), ...item.category === "home" ? { referenceOnly: true, usage: "Generation hard rule: default to the selected Home chain; Header/Footer may change. Excluding them, allow at most 0-2 justified composition changes and keep output section count within source N minus 1 through N plus 1. Read each independent component full source; source HTML/JS/CSS wins over conflicting summaries. Home code is pseudocode. This is generation guidance, not an acceptance criterion or runtime readiness gate." } : {} };
+    const section = input.section || "all", result = { id: item.id, overview: overview(text2, shopLayouts[item.id]), usage: "Use the complete actual HTML/JS/CSS as the implementation baseline; when summaries or region maps conflict, actual source wins. Fidelity is SKILL guidance only; no automatic similarity score or readiness gate. Source bindings are optional traceability. Agent decides a coherent site design and validates actual rendering and interactions." };
     for (const [part, label, language] of [["html", "HTML", "html"], ["js", "JavaScript", "javascript"], ["css", "CSS", "css"]]) if (section === "all" || section === part) {
       const match = text2.match(new RegExp(`### ${label}\\s*\`\`\`${language}([\\s\\S]*?)\`\`\``));
       if (match) result[part] = match[1].trim();
     }
     if (shopLayouts[item.id]) result.layoutContract = JSON.stringify(shopLayouts[item.id]);
     result.requiredParts = ["HTML", "JavaScript", "CSS"].filter((label) => text2.includes(`### ${label}`)).join(", ");
-    result.integrationNotes = "Agent chooses a coherent palette/light-dark strategy/content width in app.js; demo colors and widths are not defaults. Keep the selected template slots, responsive columns and Swiper; do not invent extra regions. Adapt all tags and registrations to unique xxx-component names, with one registration per constructor. Default new cart output to components/cart.js drawer; cart.html only when explicitly requested or required by an existing page-mode site, never both. Logo must be an img/picture asset. Mobile (<768px) root font-size is exactly 12px. Complete homepages add 1\u20132 distinct category/story/promotion/service sections beyond header/footer/hero/product list, without repeating the same section. Commerce configuration lives in app.js. No fidelity scoring is performed; code output uses local Prettier. Write each completed HTML page before generating the next; keep page logic inline. Imported product images require explicit render-time storeData.imageUrl and SDK.category uses the regrouped taxonomy. Do not restore demo wrappers. Actual HTML layout overrides generic Overview and global radius/spacing suggestions. For Shop read the paired Card code, replace defaultProducts with SDK queries, map every legacy tag/selector to card-component, and preserve all filters/drawers/grid-list behavior. No character/emoji icons or hand-drawn SVG product/banner images.";
+    result.integrationNotes = "Agent chooses a coherent palette/light-dark strategy/content width in app.js; demo colors and widths are not defaults. For Home use its component-chain documentation as a flexible composition reference; its code is pseudocode. For other selected components/pages keep their actual slots, responsive columns and Swiper. Adapt all tags and registrations to unique xxx-component names, with one registration per constructor. Default new cart output to components/cart.js drawer; cart.html only when explicitly requested or required by an existing page-mode site, never both. Logo must be an img/picture asset. Mobile (<768px) root font-size is exactly 12px. Default to the chosen Home chain. Excluding Header/Footer, generation allows at most 0\u20132 justified changes and source N\xB11 main sections; existing distinct shelves remain separate. Do not add blocks merely to meet an old extras quota. These are not acceptance/readiness checks. One sdk.js supplies SDK/APP. Load sdk.js, data.js, app.js, then components; configuration and SDK.init live only in app.js, never inline in HTML. No fidelity scoring is performed; code output uses local Prettier. Write each completed HTML page before generating the next; keep page logic inline. Imported product images require explicit render-time storeData.imageUrl and SDK.category uses the regrouped taxonomy. Do not restore demo wrappers. Actual HTML layout overrides generic Overview and global radius/spacing suggestions. For Shop read the paired Card code, replace defaultProducts with SDK queries, map every legacy tag/selector to card-component, and preserve all filters/drawers/grid-list behavior. No character/emoji icons or hand-drawn SVG product/banner images.";
     return result;
   }));
 }
@@ -5854,10 +5854,9 @@ function assemblePage(body, title, language = "en", options = {}) {
 <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/bootstrap-icons/1.11.3/font/bootstrap-icons.min.css">
 <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/Swiper/10.3.1/swiper-bundle.min.css">
 ${links.join("\n")}
-<script src="https://cdn.tailwindcss.com"></script><script src="js/app.js"></script>
+<script src="https://cdn.tailwindcss.com"></script>
 </head><body class="m-0 bg-surface font-sans text-content antialiased"><header-component></header-component>${body}${drawer}<footer-component></footer-component>
-<script src="https://cdnjs.cloudflare.com/ajax/libs/jquery/3.7.1/jquery.min.js"></script><script src="https://cdnjs.cloudflare.com/ajax/libs/Swiper/10.3.1/swiper-bundle.min.js"></script>${options.commerceConfig ? '<script src="js/commerce-config.js"></script>' : ""}${options.commerce ? '<script src="js/ec-sdk.js"></script><script src="js/sdk.js"></script>' : ""}<script src="js/data.js"></script>
-${options.commerce ? "<script>window.SDK.init(window.productData, window.commerceConfig || {});</script>" : ""}
+<script src="https://cdnjs.cloudflare.com/ajax/libs/jquery/3.7.1/jquery.min.js"></script><script src="https://cdnjs.cloudflare.com/ajax/libs/Swiper/10.3.1/swiper-bundle.min.js"></script>${options.commerce ? '<script src="js/sdk.js"></script>' : ""}<script src="js/data.js"></script><script src="js/app.js"></script>
 <script src="components/header.js"></script><script src="components/footer.js"></script>${options.cart && options.cart !== "none" ? '<script src="components/cart.js"></script>' : ""}<script src="components/card.js"></script>${scripts.join("\n")}</body></html>`;
 }
 
@@ -6304,9 +6303,8 @@ var ProjectStore = class {
         const file = await this.target(view.project.id, path);
         let html = await readFile3(file, "utf8");
         if (!/<html\b/i.test(html) || !/<\/html>\s*$/i.test(html) || !/<body\b/i.test(html) || !/<\/body>/i.test(html)) throw new Error("HTML \u5C1A\u672A\u5B8C\u6574\u8F93\u51FA");
-        const toastPath = await this.target(view.project.id, "components/toast.js");
-        if (!await stat(toastPath).catch(() => null)) await atomic(toastPath, await formatSource("components/toast.js", await readFile3(join3(this.skillRoot, "assets/ui/toast.js"), "utf8")));
-        const enhanced = await formatSource(path, injectSharedUI(html, path));
+        const toastPath = join3(view.directory, "components/toast.js");
+        const enhanced = await formatSource(path, await stat(toastPath).catch(() => null) ? injectSharedUI(html, path) : html);
         if (enhanced !== html) {
           await atomic(file, enhanced);
           html = enhanced;
@@ -6373,10 +6371,17 @@ var ProjectStore = class {
         if (page && file.title) page.title = file.title;
       }
       const hasFile = async (path) => files.some((file) => file.path === path) || !!await stat(join3(view.directory, path)).catch(() => null);
-      const commerce = await hasFile("js/ec-sdk.js") && await hasFile("js/sdk.js");
-      const commerceConfig = commerce && await hasFile("js/commerce-config.js");
+      const commerce = await hasFile("js/sdk.js");
       const cart = !await hasFile("components/cart.js") ? "none" : view.project.pages.some((page) => /(^|\/)cart\.html?$/i.test(page.path)) ? "page" : "drawer";
-      const output = await Promise.all(files.map(async (file) => ({ ...file, content: await formatSource(file.path, /\.html?$/i.test(file.path) ? injectSharedUI(file.fragment ? assemblePage(file.content, file.title || view.project.pages.find((page) => page.path === file.path)?.title || view.project.name, view.project.language, { commerce, commerceConfig, cart }) : file.content, file.path) : file.content) }))).catch(async (error) => {
+      const toast = await hasFile("components/toast.js");
+      const output = await Promise.all(files.map(async (file) => {
+        let content = file.content;
+        if (/\.html?$/i.test(file.path)) {
+          if (file.fragment) content = assemblePage(content, file.title || view.project.pages.find((page) => page.path === file.path)?.title || view.project.name, view.project.language, { commerce, cart });
+          if (toast) content = injectSharedUI(content, file.path);
+        }
+        return { ...file, content: await formatSource(file.path, content) };
+      })).catch(async (error) => {
         const submitted = new Set(files.map((file) => file.path));
         for (const page of view.project.pages) if (page.status !== "ready" && (submitted.has(page.path) || page.status === "generating" && await this.usesFiles(view, page.path, submitted))) {
           page.status = "error";
@@ -6387,7 +6392,6 @@ var ProjectStore = class {
         await this.save(view.project);
         throw error;
       });
-      if (output.some((file) => /\.html?$/i.test(file.path) && /<toast-component\b/i.test(file.content)) && !await hasFile("components/toast.js")) output.push({ path: "components/toast.js", content: await formatSource("components/toast.js", await readFile3(join3(this.skillRoot, "assets/ui/toast.js"), "utf8")) });
       const changed = /* @__PURE__ */ new Set();
       for (const file of output) {
         const target = await this.target(view.project.id, file.path);
@@ -7216,15 +7220,39 @@ function projectService(store) {
 }
 
 // server/commerce.ts
+import { readFile as readFile8, realpath as realpath4 } from "node:fs/promises";
+import { join as join6, relative as relative4, sep as sep4, isAbsolute as isAbsolute4 } from "node:path";
+import { createHash as createHash3 } from "node:crypto";
+
+// server/commerce-assets.ts
 import { readFile as readFile7, realpath as realpath3 } from "node:fs/promises";
 import { join as join5, relative as relative3, sep as sep3, isAbsolute as isAbsolute3 } from "node:path";
-import { createHash as createHash3 } from "node:crypto";
+async function commerceAssets(directory, skillRoot) {
+  const files = [], kept = [];
+  for (const name of ["sdk.js", "app.js"]) {
+    const path = `js/${name}`;
+    try {
+      const file = await realpath3(join5(directory, path)), base = await realpath3(directory), rel = relative3(base, file);
+      if (rel === ".." || rel.startsWith(`..${sep3}`) || isAbsolute3(rel)) throw Error("\u8FD0\u884C\u6587\u4EF6\u4E0D\u80FD\u6307\u5411\u9879\u76EE\u5916\u90E8");
+      await readFile7(file, "utf8");
+      kept.push(path);
+    } catch (error) {
+      if (error.code !== "ENOENT") throw error;
+      if (name === "app.js") continue;
+      const source = await readFile7(join5(skillRoot, "assets/commerce", name), "utf8");
+      files.push({ path, content: source });
+    }
+  }
+  return { files, kept, appRequired: !kept.includes("js/app.js") };
+}
+
+// server/commerce.ts
 async function existingFile(directory, path) {
   try {
-    const file = await realpath3(join5(directory, path));
-    const rel = relative3(await realpath3(directory), file);
-    if (rel === ".." || rel.startsWith(`..${sep3}`) || isAbsolute3(rel)) throw new Error("\u5546\u54C1\u6587\u4EF6\u4E0D\u80FD\u6307\u5411\u9879\u76EE\u5916\u90E8");
-    return await readFile7(file, "utf8");
+    const file = await realpath4(join6(directory, path));
+    const rel = relative4(await realpath4(directory), file);
+    if (rel === ".." || rel.startsWith(`..${sep4}`) || isAbsolute4(rel)) throw new Error("\u5546\u54C1\u6587\u4EF6\u4E0D\u80FD\u6307\u5411\u9879\u76EE\u5916\u90E8");
+    return await readFile8(file, "utf8");
   } catch (error) {
     if (error.code === "ENOENT") return void 0;
     throw error;
@@ -7346,7 +7374,7 @@ async function prepareCommerce(store, skillRoot, input) {
   const existing = await existingFile(view.directory, "js/data.js");
   let imported = false;
   try {
-    const record = JSON.parse(await readFile7(join5(view.metadataDirectory, "website-builder.import.json"), "utf8"));
+    const record = JSON.parse(await readFile8(join6(view.metadataDirectory, "website-builder.import.json"), "utf8"));
     imported = ["sdk-import-v1", "sdk-import-v2"].includes(record.schema) && !!existing && record.runtime_data_sha256 === createHash3("sha256").update(existing).digest("hex");
   } catch (error) {
     if (error.code !== "ENOENT" && !(error instanceof SyntaxError)) throw error;
@@ -7399,17 +7427,10 @@ window.storeData = {
 };
 ` });
   }
-  const kept = [];
-  for (const name of ["sdk.js", "ec-sdk.js"]) {
-    const path = `js/${name}`;
-    if (await existingFile(view.directory, path) !== void 0) kept.push(path);
-    else files.push({ path, content: await readFile7(join5(skillRoot, "assets/commerce", name), "utf8") });
-  }
-  const configuration = "js/app.js";
   const configDefaults = { currency: input.currency || "USD", locale: input.locale || "en-US", storageKey: `website-builder:${view.project.id}` };
-  if (await existingFile(view.directory, configuration) !== void 0) kept.push(configuration);
-  else files.push({ path: configuration, content: `window.commerceConfig = ${JSON.stringify(configDefaults)};
-` });
+  const runtime2 = await commerceAssets(view.directory, skillRoot);
+  files.push(...runtime2.files);
+  const kept = runtime2.kept;
   if (files.length) await store.write(input.thread_id, files);
   return {
     project_id: view.project.id,
@@ -7418,16 +7439,17 @@ window.storeData = {
     written: files.map((file) => file.path),
     kept,
     config_defaults: configDefaults,
-    configuration_note: "New projects keep currency/locale/storageKey in js/app.js, not a separate commerce-config.js. Merge missing defaults without replacing existing settings, keep Tailwind config first, and initialize configuration before SDK/APP.",
-    ...source === "api" ? { next: "\u751F\u6210 API \u5B57\u6BB5\u9002\u914D\u5668\uFF0C\u6570\u636E\u5C31\u7EEA\u540E\u8BBE\u7F6E window.productData \u5E76 SDK.init\uFF1B\u672A\u751F\u6210 mock \u6570\u636E\u3002" } : {},
+    app_required: runtime2.appRequired,
+    configuration_note: "Data preparation never generates app.js. The website builder must generate it from selected template requirements and site design, merging these config_defaults. Load sdk.js -> data.js -> app.js -> components; app.js owns theme, SDK.init, mobile setup and readiness. Preserve existing custom app/SDK files and adapt only as needed. Do not copy a fixed app starter or emit a separate configuration script.",
+    ...source === "api" ? { next: "\u5728app.js\u5B9E\u73B0app.loadProducts\u4EE5\u52A0\u8F7D\u5E76\u9002\u914DAPI\u6570\u7EC4\uFF0C\u518D\u7531app.js\u7B49\u5F85\u6570\u636E\u5E76SDK.init\uFF1B\u7EC4\u4EF6\u7B49\u5F85app.dataReady\uFF0C\u672A\u751F\u6210mock\u6570\u636E\u3002" } : {},
     account_contract: "Bundled APP.account.register/login/update are async demo methods; await results. Existing SDKs are preserved: inspect their contract before use."
   };
 }
 
 // server/screenshot.ts
 import { createServer as createServer2 } from "node:http";
-import { readFile as readFile8, mkdir as mkdir2, writeFile as writeFile2 } from "node:fs/promises";
-import { dirname as dirname3, extname as extname3, join as join6 } from "node:path";
+import { readFile as readFile9, mkdir as mkdir2, writeFile as writeFile2 } from "node:fs/promises";
+import { dirname as dirname3, extname as extname3, join as join7 } from "node:path";
 import { fileURLToPath as fileURLToPath3 } from "node:url";
 import { randomBytes as randomBytes3 } from "node:crypto";
 var mime2 = { ".html": "text/html", ".js": "text/javascript", ".mjs": "text/javascript", ".css": "text/css", ".json": "application/json", ".png": "image/png", ".jpg": "image/jpeg", ".jpeg": "image/jpeg", ".webp": "image/webp", ".avif": "image/avif", ".gif": "image/gif", ".svg": "image/svg+xml", ".ico": "image/x-icon", ".woff": "font/woff", ".woff2": "font/woff2", ".ttf": "font/ttf" };
@@ -7445,7 +7467,7 @@ async function screenshotPage(store, input) {
     runtime2
   );
   const vendor = fileURLToPath3(new URL("../vendor/", import.meta.url));
-  const vendors = JSON.parse(await readFile8(join6(vendor, "manifest.json"), "utf8"));
+  const vendors = JSON.parse(await readFile9(join7(vendor, "manifest.json"), "utf8"));
   const token = randomBytes3(24).toString("hex");
   const prefix = `/${token}/`;
   const service = createServer2(async (req, res) => {
@@ -7465,7 +7487,7 @@ async function screenshotPage(store, input) {
       if (name.split("/").some((part) => part.startsWith(".")) || name.includes("\\")) throw Error("\u4E0D\u53EF\u8BFB\u53D6\u6B64\u8DEF\u5F84");
       const file = await contained(view.directory, name);
       res.setHeader("Content-Type", mime2[extname3(file)] || "application/octet-stream");
-      res.end(await readFile8(file));
+      res.end(await readFile9(file));
     } catch {
       res.writeHead(404).end();
     }
@@ -7498,7 +7520,7 @@ async function screenshotPage(store, input) {
           return;
         }
         try {
-          if (vendors[url] && process.env.WEBSITE_BUILDER_PREVIEW_VENDOR_FIXTURES === "1") await route.fulfill({ body: await readFile8(await contained(vendor, vendors[url])), contentType: mime2[extname3(vendors[url])] });
+          if (vendors[url] && process.env.WEBSITE_BUILDER_PREVIEW_VENDOR_FIXTURES === "1") await route.fulfill({ body: await readFile9(await contained(vendor, vendors[url])), contentType: mime2[extname3(vendors[url])] });
           else {
             const resource = await proxyResource(url);
             await route.fulfill({ body: resource.bytes, contentType: resource.mime });
@@ -7574,7 +7596,7 @@ async function screenshotPage(store, input) {
         }, Array.from(bytes));
         bytes = Buffer.from(data2, "base64");
       }
-      const path = join6(view.metadataDirectory, "artifacts/screenshots", `${input.path.split(/[?#]/)[0].replace(/[^a-zA-Z0-9_-]/g, "-")}-${width}-${Date.now()}-${randomBytes3(3).toString("hex")}.png`);
+      const path = join7(view.metadataDirectory, "artifacts/screenshots", `${input.path.split(/[?#]/)[0].replace(/[^a-zA-Z0-9_-]/g, "-")}-${width}-${Date.now()}-${randomBytes3(3).toString("hex")}.png`);
       await mkdir2(dirname3(path), { recursive: true });
       await writeFile2(path, bytes);
       return { path, width, page: input.path, bytes };
@@ -7595,8 +7617,8 @@ async function screenshotPage(store, input) {
 }
 
 // server/product-import.ts
-import { readFile as readFile9, stat as stat4 } from "node:fs/promises";
-import { isAbsolute as isAbsolute4, join as join7 } from "node:path";
+import { readFile as readFile10, stat as stat4 } from "node:fs/promises";
+import { isAbsolute as isAbsolute5, join as join8 } from "node:path";
 import { createHash as createHash4 } from "node:crypto";
 import { runInNewContext } from "node:vm";
 var valueAt = (item, path) => path.split(".").reduce((value, key) => value && Object.hasOwn(value, key) ? value[key] : void 0, item);
@@ -7725,10 +7747,10 @@ async function importProducts(store, skillRoot, input) {
   if (Number(Boolean(input.file_path)) + Number(input.source_json !== void 0) !== 1) throw Error("file_path\u4E0Esource_json\u5FC5\u987B\u4E14\u53EA\u80FD\u63D0\u4F9B\u4E00\u4E2A");
   let source;
   if (input.file_path) {
-    if (!isAbsolute4(input.file_path) || !/\.json$/i.test(input.file_path)) throw Error("\u9700\u8981\u7528\u6237\u63D0\u4F9B\u7684JSON\u6587\u4EF6\u7EDD\u5BF9\u8DEF\u5F84");
+    if (!isAbsolute5(input.file_path) || !/\.json$/i.test(input.file_path)) throw Error("\u9700\u8981\u7528\u6237\u63D0\u4F9B\u7684JSON\u6587\u4EF6\u7EDD\u5BF9\u8DEF\u5F84");
     const info = await stat4(input.file_path);
     if (info.size > 64 * 1024 * 1024) throw Error("JSON\u6587\u4EF6\u8D85\u8FC764MB\u8BFB\u53D6\u4E0A\u9650");
-    source = await readFile9(input.file_path, "utf8");
+    source = await readFile10(input.file_path, "utf8");
   } else {
     source = input.source_json;
     if (Buffer.byteLength(source) > 64 * 1024 * 1024) throw Error("JSON\u8D85\u8FC764MB\u8BFB\u53D6\u4E0A\u9650");
@@ -7739,10 +7761,10 @@ async function importProducts(store, skillRoot, input) {
   try {
     normalized = normalize(JSON.parse(source.replace(/^\uFEFF/, "")), input);
   } catch (error) {
-    return { mode: "mock", fallback: true, next_skill: "generate-mock-data", reason: error.message, written: [], source_sha256: fingerprint, note: "\u539F\u59CBJSON\u548C\u73B0\u6709\u5546\u54C1\u6570\u636E\u672A\u6539\u5199\uFF1B\u4E3B\u6280\u80FD\u63A5\u7EEDMock Data\u5DE5\u4F5C\u6D41\uFF0C\u4E0D\u628A\u5931\u8D25\u5BFC\u5165\u5192\u5145\u6210\u529F\u3002" };
+    return { mode: "mock", fallback: true, next_skill: "website-mock-data", reason: error.message, written: [], source_sha256: fingerprint, note: "\u539F\u59CBJSON\u548C\u73B0\u6709\u5546\u54C1\u6570\u636E\u672A\u6539\u5199\uFF1B\u4E3B\u6280\u80FD\u63A5\u7EEDMock Data\u5DE5\u4F5C\u6D41\uFF0C\u4E0D\u628A\u5931\u8D25\u5BFC\u5165\u5192\u5145\u6210\u529F\u3002" };
   }
   const window2 = { productData: normalized.products };
-  runInNewContext(await readFile9(join7(skillRoot, "assets/commerce/sdk.js"), "utf8"), { window: window2, Intl }, { timeout: 2e3 });
+  runInNewContext(await readFile10(join8(skillRoot, "assets/commerce/sdk.js"), "utf8"), { window: window2, Intl }, { timeout: 2e3 });
   const config = { currency: input.currency || "USD", locale: input.locale || "en-US", storageKey: `website-builder:${view.project.id}` };
   window2.SDK.init(normalized.products, config);
   const sourceCategories = window2.SDK.categories();
@@ -7807,58 +7829,45 @@ window.catalogGroups = ${JSON.stringify(groups, null, 2)};
 ${renderHelper}
 window.storeData = { getAll:()=>window.SDK.list().result(), getById:id=>window.SDK.get(String(id)), getByCategory:category=>window.SDK.categories(category).result(), formatPrice:value=>window.SDK.price(value), imageUrl:value=>window.productImageUrl(value), toCartItem:product=>({id:product.id,name:product.name,image:product.main_image,price:product.final_price}) };
 `) }];
-  for (const name of ["sdk.js", "ec-sdk.js"]) {
-    try {
-      await stat4(join7(view.directory, "js", name));
-    } catch (error) {
-      if (error.code !== "ENOENT") throw error;
-      files.push({ path: `js/${name}`, content: await readFile9(join7(skillRoot, "assets/commerce", name), "utf8") });
-    }
-  }
-  try {
-    await stat4(join7(view.directory, "js/app.js"));
-  } catch (error) {
-    if (error.code !== "ENOENT") throw error;
-    files.push({ path: "js/app.js", content: `window.commerceConfig = ${JSON.stringify(config)};
-` });
-  }
+  const runtime2 = await commerceAssets(view.directory, skillRoot);
+  files.push(...runtime2.files);
   files.push({ path: "website-builder.import.json", content: JSON.stringify({ ...summary, schema: "sdk-import-v2", runtime_data_sha256: createHash4("sha256").update(files[0].content).digest("hex"), source: input.file_path || "provided-json", field_map: input.field_map || {}, category_map: mapping || {} }, null, 2) });
   await store.write(input.thread_id, files);
-  return { ...compact(), written: files.map((file) => file.path), note: "SDK.category/categories/filter\u8FD4\u56DE\u4E8C\u6B21\u5206\u7C7B\uFF0Csource_category\u4FDD\u7559\u539F\u7C7B\uFF1B\u56FE\u7247\u5B57\u6BB5\u4FDD\u7559\u76F8\u5BF9\u8DEF\u5F84\uFF0C\u53EA\u6709\u6E32\u67D3\u65F6\u8C03\u7528storeData.imageUrl\u62FC\u63A5CDN\uFF1B\u4E0D\u8DB35\u7EC4\u65F6\u6309\u771F\u5B9E\u4E1A\u52A1\u8865\u5145\u5206\u7EC4\uFF0C\u4E0D\u80FD\u4F2A\u9020\u5206\u7C7B\u3002\u5DF2\u6709SDK/\u914D\u7F6E\u672A\u8986\u76D6\uFF0C\u5E01\u79CD\u914D\u7F6E\u7F3A\u5931\u9879\u6309config_defaults\u5408\u5E76\u3002" };
+  return { ...compact(), written: files.map((file) => file.path), app_required: runtime2.appRequired, note: "SDK.category/categories/filter\u8FD4\u56DE\u4E8C\u6B21\u5206\u7C7B\uFF0Csource_category\u4FDD\u7559\u539F\u7C7B\uFF1B\u56FE\u7247\u5B57\u6BB5\u4FDD\u7559\u76F8\u5BF9\u8DEF\u5F84\uFF0C\u53EA\u6709\u6E32\u67D3\u65F6\u8C03\u7528storeData.imageUrl\u62FC\u63A5CDN\u3002\u6570\u636E\u5BFC\u5165\u4EC5\u51C6\u5907data.js\u53CA\u7F3A\u5931sdk.js\uFF0C\u4E0D\u751F\u6210app.js\uFF1B\u4E3B\u5EFA\u7AD9\u6280\u80FD\u6309\u6240\u9009\u6A21\u677F\u548C\u7AD9\u70B9design\u751F\u6210app.js\u5E76\u5408\u5E76config_defaults\u3002\u987A\u5E8Fsdk.js\u2192data.js\u2192app.js\uFF0CSDK.init\u53EA\u5728app.js\u3002\u5DF2\u6709\u81EA\u5B9A\u4E49SDK/app\u4FDD\u7559\u3002" };
 }
 
 // server/data-paths.ts
 import { homedir } from "node:os";
-import { isAbsolute as isAbsolute5, join as join8, resolve as resolve4 } from "node:path";
+import { isAbsolute as isAbsolute6, join as join9, resolve as resolve4 } from "node:path";
 import { fileURLToPath as fileURLToPath4 } from "node:url";
 function dataPaths(env = process.env) {
   const home = homedir();
-  const base = process.platform === "win32" ? env.LOCALAPPDATA || join8(home, "AppData", "Local") : env.XDG_DATA_HOME && isAbsolute5(env.XDG_DATA_HOME) ? env.XDG_DATA_HOME : join8(home, ".local", "share");
-  const root = resolve4(env.WEBSITE_BUILDER_DATA_DIR || join8(base, "codex-website-builder"));
+  const base = process.platform === "win32" ? env.LOCALAPPDATA || join9(home, "AppData", "Local") : env.XDG_DATA_HOME && isAbsolute6(env.XDG_DATA_HOME) ? env.XDG_DATA_HOME : join9(home, ".local", "share");
+  const root = resolve4(env.WEBSITE_BUILDER_DATA_DIR || join9(base, "codex-website-builder"));
   const expand = (value) => resolve4(value.replaceAll("${PLUGIN_ROOT}", fileURLToPath4(new URL("../../", import.meta.url))));
   return {
     root,
-    project: env.WEBSITE_BUILDER_PROJECT_ROOT ? expand(env.WEBSITE_BUILDER_PROJECT_ROOT) : join8(root, "project"),
-    reference: env.WEBSITE_BUILDER_ROOT ? expand(env.WEBSITE_BUILDER_ROOT) : join8(root, "reference")
+    project: env.WEBSITE_BUILDER_PROJECT_ROOT ? expand(env.WEBSITE_BUILDER_PROJECT_ROOT) : join9(root, "project"),
+    reference: env.WEBSITE_BUILDER_ROOT ? expand(env.WEBSITE_BUILDER_ROOT) : join9(root, "reference")
   };
 }
 
 // server/migrate-data.ts
-import { cp, mkdir as mkdir3, open as open2, readdir as readdir3, readFile as readFile10, rename as rename2, rm, stat as stat5, lstat } from "node:fs/promises";
-import { dirname as dirname4, join as join9, resolve as resolve5 } from "node:path";
+import { cp, mkdir as mkdir3, open as open2, readdir as readdir3, readFile as readFile11, rename as rename2, rm, stat as stat5, lstat } from "node:fs/promises";
+import { dirname as dirname4, join as join10, resolve as resolve5 } from "node:path";
 import { fileURLToPath as fileURLToPath5 } from "node:url";
 import { randomUUID as randomUUID2 } from "node:crypto";
 async function migrateLegacyData(projectRoot, sources) {
   if (!sources && (process.env.WEBSITE_BUILDER_PROJECT_ROOT || process.env.WEBSITE_BUILDER_DATA_DIR)) return;
   const pluginRoot = fileURLToPath5(new URL("../../", import.meta.url));
   if (!sources) {
-    sources = [join9(pluginRoot, "project")];
+    sources = [join10(pluginRoot, "project")];
     if (dirname4(pluginRoot).split(/[\\/]/).pop() === "codex-website-builder") {
       for (const entry of await readdir3(dirname4(pluginRoot), { withFileTypes: true })) {
         if (!entry.isDirectory()) continue;
-        const root = join9(dirname4(pluginRoot), entry.name);
-        const manifest = await readFile10(join9(root, "package.json"), "utf8").then(JSON.parse).catch(() => null);
-        if (manifest?.name === "codex-website-builder") sources.push(join9(root, "project"));
+        const root = join10(dirname4(pluginRoot), entry.name);
+        const manifest = await readFile11(join10(root, "package.json"), "utf8").then(JSON.parse).catch(() => null);
+        if (manifest?.name === "codex-website-builder") sources.push(join10(root, "project"));
       }
     }
   }
@@ -7866,8 +7875,8 @@ async function migrateLegacyData(projectRoot, sources) {
   for (const source of new Set(sources)) if (resolve5(source) !== resolve5(projectRoot) && (await stat5(source).catch(() => null))?.isDirectory()) existing.push(source);
   if (!existing.length) return;
   const base = dirname4(projectRoot);
-  await mkdir3(join9(base, "db"), { recursive: true });
-  const lockPath = join9(base, "db", "migration.lock");
+  await mkdir3(join10(base, "db"), { recursive: true });
+  const lockPath = join10(base, "db", "migration.lock");
   let lock;
   for (let attempt = 0; attempt < 100; attempt++) {
     try {
@@ -7876,7 +7885,7 @@ async function migrateLegacyData(projectRoot, sources) {
       break;
     } catch (error) {
       if (error.code !== "EEXIST") throw error;
-      const pid = Number(await readFile10(lockPath, "utf8").catch(() => ""));
+      const pid = Number(await readFile11(lockPath, "utf8").catch(() => ""));
       if (pid > 0) {
         try {
           process.kill(pid, 0);
@@ -7899,17 +7908,17 @@ async function migrateLegacyData(projectRoot, sources) {
   if (!lock) throw Error("\u5168\u5C40\u9879\u76EE\u8FC1\u79FB\u6B63\u5728\u8FDB\u884C\uFF0C\u8BF7\u7A0D\u540E\u91CD\u65B0\u6253\u5F00\u63D2\u4EF6");
   try {
     await mkdir3(projectRoot, { recursive: true });
-    const state = join9(base, ".builder-state");
+    const state = join10(base, ".builder-state");
     for (const source of existing) {
-      const oldState = join9(dirname4(source), ".builder-state");
+      const oldState = join10(dirname4(source), ".builder-state");
       for (const entry of await readdir3(source, { withFileTypes: true })) {
         if (!entry.isDirectory() || !/^[a-f0-9]{4}(?:-[a-f0-9]{4}){3}$/.test(entry.name)) continue;
-        const target = join9(projectRoot, entry.name), metadata = join9(state, "projects", entry.name);
+        const target = join10(projectRoot, entry.name), metadata = join10(state, "projects", entry.name);
         if (await stat5(target).catch(() => null) || await stat5(metadata).catch(() => null)) continue;
-        const stage = join9(base, `.migration-${randomUUID2()}`);
+        const stage = join10(base, `.migration-${randomUUID2()}`);
         try {
-          await cp(join9(source, entry.name), stage, { recursive: true, errorOnExist: true, force: false, filter: async (path) => !(await lstat(path)).isSymbolicLink() });
-          const oldMeta = join9(oldState, "projects", entry.name);
+          await cp(join10(source, entry.name), stage, { recursive: true, errorOnExist: true, force: false, filter: async (path) => !(await lstat(path)).isSymbolicLink() });
+          const oldMeta = join10(oldState, "projects", entry.name);
           if (await stat5(oldMeta).catch(() => null)) {
             await mkdir3(dirname4(metadata), { recursive: true });
             await cp(oldMeta, metadata, { recursive: true, errorOnExist: true, force: false, filter: async (path) => !(await lstat(path)).isSymbolicLink() });
@@ -7919,10 +7928,10 @@ async function migrateLegacyData(projectRoot, sources) {
           await rm(stage, { recursive: true, force: true });
         }
       }
-      const threads = await readdir3(join9(oldState, "threads"), { withFileTypes: true }).catch(() => []);
-      await mkdir3(join9(state, "threads"), { recursive: true });
-      for (const entry of threads) if (entry.isFile() && entry.name.endsWith(".json")) await cp(join9(oldState, "threads", entry.name), join9(state, "threads", entry.name), { force: false });
-      if (await stat5(join9(oldState, "active.json")).catch(() => null)) await cp(join9(oldState, "active.json"), join9(state, "active.json"), { force: false });
+      const threads = await readdir3(join10(oldState, "threads"), { withFileTypes: true }).catch(() => []);
+      await mkdir3(join10(state, "threads"), { recursive: true });
+      for (const entry of threads) if (entry.isFile() && entry.name.endsWith(".json")) await cp(join10(oldState, "threads", entry.name), join10(state, "threads", entry.name), { force: false });
+      if (await stat5(join10(oldState, "active.json")).catch(() => null)) await cp(join10(oldState, "active.json"), join10(state, "active.json"), { force: false });
     }
   } finally {
     await lock.close();
@@ -7931,13 +7940,13 @@ async function migrateLegacyData(projectRoot, sources) {
 }
 
 // server/project-manager.ts
-import { readFile as readFile11, mkdir as mkdir4, copyFile, realpath as realpath5, stat as stat7, readdir as readdir4 } from "node:fs/promises";
+import { readFile as readFile12, mkdir as mkdir4, copyFile, realpath as realpath6, stat as stat7, readdir as readdir4 } from "node:fs/promises";
 import { createHash as createHash5 } from "node:crypto";
-import { extname as extname4, join as join10, relative as relative4, sep as sep4, isAbsolute as isAbsolute6 } from "node:path";
+import { extname as extname4, join as join11, relative as relative5, sep as sep5, isAbsolute as isAbsolute7 } from "node:path";
 
 // server/open-directory.ts
 import { spawn } from "node:child_process";
-import { stat as stat6, realpath as realpath4 } from "node:fs/promises";
+import { stat as stat6, realpath as realpath5 } from "node:fs/promises";
 import { win32 } from "node:path";
 function windowsShellPath(path) {
   if (path.startsWith("\\\\?\\UNC\\")) path = "\\\\" + path.slice(8);
@@ -7996,7 +8005,7 @@ async function openDirectory(directory, platform = process.platform, start = spa
   const windows = platform === "win32";
   const command = windows ? win32.join(process.env.SystemRoot || "C:\\Windows", "System32", "WindowsPowerShell", "v1.0", "powershell.exe") : platform === "darwin" ? "open" : "xdg-open";
   const args = windows ? ["-NoProfile", "-NonInteractive", "-STA", "-WindowStyle", "Hidden", "-Command", activateDirectoryScript] : [directory];
-  const env = windows ? { ...process.env, WEBSITE_BUILDER_OPEN_DIRECTORY: windowsShellPath(await realpath4(directory)) } : void 0;
+  const env = windows ? { ...process.env, WEBSITE_BUILDER_OPEN_DIRECTORY: windowsShellPath(await realpath5(directory)) } : void 0;
   await new Promise((resolve6, reject) => {
     const child = start(command, args, { stdio: "ignore", shell: false, windowsHide: true, env, timeout: 15e3 });
     child.once("error", () => reject(Error("\u65E0\u6CD5\u6253\u5F00\u9879\u76EE\u76EE\u5F55")));
@@ -8040,16 +8049,16 @@ function projectManager(store) {
       if (thumbnails.size < 2) void thumbnail(project.id);
       let image;
       if (project.thumbnailPath) {
-        const directory = await realpath5(store.metadataDirectory(project.id));
-        const path = await realpath5(project.thumbnailPath).catch(() => "");
-        const rel = relative4(directory, path);
-        if (path && rel !== ".." && !rel.startsWith(`..${sep4}`) && !isAbsolute6(rel)) image = `data:image/png;base64,${(await readFile11(path)).toString("base64")}`;
+        const directory = await realpath6(store.metadataDirectory(project.id));
+        const path = await realpath6(project.thumbnailPath).catch(() => "");
+        const rel = relative5(directory, path);
+        if (path && rel !== ".." && !rel.startsWith(`..${sep5}`) && !isAbsolute7(rel)) image = `data:image/png;base64,${(await readFile12(path)).toString("base64")}`;
       }
       const details = store.database.project(project.id);
       let domain = [...`${project.name} ${details?.brief || ""}`.matchAll(/(?:https?:\/\/)?((?:[a-z0-9](?:[a-z0-9-]*[a-z0-9])?\.)+[a-z]{2,24})\b/gi)].map((match) => match[1].toLowerCase()).find((host) => !/\.(?:html?|css|js|json|png|jpe?g|webp|svg|avif)$/i.test(host));
       if (!domain) for (const name of ["index.html", "components/footer.js"]) {
         try {
-          const base = await realpath5(join10(store.root, project.id)), source = await readFile11(await contained(base, name), "utf8");
+          const base = await realpath6(join11(store.root, project.id)), source = await readFile12(await contained(base, name), "utf8");
           domain = source.match(/<link\b(?=[^>]*\brel\s*=\s*["']canonical["'])[^>]*\bhref\s*=\s*["']https?:\/\/([^/"']+)/i)?.[1] || source.match(/support@([a-z0-9.-]+\.[a-z]{2,24})/i)?.[1];
           if (domain) break;
         } catch {
@@ -8070,7 +8079,7 @@ function projectManager(store) {
     const scan = async (directory) => {
       for (const entry of await readdir4(directory, { withFileTypes: true })) {
         if (entry.name.startsWith(".") || entry.name === "node_modules") continue;
-        const path = join10(directory, entry.name);
+        const path = join11(directory, entry.name);
         if (entry.isDirectory()) await scan(path);
         else if (entry.isFile() && !/\.(?:html?|js|mjs|css)$/i.test(path)) {
           const info = await stat7(path);
@@ -8131,9 +8140,9 @@ function projectManager(store) {
       for (const resource of await resources(id)) {
         if (!resource.mime.startsWith("image/")) continue;
         try {
-          const base = await realpath5(view.directory), file = await realpath5(resource.path), path = relative4(base, file);
-          if (path === ".." || path.startsWith(`..${sep4}`) || isAbsolute6(path)) continue;
-          const relativePath = path.split(sep4).join("/");
+          const base = await realpath6(view.directory), file = await realpath6(resource.path), path = relative5(base, file);
+          if (path === ".." || path.startsWith(`..${sep5}`) || isAbsolute7(path)) continue;
+          const relativePath = path.split(sep5).join("/");
           if (pending.has(relativePath)) continue;
           images.push({ ...resource, path: relativePath, status: "ready", url: await registerPreviewFile(file, resource.mime) });
         } catch {
@@ -8175,13 +8184,13 @@ function projectManager(store) {
     }
     if (action === "resources") return { resources: await resources(id) };
     if (action === "attach") {
-      if (!input.source_path || !isAbsolute6(input.source_path)) throw Error("\u9700\u8981\u7528\u6237\u63D0\u4F9B\u7684\u8D44\u6E90\u7EDD\u5BF9\u8DEF\u5F84");
-      const source = await realpath5(input.source_path), info = await stat7(source);
+      if (!input.source_path || !isAbsolute7(input.source_path)) throw Error("\u9700\u8981\u7528\u6237\u63D0\u4F9B\u7684\u8D44\u6E90\u7EDD\u5BF9\u8DEF\u5F84");
+      const source = await realpath6(input.source_path), info = await stat7(source);
       if (!info.isFile() || info.size > 64 * 1024 * 1024) throw Error("\u8D44\u6E90\u5FC5\u987B\u662F\u6587\u4EF6\u4E14\u4E0D\u8D85\u8FC7 64 MB");
-      const bytes = await readFile11(source), hash = createHash5("sha256").update(bytes).digest("hex");
-      const folder = join10(view.metadataDirectory, "session-assets");
+      const bytes = await readFile12(source), hash = createHash5("sha256").update(bytes).digest("hex");
+      const folder = join11(view.metadataDirectory, "session-assets");
       await mkdir4(folder, { recursive: true });
-      const path = join10(folder, hash + extname4(source));
+      const path = join11(folder, hash + extname4(source));
       await copyFile(source, path);
       const name = source.split(/[\\/]/).pop();
       store.database.sql.prepare("INSERT INTO resources VALUES (?,?,?,?,?,?,?) ON CONFLICT(project_id,path) DO UPDATE SET thread_id=excluded.thread_id,name=excluded.name").run(createHash5("sha256").update(id + path).digest("hex"), id, thread || null, name, path, mime3(path), info.size);

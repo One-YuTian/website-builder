@@ -1,5 +1,5 @@
 interface:
   display_name: "网站验收"
-  short_description: "website-acceptance"
+  short_description: "按用户明确要求检查网站布局、多端适配、页面完整性及登录注册和下单结算流程。"
 policy:
   allow_implicit_invocation: false

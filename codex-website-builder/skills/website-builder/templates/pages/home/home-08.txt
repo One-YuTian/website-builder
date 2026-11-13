@@ -1,0 +1,55 @@
+## Overview
+
+Kitchen, bathroom, and home cleaning specialty store homepage assembled from utility navigation header, clean living hero carousel, kitchen essentials bestsellers grid, fast delivery service bar, and footer.
+
+### Component Chain
+`home-08: header-08 -> carousel-03 -> productlist-02 -> services-08 -> footer-02`
+
+### Included Components
+| Component | Custom Element | Role & Function |
+| --- | --- | --- |
+| `Header-08` | `<header-08>` | Kitchen and cleaning specialty navigation header with search and shortcuts |
+| `Carousel-03` | `<carousel-03>` | Hero responsive full-width banner carousel for seasonal cleaning promotions |
+| `ProductList-02` | `<productlist-02>` | High-frequency kitchen essentials bestseller products grid |
+| `Services-08` | `<services-08>` | Fast shipping, eco-friendly guarantees, and customer return service badges |
+| `Footer-02` | `<footer-02>` | Global site footer with customer support channels and secure payment badges |
+
+### Dimensions & Responsiveness
+- Aligned to global content width (`w-full max-w-content mx-auto px-4 lg:px-6`).
+- Mobile: Fully responsive stacked layout with native touch carousel gestures.
+
+## Code
+
+### HTML
+
+```html
+<div class="home-page w-full min-h-screen bg-surface font-sans text-content flex flex-col">
+  <!-- Component: Header-08 - Kitchen and cleaning specialty navigation header with search and shortcuts -->
+  <header-08 class="block w-full sticky top-0 z-40"></header-08>
+
+  <main class="flex-1 w-full space-y-8 sm:space-y-12 pb-12">
+    <!-- Component: Carousel-03 - Hero responsive full-width banner carousel for seasonal cleaning promotions -->
+    <carousel-03 class="block w-full"></carousel-03>
+
+    <!-- Component: ProductList-02 - High-frequency kitchen essentials bestseller products grid -->
+    <productlist-02 class="block w-full"></productlist-02>
+
+    <!-- Component: Services-08 - Fast shipping, eco-friendly guarantees, and customer return service badges -->
+    <services-08 class="block w-full"></services-08>
+  </main>
+
+  <!-- Component: Footer-02 - Global site footer with customer support channels and secure payment badges -->
+  <footer-02 class="block w-full"></footer-02>
+</div>
+```
+
+### JavaScript
+
+```javascript
+document.addEventListener('DOMContentLoaded', function() {
+  // Page-level event coordination for Home-08
+  document.addEventListener('product-navigate', function(e) {
+    console.log('Home-08 Product Navigation:', e.detail);
+  });
+});
+```

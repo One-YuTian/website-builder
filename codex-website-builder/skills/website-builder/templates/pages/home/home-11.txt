@@ -1,0 +1,59 @@
+## Overview
+
+Brand discount deals and multi-category retail homepage assembled from high-tech navigation header, hero banner carousel, brand special offer promotional block, value countdown flash deal section, trending products grid, and footer.
+
+### Component Chain
+`home-11: header-03 -> carousel-03 -> promotion-05 -> flashsale-03 -> productlist-01 -> footer-01`
+
+### Included Components
+| Component | Custom Element | Role & Function |
+| --- | --- | --- |
+| `Header-03` | `<header-03>` | Dual-layer sticky navigation header with search and category shortcuts |
+| `Carousel-03` | `<carousel-03>` | Hero responsive full-width banner carousel for joint brand campaigns |
+| `Promotion-05` | `<promotion-05>` | Brand special offer promotional block showcasing partner brand discounts |
+| `FlashSale-03` | `<flashsale-03>` | Value countdown flash deal section with time-limited discounts |
+| `ProductList-01` | `<productlist-01>` | Featured trending products grid showcase with add-to-cart actions |
+| `Footer-01` | `<footer-01>` | Global comprehensive site footer with sitemap links and newsletter signup |
+
+### Dimensions & Responsiveness
+- Aligned to global content width (`w-full max-w-content mx-auto px-4 lg:px-6`).
+- Mobile: Fully responsive stacked layout with native touch carousel gestures.
+
+## Code
+
+### HTML
+
+```html
+<div class="home-page w-full min-h-screen bg-surface font-sans text-content flex flex-col">
+  <!-- Component: Header-03 - Dual-layer sticky navigation header with search and category shortcuts -->
+  <header-03 class="block w-full sticky top-0 z-40"></header-03>
+
+  <main class="flex-1 w-full space-y-8 sm:space-y-12 pb-12">
+    <!-- Component: Carousel-03 - Hero responsive full-width banner carousel for joint brand campaigns -->
+    <carousel-03 class="block w-full"></carousel-03>
+
+    <!-- Component: Promotion-05 - Brand special offer promotional block showcasing partner brand discounts -->
+    <promotion-05 class="block w-full"></promotion-05>
+
+    <!-- Component: FlashSale-03 - Value countdown flash deal section with time-limited discounts -->
+    <flashsale-03 class="block w-full"></flashsale-03>
+
+    <!-- Component: ProductList-01 - Featured trending products grid showcase with add-to-cart actions -->
+    <productlist-01 class="block w-full"></productlist-01>
+  </main>
+
+  <!-- Component: Footer-01 - Global comprehensive site footer with sitemap links and newsletter signup -->
+  <footer-01 class="block w-full"></footer-01>
+</div>
+```
+
+### JavaScript
+
+```javascript
+document.addEventListener('DOMContentLoaded', function() {
+  // Page-level event coordination for Home-11
+  document.addEventListener('product-navigate', function(e) {
+    console.log('Home-11 Product Navigation:', e.detail);
+  });
+});
+```

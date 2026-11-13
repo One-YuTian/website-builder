@@ -1,0 +1,59 @@
+## Overview
+
+Regional digital technology and computer office homepage assembled from tech dual-layer header, new tech hero carousel, computing bestsellers grid, tech accessories countdown flash sale, consumer electronics feed, and footer.
+
+### Component Chain
+`home-19: header-03 -> carousel-01 -> productlist-02 -> flashsale-07 -> productlist-01 -> footer-02`
+
+### Included Components
+| Component | Custom Element | Role & Function |
+| --- | --- | --- |
+| `Header-03` | `<header-03>` | Tech marketplace dual-layer navigation header with deep category index |
+| `Carousel-01` | `<carousel-01>` | Tech release hero responsive promotional banner carousel |
+| `ProductList-02` | `<productlist-02>` | Computing devices, tablets, and office tech bestseller products grid |
+| `FlashSale-07` | `<flashsale-07>` | Tech accessories and geek gadgets countdown flash sale section |
+| `ProductList-01` | `<productlist-01>` | Comprehensive consumer electronics products showcase grid |
+| `Footer-02` | `<footer-02>` | Tech warranty, authenticity guarantee, and site footer |
+
+### Dimensions & Responsiveness
+- Aligned to global content width (`w-full max-w-content mx-auto px-4 lg:px-6`).
+- Mobile: Fully responsive stacked layout with native touch carousel gestures.
+
+## Code
+
+### HTML
+
+```html
+<div class="home-page w-full min-h-screen bg-surface font-sans text-content flex flex-col">
+  <!-- Component: Header-03 - Tech marketplace dual-layer navigation header with deep category index -->
+  <header-03 class="block w-full sticky top-0 z-40"></header-03>
+
+  <main class="flex-1 w-full space-y-8 sm:space-y-12 pb-12">
+    <!-- Component: Carousel-01 - Tech release hero responsive promotional banner carousel -->
+    <carousel-01 class="block w-full"></carousel-01>
+
+    <!-- Component: ProductList-02 - Computing devices, tablets, and office tech bestseller products grid -->
+    <productlist-02 class="block w-full"></productlist-02>
+
+    <!-- Component: FlashSale-07 - Tech accessories and geek gadgets countdown flash sale section -->
+    <flashsale-07 class="block w-full"></flashsale-07>
+
+    <!-- Component: ProductList-01 - Comprehensive consumer electronics products showcase grid -->
+    <productlist-01 class="block w-full"></productlist-01>
+  </main>
+
+  <!-- Component: Footer-02 - Tech warranty, authenticity guarantee, and site footer -->
+  <footer-02 class="block w-full"></footer-02>
+</div>
+```
+
+### JavaScript
+
+```javascript
+document.addEventListener('DOMContentLoaded', function() {
+  // Page-level event coordination for Home-19
+  document.addEventListener('product-navigate', function(e) {
+    console.log('Home-19 Product Navigation:', e.detail);
+  });
+});
+```

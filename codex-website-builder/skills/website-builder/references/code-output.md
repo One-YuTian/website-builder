@@ -13,7 +13,7 @@
 
 插件内置Prettier standalone 3.6.2及HTML/Babel/Estree/PostCSS解析器文件，不使用npm依赖、npm install或npx，运行时不联网下载格式化器。文件和许可证在插件assets/prettier，构建复制到dist/runtime/prettier，仅供插件输出代码使用，不能发布进网站生产目录。
 
-write会在装配HTML/Toast后，使用本地Prettier格式化HTML、页面内script/style、JS/MJS、CSS和JSON，再校验并落盘；finish会格式化对应完整HTML及新建的Toast文件。直接写共享文件时仍应通过website_write，不绕开格式化链路。旧hook-page脚本也调用同一格式化路径。未完整HTML保持未完成，不能由Prettier补齐后冒充ready；语法错误不得覆盖原文件。
+write会在装配HTML及复用项目已有Toast后，使用本地Prettier格式化HTML、页面内script/style、JS/MJS、CSS和JSON，再校验并落盘；finish格式化对应完整HTML，不创建默认Toast。共享组件由Agent按模板文档实现并通过website_write落盘，工具不可用时用project.mjs走同一CLI格式化链路。未完整HTML保持未完成，不能由Prettier补齐后冒充ready；语法错误不得覆盖原文件。
 
 唯一配置为 [options.json](../../../assets/prettier/options.json)：2空格缩进、不用Tab、printWidth 100、JS分号与单引号、trailingComma all、对象括号内空格、LF换行和文件末尾换行。HTML属性双引号，htmlWhitespaceSensitivity为css，内联JS/CSS自动格式化；JSON用json-stringify解析器、双引号、层级缩进，不输出注释或尾逗号。printWidth是折行目标，长URL/素材字符串等可超出，不以正则强截断代码。
 

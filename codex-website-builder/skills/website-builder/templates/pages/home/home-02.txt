@@ -1,0 +1,59 @@
+## Overview
+
+Southeast Asian comprehensive multi-category e-commerce homepage assembled from promo-focused navigation header, hero responsive banner carousel, bestsellers product grid, visual promotional banner, personalized recommendation feed, and site footer.
+
+### Component Chain
+`home-02: header-02 -> carousel-03 -> productlist-02 -> promotion-01 -> productlist-03 -> footer-02`
+
+### Included Components
+| Component | Custom Element | Role & Function |
+| --- | --- | --- |
+| `Header-02` | `<header-02>` | Sticky navigation header with promotional announcement bar, search bar, category shortcuts, and cart indicators |
+| `Carousel-03` | `<carousel-03>` | Hero responsive full-width promotional banner carousel with touch swipe and autoplay |
+| `ProductList-02` | `<productlist-02>` | Featured bestseller products grid showcase with add-to-cart actions |
+| `Promotion-01` | `<promotion-01>` | Visual promotional marketing banner for seasonal sales campaign and highlights |
+| `ProductList-03` | `<productlist-03>` | Personalized product recommendation feed showcase |
+| `Footer-02` | `<footer-02>` | Global site footer with trust badges, multi-column sitemap navigation, and copyright |
+
+### Dimensions & Responsiveness
+- Aligned to global content width (`w-full max-w-content mx-auto px-4 lg:px-6`).
+- Mobile: Fully responsive stacked layout with native touch carousel gestures.
+
+## Code
+
+### HTML
+
+```html
+<div class="home-page w-full min-h-screen bg-surface font-sans text-content flex flex-col">
+  <!-- Component: Header-02 - Sticky navigation header with promotional announcement bar, search bar, category shortcuts, and cart indicators -->
+  <header-02 class="block w-full sticky top-0 z-40"></header-02>
+
+  <main class="flex-1 w-full space-y-8 sm:space-y-12 pb-12">
+    <!-- Component: Carousel-03 - Hero responsive full-width promotional banner carousel with touch swipe and autoplay -->
+    <carousel-03 class="block w-full"></carousel-03>
+
+    <!-- Component: ProductList-02 - Featured bestseller products grid showcase with add-to-cart actions -->
+    <productlist-02 class="block w-full"></productlist-02>
+
+    <!-- Component: Promotion-01 - Visual promotional marketing banner for seasonal sales campaign and highlights -->
+    <promotion-01 class="block w-full"></promotion-01>
+
+    <!-- Component: ProductList-03 - Personalized product recommendation feed showcase -->
+    <productlist-03 class="block w-full"></productlist-03>
+  </main>
+
+  <!-- Component: Footer-02 - Global site footer with trust badges, multi-column sitemap navigation, and copyright -->
+  <footer-02 class="block w-full"></footer-02>
+</div>
+```
+
+### JavaScript
+
+```javascript
+document.addEventListener('DOMContentLoaded', function() {
+  // Page-level event coordination for Home-02
+  document.addEventListener('product-navigate', function(e) {
+    console.log('Home-02 Product Navigation:', e.detail);
+  });
+});
+```

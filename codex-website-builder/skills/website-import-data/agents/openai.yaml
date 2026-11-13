@@ -1,0 +1,3 @@
+interface:
+  display_name: "网站商品导入"
+  short_description: "通过SDK导入商品JSON，统计商品与分类，完成二次归类和图片CDN适配。"
