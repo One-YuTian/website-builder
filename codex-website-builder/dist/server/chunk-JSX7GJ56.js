@@ -1,7 +1,7 @@
 import { createRequire } from 'node:module'; const require = createRequire(import.meta.url);
 
 // server/format-source.ts
-import { readFile } from "fs/promises";
+import { readFile } from "node:fs/promises";
 
 // node_modules/.pnpm/acorn@8.19.0/node_modules/acorn/dist/acorn.mjs
 var astralIdentifierCodes = [509, 0, 227, 0, 150, 4, 294, 9, 1368, 2, 2, 1, 6, 3, 41, 2, 5, 0, 166, 1, 574, 3, 9, 9, 7, 9, 32, 4, 318, 1, 31, 4, 33, 15, 71, 10, 50, 3, 123, 2, 54, 14, 32, 10, 3, 1, 11, 3, 46, 10, 8, 0, 46, 9, 7, 2, 37, 13, 2, 9, 6, 1, 45, 0, 13, 2, 49, 13, 9, 3, 2, 11, 83, 11, 7, 0, 3, 0, 158, 11, 6, 9, 7, 3, 56, 1, 2, 6, 3, 1, 3, 2, 10, 0, 11, 1, 3, 6, 4, 4, 68, 8, 2, 0, 3, 0, 2, 3, 2, 4, 2, 0, 15, 1, 83, 17, 10, 9, 5, 0, 82, 19, 13, 9, 214, 6, 3, 8, 28, 1, 83, 16, 16, 9, 82, 12, 9, 9, 7, 19, 58, 14, 5, 9, 243, 14, 166, 9, 71, 5, 2, 1, 3, 3, 2, 0, 2, 1, 13, 9, 120, 6, 3, 6, 4, 0, 29, 9, 41, 6, 2, 3, 9, 0, 10, 10, 47, 15, 199, 7, 137, 9, 54, 7, 2, 7, 17, 9, 57, 21, 2, 13, 123, 5, 4, 0, 2, 1, 2, 6, 2, 0, 9, 9, 49, 4, 2, 1, 2, 4, 9, 9, 55, 9, 7, 0, 259, 3, 10, 1, 2, 0, 49, 6, 4, 4, 14, 10, 5350, 0, 7, 14, 11465, 27, 2343, 9, 87, 9, 39, 4, 60, 6, 26, 9, 535, 9, 470, 0, 2, 54, 8, 3, 82, 0, 12, 1, 19628, 1, 4178, 9, 519, 45, 3, 22, 481, 1, 61, 4, 4, 5, 9, 7, 3, 6, 31, 3, 149, 2, 12, 2, 9, 1, 3, 0, 33, 1, 1357, 49, 513, 54, 5, 49, 9, 0, 15, 0, 23, 4, 2, 14, 1361, 6, 2, 16, 3, 6, 2, 1, 2, 4, 101, 0, 161, 6, 10, 9, 357, 0, 62, 13, 499, 13, 245, 1, 2, 9, 233, 0, 3, 0, 8, 1, 6, 0, 475, 6, 110, 6, 6, 9, 4759, 9, 787719, 239];
@@ -5772,8 +5772,8 @@ async function formatSource(path, source) {
 }
 
 // server/templates.ts
-import { readFile as readFile2 } from "fs/promises";
-import { join } from "path";
+import { readFile as readFile2 } from "node:fs/promises";
+import { join } from "node:path";
 function overview(text2, layout) {
   const original = text2.match(/## Overview([\s\S]*?)(?=## Code|$)/)?.[1].trim() || "";
   if (!layout) return original;
@@ -5820,12 +5820,12 @@ async function readTemplates(skillRoot, input) {
 }
 
 // server/projects.ts
-import { mkdir, readFile as readFile3, rename, writeFile, open, unlink, realpath, stat, readdir } from "fs/promises";
-import { randomBytes, randomUUID, createHash } from "crypto";
-import { dirname, isAbsolute, join as join2, relative, resolve, sep } from "path";
+import { mkdir, readFile as readFile3, rename, writeFile, open, unlink, realpath, stat } from "node:fs/promises";
+import { randomBytes, randomUUID, createHash } from "node:crypto";
+import { dirname, isAbsolute, join as join3, relative, resolve, sep } from "node:path";
 
 // server/assemble.ts
-import { posix } from "path";
+import { posix } from "node:path";
 function injectSharedUI(html, path) {
   if (!/<html\b/i.test(html) || !/<\/body>/i.test(html) || !/<\/html>\s*$/i.test(html)) return html;
   if (!/<head\b/i.test(html)) html = html.replace(/<html\b[^>]*>/i, (match) => `${match}<head></head>`);
@@ -5862,17 +5862,130 @@ ${options.commerce ? "<script>window.SDK.init(window.productData, window.commerc
 }
 
 // server/projects.ts
-import { fileURLToPath } from "url";
+import { fileURLToPath } from "node:url";
 
 // server/template-source.ts
 function regionMarkers(binding) {
   return { start: `<!-- Source Template: ${binding.id} | Region: ${binding.region} -->`, end: `<!-- /Source Template: ${binding.region} -->` };
 }
 
+// server/database.ts
+import { DatabaseSync } from "node:sqlite";
+import { mkdirSync, readFileSync, readdirSync, existsSync } from "node:fs";
+import { join as join2 } from "node:path";
+var ProjectDatabase = class {
+  sql;
+  path;
+  constructor(base, projectRoot, stateRoot) {
+    mkdirSync(join2(base, "db"), { recursive: true });
+    this.path = join2(base, "db", "website-builder.sqlite");
+    this.sql = new DatabaseSync(this.path);
+    this.sql.exec(`PRAGMA busy_timeout=5000; PRAGMA journal_mode=WAL; PRAGMA foreign_keys=ON;
+      CREATE TABLE IF NOT EXISTS projects (
+        id TEXT PRIMARY KEY, title TEXT NOT NULL, data TEXT NOT NULL,
+        updated_at TEXT NOT NULL, deleted_at TEXT, thumbnail_path TEXT, thumbnail_revision TEXT
+      );
+      CREATE TABLE IF NOT EXISTS threads (thread_id TEXT PRIMARY KEY, project_id TEXT NOT NULL REFERENCES projects(id));
+      CREATE TABLE IF NOT EXISTS project_sessions (project_id TEXT NOT NULL REFERENCES projects(id), thread_id TEXT NOT NULL, PRIMARY KEY(project_id,thread_id));
+      CREATE TABLE IF NOT EXISTS panels (panel_id TEXT PRIMARY KEY, thread_id TEXT NOT NULL, project_id TEXT REFERENCES projects(id), updated_at TEXT NOT NULL);
+      CREATE INDEX IF NOT EXISTS panels_thread ON panels(thread_id,updated_at);
+      CREATE TABLE IF NOT EXISTS resources (
+        id TEXT PRIMARY KEY, project_id TEXT NOT NULL REFERENCES projects(id), thread_id TEXT,
+        name TEXT NOT NULL, path TEXT NOT NULL, mime TEXT NOT NULL, size INTEGER NOT NULL,
+        UNIQUE(project_id,path)
+      );
+      CREATE TABLE IF NOT EXISTS settings (key TEXT PRIMARY KEY, value TEXT NOT NULL);
+      PRAGMA user_version=1;`);
+    const read = (file) => {
+      try {
+        return JSON.parse(readFileSync(file, "utf8"));
+      } catch (error) {
+        if (error.code === "ENOENT") return null;
+        throw error;
+      }
+    };
+    const entries = (path) => existsSync(path) ? readdirSync(path, { withFileTypes: true }) : [];
+    for (const entry of entries(projectRoot)) {
+      if (!entry.isDirectory() || !/^[a-f0-9]{4}(?:-[a-f0-9]{4}){3}$/.test(entry.name)) continue;
+      if (this.row(entry.name)) continue;
+      const project = read(join2(stateRoot, "projects", entry.name, "project.json")) || read(join2(projectRoot, entry.name, ".website-builder.json"));
+      if (project?.id === entry.name) this.save(project);
+    }
+    for (const entry of entries(join2(stateRoot, "threads"))) {
+      if (!entry.isFile() || !entry.name.endsWith(".json")) continue;
+      const binding = read(join2(stateRoot, "threads", entry.name));
+      if (binding?.threadId && this.project(binding.projectId)) this.sql.prepare("INSERT OR IGNORE INTO threads VALUES (?,?)").run(binding.threadId, binding.projectId);
+    }
+    this.sql.exec("INSERT OR IGNORE INTO project_sessions SELECT project_id,thread_id FROM threads");
+    if (!this.sql.prepare("SELECT value FROM settings WHERE key='active'").get()) {
+      const active = read(join2(stateRoot, "active.json"));
+      if (active?.threadId && this.project(active.projectId)) this.setActive(active);
+    }
+  }
+  row(id) {
+    return this.sql.prepare("SELECT * FROM projects WHERE id=?").get(id);
+  }
+  project(id) {
+    const row = this.row(id);
+    return row && !row.deleted_at ? JSON.parse(row.data) : null;
+  }
+  save(project) {
+    this.sql.prepare(`INSERT INTO projects(id,title,data,updated_at) VALUES (?,?,?,?)
+      ON CONFLICT(id) DO UPDATE SET title=excluded.title,data=excluded.data,updated_at=excluded.updated_at WHERE projects.deleted_at IS NULL`).run(project.id, project.name, JSON.stringify(project), project.updatedAt);
+  }
+  list(includeDeleted = false) {
+    return this.sql.prepare(`SELECT id,title AS name,updated_at AS updatedAt,deleted_at AS deletedAt,thumbnail_path AS thumbnailPath,thumbnail_revision AS thumbnailRevision FROM projects ${includeDeleted ? "" : "WHERE deleted_at IS NULL"} ORDER BY updated_at DESC`).all();
+  }
+  binding(thread) {
+    if (thread) {
+      const row2 = this.sql.prepare("SELECT thread_id AS threadId,project_id AS projectId FROM threads WHERE thread_id=?").get(thread);
+      return row2 || null;
+    }
+    const row = this.sql.prepare("SELECT value FROM settings WHERE key='active'").get();
+    return row ? JSON.parse(row.value) : null;
+  }
+  setActive(binding) {
+    this.sql.prepare("INSERT OR IGNORE INTO project_sessions VALUES (?,?)").run(binding.projectId, binding.threadId);
+    this.sql.prepare("INSERT INTO threads VALUES (?,?) ON CONFLICT(thread_id) DO UPDATE SET project_id=excluded.project_id").run(binding.threadId, binding.projectId);
+    this.sql.prepare("INSERT INTO settings VALUES ('active',?) ON CONFLICT(key) DO UPDATE SET value=excluded.value").run(JSON.stringify(binding));
+  }
+  panel(panelId, thread, projectId) {
+    if (projectId && !this.project(projectId)) throw Error("\u9879\u76EE\u4E0D\u5B58\u5728\u6216\u5DF2\u5220\u9664");
+    const existing = this.sql.prepare("SELECT thread_id FROM panels WHERE panel_id=?").get(panelId);
+    if (existing?.thread_id && existing.thread_id !== thread) throw Error("\u9762\u677F\u4E0D\u5C5E\u4E8E\u5F53\u524D\u4F1A\u8BDD");
+    this.sql.prepare("INSERT INTO panels VALUES (?,?,?,?) ON CONFLICT(panel_id) DO UPDATE SET thread_id=excluded.thread_id,project_id=excluded.project_id,updated_at=excluded.updated_at").run(panelId, thread, projectId, (/* @__PURE__ */ new Date()).toISOString());
+  }
+  panelById(panelId) {
+    return this.sql.prepare("SELECT * FROM panels WHERE panel_id=?").get(panelId);
+  }
+  context(thread, panelId) {
+    if (panelId) {
+      const panel = this.panelById(panelId);
+      return panel && (!thread || !panel.thread_id || panel.thread_id === thread) ? panel : void 0;
+    }
+    return thread ? this.sql.prepare("SELECT * FROM panels WHERE thread_id=? ORDER BY updated_at DESC LIMIT 1").get(thread) : void 0;
+  }
+  remove(id) {
+    if (!this.project(id)) throw Error("\u9879\u76EE\u4E0D\u5B58\u5728\u6216\u5DF2\u5220\u9664");
+    this.sql.exec("BEGIN IMMEDIATE");
+    try {
+      this.sql.prepare("UPDATE projects SET deleted_at=? WHERE id=?").run((/* @__PURE__ */ new Date()).toISOString(), id);
+      this.sql.prepare("UPDATE panels SET project_id=NULL WHERE project_id=?").run(id);
+      this.sql.prepare("DELETE FROM threads WHERE project_id=?").run(id);
+      const active = this.binding();
+      if (active?.projectId === id) this.sql.prepare("DELETE FROM settings WHERE key='active'").run();
+      this.sql.exec("COMMIT");
+    } catch (error) {
+      this.sql.exec("ROLLBACK");
+      throw error;
+    }
+  }
+};
+
 // server/projects.ts
 var DEFAULT_PAGES = ["index", "shop", "product", "wishlist", "checkout", "login", "register", "about", "contact", "terms", "privacy", "return"].map((name) => ({ path: `${name}.html`, title: name }));
 var idPattern = /^[a-f0-9]{4}(?:-[a-f0-9]{4}){3}$/;
-var pause = (ms) => new Promise((resolve4) => setTimeout(resolve4, ms));
+var pause = (ms) => new Promise((resolve6) => setTimeout(resolve6, ms));
 async function json(file) {
   try {
     return JSON.parse(await readFile3(file, "utf8"));
@@ -5904,32 +6017,34 @@ var ProjectStore = class {
   constructor(root) {
     this.root = root;
     this.root = resolve(root);
-    this.stateRoot = join2(dirname(this.root), ".builder-state");
+    this.stateRoot = join3(dirname(this.root), ".builder-state");
+    this.database = new ProjectDatabase(dirname(this.root), this.root, this.stateRoot);
   }
   root;
   skillRoot = (process.env.WEBSITE_BUILDER_SKILL_ROOT || fileURLToPath(new URL("../../skills/website-builder/", import.meta.url))).replaceAll("${PLUGIN_ROOT}", fileURLToPath(new URL("../../", import.meta.url)));
   stateRoot;
+  database;
   binding(thread) {
     if (!thread.trim()) throw new Error("\u9700\u8981\u5F53\u524D\u771F\u5B9E thread_id\uFF0C\u4E0D\u80FD\u4F7F\u7528\u5171\u4EAB\u533F\u540D\u4F1A\u8BDD");
-    return join2(this.stateRoot, "threads", createHash("sha256").update(thread).digest("hex") + ".json");
+    return join3(this.stateRoot, "threads", createHash("sha256").update(thread).digest("hex") + ".json");
   }
   folder(id) {
     if (!idPattern.test(id)) throw new Error("\u9879\u76EE ID \u65E0\u6548");
-    return join2(this.root, id);
+    return join3(this.root, id);
   }
   metadataDirectory(id) {
     this.folder(id);
-    return join2(this.stateRoot, "projects", id);
+    return join3(this.stateRoot, "projects", id);
   }
   manifest(id) {
-    return join2(this.metadataDirectory(id), "project.json");
+    return join3(this.metadataDirectory(id), "project.json");
   }
   async loadProject(id) {
-    return await json(this.manifest(id)) || await json(join2(this.folder(id), ".website-builder.json"));
+    return this.database.project(id);
   }
   async lock(key, run) {
-    await mkdir(join2(this.stateRoot, "locks"), { recursive: true });
-    const file = join2(this.stateRoot, "locks", createHash("sha256").update(key).digest("hex") + ".lock");
+    await mkdir(join3(this.stateRoot, "locks"), { recursive: true });
+    const file = join3(this.stateRoot, "locks", createHash("sha256").update(key).digest("hex") + ".lock");
     let handle;
     for (let attempt = 0; attempt < 100; attempt++) {
       try {
@@ -5955,14 +6070,18 @@ var ProjectStore = class {
   async save(project) {
     project.revision = randomUUID();
     project.updatedAt = (/* @__PURE__ */ new Date()).toISOString();
+    this.database.save(project);
     await atomic(this.manifest(project.id), JSON.stringify(project, null, 2));
   }
   async get(threadId, projectId) {
-    const binding = threadId ? await json(this.binding(threadId)) : await json(join2(this.stateRoot, "active.json"));
+    const binding = this.database.binding(threadId);
     const id = projectId || binding?.projectId;
     if (!id) return null;
     const project = await this.loadProject(id);
-    if (!project) throw new Error("\u9879\u76EE\u4E0D\u5B58\u5728");
+    if (!project) {
+      if (!projectId) return null;
+      throw new Error("\u9879\u76EE\u4E0D\u5B58\u5728\u6216\u5DF2\u5220\u9664");
+    }
     const base = await realpath(this.root), folder = await realpath(this.folder(id)), rel = relative(base, folder);
     if (rel === ".." || rel.startsWith(`..${sep}`) || isAbsolute(rel)) throw new Error("\u9879\u76EE\u76EE\u5F55\u4E0D\u80FD\u6307\u5411\u5916\u90E8");
     const currentThread = threadId || binding?.threadId || "";
@@ -5970,20 +6089,14 @@ var ProjectStore = class {
   }
   async list() {
     await mkdir(this.root, { recursive: true });
-    const projects = [];
-    for (const entry of await readdir(this.root, { withFileTypes: true })) {
-      if (!entry.isDirectory() || !idPattern.test(entry.name)) continue;
-      const project = await this.loadProject(entry.name);
-      if (project) projects.push({ id: project.id, name: project.name, updatedAt: project.updatedAt });
-    }
-    return projects.sort((a, b) => b.updatedAt.localeCompare(a.updatedAt));
+    return this.database.list();
   }
   async templateUsage() {
     const usage = {};
     for (const project of await this.list()) {
       let data2;
       try {
-        data2 = await json(join2(this.metadataDirectory(project.id), "website-builder.templates.json")) || await json(join2(this.folder(project.id), "website-builder.templates.json"));
+        data2 = await json(join3(this.metadataDirectory(project.id), "website-builder.templates.json")) || await json(join3(this.folder(project.id), "website-builder.templates.json"));
       } catch {
         continue;
       }
@@ -5996,22 +6109,27 @@ var ProjectStore = class {
     }
     return usage;
   }
+  async createProject(input) {
+    const id = randomBytes(8).toString("hex").match(/.{4}/g).join("-");
+    const pages = (input.pages || DEFAULT_PAGES).map((page) => ({ ...page, path: this.path(page.path, true), status: "queued", version: 0 }));
+    if (new Set(pages.map((page) => page.path)).size !== pages.length) throw new Error("\u9875\u9762\u8DEF\u5F84\u91CD\u590D");
+    const project = { id, name: input.name || "Ecommerce website", brief: input.brief || "", language: input.language || "en", revision: "", pages, updatedAt: "" };
+    await mkdir(this.folder(id), { recursive: true });
+    await this.save(project);
+    return { project, threadId: "", directory: this.folder(id), metadataDirectory: this.metadataDirectory(id), revision: `${id}::${project.revision}` };
+  }
   async open(input) {
     return this.lock(`thread:${input.threadId}`, async () => {
       let view = input.newProject ? null : await this.get(input.threadId, input.projectId);
       if (!view) {
         if (input.projectId) throw new Error("\u6307\u5B9A\u9879\u76EE\u4E0D\u5B58\u5728\uFF0C\u4E0D\u4F1A\u7528\u76F8\u540C\u540D\u5B57\u521B\u5EFA\u66FF\u4EE3\u9879\u76EE");
-        const id = randomBytes(8).toString("hex").match(/.{4}/g).join("-");
-        const pages = (input.pages || DEFAULT_PAGES).map((page) => ({ ...page, path: this.path(page.path, true), status: "queued", version: 0 }));
-        if (new Set(pages.map((page) => page.path)).size !== pages.length) throw new Error("\u9875\u9762\u8DEF\u5F84\u91CD\u590D");
-        const project = { id, name: input.name || "Ecommerce website", brief: input.brief || "", language: input.language || "en", revision: "", pages, updatedAt: "" };
-        await mkdir(this.folder(id), { recursive: true });
-        await this.save(project);
-        view = { project, threadId: input.threadId, directory: this.folder(id), metadataDirectory: this.metadataDirectory(id), revision: `${id}:${input.threadId}:${project.revision}` };
+        const created = await this.createProject(input);
+        view = { ...created, threadId: input.threadId, revision: `${created.project.id}:${input.threadId}:${created.project.revision}` };
       }
       const binding = { threadId: input.threadId, projectId: view.project.id };
+      this.database.setActive(binding);
       await atomic(this.binding(input.threadId), JSON.stringify(binding));
-      await atomic(join2(this.stateRoot, "active.json"), JSON.stringify(binding));
+      await atomic(join3(this.stateRoot, "active.json"), JSON.stringify(binding));
       return view;
     });
   }
@@ -6030,13 +6148,13 @@ var ProjectStore = class {
     }
     let folder = root;
     for (const part of path.split("/").slice(0, -1)) {
-      folder = join2(folder, part);
+      folder = join3(folder, part);
       await mkdir(folder, { recursive: true });
       const actual = await realpath(folder);
       const rel = relative(root, actual);
       if (rel === ".." || rel.startsWith(`..${sep}`) || isAbsolute(rel)) throw new Error("\u9879\u76EE\u8DEF\u5F84\u4E0D\u80FD\u7ECF\u8FC7\u5916\u90E8\u7B26\u53F7\u94FE\u63A5");
     }
-    const file = join2(root, path);
+    const file = join3(root, path);
     try {
       const actual = await realpath(file);
       const rel = relative(root, actual);
@@ -6087,6 +6205,43 @@ var ProjectStore = class {
     });
     return source ? createHash("sha256").update(source).digest("hex") : "";
   }
+  async resourceSignature(view, page) {
+    const hash = createHash("sha256"), visited = /* @__PURE__ */ new Set(), base = await realpath(view.directory);
+    const visit = async (path) => {
+      if (visited.has(path)) return;
+      visited.add(path);
+      hash.update(path);
+      let file;
+      try {
+        file = await realpath(resolve(view.directory, path));
+        const rel = relative(base, file);
+        if (rel === ".." || rel.startsWith(`..${sep}`) || isAbsolute(rel)) throw new Error("Resource outside project");
+        const info = await stat(file);
+        hash.update(`${info.size}:${info.mtimeMs}`);
+      } catch {
+        hash.update(":missing");
+        return;
+      }
+      if (!/\.(?:html?|js|mjs|css)$/i.test(path)) return;
+      const source = await readFile3(file, "utf8");
+      for (const match of source.matchAll(/(?:\b(?:src|href|srcset)\s*=\s*["']|url\(\s*["']?|["'`])([^"'`\s<>)]*\.(?:js|mjs|css|png|jpe?g|webp|avif|gif|svg|ico|woff2?|ttf|otf|mp4|mp3|json)(?:[?#][^"'`\s<>)]*)?)/gi)) {
+        const url = match[1].replaceAll("&amp;", "&");
+        if (/^(?:[a-z]+:|\/\/|#)/i.test(url)) continue;
+        try {
+          const value = decodeURIComponent(url.split(/[?#]/)[0]);
+          const directory = /\.m?js$/i.test(path) ? dirname(resolve(base, page)) : dirname(file);
+          const target = value.startsWith("/") ? resolve(base, value.slice(1)) : resolve(directory, value);
+          const rel = relative(base, target).split(sep).join("/");
+          this.path(rel);
+          await visit(rel);
+        } catch {
+          hash.update(":invalid-reference");
+        }
+      }
+    };
+    await visit(page);
+    return hash.digest("hex");
+  }
   // Direct-file generation may finish without a tool callback. Only a complete,
   // changed document can leave generating; begin must not redisplay the old file.
   async reconcile(threadId) {
@@ -6095,6 +6250,10 @@ var ProjectStore = class {
     const candidates = async (current2) => {
       const paths = [];
       for (const page of current2.project.pages) {
+        if (page.status === "ready" || page.status === "error" && page.resourceSignature) {
+          if (page.resourceSignature !== await this.resourceSignature(current2, page.path)) paths.push(page.path);
+          continue;
+        }
         if (page.status !== "generating" || page.generationHash === void 0) continue;
         const source = await readFile3(await this.target(current2.project.id, page.path), "utf8").catch(() => null);
         if (source && /<html\b/i.test(source) && /<body\b/i.test(source) && /<\/body>/i.test(source) && /<\/html>\s*$/i.test(source) && createHash("sha256").update(source).digest("hex") !== page.generationHash) paths.push(page.path);
@@ -6114,7 +6273,7 @@ var ProjectStore = class {
     }
     const view = await this.update(threadId, async (view2) => {
       const file = await this.target(view2.project.id, "website-builder.templates.json");
-      const previous = await json(file) || await json(join2(view2.directory, "website-builder.templates.json"));
+      const previous = await json(file) || await json(join3(view2.directory, "website-builder.templates.json"));
       const merged = [...previous?.bindings || []];
       for (const binding of bindings) {
         const index = merged.findIndex((item) => item.file === binding.file && item.region === binding.region);
@@ -6128,7 +6287,7 @@ var ProjectStore = class {
   async auditTemplates(threadId) {
     const view = await this.get(threadId);
     if (!view) throw new Error("\u8BF7\u5148\u6253\u5F00\u5F53\u524D\u4F1A\u8BDD\u9879\u76EE");
-    const sources = await json(await this.target(view.project.id, "website-builder.templates.json")) || await json(join2(view.directory, "website-builder.templates.json"));
+    const sources = await json(await this.target(view.project.id, "website-builder.templates.json")) || await json(join3(view.directory, "website-builder.templates.json"));
     return { advisory: true, configured: !!sources, bindings: sources?.bindings || [], message: "Template fidelity is SKILL guidance only. No structure score or generation pass/fail is calculated. Page readiness uses complete HTML and local dependency validation." };
   }
   async complete(view, paths) {
@@ -6140,7 +6299,7 @@ var ProjectStore = class {
         let html = await readFile3(file, "utf8");
         if (!/<html\b/i.test(html) || !/<\/html>\s*$/i.test(html) || !/<body\b/i.test(html) || !/<\/body>/i.test(html)) throw new Error("HTML \u5C1A\u672A\u5B8C\u6574\u8F93\u51FA");
         const toastPath = await this.target(view.project.id, "components/toast.js");
-        if (!await stat(toastPath).catch(() => null)) await atomic(toastPath, await formatSource("components/toast.js", await readFile3(join2(this.skillRoot, "assets/ui/toast.js"), "utf8")));
+        if (!await stat(toastPath).catch(() => null)) await atomic(toastPath, await formatSource("components/toast.js", await readFile3(join3(this.skillRoot, "assets/ui/toast.js"), "utf8")));
         const enhanced = await formatSource(path, injectSharedUI(html, path));
         if (enhanced !== html) {
           await atomic(file, enhanced);
@@ -6148,7 +6307,7 @@ var ProjectStore = class {
         }
         for (const match of html.matchAll(/\b(?:src|href)\s*=\s*["']([^"']+\.(?:js|css))(?:\?[^"']*)?["']/gi)) {
           if (/^(?:[a-z]+:|\/\/)/i.test(match[1])) continue;
-          const relativePath = relative(view.directory, resolve(dirname(file), match[1])).split(sep).join("/");
+          const relativePath = relative(view.directory, resolve(dirname(resolve(view.directory, path)), match[1])).split(sep).join("/");
           await stat(await this.target(view.project.id, relativePath));
         }
         page.status = "ready";
@@ -6161,6 +6320,7 @@ var ProjectStore = class {
         page.version++;
         delete page.generationHash;
       }
+      page.resourceSignature = await this.resourceSignature(view, path);
     }
   }
   async finish(threadId, paths) {
@@ -6206,7 +6366,7 @@ var ProjectStore = class {
         const page = view.project.pages.find((page2) => page2.path === file.path);
         if (page && file.title) page.title = file.title;
       }
-      const hasFile = async (path) => files.some((file) => file.path === path) || !!await stat(join2(view.directory, path)).catch(() => null);
+      const hasFile = async (path) => files.some((file) => file.path === path) || !!await stat(join3(view.directory, path)).catch(() => null);
       const commerce = await hasFile("js/ec-sdk.js") && await hasFile("js/sdk.js");
       const commerceConfig = commerce && await hasFile("js/commerce-config.js");
       const cart = !await hasFile("components/cart.js") ? "none" : view.project.pages.some((page) => /(^|\/)cart\.html?$/i.test(page.path)) ? "page" : "drawer";
@@ -6221,7 +6381,7 @@ var ProjectStore = class {
         await this.save(view.project);
         throw error;
       });
-      if (output.some((file) => /\.html?$/i.test(file.path) && /<toast-component\b/i.test(file.content)) && !await hasFile("components/toast.js")) output.push({ path: "components/toast.js", content: await formatSource("components/toast.js", await readFile3(join2(this.skillRoot, "assets/ui/toast.js"), "utf8")) });
+      if (output.some((file) => /\.html?$/i.test(file.path) && /<toast-component\b/i.test(file.content)) && !await hasFile("components/toast.js")) output.push({ path: "components/toast.js", content: await formatSource("components/toast.js", await readFile3(join3(this.skillRoot, "assets/ui/toast.js"), "utf8")) });
       const changed = /* @__PURE__ */ new Set();
       for (const file of output) {
         const target = await this.target(view.project.id, file.path);
@@ -6263,27 +6423,29 @@ var ProjectStore = class {
 };
 
 // server/resource-proxy.ts
-import http from "http";
-import https from "https";
-import { lookup } from "dns";
-import { isIP } from "net";
-import { gunzipSync, inflateSync, brotliDecompressSync } from "zlib";
+import http from "node:http";
+import https from "node:https";
+import { lookup } from "node:dns";
+import { isIP } from "node:net";
+import { gunzipSync, inflateSync, brotliDecompressSync } from "node:zlib";
 
 // server/snapshot.ts
-import { readFile as readFile5 } from "fs/promises";
-import { basename as basename2, dirname as dirname2, extname as extname2, resolve as resolve3 } from "path";
+import { readFile as readFile5 } from "node:fs/promises";
+import { basename as basename2, dirname as dirname2, extname as extname2, resolve as resolve3 } from "node:path";
 
 // server/preview.ts
-import { createServer } from "http";
-import { readFile as readFile4, readdir as readdir2, realpath as realpath2, stat as stat2 } from "fs/promises";
-import { basename, extname, isAbsolute as isAbsolute2, join as join3, relative as relative2, resolve as resolve2, sep as sep2 } from "path";
-import { randomBytes as randomBytes2 } from "crypto";
-import { fileURLToPath as fileURLToPath2 } from "url";
+import { createServer } from "node:http";
+import { readFile as readFile4, readdir as readdir2, realpath as realpath2, stat as stat2 } from "node:fs/promises";
+import { basename, extname, isAbsolute as isAbsolute2, join as join4, relative as relative2, resolve as resolve2, sep as sep2 } from "node:path";
+import { randomBytes as randomBytes2 } from "node:crypto";
+import { fileURLToPath as fileURLToPath2 } from "node:url";
 
 // server/proxy-runtime.ts
 var proxyRuntime = String.raw`<script>
 (()=>{
- const requests=new Map(),cached=new Map();let sequence=0;
+ const lockInteractions=root=>{const block=event=>{event.preventDefault();event.stopImmediatePropagation();};root.addEventListener('selectstart',block,true);root.addEventListener('contextmenu',block,true);};
+ lockInteractions(window);
+ const requests=new Map(),cached=new Map(),originalURLs=new Map();let sequence=0;
  const remote=value=>{try{const url=new URL(String(value),window.__websiteBuilderLocation);return /^https?:$/.test(url.protocol)&&(url.hostname!=='website-builder.invalid'||url.pathname.startsWith('/preview-assets/'))?url.href:null;}catch{return null;}};
  const request=(url,raw=false)=>{
   const key=(raw?'raw:':'asset:')+url;if(cached.has(key))return cached.get(key);
@@ -6292,7 +6454,38 @@ var proxyRuntime = String.raw`<script>
  };
  addEventListener('message',event=>{if(event.source!==parent||event.data?.type!=='website-builder:resource-result')return;const pending=requests.get(event.data.id);if(!pending)return;clearTimeout(pending.timer);requests.delete(event.data.id);if(event.data.error)pending.reject(new Error(event.data.error));else pending.resolve(event.data);});
  const fail=error=>parent.postMessage({type:'website-builder:resource-error',error:String(error.message||error)},'*');
- const dataURI=async url=>(await request(url)).data;
+ const dataURI=async url=>{const value=(await request(url)).data;originalURLs.set(value,url);return value;};
+ addEventListener('message',async event=>{
+  if(event.source!==parent||event.data?.type!=='website-builder:capture')return;
+  const id=event.data.id;
+  try{
+   await window.websiteReady;
+   await Promise.all([...new Set([...document.querySelectorAll('*')].map(element=>element.localName).filter(name=>name.includes('-')))].map(name=>customElements.whenDefined(name)));
+   document.querySelectorAll('img').forEach(image=>image.loading='eager');
+   await Promise.all([...cached.values()]);await document.fonts.ready;
+   await Promise.all([...document.images].map(image=>image.decode()));
+   const clone=new DOMParser().parseFromString(document.documentElement.outerHTML,'text/html');
+   const mirror=(source,target)=>{
+    const originals=[...source.querySelectorAll('*')],copies=[...target.querySelectorAll('*')];
+    originals.forEach((element,index)=>{const copy=copies[index];if(!copy)return;
+     if(element instanceof HTMLInputElement){copy.setAttribute('value',element.type==='password'?'•'.repeat(element.value.length):element.value);element.checked?copy.setAttribute('checked',''):copy.removeAttribute('checked');}
+     if(element instanceof HTMLTextAreaElement)copy.textContent=element.value;
+     if(element instanceof HTMLSelectElement)[...copy.options].forEach((option,i)=>element.options[i].selected?option.setAttribute('selected',''):option.removeAttribute('selected'));
+     if(element instanceof HTMLDetailsElement)element.open?copy.setAttribute('open',''):copy.removeAttribute('open');
+     if(element.tagName==='STYLE'){try{if(element.sheet)copy.textContent=[...element.sheet.cssRules].map(rule=>rule.cssText).join('\n');}catch{}}
+     if(element.shadowRoot){const fragment=new DOMParser().parseFromString('<body>'+element.shadowRoot.innerHTML+'</body>','text/html');mirror(element.shadowRoot,fragment.body);const template=clone.createElement('template');template.setAttribute('shadowrootmode','open');template.content.append(...fragment.body.childNodes);copy.prepend(template);}
+     if(element instanceof HTMLCanvasElement){const image=clone.createElement('img');for(const attr of copy.attributes)image.setAttribute(attr.name,attr.value);image.src=element.toDataURL('image/png');image.width=element.width;image.height=element.height;copy.replaceWith(image);}
+     for(const attribute of [...copy.attributes]){
+      if(/^on/i.test(attribute.name))copy.removeAttribute(attribute.name);
+      else {let value=attribute.value;for(const [data,url]of originalURLs)if(value.includes(data))value=value.replaceAll(data,url);copy.setAttribute(attribute.name,value);}
+     }
+    });
+   };
+   mirror(document,clone);
+   clone.querySelectorAll('script,iframe,object,embed,link[rel="icon"],meta[http-equiv="refresh"]').forEach(element=>element.remove());
+   parent.postMessage({type:'website-builder:capture-result',id,html:'<!doctype html>'+clone.documentElement.outerHTML},'*');
+  }catch(error){parent.postMessage({type:'website-builder:capture-result',id,error:String(error.message||error)},'*');}
+ });
  window.__websiteBuilderImport=async url=>import(await dataURI(remote(url)||url));
  const nativeFetch=window.fetch.bind(window);
  window.fetch=async(input,options={})=>{
@@ -6349,7 +6542,7 @@ var proxyRuntime = String.raw`<script>
  const observe=root=>new MutationObserver(records=>{for(const record of records){scan(record.target);if(record.type!=='attributes')for(const node of record.addedNodes){scan(node);if(node.querySelectorAll)node.querySelectorAll('*').forEach(scan);}}}).observe(root,{subtree:true,childList:true,attributes:true,attributeFilter:['src','srcset','href','poster','data','style']});
  observe(document.documentElement);
  const attach=Element.prototype.attachShadow;
- Element.prototype.attachShadow=function(options){const root=attach.call(this,options);observe(root);return root;};
+ Element.prototype.attachShadow=function(options){const root=attach.call(this,options);observe(root);lockInteractions(root);return root;};
  document.querySelectorAll('*').forEach(scan);
 })();</script>`;
 
@@ -6361,18 +6554,20 @@ var inside = (root, path) => {
 };
 var natural = (a, b) => a.localeCompare(b, "en", { numeric: true });
 async function contained(root, path) {
-  const target = await realpath2(resolve2(root, path));
-  if (!inside(root, target)) throw new Error("\u76EE\u5F55\u8D85\u51FA\u5DF2\u914D\u7F6E\u7684\u7F51\u7AD9\u6839\u76EE\u5F55");
+  const base = await realpath2(root);
+  const target = await realpath2(resolve2(base, path));
+  if (!inside(base, target)) throw new Error("\u76EE\u5F55\u8D85\u51FA\u5DF2\u914D\u7F6E\u7684\u7F51\u7AD9\u6839\u76EE\u5F55");
   return target;
 }
 async function scanSite(root, directory, prefix) {
+  root = await realpath2(root);
   const site = await contained(root, directory);
   if (!(await stat2(site)).isDirectory()) throw new Error("\u8BF7\u9009\u62E9\u7F51\u7AD9\u76EE\u5F55");
   const documents = /* @__PURE__ */ new Map();
   async function walk(folder) {
     for (const entry of (await readdir2(folder, { withFileTypes: true })).sort((a, b) => natural(a.name, b.name))) {
       if (entry.name.startsWith(".") || ["node_modules", "vendor"].includes(entry.name) || entry.isSymbolicLink()) continue;
-      const path = join3(folder, entry.name);
+      const path = join4(folder, entry.name);
       if (entry.isDirectory()) await walk(path);
       else if (/\.html?$/i.test(entry.name)) documents.set(relative2(site, path).split(sep2).join("/"), await readFile4(path, "utf8"));
     }
@@ -6385,10 +6580,10 @@ async function scanSite(root, directory, prefix) {
   };
   const warnings = [];
   try {
-    const data2 = await readFile4(await contained(root, join3(site, "js/data.js")), "utf8");
+    const data2 = await readFile4(await contained(root, join4(site, "js/data.js")), "utf8");
     if (data2.includes('"/img/')) {
       try {
-        await stat2(join3(site, "img"));
+        await stat2(join4(site, "img"));
       } catch {
         warnings.push("\u5546\u54C1\u56FE\u7247\u6CBF\u7528\u539F\u7AD9 CDN \u52A0\u8F7D\u3002");
       }
@@ -6397,7 +6592,7 @@ async function scanSite(root, directory, prefix) {
   }
   let order = "\u9996\u9875\u3001\u4E3B\u5BFC\u822A\u3001\u9875\u811A\u5BFC\u822A\u3001\u5176\u4F59\u9875\u9762\u81EA\u7136\u6392\u5E8F";
   try {
-    const file = await contained(root, join3(site, "website-builder.order.json"));
+    const file = await contained(root, join4(site, "website-builder.order.json"));
     const custom = JSON.parse(await readFile4(file, "utf8"));
     if (!Array.isArray(custom) || custom.some((path) => typeof path !== "string" || !documents.has(path))) throw new Error("\u6392\u5E8F\u6587\u4EF6\u5FC5\u987B\u4E3A\u73B0\u6709 HTML \u76F8\u5BF9\u8DEF\u5F84\u7684\u6570\u7EC4");
     custom.forEach(add);
@@ -6409,7 +6604,7 @@ async function scanSite(root, directory, prefix) {
   add("index.htm");
   for (const navigation of ["components/header.js", "components/footer.js", "index.html"]) {
     try {
-      const file = await contained(root, join3(site, navigation));
+      const file = await contained(root, join4(site, navigation));
       const html = await readFile4(file, "utf8");
       for (const match of html.matchAll(/<a\b[^>]*\bhref\s*=\s*["']([^"'#?]+\.html?)(?:[?#][^"']*)?["']/gi)) {
         const url = new URL(match[1], "https://site.local/");
@@ -6429,7 +6624,7 @@ async function scanSite(root, directory, prefix) {
   };
 }
 function instrument(html, embedded = false) {
-  const script = `<style>html{height:auto!important;min-height:0!important;scrollbar-width:thin;scrollbar-color:transparent transparent!important}html[data-wb-scrolling]{scrollbar-color:rgba(75,100,87,.48) transparent!important}html::-webkit-scrollbar{width:7px;height:7px}html::-webkit-scrollbar-track{background:transparent}html::-webkit-scrollbar-thumb{background:transparent;border-radius:8px}html[data-wb-scrolling]::-webkit-scrollbar-thumb{background:rgba(75,100,87,.48)}html::-webkit-scrollbar-button{display:none}body{min-height:0!important}</style><script>
+  const script = `<style>html,body,body *{-webkit-user-select:none!important;user-select:none!important}html{height:auto!important;min-height:0!important;scrollbar-width:thin;scrollbar-color:transparent transparent!important}html[data-wb-scrolling]{scrollbar-color:rgba(75,100,87,.48) transparent!important}html::-webkit-scrollbar{width:7px;height:7px}html::-webkit-scrollbar-track{background:transparent}html::-webkit-scrollbar-thumb{background:transparent;border-radius:8px}html[data-wb-scrolling]::-webkit-scrollbar-thumb{background:rgba(75,100,87,.48)}html::-webkit-scrollbar-button{display:none}body{min-height:0!important}</style><script>
 (() => {
   const virtualUrl = ${embedded ? '"__WEBSITE_BUILDER_VIRTUAL_URL__"' : "location.href"};
   window.__websiteBuilderLocation = new URL(virtualUrl);
@@ -6512,14 +6707,14 @@ function instrument(html, embedded = false) {
 }
 async function compileProjectPage(root, directory, path) {
   const vendor = fileURLToPath2(new URL("../vendor/", import.meta.url));
-  const assets = JSON.parse(await readFile4(join3(vendor, "manifest.json"), "utf8"));
+  const assets = JSON.parse(await readFile4(join4(vendor, "manifest.json"), "utf8"));
   const base = await realpath2(root), site = await contained(base, directory);
   return instrument(await snapshotCompiler(base, site, vendor, assets)(path), true);
 }
-async function createPreview(ui, configuredRoot, defaultDirectory = "www.noventrad.com", projectSync) {
+async function createPreview(ui, configuredRoot, defaultDirectory = "www.noventrad.com", projectSync, manageProjects) {
   const referenceRoot = () => realpath2(configuredRoot);
   const vendor = fileURLToPath2(new URL("../vendor/", import.meta.url));
-  const assets = JSON.parse(await readFile4(join3(vendor, "manifest.json"), "utf8"));
+  const assets = JSON.parse(await readFile4(join4(vendor, "manifest.json"), "utf8"));
   const siteKeys = /* @__PURE__ */ new Set();
   async function readWebsite(directory, includeHtml = true) {
     const root = await referenceRoot();
@@ -6541,7 +6736,7 @@ async function createPreview(ui, configuredRoot, defaultDirectory = "www.noventr
   let origin = "";
   const service = createServer(async (req, res) => {
     try {
-      if (req.method !== "GET") {
+      if (req.method !== "GET" && req.method !== "POST") {
         res.writeHead(405).end();
         return;
       }
@@ -6555,6 +6750,24 @@ async function createPreview(ui, configuredRoot, defaultDirectory = "www.noventr
       res.setHeader("Access-Control-Allow-Origin", "*");
       res.setHeader("X-Content-Type-Options", "nosniff");
       const route = url.pathname.slice(prefix.length);
+      if (route === "/api/projects" && manageProjects) {
+        if (req.method !== "POST") {
+          res.writeHead(405).end();
+          return;
+        }
+        let body = "";
+        for await (const chunk of req) {
+          body += chunk;
+          if (body.length > 1e6) throw Error("\u8BF7\u6C42\u8FC7\u5927");
+        }
+        res.setHeader("Content-Type", "application/json");
+        res.end(JSON.stringify(await manageProjects(JSON.parse(body))));
+        return;
+      }
+      if (req.method !== "GET") {
+        res.writeHead(405).end();
+        return;
+      }
       if (route === "/api/resource") {
         const resource = await resourceChunk(url.searchParams.get("url") || "", Math.max(0, Number(url.searchParams.get("offset") || 0)), url.searchParams.get("raw") === "true");
         res.setHeader("Content-Type", "application/json");
@@ -6577,7 +6790,7 @@ async function createPreview(ui, configuredRoot, defaultDirectory = "www.noventr
         return;
       }
       if (route === "/api/project-sync" && projectSync) {
-        const value = await projectSync({ since: url.searchParams.get("since") || "none", known: JSON.parse(url.searchParams.get("known") || "{}"), waitMs: Number(url.searchParams.get("wait") || "20000") });
+        const value = await projectSync({ since: url.searchParams.get("since") || "none", known: JSON.parse(url.searchParams.get("known") || "{}"), waitMs: Number(url.searchParams.get("wait") || "20000"), threadId: url.searchParams.get("thread_id") || void 0, projectId: url.searchParams.get("project_id") || void 0 });
         res.setHeader("Content-Type", "application/json");
         res.end(JSON.stringify(value));
         return;
@@ -6627,14 +6840,14 @@ async function createPreview(ui, configuredRoot, defaultDirectory = "www.noventr
       res.end(JSON.stringify({ error: error.message }));
     }
   });
-  await new Promise((resolve4, reject) => {
+  await new Promise((resolve6, reject) => {
     service.once("error", reject);
-    service.listen(0, "127.0.0.1", resolve4);
+    service.listen(0, "127.0.0.1", resolve6);
   });
   const port = service.address().port;
   origin = `http://127.0.0.1:${port}`;
   function render() {
-    const config = JSON.stringify({ api: `${origin}/${token}/api/site`, projectApi: `${origin}/${token}/api/project-sync`, resourceApi: `${origin}/${token}/api/resource`, origin, defaultDirectory }).replaceAll("<", "\\u003c");
+    const config = JSON.stringify({ api: `${origin}/${token}/api/site`, projectApi: `${origin}/${token}/api/project-sync`, managerApi: `${origin}/${token}/api/projects`, resourceApi: `${origin}/${token}/api/resource`, origin, defaultDirectory }).replaceAll("<", "\\u003c");
     return ui.replace("</head>", `<script>window.__WEBSITE_BUILDER__=${config};</script></head>`);
   }
   return { origin, url: `http://localhost:${port}/${token}/canvas`, render, service, readWebsite, readPage };
@@ -6705,7 +6918,10 @@ function snapshotCompiler(root, site, vendor, vendors) {
         return `data:${resource.mime};base64,${resource.bytes.toString("base64")}`;
       }
       file = resolve3(vendor, vendors[remote]);
-    } else file = decoded.startsWith("/") ? resolve3(site, decoded.slice(1).split(/[?#]/)[0]) : resolve3(dirname2(from), decoded.split(/[?#]/)[0]);
+    } else {
+      const path = decodeURIComponent(decoded.split(/[?#]/)[0]);
+      file = path.startsWith("/") ? resolve3(site, path.slice(1)) : resolve3(dirname2(from), path);
+    }
     const type = types2[extname2(file).toLowerCase()];
     if (!type) return url;
     const cacheKey = `${external ? "embedded" : "lazy"}:${preserveMissing ? "literal" : "resource"}:${file}`;
@@ -6773,18 +6989,18 @@ function snapshotCompiler(root, site, vendor, vendors) {
 }
 
 // server/resource-proxy.ts
-import { readFile as readFile6, stat as stat3 } from "fs/promises";
-import { createHash as createHash2 } from "crypto";
+import { readFile as readFile6, stat as stat3 } from "node:fs/promises";
+import { createHash as createHash2 } from "node:crypto";
 var maximum = 64 * 1024 * 1024;
 var privateAddress = (ip) => /^(?:0\.|10\.|127\.|169\.254\.|192\.168\.|172\.(?:1[6-9]|2\d|3[01])\.|22[4-9]\.|2[3-5]\d\.)/.test(ip) || ip.includes(":") && (/^(?:::|f[cd]|fe[89ab])/i.test(ip) || ip.toLowerCase().includes("ffff:"));
 var cache = /* @__PURE__ */ new Map();
 var previewPrefix = "https://website-builder.invalid/preview-assets/";
 var previewFiles = /* @__PURE__ */ new Map();
 var previewBuffers = /* @__PURE__ */ new Map();
-function registerPreviewBuffer(bytes, mime3) {
-  const url = previewPrefix + createHash2("sha256").update(mime3).update(bytes).digest("hex");
+function registerPreviewBuffer(bytes, mime4) {
+  const url = previewPrefix + createHash2("sha256").update(mime4).update(bytes).digest("hex");
   previewBuffers.delete(url);
-  previewBuffers.set(url, { bytes, mime: mime3 });
+  previewBuffers.set(url, { bytes, mime: mime4 });
   let size = [...previewBuffers.values()].reduce((sum, item) => sum + item.bytes.length, 0);
   for (const [key, item] of previewBuffers) {
     if (size <= 128 * 1024 * 1024) break;
@@ -6795,10 +7011,10 @@ function registerPreviewBuffer(bytes, mime3) {
   }
   return url;
 }
-async function registerPreviewFile(file, mime3) {
+async function registerPreviewFile(file, mime4) {
   const info = await stat3(file), version2 = `${info.size}:${info.mtimeMs}`;
   const url = previewPrefix + createHash2("sha256").update(file).update(version2).digest("hex");
-  previewFiles.set(url, { file, mime: mime3, version: version2 });
+  previewFiles.set(url, { file, mime: mime4, version: version2 });
   if (previewFiles.size > 8192) previewFiles.delete(previewFiles.keys().next().value);
   return url;
 }
@@ -6809,7 +7025,7 @@ function download(value, redirects = 0) {
   if (redirects > 6) throw new Error("\u8D44\u6E90\u91CD\u5B9A\u5411\u8FC7\u591A");
   const allowLocal = process.env.WEBSITE_BUILDER_PROXY_ALLOW_LOCAL === "1";
   if (!allowLocal && (url.hostname === "localhost" || isIP(url.hostname.replace(/^\[|\]$/g, "")) && privateAddress(url.hostname.replace(/^\[|\]$/g, "")))) throw new Error("\u5916\u90E8\u8D44\u6E90\u4EE3\u7406\u4E0D\u80FD\u8BBF\u95EE\u672C\u673A\u6216\u79C1\u6709\u7F51\u7EDC");
-  return new Promise((resolve4, reject) => {
+  return new Promise((resolve6, reject) => {
     const request = (url.protocol === "https:" ? https : http).get(url, { headers: { "User-Agent": "Mozilla/5.0 WebsiteBuilderPreview/0.5.2", "Accept": "*/*", "Accept-Encoding": "gzip, deflate, br" }, lookup: (hostname, options, callback) => lookup(hostname, { ...options, all: true }, (error, addresses) => {
       if (error) return callback(error, []);
       if (!allowLocal && addresses.some((item) => privateAddress(item.address))) return callback(new Error("\u5916\u90E8\u8D44\u6E90\u5730\u5740\u89E3\u6790\u5230\u79C1\u6709\u7F51\u7EDC"), []);
@@ -6819,7 +7035,7 @@ function download(value, redirects = 0) {
       const status = response.statusCode || 502;
       if (status >= 300 && status < 400 && response.headers.location) {
         response.resume();
-        download(new URL(response.headers.location, url).href, redirects + 1).then(resolve4, reject);
+        download(new URL(response.headers.location, url).href, redirects + 1).then(resolve6, reject);
         return;
       }
       if (status < 200 || status >= 300) {
@@ -6843,8 +7059,8 @@ function download(value, redirects = 0) {
           if (encoding === "gzip") bytes = gunzipSync(bytes, options);
           else if (encoding === "br") bytes = brotliDecompressSync(bytes, options);
           else if (encoding === "deflate") bytes = inflateSync(bytes, options);
-          const mime3 = (response.headers["content-type"] || mimeByPath[url.pathname.split(".").pop() || ""] || "application/octet-stream").split(";")[0];
-          resolve4({ bytes, mime: mime3, url: url.href, status });
+          const mime4 = (response.headers["content-type"] || mimeByPath[url.pathname.split(".").pop() || ""] || "application/octet-stream").split(";")[0];
+          resolve6({ bytes, mime: mime4, url: url.href, status });
         } catch (error) {
           reject(error);
         }
@@ -6929,7 +7145,7 @@ async function resourceChunk(url, offset2 = 0, raw = false) {
 }
 
 // server/project-service.ts
-import { gzipSync } from "zlib";
+import { gzipSync } from "node:zlib";
 function previewPayload(gzip) {
   return gzip.length <= 1e6 ? gzip : { resource: registerPreviewBuffer(Buffer.from(gzip, "base64"), "application/gzip") };
 }
@@ -6939,10 +7155,28 @@ function compactProject(view) {
 function projectService(store) {
   const cache2 = /* @__PURE__ */ new Map();
   return async function sync(input) {
-    let view = await store.reconcile(input.threadId);
+    const load2 = async () => {
+      if (!input.projectId) return store.reconcile(input.threadId);
+      if (!input.threadId) {
+        const view2 = await store.get(void 0, input.projectId);
+        return view2 ? { ...view2, threadId: "", revision: `${view2.project.id}::${view2.project.revision}` } : null;
+      }
+      const binding = await store.get(input.threadId);
+      return binding?.project.id === input.projectId ? store.reconcile(input.threadId) : store.get(input.threadId, input.projectId);
+    };
+    let view = await load2();
     const known = input.known || {};
     const missing = view?.project.pages.some((page) => page.status === "ready" && known[page.path] !== page.version);
-    if (!missing && (view?.revision || "none") === (input.since || "none")) view = await store.wait(input.since || "none", input.threadId, input.waitMs ?? 2e4);
+    if (!missing && (view?.revision || "none") === (input.since || "none")) {
+      if (!input.projectId) view = await store.wait(input.since || "none", input.threadId, input.waitMs ?? 2e4);
+      else {
+        const deadline = Date.now() + Math.min(input.waitMs ?? 2e4, 2e4);
+        while (Date.now() < deadline && view?.revision === input.since) {
+          await new Promise((resolve6) => setTimeout(resolve6, 250));
+          view = await load2();
+        }
+      }
+    }
     if (!view) return { revision: "none", unchanged: true };
     if (!missing && view.revision === input.since) return { revision: view.revision, unchanged: true };
     const manifest = { directory: view.project.id, name: view.project.name, projectId: view.project.id, threadId: view.threadId, revision: view.revision, order: "\u9879\u76EE\u9875\u9762\u8BA1\u5212", warnings: [], pages: view.project.pages.map((page) => ({ ...page, url: `https://website-builder.invalid/files/${view.project.id}/${page.path.split("/").map(encodeURIComponent).join("/")}` })) };
@@ -6976,12 +7210,12 @@ function projectService(store) {
 }
 
 // server/commerce.ts
-import { readFile as readFile7, realpath as realpath3 } from "fs/promises";
-import { join as join4, relative as relative3, sep as sep3, isAbsolute as isAbsolute3 } from "path";
-import { createHash as createHash3 } from "crypto";
+import { readFile as readFile7, realpath as realpath3 } from "node:fs/promises";
+import { join as join5, relative as relative3, sep as sep3, isAbsolute as isAbsolute3 } from "node:path";
+import { createHash as createHash3 } from "node:crypto";
 async function existingFile(directory, path) {
   try {
-    const file = await realpath3(join4(directory, path));
+    const file = await realpath3(join5(directory, path));
     const rel = relative3(await realpath3(directory), file);
     if (rel === ".." || rel.startsWith(`..${sep3}`) || isAbsolute3(rel)) throw new Error("\u5546\u54C1\u6587\u4EF6\u4E0D\u80FD\u6307\u5411\u9879\u76EE\u5916\u90E8");
     return await readFile7(file, "utf8");
@@ -7106,7 +7340,7 @@ async function prepareCommerce(store, skillRoot, input) {
   const existing = await existingFile(view.directory, "js/data.js");
   let imported = false;
   try {
-    const record = JSON.parse(await readFile7(join4(view.metadataDirectory, "website-builder.import.json"), "utf8"));
+    const record = JSON.parse(await readFile7(join5(view.metadataDirectory, "website-builder.import.json"), "utf8"));
     imported = ["sdk-import-v1", "sdk-import-v2"].includes(record.schema) && !!existing && record.runtime_data_sha256 === createHash3("sha256").update(existing).digest("hex");
   } catch (error) {
     if (error.code !== "ENOENT" && !(error instanceof SyntaxError)) throw error;
@@ -7163,7 +7397,7 @@ window.storeData = {
   for (const name of ["sdk.js", "ec-sdk.js"]) {
     const path = `js/${name}`;
     if (await existingFile(view.directory, path) !== void 0) kept.push(path);
-    else files.push({ path, content: await readFile7(join4(skillRoot, "assets/commerce", name), "utf8") });
+    else files.push({ path, content: await readFile7(join5(skillRoot, "assets/commerce", name), "utf8") });
   }
   const configuration = "js/app.js";
   const configDefaults = { currency: input.currency || "USD", locale: input.locale || "en-US", storageKey: `website-builder:${view.project.id}` };
@@ -7185,14 +7419,15 @@ window.storeData = {
 }
 
 // server/screenshot.ts
-import { createServer as createServer2 } from "http";
-import { readFile as readFile8, mkdir as mkdir2, writeFile as writeFile2 } from "fs/promises";
-import { dirname as dirname3, extname as extname3, join as join5 } from "path";
-import { fileURLToPath as fileURLToPath3 } from "url";
-import { randomBytes as randomBytes3 } from "crypto";
+import { createServer as createServer2 } from "node:http";
+import { readFile as readFile8, mkdir as mkdir2, writeFile as writeFile2 } from "node:fs/promises";
+import { dirname as dirname3, extname as extname3, join as join6 } from "node:path";
+import { fileURLToPath as fileURLToPath3 } from "node:url";
+import { randomBytes as randomBytes3 } from "node:crypto";
 var mime2 = { ".html": "text/html", ".js": "text/javascript", ".mjs": "text/javascript", ".css": "text/css", ".json": "application/json", ".png": "image/png", ".jpg": "image/jpeg", ".jpeg": "image/jpeg", ".webp": "image/webp", ".avif": "image/avif", ".gif": "image/gif", ".svg": "image/svg+xml", ".ico": "image/x-icon", ".woff": "font/woff", ".woff2": "font/woff2", ".ttf": "font/ttf" };
 async function screenshotPage(store, input) {
-  const view = await store.get(input.thread_id);
+  if (input.signal?.aborted) throw Error("\u622A\u56FE\u5DF2\u53D6\u6D88");
+  const view = await store.get(input.thread_id, input.thread_id ? void 0 : input.project_id);
   if (!view || view.project.id !== input.project_id) throw new Error("\u5F53\u524D\u4F1A\u8BDD\u9879\u76EE\u4E0D\u5339\u914D");
   const planned = view.project.pages.find((page) => page.path === input.path.split(/[?#]/)[0]);
   if (!planned || planned.status !== "ready") throw new Error("\u9875\u9762\u4E0D\u5B58\u5728\u6216\u5C1A\u672A\u751F\u6210\u5B8C\u6210");
@@ -7204,7 +7439,7 @@ async function screenshotPage(store, input) {
     runtime2
   );
   const vendor = fileURLToPath3(new URL("../vendor/", import.meta.url));
-  const vendors = JSON.parse(await readFile8(join5(vendor, "manifest.json"), "utf8"));
+  const vendors = JSON.parse(await readFile8(join6(vendor, "manifest.json"), "utf8"));
   const token = randomBytes3(24).toString("hex");
   const prefix = `/${token}/`;
   const service = createServer2(async (req, res) => {
@@ -7215,6 +7450,12 @@ async function screenshotPage(store, input) {
         return;
       }
       const name = decodeURIComponent(url.pathname.slice(prefix.length));
+      if (input.snapshot && name === input.path.split(/[?#]/)[0]) {
+        res.setHeader("Content-Type", "text/html; charset=utf-8");
+        res.setHeader("Content-Security-Policy", "script-src 'none'; object-src 'none'; base-uri 'none'");
+        res.end(input.snapshot.replace(/<base\b[^>]*>/gi, ""));
+        return;
+      }
       if (name.split("/").some((part) => part.startsWith(".")) || name.includes("\\")) throw Error("\u4E0D\u53EF\u8BFB\u53D6\u6B64\u8DEF\u5F84");
       const file = await contained(view.directory, name);
       res.setHeader("Content-Type", mime2[extname3(file)] || "application/octet-stream");
@@ -7223,14 +7464,16 @@ async function screenshotPage(store, input) {
       res.writeHead(404).end();
     }
   });
-  await new Promise((resolve4) => service.listen(0, "127.0.0.1", resolve4));
+  await new Promise((resolve6) => service.listen(0, "127.0.0.1", resolve6));
   const origin = `http://127.0.0.1:${service.address().port}`;
   let browser;
   let timer;
+  let cancel;
   try {
     browser = await chromium.launch({ channel: "chrome", headless: true });
+    if (input.signal?.aborted) throw Error("\u622A\u56FE\u5DF2\u53D6\u6D88");
     const work = async () => {
-      const page = await browser.newPage({ viewport: { width, height: 900 }, deviceScaleFactor: 1 });
+      const page = await browser.newPage({ viewport: { width, height: input.thumbnail ? width : 900 }, deviceScaleFactor: 1 });
       page.setDefaultTimeout(15e3);
       const failures = /* @__PURE__ */ new Set();
       page.on("pageerror", (error) => failures.add(error.message));
@@ -7260,11 +7503,14 @@ async function screenshotPage(store, input) {
         }
       });
       await page.goto(origin + prefix + input.path, { waitUntil: "load", timeout: 3e4 });
-      await page.evaluate(async () => {
-        await window.websiteReady;
-        await Promise.all([...new Set([...document.querySelectorAll("*")].map((el) => el.localName).filter((name) => name.includes("-")))].map((name) => customElements.whenDefined(name)));
+      if (input.snapshot) await page.addStyleTag({ content: "*,*::before,*::after{animation:none!important;transition:none!important;caret-color:transparent!important;scroll-behavior:auto!important}" });
+      await page.evaluate(async (snapshot) => {
+        if (!snapshot) {
+          await window.websiteReady;
+          await Promise.all([...new Set([...document.querySelectorAll("*")].map((el) => el.localName).filter((name) => name.includes("-")))].map((name) => customElements.whenDefined(name)));
+        }
         await document.fonts.ready;
-      });
+      }, !!input.snapshot);
       await page.waitForLoadState("networkidle", { timeout: 15e3 });
       await page.evaluate(async () => {
         document.querySelectorAll("img").forEach((image) => image.loading = "eager");
@@ -7272,7 +7518,7 @@ async function screenshotPage(store, input) {
         for (let step = 0; step < 100; step++) {
           const height = document.documentElement.scrollHeight;
           window.scrollTo(0, Math.min(step * 700, height));
-          await new Promise((resolve4) => setTimeout(resolve4, 60));
+          await new Promise((resolve6) => setTimeout(resolve6, 60));
           if (step * 700 >= height && height === lastHeight) stable2++;
           else stable2 = 0;
           if (stable2 >= 3) break;
@@ -7288,9 +7534,9 @@ async function screenshotPage(store, input) {
           const image = getComputedStyle(element).backgroundImage;
           for (const match of image.matchAll(/url\(["']?(.*?)["']?\)/g)) urls.add(match[1]);
         });
-        await Promise.all([...urls].map((url) => new Promise((resolve4, reject) => {
+        await Promise.all([...urls].map((url) => new Promise((resolve6, reject) => {
           const image = new Image();
-          image.onload = () => resolve4();
+          image.onload = () => resolve6();
           image.onerror = () => reject(Error(`\u80CC\u666F\u56FE\u7247\u672A\u52A0\u8F7D: ${url}`));
           image.src = url;
         })));
@@ -7309,28 +7555,44 @@ async function screenshotPage(store, input) {
       }
       if (stable < 4) throw Error("\u9875\u9762\u5E03\u5C40\u5C1A\u672A\u7A33\u5B9A");
       if (failures.size) throw Error(`\u9875\u9762\u672A\u5B8C\u6574\u6E32\u67D3\uFF1A${[...failures].slice(0, 5).join("; ")}`);
-      const bytes = await page.screenshot({ fullPage: true, type: "png", animations: "disabled" });
-      const path = join5(view.metadataDirectory, "artifacts/screenshots", `${input.path.split(/[?#]/)[0].replace(/[^a-zA-Z0-9_-]/g, "-")}-${width}-${Date.now()}-${randomBytes3(3).toString("hex")}.png`);
+      let bytes = await page.screenshot(input.thumbnail ? { clip: { x: 0, y: 0, width, height: width }, type: "png", animations: "disabled" } : { fullPage: true, type: "png", animations: "disabled" });
+      if (input.thumbnail) {
+        const data2 = await page.evaluate(async (values) => {
+          const image = await createImageBitmap(new Blob([new Uint8Array(values)], { type: "image/png" }));
+          const canvas = document.createElement("canvas");
+          canvas.width = 256;
+          canvas.height = 256;
+          canvas.getContext("2d").drawImage(image, 0, 0, 256, 256);
+          image.close();
+          return canvas.toDataURL("image/png").split(",")[1];
+        }, Array.from(bytes));
+        bytes = Buffer.from(data2, "base64");
+      }
+      const path = join6(view.metadataDirectory, "artifacts/screenshots", `${input.path.split(/[?#]/)[0].replace(/[^a-zA-Z0-9_-]/g, "-")}-${width}-${Date.now()}-${randomBytes3(3).toString("hex")}.png`);
       await mkdir2(dirname3(path), { recursive: true });
       await writeFile2(path, bytes);
       return { path, width, page: input.path, bytes };
     };
     return await Promise.race([work(), new Promise((_, reject) => {
       timer = setTimeout(() => reject(Error("\u5B8C\u6574\u9875\u9762\u622A\u56FE\u8D85\u65F6\uFF1A\u672A\u83B7\u5F97\u52A0\u8F7D\u5B8C\u6210\u7684\u7A33\u5B9A\u9875\u9762")), 6e4);
+    }), new Promise((_, reject) => {
+      cancel = () => reject(Error("\u622A\u56FE\u5DF2\u53D6\u6D88"));
+      input.signal?.addEventListener("abort", cancel, { once: true });
     })]);
   } finally {
+    if (cancel) input.signal?.removeEventListener("abort", cancel);
     if (timer) clearTimeout(timer);
     if (browser) await browser.close();
     service.closeAllConnections();
-    await new Promise((resolve4) => service.close(() => resolve4()));
+    await new Promise((resolve6) => service.close(() => resolve6()));
   }
 }
 
 // server/product-import.ts
-import { readFile as readFile9, stat as stat4 } from "fs/promises";
-import { isAbsolute as isAbsolute4, join as join6 } from "path";
-import { createHash as createHash4 } from "crypto";
-import { runInNewContext } from "vm";
+import { readFile as readFile9, stat as stat4 } from "node:fs/promises";
+import { isAbsolute as isAbsolute4, join as join7 } from "node:path";
+import { createHash as createHash4 } from "node:crypto";
+import { runInNewContext } from "node:vm";
 var valueAt = (item, path) => path.split(".").reduce((value, key) => value && Object.hasOwn(value, key) ? value[key] : void 0, item);
 var text = (value) => typeof value === "string" ? value.trim() : typeof value === "number" ? String(value) : "";
 function amount(value, locale) {
@@ -7474,7 +7736,7 @@ async function importProducts(store, skillRoot, input) {
     return { mode: "mock", fallback: true, next_skill: "generate-mock-data", reason: error.message, written: [], source_sha256: fingerprint, note: "\u539F\u59CBJSON\u548C\u73B0\u6709\u5546\u54C1\u6570\u636E\u672A\u6539\u5199\uFF1B\u4E3B\u6280\u80FD\u63A5\u7EEDMock Data\u5DE5\u4F5C\u6D41\uFF0C\u4E0D\u628A\u5931\u8D25\u5BFC\u5165\u5192\u5145\u6210\u529F\u3002" };
   }
   const window2 = { productData: normalized.products };
-  runInNewContext(await readFile9(join6(skillRoot, "assets/commerce/sdk.js"), "utf8"), { window: window2, Intl }, { timeout: 2e3 });
+  runInNewContext(await readFile9(join7(skillRoot, "assets/commerce/sdk.js"), "utf8"), { window: window2, Intl }, { timeout: 2e3 });
   const config = { currency: input.currency || "USD", locale: input.locale || "en-US", storageKey: `website-builder:${view.project.id}` };
   window2.SDK.init(normalized.products, config);
   const sourceCategories = window2.SDK.categories();
@@ -7541,14 +7803,14 @@ window.storeData = { getAll:()=>window.SDK.list().result(), getById:id=>window.S
 `) }];
   for (const name of ["sdk.js", "ec-sdk.js"]) {
     try {
-      await stat4(join6(view.directory, "js", name));
+      await stat4(join7(view.directory, "js", name));
     } catch (error) {
       if (error.code !== "ENOENT") throw error;
-      files.push({ path: `js/${name}`, content: await readFile9(join6(skillRoot, "assets/commerce", name), "utf8") });
+      files.push({ path: `js/${name}`, content: await readFile9(join7(skillRoot, "assets/commerce", name), "utf8") });
     }
   }
   try {
-    await stat4(join6(view.directory, "js/app.js"));
+    await stat4(join7(view.directory, "js/app.js"));
   } catch (error) {
     if (error.code !== "ENOENT") throw error;
     files.push({ path: "js/app.js", content: `window.commerceConfig = ${JSON.stringify(config)};
@@ -7557,6 +7819,354 @@ window.storeData = { getAll:()=>window.SDK.list().result(), getById:id=>window.S
   files.push({ path: "website-builder.import.json", content: JSON.stringify({ ...summary, schema: "sdk-import-v2", runtime_data_sha256: createHash4("sha256").update(files[0].content).digest("hex"), source: input.file_path || "provided-json", field_map: input.field_map || {}, category_map: mapping || {} }, null, 2) });
   await store.write(input.thread_id, files);
   return { ...compact(), written: files.map((file) => file.path), note: "SDK.category/categories/filter\u8FD4\u56DE\u4E8C\u6B21\u5206\u7C7B\uFF0Csource_category\u4FDD\u7559\u539F\u7C7B\uFF1B\u56FE\u7247\u5B57\u6BB5\u4FDD\u7559\u76F8\u5BF9\u8DEF\u5F84\uFF0C\u53EA\u6709\u6E32\u67D3\u65F6\u8C03\u7528storeData.imageUrl\u62FC\u63A5CDN\uFF1B\u4E0D\u8DB35\u7EC4\u65F6\u6309\u771F\u5B9E\u4E1A\u52A1\u8865\u5145\u5206\u7EC4\uFF0C\u4E0D\u80FD\u4F2A\u9020\u5206\u7C7B\u3002\u5DF2\u6709SDK/\u914D\u7F6E\u672A\u8986\u76D6\uFF0C\u5E01\u79CD\u914D\u7F6E\u7F3A\u5931\u9879\u6309config_defaults\u5408\u5E76\u3002" };
+}
+
+// server/data-paths.ts
+import { homedir } from "node:os";
+import { isAbsolute as isAbsolute5, join as join8, resolve as resolve4 } from "node:path";
+import { fileURLToPath as fileURLToPath4 } from "node:url";
+function dataPaths(env = process.env) {
+  const home = homedir();
+  const base = process.platform === "win32" ? env.LOCALAPPDATA || join8(home, "AppData", "Local") : env.XDG_DATA_HOME && isAbsolute5(env.XDG_DATA_HOME) ? env.XDG_DATA_HOME : join8(home, ".local", "share");
+  const root = resolve4(env.WEBSITE_BUILDER_DATA_DIR || join8(base, "codex-website-builder"));
+  const expand = (value) => resolve4(value.replaceAll("${PLUGIN_ROOT}", fileURLToPath4(new URL("../../", import.meta.url))));
+  return {
+    root,
+    project: env.WEBSITE_BUILDER_PROJECT_ROOT ? expand(env.WEBSITE_BUILDER_PROJECT_ROOT) : join8(root, "project"),
+    reference: env.WEBSITE_BUILDER_ROOT ? expand(env.WEBSITE_BUILDER_ROOT) : join8(root, "reference")
+  };
+}
+
+// server/migrate-data.ts
+import { cp, mkdir as mkdir3, open as open2, readdir as readdir3, readFile as readFile10, rename as rename2, rm, stat as stat5, lstat } from "node:fs/promises";
+import { dirname as dirname4, join as join9, resolve as resolve5 } from "node:path";
+import { fileURLToPath as fileURLToPath5 } from "node:url";
+import { randomUUID as randomUUID2 } from "node:crypto";
+async function migrateLegacyData(projectRoot, sources) {
+  if (!sources && (process.env.WEBSITE_BUILDER_PROJECT_ROOT || process.env.WEBSITE_BUILDER_DATA_DIR)) return;
+  const pluginRoot = fileURLToPath5(new URL("../../", import.meta.url));
+  if (!sources) {
+    sources = [join9(pluginRoot, "project")];
+    if (dirname4(pluginRoot).split(/[\\/]/).pop() === "codex-website-builder") {
+      for (const entry of await readdir3(dirname4(pluginRoot), { withFileTypes: true })) {
+        if (!entry.isDirectory()) continue;
+        const root = join9(dirname4(pluginRoot), entry.name);
+        const manifest = await readFile10(join9(root, "package.json"), "utf8").then(JSON.parse).catch(() => null);
+        if (manifest?.name === "codex-website-builder") sources.push(join9(root, "project"));
+      }
+    }
+  }
+  const existing = [];
+  for (const source of new Set(sources)) if (resolve5(source) !== resolve5(projectRoot) && (await stat5(source).catch(() => null))?.isDirectory()) existing.push(source);
+  if (!existing.length) return;
+  const base = dirname4(projectRoot);
+  await mkdir3(join9(base, "db"), { recursive: true });
+  const lockPath = join9(base, "db", "migration.lock");
+  let lock;
+  for (let attempt = 0; attempt < 100; attempt++) {
+    try {
+      lock = await open2(lockPath, "wx");
+      await lock.writeFile(String(process.pid));
+      break;
+    } catch (error) {
+      if (error.code !== "EEXIST") throw error;
+      const pid = Number(await readFile10(lockPath, "utf8").catch(() => ""));
+      if (pid > 0) {
+        try {
+          process.kill(pid, 0);
+        } catch (check) {
+          if (check.code === "ESRCH") {
+            await rm(lockPath, { force: true });
+            continue;
+          }
+        }
+      } else {
+        const info = await stat5(lockPath).catch(() => null);
+        if (info && Date.now() - info.mtimeMs > 12e4) {
+          await rm(lockPath, { force: true });
+          continue;
+        }
+      }
+      await new Promise((resolve6) => setTimeout(resolve6, 100));
+    }
+  }
+  if (!lock) throw Error("\u5168\u5C40\u9879\u76EE\u8FC1\u79FB\u6B63\u5728\u8FDB\u884C\uFF0C\u8BF7\u7A0D\u540E\u91CD\u65B0\u6253\u5F00\u63D2\u4EF6");
+  try {
+    await mkdir3(projectRoot, { recursive: true });
+    const state = join9(base, ".builder-state");
+    for (const source of existing) {
+      const oldState = join9(dirname4(source), ".builder-state");
+      for (const entry of await readdir3(source, { withFileTypes: true })) {
+        if (!entry.isDirectory() || !/^[a-f0-9]{4}(?:-[a-f0-9]{4}){3}$/.test(entry.name)) continue;
+        const target = join9(projectRoot, entry.name), metadata = join9(state, "projects", entry.name);
+        if (await stat5(target).catch(() => null) || await stat5(metadata).catch(() => null)) continue;
+        const stage = join9(base, `.migration-${randomUUID2()}`);
+        try {
+          await cp(join9(source, entry.name), stage, { recursive: true, errorOnExist: true, force: false, filter: async (path) => !(await lstat(path)).isSymbolicLink() });
+          const oldMeta = join9(oldState, "projects", entry.name);
+          if (await stat5(oldMeta).catch(() => null)) {
+            await mkdir3(dirname4(metadata), { recursive: true });
+            await cp(oldMeta, metadata, { recursive: true, errorOnExist: true, force: false, filter: async (path) => !(await lstat(path)).isSymbolicLink() });
+          }
+          await rename2(stage, target);
+        } finally {
+          await rm(stage, { recursive: true, force: true });
+        }
+      }
+      const threads = await readdir3(join9(oldState, "threads"), { withFileTypes: true }).catch(() => []);
+      await mkdir3(join9(state, "threads"), { recursive: true });
+      for (const entry of threads) if (entry.isFile() && entry.name.endsWith(".json")) await cp(join9(oldState, "threads", entry.name), join9(state, "threads", entry.name), { force: false });
+      if (await stat5(join9(oldState, "active.json")).catch(() => null)) await cp(join9(oldState, "active.json"), join9(state, "active.json"), { force: false });
+    }
+  } finally {
+    await lock.close();
+    await rm(lockPath, { force: true });
+  }
+}
+
+// server/project-manager.ts
+import { readFile as readFile11, mkdir as mkdir4, copyFile, realpath as realpath5, stat as stat7, readdir as readdir4 } from "node:fs/promises";
+import { createHash as createHash5 } from "node:crypto";
+import { extname as extname4, join as join10, relative as relative4, sep as sep4, isAbsolute as isAbsolute6 } from "node:path";
+
+// server/open-directory.ts
+import { spawn } from "node:child_process";
+import { stat as stat6, realpath as realpath4 } from "node:fs/promises";
+import { win32 } from "node:path";
+function windowsShellPath(path) {
+  if (path.startsWith("\\\\?\\UNC\\")) path = "\\\\" + path.slice(8);
+  else if (path.startsWith("\\\\?\\")) path = path.slice(4);
+  return win32.normalize(path);
+}
+var activateDirectoryScript = String.raw`
+$ErrorActionPreference='Stop'
+$target=[IO.Path]::GetFullPath($env:WEBSITE_BUILDER_OPEN_DIRECTORY).TrimEnd('\')
+$shellApp=New-Object -ComObject Shell.Application
+function Find-DirectoryWindows {
+  @($shellApp.Windows() | Where-Object {
+    try { [string]::Equals($_.Document.Folder.Self.Path.TrimEnd('\'),$target,[StringComparison]::OrdinalIgnoreCase) } catch { $false }
+  })
+}
+$directoryWindows=@(Find-DirectoryWindows)
+if(!$directoryWindows.Count) {
+  $shellApp.Open($target)
+  for($i=0;$i -lt 60 -and !$directoryWindows.Count;$i++){Start-Sleep -Milliseconds 100;$directoryWindows=@(Find-DirectoryWindows)}
+}
+if(!$directoryWindows.Count){exit 1}
+Add-Type -TypeDefinition @'
+using System;
+using System.Runtime.InteropServices;
+public static class WBDirectoryWindow {
+ [DllImport("user32.dll")] public static extern bool ShowWindowAsync(IntPtr hwnd,int command);
+ [DllImport("user32.dll")] public static extern bool SetForegroundWindow(IntPtr hwnd);
+ [DllImport("user32.dll")] public static extern bool BringWindowToTop(IntPtr hwnd);
+ [DllImport("user32.dll")] public static extern IntPtr GetForegroundWindow();
+ [DllImport("user32.dll")] public static extern uint GetWindowThreadProcessId(IntPtr hwnd,IntPtr pid);
+ [DllImport("kernel32.dll")] public static extern uint GetCurrentThreadId();
+ [DllImport("user32.dll")] public static extern bool AttachThreadInput(uint from,uint to,bool attach);
+}
+'@
+$window=$directoryWindows[0];$handle=[IntPtr]$window.HWND
+[void][WBDirectoryWindow]::ShowWindowAsync($handle,9)
+$current=[WBDirectoryWindow]::GetCurrentThreadId()
+$foreground=[WBDirectoryWindow]::GetWindowThreadProcessId([WBDirectoryWindow]::GetForegroundWindow(),[IntPtr]::Zero)
+$attached=$false
+try {
+ if($foreground -ne $current){$attached=[WBDirectoryWindow]::AttachThreadInput($current,$foreground,$true)}
+ [void][WBDirectoryWindow]::BringWindowToTop($handle)
+ [void][WBDirectoryWindow]::SetForegroundWindow($handle)
+} finally {if($attached){[void][WBDirectoryWindow]::AttachThreadInput($current,$foreground,$false)}}
+Start-Sleep -Milliseconds 150
+$active=[WBDirectoryWindow]::GetForegroundWindow().ToInt64()
+if(@(Find-DirectoryWindows | Where-Object {$_.HWND -eq $active}).Count){exit 0}
+[void](New-Object -ComObject WScript.Shell).AppActivate($window.LocationName)
+Start-Sleep -Milliseconds 150
+$active=[WBDirectoryWindow]::GetForegroundWindow().ToInt64()
+if(@(Find-DirectoryWindows | Where-Object {$_.HWND -eq $active}).Count){exit 0}
+exit 3
+`;
+async function openDirectory(directory, platform = process.platform, start = spawn) {
+  if (!(await stat6(directory)).isDirectory()) throw Error("\u9879\u76EE\u76EE\u5F55\u4E0D\u5B58\u5728");
+  const windows = platform === "win32";
+  const command = windows ? win32.join(process.env.SystemRoot || "C:\\Windows", "System32", "WindowsPowerShell", "v1.0", "powershell.exe") : platform === "darwin" ? "open" : "xdg-open";
+  const args = windows ? ["-NoProfile", "-NonInteractive", "-STA", "-WindowStyle", "Hidden", "-Command", activateDirectoryScript] : [directory];
+  const env = windows ? { ...process.env, WEBSITE_BUILDER_OPEN_DIRECTORY: windowsShellPath(await realpath4(directory)) } : void 0;
+  await new Promise((resolve6, reject) => {
+    const child = start(command, args, { stdio: "ignore", shell: false, windowsHide: true, env, timeout: 15e3 });
+    child.once("error", () => reject(Error("\u65E0\u6CD5\u6253\u5F00\u9879\u76EE\u76EE\u5F55")));
+    child.once("exit", (code) => code === 0 ? resolve6() : reject(Error(windows && code === 3 ? "\u76EE\u5F55\u5DF2\u6253\u5F00\uFF0C\u4F46 Windows \u672A\u5141\u8BB8\u5207\u6362\u5230\u524D\u53F0" : "\u65E0\u6CD5\u6253\u5F00\u9879\u76EE\u76EE\u5F55")));
+  });
+}
+
+// server/project-manager.ts
+import { gunzipSync as gunzipSync2 } from "node:zlib";
+var mime3 = (path) => ({ ".png": "image/png", ".jpg": "image/jpeg", ".jpeg": "image/jpeg", ".webp": "image/webp", ".avif": "image/avif", ".ico": "image/x-icon", ".svg": "image/svg+xml", ".gif": "image/gif", ".pdf": "application/pdf", ".json": "application/json" })[extname4(path).toLowerCase()] || "application/octet-stream";
+function projectManager(store) {
+  const captures = /* @__PURE__ */ new Map();
+  const thumbnails = /* @__PURE__ */ new Map();
+  const thumbnailRetry = /* @__PURE__ */ new Map();
+  const shutdown = new AbortController();
+  async function thumbnail(id) {
+    if (shutdown.signal.aborted) return;
+    if (thumbnails.has(id)) return thumbnails.get(id);
+    const task = (async () => {
+      const row = store.database.row(id), project = store.database.project(id);
+      const home = project?.pages.find((page) => /^(?:index|home)\.html?$/i.test(page.path));
+      if (!home || home.status !== "ready" || row.thumbnail_revision === String(home.version)) return;
+      if ((thumbnailRetry.get(id) || 0) > Date.now()) return;
+      const thread = store.database.sql.prepare("SELECT thread_id FROM threads WHERE project_id=? LIMIT 1").get(id);
+      if (!thread) return;
+      try {
+        const result = await screenshotPage(store, { thread_id: thread.thread_id, project_id: id, path: home.path, thumbnail: true, signal: shutdown.signal });
+        store.database.sql.prepare("UPDATE projects SET thumbnail_path=?,thumbnail_revision=? WHERE id=? AND deleted_at IS NULL").run(result.path, String(home.version), id);
+      } catch (error) {
+        thumbnailRetry.set(id, Date.now() + 6e4);
+        if (!shutdown.signal.aborted) console.error(`Website Builder thumbnail ${id}: ${error.message}`);
+      }
+    })();
+    thumbnails.set(id, task);
+    void task.finally(() => thumbnails.delete(id));
+    return task;
+  }
+  async function list() {
+    const projects = await store.list();
+    return Promise.all(projects.map(async (project) => {
+      if (thumbnails.size < 2) void thumbnail(project.id);
+      let image;
+      if (project.thumbnailPath) {
+        const directory = await realpath5(store.metadataDirectory(project.id));
+        const path = await realpath5(project.thumbnailPath).catch(() => "");
+        const rel = relative4(directory, path);
+        if (path && rel !== ".." && !rel.startsWith(`..${sep4}`) && !isAbsolute6(rel)) image = `data:image/png;base64,${(await readFile11(path)).toString("base64")}`;
+      }
+      const details = store.database.project(project.id);
+      let domain = [...`${project.name} ${details?.brief || ""}`.matchAll(/(?:https?:\/\/)?((?:[a-z0-9](?:[a-z0-9-]*[a-z0-9])?\.)+[a-z]{2,24})\b/gi)].map((match) => match[1].toLowerCase()).find((host) => !/\.(?:html?|css|js|json|png|jpe?g|webp|svg|avif)$/i.test(host));
+      if (!domain) for (const name of ["index.html", "components/footer.js"]) {
+        try {
+          const base = await realpath5(join10(store.root, project.id)), source = await readFile11(await contained(base, name), "utf8");
+          domain = source.match(/<link\b(?=[^>]*\brel\s*=\s*["']canonical["'])[^>]*\bhref\s*=\s*["']https?:\/\/([^/"']+)/i)?.[1] || source.match(/support@([a-z0-9.-]+\.[a-z]{2,24})/i)?.[1];
+          if (domain) break;
+        } catch {
+        }
+      }
+      return { id: project.id, name: project.name, displayName: `\u7F51\u7AD9-${domain || project.name}`, domain, updatedAt: project.updatedAt, thumbnail: image };
+    }));
+  }
+  async function context(thread, panelId) {
+    const panel = store.database.context(thread, panelId);
+    const id = panel?.project_id;
+    if (id && store.database.project(id)) return { page: "project", panel_id: panel.panel_id, ...compactProject(await store.get(thread, id)), thread_id: thread || null };
+    return { page: "home", panel_id: panel?.panel_id || panelId || null, projects: await store.list() };
+  }
+  async function resources(id) {
+    const view = await store.get(void 0, id);
+    if (!view) throw Error("\u9879\u76EE\u4E0D\u5B58\u5728");
+    const scan = async (directory) => {
+      for (const entry of await readdir4(directory, { withFileTypes: true })) {
+        if (entry.name.startsWith(".") || entry.name === "node_modules") continue;
+        const path = join10(directory, entry.name);
+        if (entry.isDirectory()) await scan(path);
+        else if (entry.isFile() && !/\.(?:html?|js|mjs|css)$/i.test(path)) {
+          const info = await stat7(path);
+          store.database.sql.prepare("INSERT INTO resources VALUES (?,?,?,?,?,?,?) ON CONFLICT(project_id,path) DO UPDATE SET size=excluded.size,mime=excluded.mime").run(createHash5("sha256").update(id + path).digest("hex"), id, null, entry.name, path, mime3(path), info.size);
+        }
+      }
+    };
+    await scan(view.directory);
+    return store.database.sql.prepare("SELECT id,name,path,mime,size,thread_id FROM resources WHERE project_id=? ORDER BY name").all(id);
+  }
+  async function run(input) {
+    const action = input.action || "list";
+    const panel = input.panel_id ? store.database.panelById(input.panel_id) : void 0;
+    const thread = input.thread_id || process.env.CODEX_THREAD_ID || process.env.CODEX_SESSION_ID || panel?.thread_id || void 0;
+    if (action === "list") return { projects: await list(), thread_id: thread || null };
+    if (action === "context") return context(thread, input.panel_id);
+    if (!input.panel_id || !/^[a-zA-Z0-9_-]{8,128}$/.test(input.panel_id)) throw Error("\u9700\u8981\u5F53\u524D\u9762\u677F ID");
+    if (panel?.thread_id && thread && panel.thread_id !== thread) throw Error("\u9762\u677F\u4E0D\u5C5E\u4E8E\u5F53\u524D\u4F1A\u8BDD");
+    const id = input.project_id;
+    if (action === "home") {
+      store.database.panel(input.panel_id, thread || "", null);
+      return context(thread, input.panel_id);
+    }
+    if (action === "create" || action === "open" || action === "bind") {
+      if (action !== "create" && !id) throw Error("\u9700\u8981\u9879\u76EE ID");
+      const view2 = thread ? await store.open({ threadId: thread, projectId: id, newProject: action === "create", name: input.name }) : action === "create" ? await store.createProject({ name: input.name }) : await store.get(void 0, id);
+      if (!view2) throw Error("\u9879\u76EE\u4E0D\u5B58\u5728\u6216\u5DF2\u5220\u9664");
+      store.database.panel(input.panel_id, thread || "", view2.project.id);
+      return { page: "project", panel_id: input.panel_id, ...compactProject(view2), thread_id: thread || null };
+    }
+    if (!id) throw Error("\u9700\u8981\u9879\u76EE ID");
+    if (action === "restore") {
+      if (!store.database.row(id)) throw Error("\u9879\u76EE\u4E0D\u5B58\u5728");
+      store.database.sql.prepare("UPDATE projects SET deleted_at=NULL WHERE id=?").run(id);
+      return { projects: await list() };
+    }
+    const view = await store.get(thread, id);
+    if (!view) throw Error("\u9879\u76EE\u4E0D\u5B58\u5728");
+    if (action === "images") {
+      const images = [];
+      for (const resource of await resources(id)) {
+        if (!resource.mime.startsWith("image/")) continue;
+        try {
+          const base = await realpath5(view.directory), file = await realpath5(resource.path), path = relative4(base, file);
+          if (path === ".." || path.startsWith(`..${sep4}`) || isAbsolute6(path)) continue;
+          images.push({ ...resource, path: path.split(sep4).join("/"), url: await registerPreviewFile(file, resource.mime) });
+        } catch {
+        }
+      }
+      return { images };
+    }
+    if (action === "capture") {
+      if (!input.capture_id || !/^[a-zA-Z0-9_-]{8,128}$/.test(input.capture_id) || !input.path) throw Error("\u622A\u56FE\u8BF7\u6C42\u65E0\u6548");
+      for (const [key2, item] of captures) if (Date.now() - item.time > 12e4) captures.delete(key2);
+      const key = `${input.panel_id}:${id}:${input.capture_id}`;
+      if (input.offset === 0) {
+        if (captures.size >= 8) throw Error("\u622A\u56FE\u4EFB\u52A1\u8FC7\u591A");
+        captures.set(key, { text: "", time: Date.now() });
+      }
+      const capture = captures.get(key);
+      if (!capture || input.offset !== capture.text.length || !input.chunk || input.chunk.length > 512e3) throw Error("\u622A\u56FE\u6570\u636E\u5206\u7247\u65E0\u6548");
+      capture.text += input.chunk;
+      capture.time = Date.now();
+      if (capture.text.length > 32 * 1024 * 1024) {
+        captures.delete(key);
+        throw Error("\u5F53\u524D\u9875\u9762\u622A\u56FE\u6570\u636E\u8D85\u8FC7\u9650\u5236");
+      }
+      if (!input.final) return { received: capture.text.length };
+      captures.delete(key);
+      const snapshot = gunzipSync2(Buffer.from(capture.text, "base64"), { maxOutputLength: 64 * 1024 * 1024 }).toString("utf8");
+      if (!/<html\b/i.test(snapshot)) throw Error("\u5F53\u524D\u9875\u9762\u5FEB\u7167\u4E0D\u5B8C\u6574");
+      const image = await screenshotPage(store, { thread_id: thread, project_id: id, path: input.path, width: input.width, snapshot });
+      return { resource: registerPreviewBuffer(image.bytes, "image/png"), width: image.width, fullPage: true, page: image.page };
+    }
+    if (action === "delete") {
+      store.database.remove(id);
+      return { page: "home", projects: await list() };
+    }
+    if (action === "folder") {
+      await openDirectory(view.directory);
+      return { directory: view.directory };
+    }
+    if (action === "resources") return { resources: await resources(id) };
+    if (action === "attach") {
+      if (!input.source_path || !isAbsolute6(input.source_path)) throw Error("\u9700\u8981\u7528\u6237\u63D0\u4F9B\u7684\u8D44\u6E90\u7EDD\u5BF9\u8DEF\u5F84");
+      const source = await realpath5(input.source_path), info = await stat7(source);
+      if (!info.isFile() || info.size > 64 * 1024 * 1024) throw Error("\u8D44\u6E90\u5FC5\u987B\u662F\u6587\u4EF6\u4E14\u4E0D\u8D85\u8FC7 64 MB");
+      const bytes = await readFile11(source), hash = createHash5("sha256").update(bytes).digest("hex");
+      const folder = join10(view.metadataDirectory, "session-assets");
+      await mkdir4(folder, { recursive: true });
+      const path = join10(folder, hash + extname4(source));
+      await copyFile(source, path);
+      const name = source.split(/[\\/]/).pop();
+      store.database.sql.prepare("INSERT INTO resources VALUES (?,?,?,?,?,?,?) ON CONFLICT(project_id,path) DO UPDATE SET thread_id=excluded.thread_id,name=excluded.name").run(createHash5("sha256").update(id + path).digest("hex"), id, thread || null, name, path, mime3(path), info.size);
+      return { resources: await resources(id) };
+    }
+    throw Error("\u4E0D\u652F\u6301\u7684\u9879\u76EE\u7BA1\u7406\u64CD\u4F5C");
+  }
+  return { run, context, thumbnail, close: async () => {
+    shutdown.abort();
+    await Promise.allSettled([...thumbnails.values()]);
+  } };
 }
 
 export {
@@ -7570,5 +8180,8 @@ export {
   projectService,
   prepareCommerce,
   screenshotPage,
-  importProducts
+  importProducts,
+  dataPaths,
+  migrateLegacyData,
+  projectManager
 };

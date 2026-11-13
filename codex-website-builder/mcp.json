@@ -7,8 +7,6 @@
       "args": [],
       "cwd": "${PLUGIN_ROOT}",
       "env": {
-        "WEBSITE_BUILDER_ROOT": "${PLUGIN_ROOT}/reference",
-        "WEBSITE_BUILDER_PROJECT_ROOT": "${PLUGIN_ROOT}/project",
         "WEBSITE_BUILDER_SKILL_ROOT": "${PLUGIN_ROOT}/skills/website-builder"
       }
     }

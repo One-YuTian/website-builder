@@ -357,5 +357,17 @@
       "website-image-generator"
     ],
     "verification": "manual documentation consistency review; no new rule validation code or tests"
+  },
+  "developmentOnly20261112": {
+    "branch": "dev",
+    "published": false,
+    "scope": "image preview dependency refresh + instruction-only changes; no template selection behavior changes",
+    "skillRules": [
+      "tight logo vertical margins",
+      "username/email/phone with country code/password/confirmation; auto login to home",
+      "account navigation changes after login",
+      "checkout nonempty-only fields and user autofill, no coupon entry, COD only, amount at least 0.01",
+      "no numeric stock/review counts; initial/color review avatars, actual ratings and merchant replies"
+    ]
   }
 }

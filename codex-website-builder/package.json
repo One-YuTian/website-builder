@@ -1,6 +1,6 @@
 {
   "name": "codex-website-builder",
-  "version": "0.7.9-beta.3",
-  "private": true,
-  "type": "module"
+  "type": "module",
+  "version": "0.8.0",
+  "private": true
 }

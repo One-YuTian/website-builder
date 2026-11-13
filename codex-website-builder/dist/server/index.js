@@ -3,14 +3,17 @@ import {
   ProjectStore,
   compactProject,
   createPreview,
+  dataPaths,
   importProducts,
+  migrateLegacyData,
   prepareCommerce,
   previewPayload,
+  projectManager,
   projectService,
   readTemplates,
   resourceChunk,
   screenshotPage
-} from "./chunk-TRKZCECT.js";
+} from "./chunk-JSX7GJ56.js";
 import {
   $ZodObject,
   $ZodType,
@@ -7274,7 +7277,7 @@ var require_dist = __commonJS({
 });
 
 // server/index.ts
-import { readFile } from "fs/promises";
+import { readFile } from "node:fs/promises";
 
 // node_modules/.pnpm/zod@4.6.7/node_modules/zod/v3/helpers/util.js
 var util;
@@ -16852,7 +16855,7 @@ var EMPTY_COMPLETION_RESULT = {
 };
 
 // node_modules/.pnpm/@modelcontextprotocol+sdk@1.32.2_zod@4.6.7/node_modules/@modelcontextprotocol/sdk/dist/esm/server/stdio.js
-import process2 from "process";
+import process2 from "node:process";
 
 // node_modules/.pnpm/@modelcontextprotocol+sdk@1.32.2_zod@4.6.7/node_modules/@modelcontextprotocol/sdk/dist/esm/shared/stdio.js
 var STDIO_DEFAULT_MAX_BUFFER_SIZE = 10 * 1024 * 1024;
@@ -17053,21 +17056,25 @@ function N3(Z, $, J, X, V) {
 }
 
 // server/index.ts
-import { resolve } from "path";
-import { gzipSync } from "zlib";
-import { fileURLToPath } from "url";
+import { resolve } from "node:path";
+import { gzipSync } from "node:zlib";
+import { fileURLToPath } from "node:url";
 var uri = "ui://codex-website-builder/canvas";
+var sidebarIcon = await readFile(new URL("../../assets/icon.png", import.meta.url));
 var html = await readFile(new URL("../ui/index.html", import.meta.url), "utf8");
-var projects = new ProjectStore((process.env.WEBSITE_BUILDER_PROJECT_ROOT || "${PLUGIN_ROOT}/project").replaceAll("${PLUGIN_ROOT}", fileURLToPath(new URL("../../", import.meta.url))));
+var paths = dataPaths();
+await migrateLegacyData(paths.project);
+var projects = new ProjectStore(paths.project);
+var manager = projectManager(projects);
 var syncProject = projectService(projects);
-var preview = await createPreview(html, (process.env.WEBSITE_BUILDER_ROOT || "${PLUGIN_ROOT}/reference").replaceAll("${PLUGIN_ROOT}", fileURLToPath(new URL("../../", import.meta.url))), "www.noventrad.com", syncProject);
+var preview = await createPreview(html, paths.reference, "www.noventrad.com", syncProject, manager.run);
 var skillRoot = (process.env.WEBSITE_BUILDER_SKILL_ROOT || resolve("skills/website-builder")).replaceAll("${PLUGIN_ROOT}", fileURLToPath(new URL("../../", import.meta.url)));
-var server = new McpServer({ name: "codex-website-builder", version: "0.7.9-beta.3" });
+var server = new McpServer({ name: "codex-website-builder", version: "0.8.0", icons: [{ src: `data:image/png;base64,${sidebarIcon.toString("base64")}`, mimeType: "image/png", sizes: ["200x200"] }] });
 var csp = { connectDomains: ["data:", "blob:"], resourceDomains: ["data:", "blob:"], frameDomains: ["blob:", "data:"], baseUriDomains: ["https://website-builder.invalid"] };
 var legacyCsp = { connect_domains: csp.connectDomains, resource_domains: csp.resourceDomains, frame_domains: csp.frameDomains, base_uri_domains: csp.baseUriDomains };
 N3(server, "canvas", uri, { _meta: { ui: { csp }, "openai/widgetCSP": legacyCsp } }, async () => ({
   contents: [{ uri, mimeType: p, text: preview.render(), _meta: {
-    ui: { csp },
+    ui: { csp, permissions: { clipboardWrite: {} } },
     "openai/widgetCSP": legacyCsp,
     "openai/ui": { preferredDisplayMode: "fullscreen", availableDisplayModes: ["fullscreen"] }
   } }]
@@ -17079,6 +17086,30 @@ K3(server, "open_canvas", {
   annotations: { readOnlyHint: true, destructiveHint: false, openWorldHint: false },
   _meta: { ui: { resourceUri: uri }, "openai/ui": { entrypoints: [{ type: "global" }] } }
 }, async () => ({ content: [{ type: "text", text: "\u7F51\u7AD9\u5C55\u793A\u753B\u5E03\u5DF2\u6253\u5F00\u3002" }] }));
+server.registerTool("website_panel_context", {
+  description: "\u67E5\u8BE2\u5F53\u524D\u771F\u5B9E\u4F1A\u8BDD\u7684 Website Builder \u9762\u677F\u4F4D\u7F6E\u3002\u8BE6\u60C5\u9875\u8FD4\u56DE project_id \u548C\u9879\u76EE\u4FE1\u606F\uFF0C\u4E3B\u754C\u9762\u8FD4\u56DE\u9879\u76EE\u5217\u8868\u3002\u591A\u4E2A\u9762\u677F\u65F6\u4F20 panel_id \u7CBE\u786E\u67E5\u8BE2\uFF1B\u4E0D\u5F97\u7528\u5176\u4ED6\u4F1A\u8BDD\u6216\u5168\u5C40\u6700\u8FD1\u9879\u76EE\u66FF\u4EE3\u3002",
+  inputSchema: { thread_id: external_exports.string().optional(), panel_id: external_exports.string().optional() },
+  annotations: { readOnlyHint: true, destructiveHint: false, openWorldHint: false }
+}, async (input) => {
+  try {
+    const value = await manager.run({ ...input, action: "context" });
+    return { content: [{ type: "text", text: JSON.stringify(value) }] };
+  } catch (error) {
+    return { isError: true, content: [{ type: "text", text: error.message }] };
+  }
+});
+server.registerTool("website_projects", {
+  description: "\u7BA1\u7406\u5168\u5C40 SQLite \u9879\u76EE\uFF1Alist \u5217\u51FA\u9879\u76EE\uFF0Copen/create \u7ED1\u5B9A\u5F53\u524D\u4F1A\u8BDD\u548C\u9762\u677F\uFF0Chome \u8FD4\u56DE\u4E3B\u754C\u9762\uFF0Cdelete \u8F6F\u5220\u9664\uFF08\u4FDD\u7559\u6587\u4EF6\uFF09\uFF0Cresources \u5217\u51FA\u8D44\u6E90\uFF0Cattach \u590D\u5236\u7528\u6237\u660E\u786E\u63D0\u4F9B\u7684\u56FE\u7247/\u6587\u4EF6\u5230\u9879\u76EE\u8D44\u6E90\u76EE\u5F55\u3002panel_id \u6765\u81EA\u9762\u677F\u4E0A\u4E0B\u6587\uFF1Bthread_id \u5FC5\u987B\u662F\u771F\u5B9E\u5F53\u524D\u4F1A\u8BDD ID\u3002",
+  inputSchema: { action: external_exports.enum(["list", "open", "create", "bind", "home", "delete", "restore", "resources", "attach", "folder", "images", "capture"]).default("list"), panel_id: external_exports.string().optional(), thread_id: external_exports.string().optional(), project_id: external_exports.string().optional(), name: external_exports.string().max(200).optional(), source_path: external_exports.string().optional(), path: external_exports.string().optional(), width: external_exports.number().int().min(320).max(2560).optional(), capture_id: external_exports.string().optional(), chunk: external_exports.string().max(512e3).optional(), offset: external_exports.number().int().nonnegative().optional(), final: external_exports.boolean().optional() },
+  annotations: { readOnlyHint: false, destructiveHint: false, openWorldHint: false }
+}, async (input) => {
+  try {
+    const value = await manager.run(input);
+    return { content: [{ type: "text", text: JSON.stringify(value) }], _meta: { manager: value } };
+  } catch (error) {
+    return { isError: true, content: [{ type: "text", text: error.message }] };
+  }
+});
 server.registerTool("read_website", {
   description: "\u8BFB\u53D6\u914D\u7F6E\u6839\u76EE\u5F55\u5185\u7684\u7F51\u7AD9\u9875\u9762\u4E0E\u5185\u5D4C\u8D44\u6E90\uFF0C\u4EC5\u4F9B\u753B\u5E03 UI \u4F7F\u7528\u3002",
   inputSchema: { directory: external_exports.string().default("www.noventrad.com") },
@@ -17233,27 +17264,36 @@ server.registerTool("website_screenshot", {
 });
 server.registerTool("project_sync", {
   description: "UI-only long poll: return project state and changed ready-page payloads; no full-site reload or model context.",
-  inputSchema: { since: external_exports.string().optional(), known: external_exports.record(external_exports.string(), external_exports.number()).optional(), thread_id: external_exports.string().optional(), wait_ms: external_exports.number().int().min(0).max(2e4).default(2e4) },
+  inputSchema: { since: external_exports.string().optional(), known: external_exports.record(external_exports.string(), external_exports.number()).optional(), thread_id: external_exports.string().optional(), project_id: external_exports.string().optional(), wait_ms: external_exports.number().int().min(0).max(2e4).default(2e4) },
   annotations: { readOnlyHint: true, destructiveHint: false, openWorldHint: false },
   _meta: { ui: { visibility: ["app"] } }
 }, async (input) => {
   try {
-    return { content: [], _meta: { sync: await syncProject({ since: input.since, known: input.known, threadId: input.thread_id, waitMs: input.wait_ms }) } };
+    return { content: [], _meta: { sync: await syncProject({ since: input.since, known: input.known, threadId: input.thread_id, projectId: input.project_id, waitMs: input.wait_ms }) } };
   } catch (error) {
     return { isError: true, content: [{ type: "text", text: error.message }] };
   }
+});
+var shutdown = async () => {
+  preview.service.closeAllConnections();
+  preview.service.close();
+  await manager.close();
+};
+process.once("SIGTERM", () => {
+  void shutdown().finally(() => process.exit(0));
+});
+process.once("SIGINT", () => {
+  void shutdown().finally(() => process.exit(0));
 });
 if (process.argv.includes("--preview")) {
   console.log(preview.url);
 } else {
   const transport = new StdioServerTransport();
   server.server.onclose = () => {
-    preview.service.closeAllConnections();
-    preview.service.close();
+    void shutdown();
   };
   await server.connect(transport);
   process.stdin.once("end", () => {
-    preview.service.closeAllConnections();
-    preview.service.close();
+    void shutdown();
   });
 }

@@ -1,5 +1,7 @@
 # Website Builder
 
+当前版本：0.8.0。最新界面、图片/整页截图复制与目录打开修复见 [CHANGELOG-0.8.0.md](CHANGELOG-0.8.0.md)。beta分支提供可直接加载的预构建插件，使用Codex内置Node运行；安装包不需要npm依赖。项目与SQLite数据保存在独立用户数据目录，参见下方持久化说明。
+
 在同一张点阵画布中横向展示网站的所有 HTML 页面，顶部对齐，整体平移/缩放，每页独立 iframe。没有打开项目时画布为空；只有用户明确选择目录后才展示参考站点（例如 `website/www.noventrad.com` 的 14 个页面）。
 
 ## 右侧工具栏
@@ -47,7 +49,7 @@ mcp.json 中 WEBSITE_BUILDER_ROOT 指向 `Q:/Projects/DEMO/codex-website-develop
 
 ## 构建、测试和安装
 
-需要 Node.js 22.12+ 与 pnpm。
+需要 Node.js 22.13+ 与 pnpm。
 
 ```powershell
 pnpm install --frozen-lockfile
@@ -81,7 +83,7 @@ MCP 测试覆盖独立无 node_modules 安装、全局入口、14 个压缩页�
 
 真实 thread_id 来自当前 CODEX_THREAD_ID；不能用浏览器 localStorage 会话随机数或匿名全局键替代。绑定按会话独立持久化到 .builder-state/threads/，项目页面状态存放在各项目 .website-builder.json。显式切换才变更绑定。全局画布显示最近主动打开的会话项目，目录浮层也可切换已有项目。
 
-输出目录固定为插件源码 project/xxxx-xxxx-xxxx-xxxx/。mcp.json 的 WEBSITE_BUILDER_PROJECT_ROOT 指向源码目录，而不是版本缓存；运行时项目和 .builder-state 被排除出插件安装包，升级不覆盖用户网站。移动插件源码时需同步修改该配置。所有路径验证限制在项目内，Windows 并发读取时对原子替换共享冲突做短暂重试，不删除旧文件来替代原子提交。
+项目和会话状态保存在用户全局数据目录，独立于源码及插件版本缓存，默认位置与覆盖方式见文末“全局数据目录”。运行时项目和 .builder-state 不打包，移动或升级插件不改变数据位置。所有路径验证限制在项目内，Windows 并发读取时对原子替换共享冲突做短暂重试，不删除旧文件来替代原子提交。
 
 页面处于 queued/generating 时只显示扫光，完整 HTML 和本地 JS/CSS 均存在才进入 ready；错误会在对应页面说明。重新生成前先 begin，提交完成后仅该页替换为新预览，保留其他页面、画布位置和缩放。没有活跃项目时不请求或展示演示数据，同步失败也不回退到演示站点；参考站点须由用户在目录面板明确选择。相同内容的重复写入不触发页面重载，CSS/JS/图片修改仅影响实际引用该资源的页面。
 
@@ -231,7 +233,7 @@ begin记录原文件指纹，跨进程同步可识别直接写出的新完整HTM
 
 MCP入口改为scripts/launch-node与Windows同名.cmd启动器，优先读取Codex的CODEX_MCP_NODE_PATH及托管运行时目录，不使用系统PATH中的Node。启动器无参数启动服务器，也可传入同包脚本路径。macOS使用LF与可执行位，Windows使用CMD companion；运行时缺失以stderr明确报错，不自动安装依赖。
 
-项目目录默认${PLUGIN_ROOT}/project，参考库默认${PLUGIN_ROOT}/reference（可选），技能默认${PLUGIN_ROOT}/skills/website-builder，CLI同样展开插件根目录，不写入开发机绝对路径。升级会切换到新版本插件根目录下的project，旧Q盘项目不移动/删除；如需跨版本固定目录，可通过WEBSITE_BUILDER_PROJECT_ROOT覆盖。
+项目、会话状态与可选参考库现改用用户全局数据目录；技能仍从当前版本的 ${PLUGIN_ROOT}/skills/website-builder 读取。MCP 与 CLI 共用数据路径解析，升级不再切换项目目录。
 
 beta为仅安装内容的分支，含codex-website-builder的dist/skills/启动器/清单与必要资源，以及.agents/plugins/marketplace.json和兼容.codex-plugin/marketplace.json，市场source.path为./codex-website-builder；不包含node_modules、生产项目、管理状态或测试报告。仓库市场安装应选择beta ref。
 
@@ -240,3 +242,41 @@ Windows托管Node v24启动、MCP工具/画布及独立14页预览通过；macOS
 ## 0.7.9-beta.2 MCP配置修正
 
 严格MCP格式只接收type/command/args/env/cwd；移除legacy env_vars，command使用./scripts/launch-node，不在可执行令牌中使用PLUGIN_ROOT占位。双平台启动器及根目录project保留。详见CHANGELOG-0.7.9-beta.2.md。
+
+
+## 全局数据目录
+
+默认目录独立于安装版本：
+
+- Windows：%LOCALAPPDATA%\codex-website-builder\；未设置 LOCALAPPDATA 时使用用户目录下的 AppData\Local\codex-website-builder\。
+- macOS / Linux：~/.local/share/codex-website-builder/；设置绝对路径 XDG_DATA_HOME 时使用 $XDG_DATA_HOME/codex-website-builder/。
+
+project/<project_id>/ 保存可发布网站；.builder-state/threads/ 保存会话绑定；.builder-state/projects/<project_id>/ 保存项目状态、模板使用记录、素材记录和截图；reference/ 是可选参考库。目录首次使用时按需创建，不随插件重装或升级删除。
+
+WEBSITE_BUILDER_DATA_DIR 可指定整个数据目录（建议绝对路径，例如 Windows 的 D:\WebsiteBuilder）。原 WEBSITE_BUILDER_PROJECT_ROOT 继续支持单独指定项目目录，其状态目录仍在项目根目录父级的 .builder-state/。WEBSITE_BUILDER_ROOT 可单独指定参考库。通过宿主的服务环境设置覆盖，不要把数据位置设回插件源码或版本缓存。CLI 使用相同环境变量。
+
+旧版本保存在源码或版本缓存中的数据不会自动删除或覆盖。迁移前停止旧服务，将旧 project/ 与同级 .builder-state/ 一并复制到全局数据目录，确认新版本读取成功后再清理旧副本；已有同名项目或状态时先备份并人工核对，不直接覆盖。固定目录可避免版本切换造成数据不可见，仍建议定期备份。
+
+验证：pnpm test:persistence 模拟两个独立安装目录，检查同一会话的网站文件、管理文件和项目 ID 在切换版本后保持一致。
+
+
+## SQLite 项目管理
+
+全局数据目录新增 db/website-builder.sqlite，使用 Node.js 内置 node:sqlite，无需独立数据库服务或平台原生依赖。数据库使用 WAL、外键和 busy_timeout；包含 projects（完整项目状态/标题/缩略图/删除时间）、threads、project_sessions、panels 和 resources。网站和二进制资源仍保存在项目及管理目录，数据库负责关联与查询；project.json 作为兼容副本保留，数据库为主数据源。
+
+全局入口默认进入项目主界面：左侧搜索、时间分组、项目首页缩略图及软删除，右侧输入框与发送按钮暂时禁用，显示“开发中”，不创建项目或发送聊天消息。详情页 Home 返回主界面，文件夹按钮通过操作系统打开当前项目目录，详情页不包含需求输入框或发送控件；项目主界面仅保留开发中占位。独立浏览器预览不发送聊天消息。
+
+首页 ready 后异步生成 1:1 顶部裁剪缩略图（256×256 PNG），首页版本变化后更新。需要本机 Chrome；生成失败时保留已有缩略图，稍后重试。不同面板使用独立 panel_id，预览固定 project_id，避免全局最近项目导致串项目。
+
+新增 MCP：website_panel_context 查询真实会话及指定面板的主界面/项目上下文；website_projects 支持 list/create/open/bind/home/delete/restore/resources/attach/folder。attach 将用户提供的图片/文件复制到 metadata_directory/session-assets 并在数据库登记，不依赖临时附件路径；resources 同时索引站点文件。UI 显示删除撤销；软删除不移除网站、资源或数据库记录，旧 JSON 不会在重启时复活已删除项目。
+
+默认目录首次启动时自动从当前插件目录及同插件的旧版本缓存复制 project 与 .builder-state，既有同名项目不覆盖，旧副本保留；原全局目录的 JSON 项目与会话绑定自动导入 SQLite。自定义 WEBSITE_BUILDER_DATA_DIR/WEBSITE_BUILDER_PROJECT_ROOT 时不扫描其他目录，可将旧 project 和 .builder-state 成对复制到指定目录后重启导入。数据库、项目目录和管理目录需要一并备份，备份前停止服务（包含 WAL 文件）。
+
+验证：pnpm test:management 使用临时数据库和 Chrome 测试首页、搜索、详情、Home、发送协议、目录按钮、缩略图、资源、软删除及窄屏布局；pnpm test:persistence 验证跨安装版本读取及删除/恢复后的重启行为。消息与目录按钮在测试宿主中拦截，不向真实聊天发送测试消息或打开测试文件夹。
+
+
+## 全局入口无会话 ID 的兼容处理
+
+全局面板可以在宿主没有注入 CODEX_THREAD_ID/CODEX_SESSION_ID 时浏览、新建、删除、恢复项目和打开目录。面板使用独立 panel_id，未绑定聊天时返回 thread_id:null；数据库 panels.thread_id 的空值仅表示尚未绑定，不创建匿名/伪造聊天，也不借用全局最近会话。主页输入和发送暂时禁用；项目仍可通过真实聊天中的 MCP 工具创建与绑定。后续面板请求只复用该面板自己的绑定。
+
+验证：pnpm test:global-entry 在移除两个会话环境变量后，测试全局面板、项目预览、发送协议、真实会话绑定和跨会话隔离。composerIcon 使用 assets/icon2.png，侧边栏入口图标保持独立配置。
