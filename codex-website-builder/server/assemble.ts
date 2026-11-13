@@ -9,7 +9,7 @@ export function injectSharedUI(html:string,path:string) {
   return html;
 }
 
-export function assemblePage(body: string, title: string, language = 'en', options:{commerce?:boolean;commerceConfig?:boolean;cart?:'page'|'drawer'|'none'}={}) {
+export function assemblePage(body: string, title: string, language = 'en', options:{commerce?:boolean;cart?:'page'|'drawer'|'none'}={}) {
   if (/<html\b/i.test(body)) return body;
   const scripts:string[]=[];
   body=body.replace(/<script\b[^>]*>[\s\S]*?<\/script>/gi,script=>{scripts.push(script);return '';});
@@ -22,9 +22,8 @@ export function assemblePage(body: string, title: string, language = 'en', optio
 <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/bootstrap-icons/1.11.3/font/bootstrap-icons.min.css">
 <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/Swiper/10.3.1/swiper-bundle.min.css">
 ${links.join('\n')}
-<script src="https://cdn.tailwindcss.com"></script><script src="js/app.js"></script>
+<script src="https://cdn.tailwindcss.com"></script>
 </head><body class="m-0 bg-surface font-sans text-content antialiased"><header-component></header-component>${body}${drawer}<footer-component></footer-component>
-<script src="https://cdnjs.cloudflare.com/ajax/libs/jquery/3.7.1/jquery.min.js"></script><script src="https://cdnjs.cloudflare.com/ajax/libs/Swiper/10.3.1/swiper-bundle.min.js"></script>${options.commerceConfig?'<script src="js/commerce-config.js"></script>':''}${options.commerce?'<script src="js/ec-sdk.js"></script><script src="js/sdk.js"></script>':''}<script src="js/data.js"></script>
-${options.commerce?'<script>window.SDK.init(window.productData, window.commerceConfig || {});</script>':''}
+<script src="https://cdnjs.cloudflare.com/ajax/libs/jquery/3.7.1/jquery.min.js"></script><script src="https://cdnjs.cloudflare.com/ajax/libs/Swiper/10.3.1/swiper-bundle.min.js"></script>${options.commerce?'<script src="js/sdk.js"></script>':''}<script src="js/data.js"></script><script src="js/app.js"></script>
 <script src="components/header.js"></script><script src="components/footer.js"></script>${options.cart && options.cart !== 'none'?'<script src="components/cart.js"></script>':''}<script src="components/card.js"></script>${scripts.join('\n')}</body></html>`;
 }

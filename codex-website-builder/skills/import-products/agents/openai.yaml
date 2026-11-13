@@ -1,3 +1,0 @@
-interface:
-  display_name: 商品JSON导入与读取
-  short_description: 通过SDK读取商品JSON，统计分类并建立运行适配视图

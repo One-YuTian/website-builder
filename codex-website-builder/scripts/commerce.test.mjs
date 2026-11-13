@@ -38,7 +38,12 @@ try {
   const state = await call('website_project', { thread_id: 'commerce-test', name: 'Commerce test', pages: [{ path: 'index.html', title: 'Home' }, { path: 'shop.html', title: 'Shop' }] });
   const prepared = await call('website_commerce', { thread_id: state.thread_id, project_id: state.project_id, products: samples, seed: 'test-catalog' });
   assert.equal(prepared.count, 24);
-  assert.ok(prepared.written.includes('js/app.js'));
+  assert.equal(prepared.app_required,true);
+  assert.ok(!prepared.written.includes('js/app.js'));
+  await assert.rejects(readFile(join(state.directory,'js/app.js')));
+  const generatedApp=`window.tailwind=window.tailwind||{};window.tailwind.config={theme:{extend:{colors:{primary:'#36634b'}}}};window.commerceConfig=${JSON.stringify(prepared.config_defaults)};window.app={init(){window.SDK.init(window.productData,window.commerceConfig);window.websiteReady=Promise.resolve(window.SDK);return window.websiteReady;}};window.app.init();`;
+  await call('website_write',{thread_id:state.thread_id,project_id:state.project_id,files:[{path:'js/app.js',content:generatedApp}]});
+  await assert.rejects(readFile(join(state.directory,'js/ec-sdk.js')));
   await assert.rejects(readFile(join(state.directory, 'js/commerce-config.js')), 'new projects must not create a separate configuration script');
   assert.ok((await readFile(join(state.directory, 'js/app.js'), 'utf8')).includes(prepared.config_defaults.storageKey));
   const source = await readFile(join(state.directory, 'js/data.js'), 'utf8');
@@ -48,11 +53,15 @@ try {
     window: { crypto: webcrypto, commerceConfig: { storageKey: 'test', currency: 'USD', locale: 'en-US' }, localStorage: { getItem: key => values.get(key) || null, setItem: (key, value) => values.set(key, value), removeItem: key => values.delete(key) } },
     TextEncoder, Intl, crypto: webcrypto,
   });
-  for (const path of ['js/data.js', 'js/sdk.js', 'js/ec-sdk.js']) {
+  for (const path of ['js/sdk.js', 'js/data.js', 'js/app.js']) {
     vm.runInContext(await readFile(join(state.directory, path), 'utf8'), context, { timeout: 1000 });
   }
   const { SDK, APP, productData } = context.window;
-  SDK.init(productData, context.window.commerceConfig);
+  await context.window.websiteReady;
+  assert.equal(SDK.cart,APP.cart);assert.equal(SDK.account,APP.account);
+  const originalSDK=SDK,originalAPP=APP;
+  vm.runInContext(await readFile(join(state.directory,'js/sdk.js'),'utf8'),context);
+  assert.equal(context.window.SDK,originalSDK);assert.equal(context.window.APP,originalAPP);
   assert.equal(SDK.count(), 24);
   assert.equal(context.window.storeData.getAll().length, 24);
   assert.equal(context.window.storeData.getByCategory('Daypacks').length, 8);
@@ -130,16 +139,19 @@ try {
     content: `customElements.define('${name}-component',class extends HTMLElement{connectedCallback(){this.refresh();window.addEventListener('storage',()=>this.refresh());APP.on('CART_ADD',()=>this.refresh());}refresh(){this.textContent='products:'+SDK.count()+' cart:'+APP.cart.count();}});`,
   }));
   await call('website_write', { thread_id: state.thread_id, project_id: state.project_id, files: [
-    { path: 'js/app.js', content: `window.commerceConfig=${JSON.stringify(prepared.config_defaults)};window.app={init(){return true;}};` }, ...components,
+    ...components,
     { path: 'css/theme.css', content: 'body{color:#123;background:#fff}h1{font-size:2rem}' },
     ...['index', 'shop'].map(name => ({ path: `${name}.html`, fragment: true, content: `<main><h1>${name}</h1><button type="button">Action</button></main>` })),
   ] });
   const html = await readFile(join(state.directory, 'index.html'), 'utf8');
   assert.ok(html.indexOf('js/sdk.js') < html.indexOf('js/data.js'));
-  assert.ok(html.indexOf('window.SDK.init') < html.indexOf('components/header.js'));
+  assert.ok(html.indexOf('js/data.js') < html.indexOf('js/app.js'));
+  assert.ok(html.indexOf('js/app.js') < html.indexOf('components/header.js'));
+  assert.ok(!html.includes('SDK.init')&&!html.includes('ec-sdk.js'));
+  assert.equal((html.match(/src="js\/sdk.js"/g)||[]).length,1);
   assert.ok(!html.includes('js/commerce-config.js'));
   const formattedApp=await readFile(join(state.directory,'js/app.js'),'utf8');
-  assert.ok(formattedApp.includes('window.commerceConfig = ') && formattedApp.includes('\n  init() {'),'local Prettier formats JS');
+  assert.ok(formattedApp.includes('window.SDK.init(')&&formattedApp.includes('window.app = '),'caller-generated app owns SDK initialization');
   assert.equal(await readFile(join(state.directory,'css/theme.css'),'utf8'),'body {\n  color: #123;\n  background: #fff;\n}\nh1 {\n  font-size: 2rem;\n}\n');
   const cli = spawn(process.execPath, ['skills/website-builder/scripts/project.mjs'], {
     env: { ...env, CODEX_THREAD_ID: state.thread_id }, stdio: ['pipe', 'pipe', 'pipe'],

@@ -1,6 +1,6 @@
 # JS、组件与页面创建规范
 
-吸收旧 create-js/create-component/create-page 的职责和依赖顺序，仍由同一个 Website Builder SKILL 完成。新项目首次建组件/页面时读取；单页修改只检查受影响接口，不重复扫描全站。
+吸收旧 create-js/create-component/create-page 的职责和依赖顺序，仍由同一个 Website Builder SKILL 完成。Tailwind与技术栈细节见[模板与编码规范](template-fidelity.md)。新项目首次建组件/页面时读取；单页修改只检查受影响接口，不重复扫描全站。
 
 ## 写入与完成
 
@@ -17,9 +17,8 @@
 | 文件/层 | 责任 | 避免 |
 |---|---|---|
 | `js/data.js` | 唯一 `window.productData`，商品数组与薄 SDK 门面 | 每页另造商品、随机改 ID、夹入购物车状态 |
-| `js/sdk.js` | 商品查询、价格展示 | 页面/卡片重复筛选排序和格式化 |
-| `js/ec-sdk.js` | 业务操作、持久化、事件 | 组件自行 localStorage CRUD |
-| `js/app.js` | 顶部 Tailwind/品牌配置、currency/locale/storageKey、幂等初始化、移动适配、共享 UI 事件 | 定义/覆盖 `window.APP`、复制 SDK、在文件顶层读取尚未加载的数据 |
+| `js/sdk.js` | 唯一SDK文件：商品查询/价格及账户、购物车、收藏、订单、持久化和事件；同时提供SDK与兼容APP | 再拆业务SDK、组件自行localStorage CRUD |
+| `js/app.js` | 顶部 Tailwind/品牌配置、currency/locale/storageKey、幂等初始化、移动适配、共享 UI 事件 | 定义/覆盖 `window.APP`、复制 SDK、在SDK/data加载前执行初始化 |
 | `components/*.js` | 独立 Web Component 的模板、生命周期、数据绑定、局部刷新 | 页面整块 DOM 的拷贝、挂载两套相同组件 |
 | 对应HTML中的`script`标签 | 页面查询、筛选/排序/分页状态、页面表单和空/错状态 | 重新实现共享业务逻辑、跨页全局变量污染 |
 
@@ -42,20 +41,22 @@
 
 完整建站的页面范围按 SKILL 中的清单逐项规划：品牌介绍、联系、服务条款、隐私和退换货政策同样是独立页面，不仅是页脚文案。只有购物车是否独立成页取决于 page/drawer 选择；用户明确只做部分页面时才缩减。没有专用模板的政策页沿用整站页头/页脚、版心和正文风格，不借模板限制省略页面，也不编造业务政策。复用已有项目时先核对缺页并 plan，再逐页输出，保留已有文件。
 
-完整页面包含 doctype、lang、charset、viewport、独立 title、header/main/footer。根目录 fragment 使用自动装配，自动检测已存在的两份 SDK；新项目电商配置在 app.js，旧项目的独立配置文件仅作兼容读取；不要在 fragment 再塞一遍共享头尾/CDN/SDK。嵌套路径页面要使用正确的相对路径，必要时提交完整 HTML，不能沿用根目录片段路径。
+完整页面包含 doctype、lang、charset、viewport、独立 title、header/main/footer。根目录 fragment 使用自动装配，自动检测项目已有的统一sdk.js；电商配置与SDK.init只在app.js中维护；不要在 fragment 再塞一遍共享头尾/CDN/SDK。嵌套路径页面要使用正确的相对路径，必要时提交完整 HTML，不能沿用根目录片段路径。
 
-依赖顺序：
+依赖顺序（全部普通脚本按序，禁止async打乱顺序）：
 
-1. head 中 Tailwind 与 app.js 顶部主题设置；CSS/字体/图标按已选依赖一次引入，不混用旧模板的多个版本。
-2. 页面正文和共享组件占位。
-3. jQuery/Swiper 等实际需要的库。
-4. app.js 中的电商配置 → ec-sdk → sdk → data；数据就绪后 SDK.init。
-5. 组件定义；connectedCallback 此时可安全查询 SDK。
-6. 页面脚本/DOMContentLoaded 初始化，app.init 保持幂等。SDK 初始化不要等到组件已首次渲染后才执行。
+1. head放CSS/字体/图标与Tailwind CDN，不提前单独引入app.js，也不在head重复定义主题。
+2. 页面正文和共享组件占位；jQuery/Swiper等实际需要的库。
+3. js/sdk.js：同时定义window.SDK与window.APP，不自动初始化商品目录。
+4. js/data.js：定义window.productData及storeData薄门面，不调用SDK.init。
+5. js/app.js：唯一Tailwind主题、品牌/commerceConfig、移动字号与SDK.init初始化。静态数据在这里同步初始化，随后才执行组件注册。已有自定义app.js显式合并此逻辑，不覆盖其主题与状态。
+6. 共享组件定义及页面内联脚本；不得在HTML里再插SDK.init，不重复引入sdk/app。
 
-对于 API 数据，DOMContentLoaded 不等于数据就绪：先 await API/适配，失败留错误状态，再 SDK.init 和刷新。不要用无条件 setTimeout 猜加载顺序。
+可以在head统一用defer加载依赖，但必须保持同一先后顺序，组件与页面初始化仍在app之后。默认片段装配器采用正文末尾脚本顺序。js/app.js由主建站技能随所选模板生成，依据实际主题token、依赖、组件链与数据方案编排；不从assets复制通用起点，也不由商品准备/导入工具自动创建。主题只在其顶部定义一次。
 
-`js/app.js` 在文件顶部定义 Tailwind 配置，DOMContentLoaded后执行业务初始化；移动<768px的html根字号必须在组件首轮渲染前设置为12px，切回桌面恢复默认16px/既有桌面字阶，监听仅绑定一次。不能只设body或用transform缩放替代。主题集中在一处；容器宽度、圆角、字体、色彩和断点复用，避免旧项目固定中性色、禁止渐变等规则限制当前品牌。
+API数据在app.loadProducts中fetch并适配后返回商品数组，或由data.js提供productDataReady Promise（resolve真实商品数组）；app.js等待后调用SDK.init。异步组件先await app.dataReady再查询/首轮渲染。DOMContentLoaded不等于API完成，不使用setTimeout猜顺序，不把空数组当接口成功。window.websiteReady涵盖数据、DOM脚本阶段与可选app.afterInit，失败保持rejected以供截图识别；明确重试调用app.init，不重置旧账户/购物车。
+
+移动<768px的html根字号在app执行时、组件首轮渲染前设12px，切回桌面恢复原字号；resize监听和app.init幂等。异步额外组件注册/首轮渲染通过app.afterInit接入就绪Promise，不能循环等待自身websiteReady。
 
 页面验收围绕真实交互：商店搜索/筛选/排序/分页组合，筛选后重置页码；详情 URL ID/不存在/规格数量；购物车行 ID 操作和数值总价；收藏与徽标同步；表单原生验证、防重复提交、明确成功/错误；结账订单快照和后续查询。空状态与错误状态独立处理。
 
@@ -75,15 +76,10 @@ Cart-01是来源参考，可将其inline结构用于独立页面，或适配为v
 生产目录directory只保留网站运行产物；设计/来源/模板绑定/文案/图片记录、原始数据、临时文件和截图报告统一保存在工具返回的metadata_directory，直接写文件时必须使用该绝对目录，不写进网站。website_write会将根级website-builder.*.json管理记录路由到metadata_directory。此前记录文件的相对名称均按此规则解释。Header桌面与移动菜单必须有Home、Shop、About Us、Contact Us四个可用链接。
 
 
-## CDN、Toast与组件交互规范
+## Toast文档与装配
 
-网站所有字体、第三方库/图标依赖用在线HTTPS CDN、统一版本与加载顺序，不向生产目录复制第三方库或字体。自有APP/SDK及组件仍是项目文件。工具会在完整HTML的head注入相对components/toast.js，body注入唯一toast-component，并安装缺失实现；finish同样支持直接写入的页面。脚本必须早于app/账户业务，全局Toast.show/success/error/info/warning/dismiss/clear可用，禁止业务alert。参考实际内置assets/ui/toast.js，不另造不兼容API。
+读取website_templates(mode="doc"/"code",ids=["toast-01"])，按文档实现共享components/toast.js；不是复制演示预览壳。删除演示触发按钮、骨架展示、样例业务内容，保留真实通知区域和show/success/error/info/warning/dismiss/clear API。
 
-所有蒙层弹窗/抽屉在各组件自身作用域内实现：点内容不关闭，点空白蒙层或Esc关闭，释放滚动锁并恢复焦点/aria。只作规范要求，不提供window.Overlay、统一标记协议或全局监听接口。按钮和输入控件采用统一uiStyles及主题状态token，统一hover/focus/disabled/圆角；保持圆形图标按钮圆形，不改模板结构。
+组件使用Light DOM和唯一toast-component注册，按本站样式实现template/refresh、幂等连接、断开清理、重连恢复与安全文本。window.Toast只作薄门面；可在body之前接收早期消息，DOM可用后展示。运行文件先落盘再写页面，装配器仅复用已有实现，补齐单一实例、正确相对路径和早于app的引用，不再创建默认Toast文件，不覆盖现有组件。
 
-
-Toast必须按标准WebComponent实现，状态/计时器/事件归ToastComponent实例管理，template/refresh负责安全渲染，connectedCallback幂等、disconnectedCallback清理，注册唯一toast-component；window.Toast仅作薄门面。沿用用户在标准目录加入的components/toast.js，已存在实现不覆盖。
-
-页面逻辑必须写对应HTML的script标签，不创建js/pages或单页js文件；共享app/SDK/组件仍独立。详情/规格/评论太长时折叠、分页或分批展示，完整内容可访问，不无限拉长或永久截断。PC在max-content内统一左右轴线、减少外层水平padding和Logo两侧留白，移动安全边距及控件内部间距保留。CDN避免jsDelivr/jsdeliver及其镜像/别名，优先cdnjs/官方在线CDN。
-
-原生WebComponent内部根委托可使用稳定函数引用的addEventListener/removeEventListener，生命周期内幂等绑定和解除；不在全局函数中管理组件DOM。沿用jQuery的模板仍按命名空间解绑规则执行。
+全站禁止业务alert。CDN与蒙层关闭要求见[网站要求](site-requirements.md)，不提供全局Overlay接口。Home的组件链只作组合参考，真实实现来自所选独立组件，不执行Home伪代码。

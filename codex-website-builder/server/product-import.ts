@@ -1,3 +1,4 @@
+import { commerceAssets } from './commerce-assets';
 import { readFile, stat } from 'node:fs/promises';
 import { isAbsolute, join } from 'node:path';
 import { createHash } from 'node:crypto';
@@ -98,7 +99,7 @@ export async function importProducts(store:ProjectStore,skillRoot:string,input:I
   imageBase(input); // Invalid caller configuration is not unrecognizable product data.
   const fingerprint=createHash('sha256').update(source).digest('hex');
   let normalized:ReturnType<typeof normalize>;
-  try{normalized=normalize(JSON.parse(source.replace(/^\uFEFF/,'')),input);}catch(error){return{mode:'mock',fallback:true,next_skill:'generate-mock-data',reason:(error as Error).message,written:[],source_sha256:fingerprint,note:'原始JSON和现有商品数据未改写；主技能接续Mock Data工作流，不把失败导入冒充成功。'};}
+  try{normalized=normalize(JSON.parse(source.replace(/^\uFEFF/,'')),input);}catch(error){return{mode:'mock',fallback:true,next_skill:'website-mock-data',reason:(error as Error).message,written:[],source_sha256:fingerprint,note:'原始JSON和现有商品数据未改写；主技能接续Mock Data工作流，不把失败导入冒充成功。'};}
   // Execute only the trusted bundled SDK, never JavaScript supplied by the data.
   const window:any={productData:normalized.products};
   runInNewContext(await readFile(join(skillRoot,'assets/commerce/sdk.js'),'utf8'),{window,Intl},{timeout:2000});
@@ -148,9 +149,9 @@ export async function importProducts(store:ProjectStore,skillRoot:string,input:I
     return new URL(path.replace(/^\\/+/, ''), base).href;
   };`;
   const files=[{path:'js/data.js',content:await formatSource('js/data.js',`window.productData = ${JSON.stringify(normalized.products,(key,value)=>['__proto__','constructor','prototype'].includes(key)?undefined:value,2)};\nwindow.catalogGroups = ${JSON.stringify(groups,null,2)};\n${renderHelper}\nwindow.storeData = { getAll:()=>window.SDK.list().result(), getById:id=>window.SDK.get(String(id)), getByCategory:category=>window.SDK.categories(category).result(), formatPrice:value=>window.SDK.price(value), imageUrl:value=>window.productImageUrl(value), toCartItem:product=>({id:product.id,name:product.name,image:product.main_image,price:product.final_price}) };\n`)}];
-  for(const name of ['sdk.js','ec-sdk.js']){try{await stat(join(view.directory,'js',name));}catch(error){if((error as NodeJS.ErrnoException).code!=='ENOENT')throw error;files.push({path:`js/${name}`,content:await readFile(join(skillRoot,'assets/commerce',name),'utf8')});}}
-  try{await stat(join(view.directory,'js/app.js'));}catch(error){if((error as NodeJS.ErrnoException).code!=='ENOENT')throw error;files.push({path:'js/app.js',content:`window.commerceConfig = ${JSON.stringify(config)};\n`});}
+  const runtime=await commerceAssets(view.directory,skillRoot);
+  files.push(...runtime.files);
   files.push({path:'website-builder.import.json',content:JSON.stringify({...summary,schema:'sdk-import-v2',runtime_data_sha256:createHash('sha256').update(files[0].content).digest('hex'),source:input.file_path||'provided-json',field_map:input.field_map||{},category_map:mapping||{}},null,2)});
   await store.write(input.thread_id,files);
-  return {...compact(),written:files.map(file=>file.path),note:'SDK.category/categories/filter返回二次分类，source_category保留原类；图片字段保留相对路径，只有渲染时调用storeData.imageUrl拼接CDN；不足5组时按真实业务补充分组，不能伪造分类。已有SDK/配置未覆盖，币种配置缺失项按config_defaults合并。'};
+  return {...compact(),written:files.map(file=>file.path),app_required:runtime.appRequired,note:'SDK.category/categories/filter返回二次分类，source_category保留原类；图片字段保留相对路径，只有渲染时调用storeData.imageUrl拼接CDN。数据导入仅准备data.js及缺失sdk.js，不生成app.js；主建站技能按所选模板和站点design生成app.js并合并config_defaults。顺序sdk.js→data.js→app.js，SDK.init只在app.js。已有自定义SDK/app保留。'};
 }

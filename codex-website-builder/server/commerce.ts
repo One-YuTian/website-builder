@@ -3,6 +3,7 @@ import { join, relative, sep, isAbsolute } from 'node:path';
 import { createHash } from 'node:crypto';
 import { parse } from 'acorn';
 import { ProjectStore } from './projects';
+import { commerceAssets } from './commerce-assets';
 
 type Product = Record<string, any>;
 export interface CommerceInput {
@@ -196,19 +197,13 @@ window.storeData = {
 };
 ` });
   }
-  const kept: string[] = [];
-  for (const name of ['sdk.js', 'ec-sdk.js']) {
-    const path = `js/${name}`;
-    if (await existingFile(view.directory, path) !== undefined) kept.push(path);
-    else files.push({ path, content: await readFile(join(skillRoot, 'assets/commerce', name), 'utf8') });
-  }
-  const configuration = 'js/app.js';
   const configDefaults = { currency: input.currency || 'USD', locale: input.locale || 'en-US', storageKey: `website-builder:${view.project.id}` };
-  if (await existingFile(view.directory, configuration) !== undefined) kept.push(configuration);
-  else files.push({ path: configuration, content: `window.commerceConfig = ${JSON.stringify(configDefaults)};\n` });
+  const runtime=await commerceAssets(view.directory,skillRoot);
+  files.push(...runtime.files);
+  const kept=runtime.kept;
   if (files.length) await store.write(input.thread_id, files);
-  return { project_id: view.project.id, source, count, written: files.map(file => file.path), kept, config_defaults: configDefaults,
-    configuration_note: 'New projects keep currency/locale/storageKey in js/app.js, not a separate commerce-config.js. Merge missing defaults without replacing existing settings, keep Tailwind config first, and initialize configuration before SDK/APP.',
-    ...(source === 'api' ? { next: '生成 API 字段适配器，数据就绪后设置 window.productData 并 SDK.init；未生成 mock 数据。' } : {}),
+  return { project_id: view.project.id, source, count, written: files.map(file => file.path), kept, config_defaults: configDefaults,app_required:runtime.appRequired,
+    configuration_note: 'Data preparation never generates app.js. The website builder must generate it from selected template requirements and site design, merging these config_defaults. Load sdk.js -> data.js -> app.js -> components; app.js owns theme, SDK.init, mobile setup and readiness. Preserve existing custom app/SDK files and adapt only as needed. Do not copy a fixed app starter or emit a separate configuration script.',
+    ...(source === 'api' ? { next: '在app.js实现app.loadProducts以加载并适配API数组，再由app.js等待数据并SDK.init；组件等待app.dataReady，未生成mock数据。' } : {}),
     account_contract: 'Bundled APP.account.register/login/update are async demo methods; await results. Existing SDKs are preserved: inspect their contract before use.' };
 }

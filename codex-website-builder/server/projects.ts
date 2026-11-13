@@ -187,9 +187,8 @@ export class ProjectStore {
       try {
         const file=await this.target(view.project.id,path);let html=await readFile(file,'utf8');
         if(!/<html\b/i.test(html)||!/<\/html>\s*$/i.test(html)||!/<body\b/i.test(html)||!/<\/body>/i.test(html))throw new Error('HTML 尚未完整输出');
-        const toastPath=await this.target(view.project.id,'components/toast.js');
-        if(!await stat(toastPath).catch(()=>null))await atomic(toastPath,await formatSource('components/toast.js',await readFile(join(this.skillRoot,'assets/ui/toast.js'),'utf8')));
-        const enhanced=await formatSource(path,injectSharedUI(html,path));if(enhanced!==html){await atomic(file,enhanced);html=enhanced;}
+        const toastPath=join(view.directory,'components/toast.js');
+        const enhanced=await formatSource(path,await stat(toastPath).catch(()=>null)?injectSharedUI(html,path):html);if(enhanced!==html){await atomic(file,enhanced);html=enhanced;}
         for(const match of html.matchAll(/\b(?:src|href)\s*=\s*["']([^"']+\.(?:js|css))(?:\?[^"']*)?["']/gi)){
           if(/^(?:[a-z]+:|\/\/)/i.test(match[1]))continue;
           // Keep both operands in the configured path namespace (e.g. macOS
@@ -232,15 +231,14 @@ export class ProjectStore {
       for(const file of files)if(/\.html?$/i.test(file.path)&&!view.project.pages.some(page=>page.path===file.path))throw new Error(`请先将页面加入计划：${file.path}`);
       for(const file of files){const page=view.project.pages.find(page=>page.path===file.path);if(page&&file.title)page.title=file.title;}
       const hasFile=async(path:string)=>files.some(file=>file.path===path)||!!await stat(join(view.directory,path)).catch(()=>null);
-      const commerce=await hasFile('js/ec-sdk.js')&&await hasFile('js/sdk.js');
-      const commerceConfig=commerce&&await hasFile('js/commerce-config.js');
+      const commerce=await hasFile('js/sdk.js');
       const cart = !await hasFile('components/cart.js') ? 'none' : view.project.pages.some(page=>/(^|\/)cart\.html?$/i.test(page.path)) ? 'page' : 'drawer';
-      const output=await Promise.all(files.map(async file=>({...file,content:await formatSource(file.path,/\.html?$/i.test(file.path)?injectSharedUI(file.fragment?assemblePage(file.content,file.title||view.project.pages.find(page=>page.path===file.path)?.title||view.project.name,view.project.language,{commerce,commerceConfig,cart}):file.content,file.path):file.content)}))).catch(async error=>{
+      const toast=await hasFile('components/toast.js');
+      const output=await Promise.all(files.map(async file=>{let content=file.content;if(/\.html?$/i.test(file.path)){if(file.fragment)content=assemblePage(content,file.title||view.project.pages.find(page=>page.path===file.path)?.title||view.project.name,view.project.language,{commerce,cart});if(toast)content=injectSharedUI(content,file.path);}return {...file,content:await formatSource(file.path,content)};})).catch(async error=>{
         const submitted=new Set(files.map(file=>file.path));
         for(const page of view.project.pages)if(page.status!=='ready'&&(submitted.has(page.path)||page.status==='generating'&&await this.usesFiles(view,page.path,submitted))){page.status='error';page.error=`代码格式/语法校验失败：${(error as Error).message}`;page.version++;delete page.generationHash;}
         await this.save(view.project);throw error;
       });
-      if(output.some(file=>/\.html?$/i.test(file.path)&&/<toast-component\b/i.test(file.content))&&!await hasFile('components/toast.js'))output.push({path:'components/toast.js',content:await formatSource('components/toast.js',await readFile(join(this.skillRoot,'assets/ui/toast.js'),'utf8'))});
       const changed=new Set<string>();
       for(const file of output){const target=await this.target(view.project.id,file.path);if(await readFile(target,'utf8').catch(()=>null)!==file.content)changed.add(file.path);}
       const affected:ProjectPage[]=[];

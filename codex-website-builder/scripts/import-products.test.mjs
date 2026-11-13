@@ -26,11 +26,14 @@ try{
  assert.equal(inspected.product_count,24);assert.equal(inspected.source_category_count,8);assert.equal(inspected.category_count,6);assert.equal(inspected.main_categories.length,6);assert.ok(inspected.main_categories.every(group=>group.label.startsWith('Collection ')));
  assert.deepEqual(inspected.written,[]);assert.deepEqual(await readdir(state.directory),[]);
  const result=await call('website_products',request);assert.equal(result.mode,'imported');
+ assert.equal(result.app_required,true);assert.ok(!result.written.includes('js/app.js'));await assert.rejects(readFile(join(state.directory,'js/app.js')));
+ const generatedApp=`window.commerceConfig=${JSON.stringify(result.config_defaults)};window.SDK.init(window.productData,window.commerceConfig);window.websiteReady=Promise.resolve(window.SDK);`;
+ await call('website_write',{...ids,files:[{path:'js/app.js',content:generatedApp}]});
  assert.equal(hash(await readFile(file,'utf8')),hash(source));assert.equal(result.source_sha256,hash(source));
  assert.equal(result.image_cdn,'https://cdn.mreceix.com/');
  const data=await readFile(join(state.directory,'js/data.js'),'utf8');
  const context=vm.createContext({window:{},Intl,URL});vm.runInContext(data,context);vm.runInContext(await readFile(join(state.directory,'js/sdk.js'),'utf8'),context);
- const {window}=context;window.SDK.init(window.productData,{currency:'USD',locale:'en-US'});
+ const {window}=context;vm.runInContext(await readFile(join(state.directory,'js/app.js'),'utf8'),context);await window.websiteReady;
  assert.equal(window.SDK.get('ASIN0').private_token,undefined,'only SDK runtime fields are published');
  assert.equal(window.SDK.count(),24);assert.equal(window.SDK.categories().length,6);
  assert.equal(window.SDK.get('ASIN0').main_image,'https://images.example.com/original.jpg');
@@ -54,7 +57,7 @@ try{
  const preserved=await readFile(join(state.directory,'js/sdk.js'),'utf8');
  await call('website_products',request);assert.equal(await readFile(join(state.directory,'js/sdk.js'),'utf8'),preserved);
  for(const source_json of ['{invalid',JSON.stringify([{id:'bad',title:'Missing price'}]),JSON.stringify([{id:'x',name:'A',price:1},{id:'x',name:'B',price:2}])]){
-  const fallback=await call('website_products',{...ids,source_json});assert.equal(fallback.mode,'mock');assert.equal(fallback.next_skill,'generate-mock-data');assert.deepEqual(fallback.written,[]);
+  const fallback=await call('website_products',{...ids,source_json});assert.equal(fallback.mode,'mock');assert.equal(fallback.next_skill,'website-mock-data');assert.deepEqual(fallback.written,[]);
   assert.equal(await readFile(join(state.directory,'js/data.js'),'utf8'),data);
  }
  const few=Array.from({length:12},(_,i)=>({id:'ID'+i,name:'Item',final_price:10,category:'Home',subcategory:'Use '+i%6,image:'img/a.jpg'}));
@@ -67,7 +70,7 @@ try{
  const pendingCdn=await call('website_products',{...ids,source_json:JSON.stringify([{id:'relative',name:'Relative',price:1,image:'/relative.jpg'}]),action:'inspect'});assert.equal(pendingCdn.mode,'imported');assert.ok(pendingCdn.needs_image_cdn);
  const many=Array.from({length:201},(_,i)=>({id:'P'+i,name:'Item',price:1,category:'Source '+i}));
  const page=await call('website_products',{...ids,source_json:JSON.stringify(many),action:'inspect',category_offset:200,category_limit:10});assert.equal(page.mode,'classification_required');assert.equal(page.source_categories.length,1);assert.equal(page.source_category_count,201);assert.equal(page.category_page.next_offset,null);assert.deepEqual(page.written,[]);
- const child=spawn(process.execPath,['skills/import-products/scripts/import-products.mjs'],{env:{...env,CODEX_THREAD_ID:state.thread_id},stdio:['pipe','pipe','pipe']});
+ const child=spawn(process.execPath,['skills/website-import-data/scripts/import-products.mjs'],{env:{...env,CODEX_THREAD_ID:state.thread_id},stdio:['pipe','pipe','pipe']});
  let stdout='',stderr='';child.stdout.on('data',data=>stdout+=data);child.stderr.on('data',data=>stderr+=data);child.stdin.end(JSON.stringify({project_id:state.project_id,file_path:file,website_domain:'www.mreceix.com',category_map,mode:'inspect'}));
  assert.equal(await new Promise(resolve=>child.once('exit',resolve)),0,stderr);assert.equal(JSON.parse(stdout).product_count,24);
  assert.ok((await client.callTool({name:'website_products',arguments:{...request,project_id:'wrong'}})).isError);

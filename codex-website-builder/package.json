@@ -1,6 +1,6 @@
 {
   "name": "codex-website-builder",
-  "version": "0.8.1",
+  "version": "0.8.2",
   "private": true,
   "type": "module",
   "packageManager": "pnpm@10.18.0",
@@ -11,7 +11,7 @@
     "start": "node dist/server/index.js",
     "test": "node scripts/smoke.mjs",
     "test:visual": "node scripts/visual.mjs",
-    "prepare:plugin": "pnpm build && pnpm test && pnpm test:projects && pnpm test:proxy && pnpm test:commerce && pnpm test:templates && pnpm test:features && pnpm test:large-preview && pnpm test:ui && pnpm test:cdn && pnpm test:imports && pnpm test:output && pnpm test:startup && pnpm test:persistence && pnpm test:management && pnpm test:global-entry && pnpm test:preview-assets && pnpm test:canvas-copy && pnpm test:open-directory",
+    "prepare:plugin": "pnpm build && pnpm test:skills && pnpm test:sdk-bootstrap && pnpm test && pnpm test:projects && pnpm test:proxy && pnpm test:commerce && pnpm test:templates && pnpm test:features && pnpm test:large-preview && pnpm test:ui && pnpm test:cdn && pnpm test:imports && pnpm test:output && pnpm test:startup && pnpm test:persistence && pnpm test:management && pnpm test:global-entry && pnpm test:preview-assets && pnpm test:canvas-copy && pnpm test:open-directory",
     "install:plugin": "powershell -NoProfile -File scripts/install-plugin.ps1",
     "test:projects": "node scripts/projects.test.mjs",
     "test:proxy": "node scripts/proxy.test.mjs",
@@ -30,7 +30,9 @@
     "test:management": "node scripts/management.test.mjs",
     "test:global-entry": "node scripts/management.test.mjs --global-entry",
     "test:canvas-copy": "node scripts/canvas-copy.test.mjs",
-    "test:open-directory": "node scripts/open-directory.test.mjs"
+    "test:open-directory": "node scripts/open-directory.test.mjs",
+    "test:skills": "node scripts/skills.test.mjs",
+    "test:sdk-bootstrap": "node scripts/sdk-bootstrap.test.mjs"
   },
   "dependencies": {
     "@modelcontextprotocol/ext-apps": "^1.7.5",

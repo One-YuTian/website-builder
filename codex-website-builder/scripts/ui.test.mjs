@@ -16,11 +16,16 @@ try{
  await client.connect(new StdioClientTransport({command:process.execPath,args:[resolve('dist/server/index.js')],env}));
  const state=await call('website_project',{thread_id:'shared-ui',pages:[{path:'index.html',title:'Full'},{path:'nested/about.html',title:'Nested'},{path:'login.html',title:'Login'},{path:'fragment.html',title:'Fragment'},{path:'direct.html',title:'Direct'}]});
  const ids={thread_id:state.thread_id,project_id:state.project_id};
- const shell=body=>`<!doctype html><html><head><meta charset="utf-8"><title>UI</title><script src="app.js"></script><script src="js/ec-sdk.js"></script></head><body>${body}</body></html>`;
+ // The template is a specification; the caller supplies its adapted shared component.
+ const toastDoc=await readFile('skills/website-builder/templates/components/toast/toast-01.txt','utf8');
+ const toastCode=toastDoc.match(/### JavaScript\s*```javascript([\s\S]*?)```/)[1].replaceAll('toast-01','toast-component').replace('class Toast extends','class ToastComponent extends').replace("define('toast-component', Toast)","define('toast-component', ToastComponent)");
+ const suppliedToast=`(()=>{if(customElements.get('toast-component'))return;${toastCode}\nToastComponent.prototype.render=function(){this.innerHTML='<div data-region="live-toast-stack"></div>';};})();`;
+ const shell=body=>`<!doctype html><html><head><meta charset="utf-8"><title>UI</title><script src="js/sdk.js"></script><script src="js/data.js"></script><script src="app.js"></script></head><body>${body}</body></html>`;
  const html=shell('<button id="open" onclick="document.querySelector(\'#modal\').hidden=false">Open</button><button id="guest" onclick="APP.wishlist.add(\'B012345678\')">Save</button><div id="modal" data-overlay-root hidden><div data-overlay-backdrop style="position:fixed;inset:0;background:#0006"><span id="decoration" style="display:block;width:30px;height:30px">Backdrop</span></div><section data-overlay-panel style="position:fixed;right:0;top:50px;width:260px;background:white;padding:20px"><input aria-label="Inside"><button onclick="document.querySelector(\'#modal\').hidden=true">Close panel</button></section></div>');
  await call('website_write',{...ids,files:[
-  {path:'app.js',content:'window.uiMessages={close:"关闭"};window.commerceConfig={storageKey:"ui-test",loginUrl:"login.html",loginRequiredMessage:"请先登录"};window.earlyToast=Toast.info("Before body",{duration:0});'},
-  {path:'js/ec-sdk.js',content:await readFile('skills/website-builder/assets/commerce/ec-sdk.js','utf8')},
+  {path:'app.js',content:'window.uiMessages={close:"关闭"};window.commerceConfig={storageKey:"ui-test",loginUrl:"login.html",loginRequiredMessage:"请先登录"};window.SDK.init(window.productData,window.commerceConfig);document.addEventListener("DOMContentLoaded",()=>Toast.info("Template notification",{duration:0}));'},
+  {path:'components/toast.js',content:suppliedToast},
+  {path:'js/sdk.js',content:await readFile('skills/website-builder/assets/commerce/sdk.js','utf8')},
   {path:'index.html',content:html},
   {path:'nested/about.html',content:'<!doctype html><html><head><title>Nested</title></head><body>About</body></html>'},
   {path:'login.html',content:'<!doctype html><html><head><title>Login</title></head><body>Login</body></html>'},
@@ -46,14 +51,15 @@ try{
  const page=await browser.newPage(),errors=[],dialogs=[];page.on('pageerror',error=>errors.push(error.message));page.on('dialog',dialog=>{dialogs.push(dialog.message());void dialog.dismiss();});
  const url=`http://127.0.0.1:${service.address().port}`;
  await page.goto(url+'/index.html');
- assert.equal(await page.locator('toast-component').count(),1);assert.ok((await page.locator('toast-component').innerText()).includes('Before body'));
+ assert.equal(await page.locator('toast-component').count(),1);assert.ok((await page.locator('toast-component').innerText()).includes('Template notification'));
  await page.evaluate(()=>{Toast.clear();Toast.success('<img src=x onerror=alert(1)>',{duration:0});});
  assert.equal(await page.locator('toast-component img').count(),0);
  assert.ok((await page.locator('toast-component').innerText()).includes('<img src=x'));
- await page.getByRole('button',{name:'关闭',exact:true}).click();assert.equal(await page.locator('[data-toast-id]').count(),0);
- await page.mouse.move(1000,650);
+ await page.getByRole('button',{name:'Dismiss notification',exact:true}).click();assert.equal(await page.locator('[data-toast-item]').count(),0);
+ await page.mouse.move(-10,-10);
+ await page.evaluate(()=>document.activeElement?.blur());
  await page.evaluate(()=>Toast.info('Temporary',{duration:120}));await page.getByText('Temporary',{exact:true}).waitFor({state:'hidden'});
- await page.evaluate(()=>{for(let i=0;i<8;i++)Toast.info('Message '+i,{duration:0});});assert.equal(await page.locator('[data-toast-id]').count(),4);
+ await page.evaluate(()=>{for(let i=0;i<8;i++)Toast.info('Message '+i,{duration:0});});assert.equal(await page.locator('[data-toast-item]').count(),4);
  const same=await page.evaluate(async()=>{const previous=Toast;await new Promise(resolve=>{const script=document.createElement('script');script.src='components/toast.js';script.onload=resolve;document.head.append(script);});return Toast===previous&&document.querySelectorAll('toast-component').length===1;});assert.ok(same);
  await page.evaluate(()=>Toast.clear());
  assert.equal(await page.evaluate(()=>typeof window.Overlay),'undefined','shared overlay API was removed');
@@ -64,14 +70,18 @@ try{
  const lifecycle=await page.evaluate(()=>{
    Toast.clear();const element=document.querySelector('toast-component');
    Toast.info('Disconnect',{duration:5000});const armed=element.timers.size>0;
-   const named=element.constructor.name==='ToastComponent'&&typeof element.template==='function'&&typeof element.refresh==='function';
-   element.remove();const cleared=armed&&element.timers.size===0&&!element.bound;
-   document.body.append(element);const rebound=element.bound&&element.timers.size>0;
+   const named=element.constructor.name==='ToastComponent';
+   element.remove();const cleared=armed&&element.timers.size===0;
+   document.body.append(element);Toast.info('Reconnected',{duration:1000});const rebound=window.Toast._instance===element&&element.timers.size>0;
    Toast.clear();return {named,cleared,rebound};
  });
  assert.deepEqual(lifecycle,{named:true,cleared:true,rebound:true});
  await page.locator('#guest').click();await page.getByText('请先登录',{exact:true}).waitFor();await page.waitForURL('**/login.html?returnTo=*');
  assert.deepEqual(dialogs,[]);assert.deepEqual(errors,[]);
- const report={result:'PASS',checks:['Toast installed on full/fragment/nested/direct-finish pages once before app','early API, safe text, timeout, manual dismiss, max count and idempotent script','Toast WebComponent template/refresh, disconnect cleanup and reconnect','no shared Overlay API or backdrop interception','guest sees Toast before login navigation; no native alert']};
+ const bare=await call('website_project',{thread_id:'no-toast-default',pages:[{path:'index.html',title:'Bare'}]});
+ await call('website_write',{thread_id:bare.thread_id,project_id:bare.project_id,files:[{path:'index.html',content:'<html><body>No component supplied</body></html>'}]});
+ await assert.rejects(readFile(join(bare.directory,'components/toast.js')));
+ assert.ok(!(await readFile(join(bare.directory,'index.html'),'utf8')).includes('components/toast.js'));
+ const report={result:'PASS',checks:['caller-supplied template Toast reused on full/fragment/nested/direct-finish pages','no legacy/default Toast emitted when absent','safe text, timeout, manual dismiss, max count and idempotent script','WebComponent disconnect cleanup and reconnect','no shared Overlay API or backdrop interception','guest sees Toast before login navigation; no native alert']};
  await mkdir('artifacts',{recursive:true});await writeFile('artifacts/ui-verification.json',JSON.stringify(report,null,2));console.log(JSON.stringify(report));
 }finally{if(browser)await browser.close();if(service){service.closeAllConnections();service.close();}await client.close();}

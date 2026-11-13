@@ -44,7 +44,7 @@ Functional regions are annotated directly in the component code implementation v
     <!-- Region: Article Content - Narrative editorial and brand story -->
 
 
-    <div data-region="article-content" class="max-w-4xl mx-auto space-y-8 px-4">
+    <div data-region="article-content" class="w-full space-y-8">
       <div class="space-y-4">
         <div class="h-[1.6em] w-40 rounded-sm bg-accent"></div>
         <div class="space-y-2">

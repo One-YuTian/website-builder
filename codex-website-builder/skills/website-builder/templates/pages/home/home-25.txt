@@ -1,0 +1,59 @@
+## Overview
+
+Modern lifestyle and vibrant vibe marketplace homepage assembled from refined modern header, vibrant trendsetter hero carousel, trending highlights grid, lifestyle promotional banner, curated products feed, and footer.
+
+### Component Chain
+`home-25: header-06 -> carousel-30 -> productlist-02 -> promotion-11 -> productlist-01 -> footer-02`
+
+### Included Components
+| Component | Custom Element | Role & Function |
+| --- | --- | --- |
+| `Header-06` | `<header-06>` | Modern lifestyle marketplace sticky navigation header with search and shortcuts |
+| `Carousel-30` | `<carousel-30>` | Vibrant trendsetter hero banner carousel with bold aesthetic imagery |
+| `ProductList-02` | `<productlist-02>` | Trending lifestyle highlights and bestseller products grid |
+| `Promotion-11` | `<promotion-11>` | Vibrant lifestyle market celebration promotional marketing banner |
+| `ProductList-01` | `<productlist-01>` | Multi-category curated lifestyle products grid with quick add-to-cart |
+| `Footer-02` | `<footer-02>` | Lifestyle market community, service guarantees, and customer care footer |
+
+### Dimensions & Responsiveness
+- Aligned to global content width (`w-full max-w-content mx-auto px-4 lg:px-6`).
+- Mobile: Fully responsive stacked layout with native touch carousel gestures.
+
+## Code
+
+### HTML
+
+```html
+<div class="home-page w-full min-h-screen bg-surface font-sans text-content flex flex-col">
+  <!-- Component: Header-06 - Modern lifestyle marketplace sticky navigation header with search and shortcuts -->
+  <header-06 class="block w-full sticky top-0 z-40"></header-06>
+
+  <main class="flex-1 w-full space-y-8 sm:space-y-12 pb-12">
+    <!-- Component: Carousel-30 - Vibrant trendsetter hero banner carousel with bold aesthetic imagery -->
+    <carousel-30 class="block w-full"></carousel-30>
+
+    <!-- Component: ProductList-02 - Trending lifestyle highlights and bestseller products grid -->
+    <productlist-02 class="block w-full"></productlist-02>
+
+    <!-- Component: Promotion-11 - Vibrant lifestyle market celebration promotional marketing banner -->
+    <promotion-11 class="block w-full"></promotion-11>
+
+    <!-- Component: ProductList-01 - Multi-category curated lifestyle products grid with quick add-to-cart -->
+    <productlist-01 class="block w-full"></productlist-01>
+  </main>
+
+  <!-- Component: Footer-02 - Lifestyle market community, service guarantees, and customer care footer -->
+  <footer-02 class="block w-full"></footer-02>
+</div>
+```
+
+### JavaScript
+
+```javascript
+document.addEventListener('DOMContentLoaded', function() {
+  // Page-level event coordination for Home-25
+  document.addEventListener('product-navigate', function(e) {
+    console.log('Home-25 Product Navigation:', e.detail);
+  });
+});
+```

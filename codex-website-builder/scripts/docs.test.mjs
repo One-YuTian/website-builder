@@ -7,7 +7,7 @@ import { chromium } from '@playwright/test';
 const docs = resolve('../starlight'), dist = join(docs, 'dist');
 const maps = JSON.parse(await readFile(join(docs, 'public/region-maps.json'), 'utf8'));
 const catalog = JSON.parse(await readFile('skills/website-builder/catalog.json', 'utf8'));
-assert.equal(maps.length, 80);
+assert.equal(maps.length, catalog.length);
 for (const entry of catalog) {
   const map = maps.find(map => map.id === entry.id);
   assert.ok(map?.areas.length, `${entry.id} has documented regions`);

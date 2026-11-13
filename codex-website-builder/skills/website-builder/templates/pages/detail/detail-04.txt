@@ -229,11 +229,14 @@ Functional regions are annotated directly in the component code implementation v
       </div>
 
       <div class="tab-content">
-        <!-- Region: Product Description - Collapsible section when text exceeds max height.
-             CRITICAL: When product description content exceeds maximum height (e.g. max-h-56 / 224px or line-clamp-6),
-             display a bottom gradient fade overlay and an expand/collapse toggle button.
-             Toggling expands the section to full height (removes max-h, hides fade overlay, flips chevron),
-             and collapsing restores the original clamped height with fade overlay, preserving all formatting. -->
+        <!-- Region: Product Description - Conditional collapsible description section.
+             CRITICAL BEHAVIOR & INTERACTION SPECIFICATION:
+             1. Dynamic Overflow Detection: The bottom gradient fade mask (collapsible-fade) and expand/collapse toggle button (collapsible-toggle)
+                MUST ONLY BE RENDERED/DISPLAYED if the description content height exceeds the specified maximum threshold (e.g. scrollHeight > clientHeight / max-h-56 or >6 lines).
+                If description content is short and does NOT exceed this height limit, the toggle button and gradient mask MUST REMAIN HIDDEN (hidden).
+             2. Bidirectional Toggle Support: Clicking the toggle button expands the description section to full height
+                (removes max-height constraint, hides gradient fade, rotates chevron arrow 180deg); clicking again toggles it back to the collapsed state
+                (re-applies max-h-56, restores bottom gradient mask, reverts chevron rotation), preserving complete text formatting and layout. -->
         <div id="description-panel" class="tab-panel">
           <div class="relative bg-surface rounded-xl border border-outline/50 overflow-hidden shadow-xs">
             <div class="collapsible-content max-h-56 overflow-hidden p-6 space-y-4 transition-all duration-300">
@@ -262,11 +265,14 @@ Functional regions are annotated directly in the component code implementation v
           </div>
         </div>
 
-        <!-- Region: Product Specifications - Collapsible table when specifications exceed max height.
-             CRITICAL: When specifications exceed maximum height (e.g. max-h-56 / 224px or >4 rows),
-             display a bottom gradient fade overlay and an expand/collapse toggle button.
-             Toggling expands to full height (removes max-h, hides fade overlay, flips chevron),
-             and collapsing restores original max-h with fade overlay, preserving table formatting. -->
+        <!-- Region: Product Specifications - Conditional collapsible specifications table.
+             CRITICAL BEHAVIOR & INTERACTION SPECIFICATION:
+             1. Dynamic Overflow Detection: The bottom gradient fade mask (collapsible-fade) and expand/collapse toggle button (collapsible-toggle)
+                MUST ONLY BE RENDERED/DISPLAYED if the specifications table height exceeds the specified maximum threshold (e.g. scrollHeight > clientHeight / max-h-56 or >4-6 rows).
+                If specifications content is short and does NOT exceed this height limit, the toggle button and gradient mask MUST REMAIN HIDDEN (hidden).
+             2. Bidirectional Toggle Support: Clicking the toggle button expands the specifications table to full height
+                (removes max-height constraint, hides gradient fade, rotates chevron arrow 180deg); clicking again toggles it back to the collapsed state
+                (re-applies max-h-56, restores bottom gradient mask, reverts chevron rotation), preserving complete table styling and layout. -->
         <div id="specifications-panel" class="tab-panel hidden">
           <div class="relative bg-surface rounded-xl border border-outline/50 overflow-hidden shadow-xs">
             <div class="collapsible-content max-h-56 overflow-hidden transition-all duration-300">
@@ -300,11 +306,14 @@ Functional regions are annotated directly in the component code implementation v
           </div>
         </div>
 
-        <!-- Region: Customer Reviews - Collapsible review list when reviews exceed max height.
-             CRITICAL: When customer reviews list exceeds maximum height (e.g. max-h-72 / 288px or >2 reviews),
-             display a bottom gradient fade overlay and an expand/collapse toggle button.
-             Toggling expands to full height (removes max-h, hides fade overlay, flips chevron),
-             and collapsing restores original max-h with fade overlay, preserving all review styles. -->
+        <!-- Region: Customer Reviews - Conditional collapsible reviews list.
+             CRITICAL BEHAVIOR & INTERACTION SPECIFICATION:
+             1. Dynamic Overflow Detection: The bottom gradient fade mask (collapsible-fade) and expand/collapse toggle button (collapsible-toggle)
+                MUST ONLY BE RENDERED/DISPLAYED if the customer reviews list exceeds the specified maximum threshold (e.g. scrollHeight > clientHeight / max-h-72 or >2 reviews).
+                If reviews content is short and does NOT exceed this height limit, the toggle button and gradient mask MUST REMAIN HIDDEN (hidden).
+             2. Bidirectional Toggle Support: Clicking the toggle button expands the reviews list to show all customer reviews in full
+                (removes max-height constraint, hides gradient fade, rotates chevron arrow 180deg); clicking again toggles it back to the collapsed state
+                (re-applies max-h-72, restores bottom gradient mask, reverts chevron rotation), preserving all review card styling. -->
         <div id="reviews-panel" class="tab-panel hidden">
           <div class="relative overflow-hidden">
             <div class="collapsible-content max-h-72 overflow-hidden space-y-4 transition-all duration-300">
@@ -470,9 +479,32 @@ $(function() {
 
     $('.tab-panel').addClass('hidden');
     $('#' + tab + '-panel').removeClass('hidden');
+    setTimeout(updateCollapsibles, 50);
   });
 
-  // Collapsible sections (Description, Specifications, Reviews)
+  // Dynamic collapsible panels (Description, Specifications, Reviews)
+  function updateCollapsibles() {
+    $('.collapsible-content').each(function() {
+      const $content = $(this);
+      const $container = $content.closest('.relative');
+      const $fade = $container.find('.collapsible-fade');
+      const $toggle = $container.find('.collapsible-toggle');
+      // Only show toggle and fade overlay if content height exceeds the container threshold
+      if (this.scrollHeight > this.clientHeight + 4) {
+        $toggle.removeClass('hidden').addClass('flex');
+        if (!$content.hasClass('max-h-none')) {
+          $fade.removeClass('hidden');
+        }
+      } else if (!$content.hasClass('max-h-none')) {
+        $toggle.addClass('hidden').removeClass('flex');
+        $fade.addClass('hidden');
+      }
+    });
+  }
+
+  setTimeout(updateCollapsibles, 50);
+
+  // Bidirectional toggle support (Expand / Collapse)
   $('.collapsible-toggle').on('click', function() {
     const $toggle = $(this);
     const $container = $toggle.closest('.relative');
@@ -483,11 +515,11 @@ $(function() {
 
     if (isExpanded) {
       $content.removeClass('max-h-none overflow-visible');
-      $fade.removeClass('opacity-0 pointer-events-none');
+      $fade.removeClass('opacity-0 pointer-events-none hidden');
       $chevron.removeClass('-rotate-135').addClass('rotate-45');
     } else {
       $content.addClass('max-h-none overflow-visible');
-      $fade.addClass('opacity-0 pointer-events-none');
+      $fade.addClass('opacity-0 pointer-events-none hidden');
       $chevron.removeClass('rotate-45').addClass('-rotate-135');
     }
   });

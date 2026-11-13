@@ -1,3 +1,3 @@
 interface:
-  display_name: "网站文案生成器"
-  short_description: "website-copywriter"
+  display_name: "网站文案生成"
+  short_description: "生成品牌介绍、联系信息、About Us与政策等非商品文案，并适配页面场景。"

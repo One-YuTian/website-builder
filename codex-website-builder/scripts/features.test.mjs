@@ -29,7 +29,7 @@ try {
   // Real account/cart/wishlist/order methods, plus visible login redirect guard.
   const values=new Map(),alerts=[],redirects=[];
   const window={crypto:webcrypto,commerceConfig:{storageKey:'feature-test',loginRequiredMessage:'请先登录'},localStorage:{getItem:key=>values.get(key)||null,setItem:(key,value)=>values.set(key,value),removeItem:key=>values.delete(key)},location:{pathname:'/shop.html',search:'?category=trail',assign:url=>redirects.push(url)},Toast:{info:message=>alerts.push(message)}};
-  vm.runInNewContext(await readFile('skills/website-builder/assets/commerce/ec-sdk.js','utf8'),{window,TextEncoder,Intl,crypto:webcrypto});
+  vm.runInNewContext(await readFile('skills/website-builder/assets/commerce/sdk.js','utf8'),{window,TextEncoder,Intl,crypto:webcrypto});
   const {APP}=window;
   APP.cart.add({id:'B012345678',name:'Demo',price:42},1);
   APP.wishlist.add('B012345678');
@@ -64,7 +64,7 @@ try {
   const screenshot=await call('website_screenshot',{...ids,path:'index.html',width:375});
   const result=JSON.parse(screenshot.content[0].text), bytes=await readFile(result.path);
   assert.ok(result.path.startsWith(project.metadata_directory),'screenshot stays outside production');
-  assert.deepEqual((await readdir(project.directory)).sort(),[...pages.map(page=>page.path),'components'].sort(),'production contains only runtime pages and the shared Toast component');
+  assert.deepEqual((await readdir(project.directory)).sort(),pages.map(page=>page.path).sort(),'production contains only submitted runtime pages; no default component is created');
   assert.equal(screenshot.content[1].type,'image');
   assert.equal(bytes.readUInt32BE(16),375);
   assert.ok(bytes.readUInt32BE(20)>2700,'full page includes async footer below fold');

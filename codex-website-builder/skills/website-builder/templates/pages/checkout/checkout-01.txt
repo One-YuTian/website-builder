@@ -73,7 +73,7 @@ Functional regions are annotated directly in the component code implementation v
             <div>
               <div class="h-3 w-16 bg-content/80 rounded-xs mb-1.5"></div>
               <div class="flex">
-                <span class="inline-flex items-center px-3 rounded-l-xl border border-r-0 border-outline/50 bg-accent/30 text-xs text-muted font-mono">+1</span>
+                <span class="inline-flex items-center px-3 rounded-l-xl border border-r-0 border-outline/50 bg-accent/30"><span class="h-2.5 w-4 bg-muted/60 rounded-xs"></span></span>
                 <input type="text" readonly aria-label="Phone number" class="flex-1 px-4 py-2.5 bg-surface border border-outline/50 rounded-r-xl focus:border-primary text-sm shadow-2xs cursor-default">
               </div>
             </div>
@@ -171,7 +171,9 @@ Functional regions are annotated directly in the component code implementation v
 
           <!-- Delivery Notice Banner -->
           <div class="my-4 p-3 rounded-xl bg-accent/30 border border-outline/20 flex items-center gap-2.5">
-            <span class="size-6 rounded-md bg-primary/10 text-primary flex items-center justify-center text-xs">🚚</span>
+            <span class="size-6 rounded-md bg-primary/10 text-primary flex items-center justify-center">
+              <span class="inline-block size-3 rounded-xs border-2 border-primary/70"></span>
+            </span>
             <div class="flex-1">
               <div class="h-2.5 w-32 bg-content/80 rounded-xs mb-1"></div>
               <div class="h-2 w-24 bg-muted/50 rounded-xs"></div>

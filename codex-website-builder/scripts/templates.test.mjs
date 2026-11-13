@@ -2,7 +2,7 @@ import assert from 'node:assert/strict';
 import { readFile, writeFile, mkdir, mkdtemp } from 'node:fs/promises';
 import { join, resolve } from 'node:path';
 import { tmpdir } from 'node:os';
-import { spawn, execFileSync } from 'node:child_process';
+import { spawn } from 'node:child_process';
 import { chromium } from '@playwright/test';
 import { Client } from '@modelcontextprotocol/sdk/client/index.js';
 import { StdioClientTransport } from '@modelcontextprotocol/sdk/client/stdio.js';
@@ -80,10 +80,6 @@ try {
     const home = await readFile(join(cartState.directory, 'index.html'), 'utf8');
     assert.equal((home.match(/<cart-component\b/g) || []).length, mode === 'drawer' ? 1 : 0);
     assert.equal(home.includes('components/cart.js'), mode !== 'none');
-    execFileSync(process.execPath, ['skills/website-builder/scripts/hook-page.mjs', `--cart=${mode}`, '--content=<main>Legacy hook</main>', `--output=${join(cartState.directory, 'legacy.html')}`]);
-    const legacy = await readFile(join(cartState.directory, 'legacy.html'), 'utf8');
-    assert.equal((legacy.match(/<cart-component\b/g) || []).length, mode === 'drawer' ? 1 : 0);
-    assert.equal(legacy.includes('components/cart.js'), mode !== 'none');
     if (mode === 'page') {
       const cart = await readFile(join(cartState.directory, 'cart.html'), 'utf8');
       assert.equal((cart.match(/<cart-component\b/g) || []).length, 1, 'page cart is mounted once');
@@ -104,7 +100,7 @@ try {
   const page = await browser.newPage(); const errors = [];
   page.on('pageerror', error => errors.push(error.message));
   await page.goto(url);
-  await page.locator('[data-project-id="'+state.project_id+'"] .project-open').click();
+  await page.locator('.canvas-world').waitFor();
   await page.locator('iframe').waitFor();
   const frame = await (await page.locator('iframe').elementHandle()).contentFrame();
   await frame.waitForFunction(() => !!document.querySelector('.mobile-banner-swiper-14')?.swiper);

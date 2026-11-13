@@ -1,0 +1,59 @@
+## Overview
+
+Classic Latin-American multi-category e-commerce homepage assembled from six core functional modules: top navigation header, hero carousel, service benefits, countdown flash sale, personalized product recommendations, and footer.
+
+### Component Chain
+`home-01: header-01 -> carousel-01 -> services-08 -> flashsale-01 -> productlist-01 -> footer-01`
+
+### Included Components
+| Component | Custom Element | Role & Function |
+| --- | --- | --- |
+| `Header-01` | `<header-01>` | Global site navigation, search bar, category shortcuts, and cart indicators |
+| `Carousel-01` | `<carousel-01>` | Hero responsive promotional banner carousel with touch swipe and autoplay |
+| `Services-08` | `<services-08>` | Customer trust badges and service commitments (Free Shipping, Warranty, Returns) |
+| `FlashSale-01` | `<flashsale-01>` | Limited-time discount countdown section with `<flashcard-01>` progress cards |
+| `ProductList-01` | `<productlist-01>` | Featured personalized product grid showcase with `<card-01>` cards |
+| `Footer-01` | `<footer-01>` | Global site footer with sitemap navigation, newsletter signup, and copyright |
+
+### Dimensions & Responsiveness
+- Aligned to global content width (`w-full max-w-content mx-auto px-4 lg:px-6`).
+- Mobile: Fully responsive stacked layout with native touch carousel gestures.
+
+## Code
+
+### HTML
+
+```html
+<div class="home-page w-full min-h-screen bg-surface font-sans text-content flex flex-col">
+  <!-- Component: Header-01 - Global site navigation, search, and action controls -->
+  <header-01 class="block w-full sticky top-0 z-40"></header-01>
+
+  <main class="flex-1 w-full space-y-8 sm:space-y-12 pb-12">
+    <!-- Component: Carousel-01 - Hero responsive banner carousel with desktop and mobile variants -->
+    <carousel-01 class="block w-full"></carousel-01>
+
+    <!-- Component: Services-08 - Brand advantages and customer service benefits bar -->
+    <services-08 class="block w-full"></services-08>
+
+    <!-- Component: FlashSale-01 - Limited-time discount countdown flash sale section -->
+    <flashsale-01 class="block w-full"></flashsale-01>
+
+    <!-- Component: ProductList-01 - Featured products grid showcase with add-to-cart actions -->
+    <productlist-01 class="block w-full"></productlist-01>
+  </main>
+
+  <!-- Component: Footer-01 - Global site footer with sitemap links and newsletter signup -->
+  <footer-01 class="block w-full"></footer-01>
+</div>
+```
+
+### JavaScript
+
+```javascript
+document.addEventListener('DOMContentLoaded', function() {
+  // Page-level event coordination for Home-01
+  document.addEventListener('product-navigate', function(e) {
+    console.log('Home-01 Product Navigation:', e.detail);
+  });
+});
+```
