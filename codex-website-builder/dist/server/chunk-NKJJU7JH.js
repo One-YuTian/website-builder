@@ -5895,6 +5895,12 @@ var ProjectDatabase = class {
         UNIQUE(project_id,path)
       );
       CREATE TABLE IF NOT EXISTS settings (key TEXT PRIMARY KEY, value TEXT NOT NULL);
+      CREATE TABLE IF NOT EXISTS image_tasks (
+        project_id TEXT NOT NULL REFERENCES projects(id), path TEXT NOT NULL,
+        name TEXT NOT NULL, width INTEGER NOT NULL, height INTEGER NOT NULL,
+        status TEXT NOT NULL, error TEXT NOT NULL DEFAULT '', baseline TEXT NOT NULL DEFAULT '',
+        PRIMARY KEY(project_id,path)
+      );
       PRAGMA user_version=1;`);
     const read = (file) => {
       try {
@@ -8083,6 +8089,13 @@ function projectManager(store) {
     if (action === "context") return context(thread, input.panel_id);
     if (!input.panel_id || !/^[a-zA-Z0-9_-]{8,128}$/.test(input.panel_id)) throw Error("\u9700\u8981\u5F53\u524D\u9762\u677F ID");
     if (panel?.thread_id && thread && panel.thread_id !== thread) throw Error("\u9762\u677F\u4E0D\u5C5E\u4E8E\u5F53\u524D\u4F1A\u8BDD");
+    if (action === "resume") {
+      if (!thread && panel) return context(thread, input.panel_id);
+      const binding = thread ? store.database.binding(thread) : null;
+      const project = binding && store.database.project(binding.projectId);
+      store.database.panel(input.panel_id, thread || "", project ? binding.projectId : null);
+      return context(thread, input.panel_id);
+    }
     const id = input.project_id;
     if (action === "home") {
       store.database.panel(input.panel_id, thread || "", null);
@@ -8105,15 +8118,28 @@ function projectManager(store) {
     if (!view) throw Error("\u9879\u76EE\u4E0D\u5B58\u5728");
     if (action === "images") {
       const images = [];
+      const tasks = store.database.sql.prepare("SELECT * FROM image_tasks WHERE project_id=? ORDER BY path").all(id);
+      const pending = /* @__PURE__ */ new Map();
+      for (const task of tasks) {
+        const info = await contained(view.directory, task.path).then((file) => stat7(file)).catch(() => null);
+        if (task.status === "generating" && info?.isFile() && info.size > 0 && `${info.size}:${info.mtimeMs}` !== task.baseline) {
+          task.status = "ready";
+          store.database.sql.prepare("UPDATE image_tasks SET status='ready',error='' WHERE project_id=? AND path=?").run(id, task.path);
+        }
+        if (task.status !== "ready") pending.set(task.path, task);
+      }
       for (const resource of await resources(id)) {
         if (!resource.mime.startsWith("image/")) continue;
         try {
           const base = await realpath5(view.directory), file = await realpath5(resource.path), path = relative4(base, file);
           if (path === ".." || path.startsWith(`..${sep4}`) || isAbsolute6(path)) continue;
-          images.push({ ...resource, path: path.split(sep4).join("/"), url: await registerPreviewFile(file, resource.mime) });
+          const relativePath = path.split(sep4).join("/");
+          if (pending.has(relativePath)) continue;
+          images.push({ ...resource, path: relativePath, status: "ready", url: await registerPreviewFile(file, resource.mime) });
         } catch {
         }
       }
+      for (const task of pending.values()) images.push({ id: createHash5("sha256").update(id + task.path).digest("hex"), path: task.path, name: task.name, mime: mime3(task.path), status: task.status, error: task.error, width: task.width, height: task.height });
       return { images };
     }
     if (action === "capture") {
@@ -8163,7 +8189,24 @@ function projectManager(store) {
     }
     throw Error("\u4E0D\u652F\u6301\u7684\u9879\u76EE\u7BA1\u7406\u64CD\u4F5C");
   }
-  return { run, context, thumbnail, close: async () => {
+  async function imageTask(input) {
+    const binding = store.database.binding(input.thread_id);
+    if (binding?.projectId !== input.project_id) throw Error("\u56FE\u7247\u4EFB\u52A1\u4E0D\u5C5E\u4E8E\u5F53\u524D\u4F1A\u8BDD\u9879\u76EE");
+    const view = await store.get(input.thread_id, input.project_id);
+    if (!view) throw Error("\u9879\u76EE\u4E0D\u5B58\u5728");
+    const path = store.path(input.path);
+    if (!mime3(path).startsWith("image/")) throw Error("\u56FE\u7247\u4EFB\u52A1\u9700\u8981\u6709\u6548\u56FE\u7247\u6269\u5C55\u540D");
+    const info = await contained(view.directory, path).then((file) => stat7(file)).catch(() => null);
+    if (input.action === "begin") store.database.sql.prepare(`INSERT INTO image_tasks(project_id,path,name,width,height,status,error,baseline) VALUES (?,?,?,?,?,'generating','',?) ON CONFLICT(project_id,path) DO UPDATE SET name=excluded.name,width=excluded.width,height=excluded.height,status='generating',error='',baseline=excluded.baseline`).run(input.project_id, path, input.name || path.split("/").pop(), input.width || 960, input.height || 600, info ? `${info.size}:${info.mtimeMs}` : "");
+    else {
+      const task = store.database.sql.prepare("SELECT baseline FROM image_tasks WHERE project_id=? AND path=?").get(input.project_id, path);
+      if (!task) throw Error("\u8BF7\u5148\u767B\u8BB0\u56FE\u7247\u751F\u6210\u4EFB\u52A1");
+      if (input.action === "finish" && (!info?.isFile() || !info.size || `${info.size}:${info.mtimeMs}` === task.baseline)) throw Error("\u672C\u6B21\u56FE\u7247\u6210\u54C1\u5C1A\u672A\u5199\u5165\u9879\u76EE");
+      store.database.sql.prepare("UPDATE image_tasks SET status=?,error=? WHERE project_id=? AND path=?").run(input.action === "finish" ? "ready" : "error", input.action === "fail" ? input.error || "\u56FE\u7247\u751F\u6210\u5931\u8D25\uFF0C\u8BF7\u91CD\u8BD5" : "", input.project_id, path);
+    }
+    return { project_id: input.project_id, path, status: input.action === "begin" ? "generating" : input.action === "finish" ? "ready" : "error" };
+  }
+  return { run, context, thumbnail, imageTask, close: async () => {
     shutdown.abort();
     await Promise.allSettled([...thumbnails.values()]);
   } };

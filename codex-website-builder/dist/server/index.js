@@ -13,7 +13,7 @@ import {
   readTemplates,
   resourceChunk,
   screenshotPage
-} from "./chunk-JSX7GJ56.js";
+} from "./chunk-NKJJU7JH.js";
 import {
   $ZodObject,
   $ZodType,
@@ -17069,7 +17069,7 @@ var manager = projectManager(projects);
 var syncProject = projectService(projects);
 var preview = await createPreview(html, paths.reference, "www.noventrad.com", syncProject, manager.run);
 var skillRoot = (process.env.WEBSITE_BUILDER_SKILL_ROOT || resolve("skills/website-builder")).replaceAll("${PLUGIN_ROOT}", fileURLToPath(new URL("../../", import.meta.url)));
-var server = new McpServer({ name: "codex-website-builder", version: "0.8.0", icons: [{ src: `data:image/png;base64,${sidebarIcon.toString("base64")}`, mimeType: "image/png", sizes: ["200x200"] }] });
+var server = new McpServer({ name: "codex-website-builder", version: "0.8.1", icons: [{ src: `data:image/png;base64,${sidebarIcon.toString("base64")}`, mimeType: "image/png", sizes: ["200x200"] }] });
 var csp = { connectDomains: ["data:", "blob:"], resourceDomains: ["data:", "blob:"], frameDomains: ["blob:", "data:"], baseUriDomains: ["https://website-builder.invalid"] };
 var legacyCsp = { connect_domains: csp.connectDomains, resource_domains: csp.resourceDomains, frame_domains: csp.frameDomains, base_uri_domains: csp.baseUriDomains };
 N3(server, "canvas", uri, { _meta: { ui: { csp }, "openai/widgetCSP": legacyCsp } }, async () => ({
@@ -17081,11 +17081,11 @@ N3(server, "canvas", uri, { _meta: { ui: { csp }, "openai/widgetCSP": legacyCsp 
 }));
 K3(server, "open_canvas", {
   title: "Website Builder",
-  description: "\u6253\u5F00\u7F51\u7AD9\u751F\u6210\u4E0E\u5B9E\u65F6\u9884\u89C8\u753B\u5E03\u3002\u6CA1\u6709\u6253\u5F00\u9879\u76EE\u65F6\u753B\u5E03\u4E3A\u7A7A\u3002\u5EFA\u7AD9\u3001\u6539\u9875\u6216\u91CD\u751F\u6210\u65F6\u5148\u4F7F\u7528\u5185\u7F6E website-builder SKILL\uFF0C\u4EE5 website_project \u590D\u7528\u5F53\u524D\u4F1A\u8BDD\u9879\u76EE\uFF1B\u4EC5\u7528\u6237\u660E\u786E\u9009\u62E9\u7F51\u7AD9\u76EE\u5F55\u65F6\u5C55\u793A\u53C2\u8003\u7AD9\u70B9\u3002",
-  inputSchema: {},
+  description: "\u6253\u5F00\u7F51\u7AD9\u751F\u6210\u4E0E\u5B9E\u65F6\u9884\u89C8\u753B\u5E03\u3002\u5BF9\u8BDD\u4EFB\u52A1\u5148\u4EE5website_project\u590D\u7528\u5F53\u524D\u9879\u76EE\uFF0C\u518D\u4F20\u5F53\u524D\u771F\u5B9Ethread_id\u6253\u5F00\u753B\u5E03\uFF0C\u81EA\u52A8\u8FDB\u5165\u8BE5\u4F1A\u8BDD\u9879\u76EE\u8BE6\u60C5\uFF1B\u6CA1\u6709\u4F1A\u8BDD\u7ED1\u5B9A\u9879\u76EE\u65F6\u8FDB\u5165\u9996\u9875\uFF0C\u4E0D\u4F7F\u7528\u5168\u5C40\u6700\u8FD1\u9879\u76EE\u3002\u5EFA\u7AD9\u3001\u6539\u9875\u6216\u91CD\u751F\u6210\u65F6\u5148\u4F7F\u7528\u5185\u7F6Ewebsite-builder SKILL\uFF1B\u4EC5\u7528\u6237\u660E\u786E\u9009\u62E9\u7F51\u7AD9\u76EE\u5F55\u65F6\u5C55\u793A\u53C2\u8003\u7AD9\u70B9\u3002",
+  inputSchema: { thread_id: external_exports.string().optional() },
   annotations: { readOnlyHint: true, destructiveHint: false, openWorldHint: false },
   _meta: { ui: { resourceUri: uri }, "openai/ui": { entrypoints: [{ type: "global" }] } }
-}, async () => ({ content: [{ type: "text", text: "\u7F51\u7AD9\u5C55\u793A\u753B\u5E03\u5DF2\u6253\u5F00\u3002" }] }));
+}, async (input) => ({ content: [{ type: "text", text: "\u7F51\u7AD9\u5C55\u793A\u753B\u5E03\u5DF2\u6253\u5F00\u3002" }], structuredContent: { canvas_launch: { thread_id: input.thread_id || process.env.CODEX_THREAD_ID || process.env.CODEX_SESSION_ID || null } } }));
 server.registerTool("website_panel_context", {
   description: "\u67E5\u8BE2\u5F53\u524D\u771F\u5B9E\u4F1A\u8BDD\u7684 Website Builder \u9762\u677F\u4F4D\u7F6E\u3002\u8BE6\u60C5\u9875\u8FD4\u56DE project_id \u548C\u9879\u76EE\u4FE1\u606F\uFF0C\u4E3B\u754C\u9762\u8FD4\u56DE\u9879\u76EE\u5217\u8868\u3002\u591A\u4E2A\u9762\u677F\u65F6\u4F20 panel_id \u7CBE\u786E\u67E5\u8BE2\uFF1B\u4E0D\u5F97\u7528\u5176\u4ED6\u4F1A\u8BDD\u6216\u5168\u5C40\u6700\u8FD1\u9879\u76EE\u66FF\u4EE3\u3002",
   inputSchema: { thread_id: external_exports.string().optional(), panel_id: external_exports.string().optional() },
@@ -17100,12 +17100,23 @@ server.registerTool("website_panel_context", {
 });
 server.registerTool("website_projects", {
   description: "\u7BA1\u7406\u5168\u5C40 SQLite \u9879\u76EE\uFF1Alist \u5217\u51FA\u9879\u76EE\uFF0Copen/create \u7ED1\u5B9A\u5F53\u524D\u4F1A\u8BDD\u548C\u9762\u677F\uFF0Chome \u8FD4\u56DE\u4E3B\u754C\u9762\uFF0Cdelete \u8F6F\u5220\u9664\uFF08\u4FDD\u7559\u6587\u4EF6\uFF09\uFF0Cresources \u5217\u51FA\u8D44\u6E90\uFF0Cattach \u590D\u5236\u7528\u6237\u660E\u786E\u63D0\u4F9B\u7684\u56FE\u7247/\u6587\u4EF6\u5230\u9879\u76EE\u8D44\u6E90\u76EE\u5F55\u3002panel_id \u6765\u81EA\u9762\u677F\u4E0A\u4E0B\u6587\uFF1Bthread_id \u5FC5\u987B\u662F\u771F\u5B9E\u5F53\u524D\u4F1A\u8BDD ID\u3002",
-  inputSchema: { action: external_exports.enum(["list", "open", "create", "bind", "home", "delete", "restore", "resources", "attach", "folder", "images", "capture"]).default("list"), panel_id: external_exports.string().optional(), thread_id: external_exports.string().optional(), project_id: external_exports.string().optional(), name: external_exports.string().max(200).optional(), source_path: external_exports.string().optional(), path: external_exports.string().optional(), width: external_exports.number().int().min(320).max(2560).optional(), capture_id: external_exports.string().optional(), chunk: external_exports.string().max(512e3).optional(), offset: external_exports.number().int().nonnegative().optional(), final: external_exports.boolean().optional() },
+  inputSchema: { action: external_exports.enum(["list", "resume", "open", "create", "bind", "home", "delete", "restore", "resources", "attach", "folder", "images", "capture"]).default("list"), panel_id: external_exports.string().optional(), thread_id: external_exports.string().optional(), project_id: external_exports.string().optional(), name: external_exports.string().max(200).optional(), source_path: external_exports.string().optional(), path: external_exports.string().optional(), width: external_exports.number().int().min(320).max(2560).optional(), capture_id: external_exports.string().optional(), chunk: external_exports.string().max(512e3).optional(), offset: external_exports.number().int().nonnegative().optional(), final: external_exports.boolean().optional() },
   annotations: { readOnlyHint: false, destructiveHint: false, openWorldHint: false }
 }, async (input) => {
   try {
     const value = await manager.run(input);
     return { content: [{ type: "text", text: JSON.stringify(value) }], _meta: { manager: value } };
+  } catch (error) {
+    return { isError: true, content: [{ type: "text", text: error.message }] };
+  }
+});
+server.registerTool("website_images", {
+  description: "Track generated website images. Before calling imagegen register each intended project-relative output with begin and actual dimensions; after copying the final image call finish. Call fail with an honest reason if generation fails. Persistent UI placeholders update automatically when files arrive. Only the current thread project is allowed; never write fake placeholder image files.",
+  inputSchema: { thread_id: external_exports.string(), project_id: external_exports.string(), action: external_exports.enum(["begin", "finish", "fail"]), path: external_exports.string(), name: external_exports.string().max(200).optional(), width: external_exports.number().int().min(1).max(32768).optional(), height: external_exports.number().int().min(1).max(32768).optional(), error: external_exports.string().max(1e3).optional() },
+  annotations: { readOnlyHint: false, destructiveHint: false, openWorldHint: false }
+}, async (input) => {
+  try {
+    return { content: [{ type: "text", text: JSON.stringify(await manager.imageTask(input)) }] };
   } catch (error) {
     return { isError: true, content: [{ type: "text", text: error.message }] };
   }
