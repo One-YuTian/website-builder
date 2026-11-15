@@ -48,6 +48,10 @@ try {
    assert.equal((await unbound({action:'open',project_id:first.project_id})).thread_id,null);
    assert.equal((await json('website_panel_context',{panel_id:'unbound-panel',thread_id:'manager-thread'})).project_id,first.project_id);
    const draft=await unbound({action:'create',name:'Global draft'});assert.equal(draft.thread_id,null);
+   const blockedDraft=await client.callTool({name:'website_projects',arguments:{panel_id:'unbound-panel',action:'delete',project_id:draft.project_id}});
+   assert.ok(blockedDraft.isError,'new global drafts are protected while creating');
+   // An unbound fixture has no host turn to stop; settle its startup lease.
+   sql.prepare('DELETE FROM project_activity WHERE project_id=?').run(draft.project_id);
    await unbound({action:'delete',project_id:draft.project_id});
    await unbound({action:'restore',project_id:draft.project_id});
    assert.equal(sql.prepare('SELECT count(*) AS n FROM threads').get().n,before,'unbound panels must not create fake chat bindings');
@@ -109,10 +113,10 @@ try {
  assert.equal(await app.getByLabel('项目需求',{exact:true}).count(),0,'project detail has no composer');
  assert.equal(await app.getByRole('button',{name:'发送到当前项目会话',exact:true}).count(),0);
  await app.getByRole('button',{name:'返回主界面',exact:true}).click();
- assert.ok(await app.getByLabel('项目需求',{exact:true}).isDisabled());
- assert.equal(await app.getByLabel('项目需求',{exact:true}).getAttribute('placeholder'),'开发中');
- assert.ok(await app.getByRole('button',{name:'发送（开发中）',exact:true}).isDisabled());
- assert.equal(await page.evaluate(()=>window.sent.length),0,'disabled composer must not send messages');
+ assert.ok(await app.getByLabel('项目需求',{exact:true}).isEnabled());
+ assert.equal(await app.getByLabel('项目需求',{exact:true}).getAttribute('placeholder'),'描述你想构建的网站…');
+ assert.ok(await app.getByRole('button',{name:'发送需求',exact:true}).isDisabled());
+ assert.equal(await page.evaluate(()=>window.sent.length),0,'empty composer must not send messages');
  const hidden=(await page.evaluate(()=>window.contexts)).at(-1);assert.equal(hidden.structuredContent.page,'home');
  await page.screenshot({path:join(root,'project-home.png')});
  for(const size of [{width:768,height:1024},{width:375,height:812}]){await page.setViewportSize(size);await page.waitForTimeout(150);assert.ok(await app.locator('.project-home').evaluate(el=>el.scrollWidth<=el.clientWidth));}
@@ -145,6 +149,6 @@ try {
  assert.equal(sql.prepare('SELECT deleted_at FROM projects WHERE id=?').get(first.project_id).deleted_at,null);
  assert.deepEqual(errors,[]);
  sql.close();
- console.log(`PASS: ${globalEntry?'global entry without chat ID; ':''}SQLite legacy import, scoped panel context, resources, 1:1 thumbnail, home/detail navigation, folder request, disabled home composer, responsive UI and soft deletion`);
+ console.log(`PASS: ${globalEntry?'global entry without chat ID; ':''}SQLite legacy import, scoped panel context, resources, 1:1 thumbnail, home/detail navigation, folder request, home composer without unsolicited messages, responsive UI and soft deletion`);
  console.log(`Visual preview: ${join(root,'project-home.png')}`);
 }finally{if(browser)await browser.close();if(host)await new Promise(resolve=>host.close(resolve));await client.close();}

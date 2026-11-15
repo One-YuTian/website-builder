@@ -48,7 +48,7 @@ try {
   if(input.action==='commerce') {
     console.log(JSON.stringify(await prepareCommerce(store,skillRoot,{...input,action:input.mode||'prepare',thread_id:thread})));process.exit(0);
   }
-  if(!input.action||input.action==='open')view=await store.open({threadId:thread,projectId:input.project_id,newProject:input.new_project,name:input.name,brief:input.brief,language:input.language,pages:input.pages});
+  if(!input.action||input.action==='open')view=await store.open({threadId:thread,projectId:input.project_id,newProject:input.new_project,name:input.name,brief:input.brief,country:input.country,categories:input.categories,brand:input.brand,language:input.language,pages:input.pages});
   else {
     const current=await store.get(thread);if(!current)throw new Error('请先打开当前会话项目');if(input.project_id&&input.project_id!==current.project.id)throw new Error('会话项目已切换');
     if(input.action==='plan')view=await store.plan(thread,input.pages||[]);

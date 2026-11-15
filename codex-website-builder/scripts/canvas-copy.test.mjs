@@ -115,7 +115,7 @@ try {
  await app.locator('.project-delete').first().hover();
  assert.deepEqual(await app.locator('.project-delete').first().evaluate(el=>({background:getComputedStyle(el).backgroundColor,color:getComputedStyle(el).color})),{background:'rgba(0, 0, 0, 0)',color:'rgb(52, 56, 61)'});
  await app.locator('.project-open').filter({hasText:'Forest studio'}).waitFor();
- await app.getByText('网站-www.forest.example',{exact:true}).waitFor();
+ await app.locator('.project-open strong').filter({hasText:'www.forest.example'}).waitFor();
  assert.equal(await app.locator('.tool-rail').count(),0,'global entry opens the library, even with an active project');
  await app.getByLabel('搜索项目').fill('Forest studio');assert.equal(await app.locator('.project-row').count(),1);await app.getByLabel('搜索项目').fill('');
  await app.getByRole('button',{name:/Forest studio/}).first().click();
@@ -138,11 +138,15 @@ try {
  await pendingAsset.locator('img').waitFor();await pendingAsset.locator('.asset-caption').filter({hasText:'1 × 1'}).waitFor();
  assert.equal(await pendingAsset.getAttribute('data-status'),'ready');
  await imageTask('finish');
- await imageTask('begin');await pendingAsset.getByRole('status').filter({hasText:'图片生成中'}).waitFor();
- assert.equal(await pendingAsset.locator('img').count(),0,'regeneration hides the previous result');
- assert.ok((await client.callTool({name:'website_images',arguments:{thread_id:'manager-thread',project_id:first.project_id,action:'finish',path:'assets/brand/generated.png'}})).isError,'old image cannot complete regeneration');
- await writeFile(join(first.directory,'assets/brand/generated.png'),imageBytes);
- await imageTask('finish');await pendingAsset.locator('img').waitFor();
+ const overwrite=await client.callTool({name:'website_images',arguments:{thread_id:'manager-thread',project_id:first.project_id,action:'begin',path:'assets/brand/generated.png'}});
+ assert.ok(overwrite.isError,'regeneration must preserve the original image');
+ await imageTask('begin',{path:'assets/brand/generated-v2.png'});
+ const replacement=app.locator('[data-asset="assets/brand/generated-v2.png"]');
+ await replacement.getByRole('status').filter({hasText:'图片生成中'}).waitFor();
+ assert.equal(await pendingAsset.locator('img').count(),1,'original remains visible while generating a new version');
+ await writeFile(join(first.directory,'assets/brand/generated-v2.png'),imageBytes);
+ await imageTask('finish',{path:'assets/brand/generated-v2.png'});await replacement.locator('img').waitFor();
+ assert.deepEqual(await readFile(join(first.directory,'assets/brand/generated.png')),imageBytes);
  await app.locator('[data-asset="assets/brand/logo.png"] img').waitFor();
  assert.equal(await app.locator('.page-stage').evaluate(el=>getComputedStyle(el,'::before').position),'fixed');
  assert.equal(await app.locator('.canvas-world').evaluate(el=>el.firstElementChild.className),'asset-gallery');
@@ -201,15 +205,15 @@ try {
  assert.equal(await app.getByLabel('项目需求',{exact:true}).count(),0,'project detail has no composer');
  assert.equal(await app.getByRole('button',{name:'发送到当前项目会话',exact:true}).count(),0);
  await app.getByRole('button',{name:'返回主界面',exact:true}).click();
- assert.ok(await app.getByLabel('项目需求',{exact:true}).isDisabled());
- assert.equal(await app.getByLabel('项目需求',{exact:true}).getAttribute('placeholder'),'开发中');
- assert.ok(await app.getByRole('button',{name:'发送（开发中）',exact:true}).isDisabled());
- assert.equal(await page.evaluate(()=>window.sent.length),0,'disabled composer must not send messages');
+ assert.ok(await app.getByLabel('项目需求',{exact:true}).isEnabled());
+ assert.equal(await app.getByLabel('项目需求',{exact:true}).getAttribute('placeholder'),'描述你想构建的网站…');
+ assert.ok(await app.getByRole('button',{name:'发送需求',exact:true}).isDisabled());
+ assert.equal(await page.evaluate(()=>window.sent.length),0,'empty composer must not send messages');
  const hidden=(await page.evaluate(()=>window.contexts)).at(-1);assert.equal(hidden.structuredContent.page,'home');
  await page.screenshot({path:join(root,'project-home.png')});
  assert.ok(await app.locator('.project-sidebar').evaluate(el=>{const r=el.getBoundingClientRect();return r.top>0&&r.bottom<innerHeight}));
  assert.ok(await app.locator('.project-sidebar').evaluate(el=>getComputedStyle(el).backdropFilter.includes('blur')));
- assert.match(await app.locator('.project-description time').first().innerText(),/^\d{2}\/\d{2}\/\d{2} \d{2}:\d{2}$/);
+ assert.match(await app.locator('.project-description time').first().innerText(),/^\d{4}年\d{2}月\d{2}日 \d{2}:\d{2}$/);
  for(const size of [{width:768,height:1024},{width:375,height:812}]){await page.setViewportSize(size);await page.waitForTimeout(150);assert.ok(await app.locator('.project-home').evaluate(el=>el.scrollWidth<=el.clientWidth));}
  await page.setViewportSize({width:1440,height:900});
  // Wait for asynchronous homepage crop and verify stored square PNG dimensions.
@@ -224,7 +228,7 @@ try {
  await page.screenshot({path:join(root,'project-home.png')});
  assert.ok(await app.locator('.project-sidebar').evaluate(el=>{const r=el.getBoundingClientRect();return r.top>0&&r.bottom<innerHeight}));
  assert.ok(await app.locator('.project-sidebar').evaluate(el=>getComputedStyle(el).backdropFilter.includes('blur')));
- assert.match(await app.locator('.project-description time').first().innerText(),/^\d{2}\/\d{2}\/\d{2} \d{2}:\d{2}$/);
+ assert.match(await app.locator('.project-description time').first().innerText(),/^\d{4}年\d{2}月\d{2}日 \d{2}:\d{2}$/);
  const standalone=await browser.newPage();
  const standaloneUrl=new URL(bootstrap.api);standaloneUrl.hostname='localhost';standaloneUrl.pathname=standaloneUrl.pathname.replace('/api/site','/canvas');
  await standalone.goto(standaloneUrl.href);
@@ -252,6 +256,6 @@ try {
  sql.close();
  console.log('PASS: lifted composer, library above continuous full-width fade, UI/preview interaction locks, width-first measured canvas fit at two viewport sizes');
  console.log('PASS: original PNG clipboard bytes, live form/expanded state, full 4200+px screenshot and pixel check, image gallery, domain title/date, frosted margins and denied clipboard reporting');
- console.log(`PASS: ${globalEntry?'global entry without chat ID; ':''}SQLite legacy import, scoped panel context, resources, 1:1 thumbnail, home/detail navigation, folder request, disabled home composer, responsive UI and soft deletion`);
+ console.log(`PASS: ${globalEntry?'global entry without chat ID; ':''}SQLite legacy import, scoped panel context, resources, image version preservation, 1:1 thumbnail, home/detail navigation, folder request, home composer, responsive UI and soft deletion`);
  console.log(`Canvas image/copy and frosted UI verification: ${join(root,'project-home.png')}`);
 }finally{if(browser)await browser.close();if(host)await new Promise(resolve=>host.close(resolve));await client.close();}

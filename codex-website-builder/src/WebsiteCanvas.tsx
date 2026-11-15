@@ -1,4 +1,4 @@
-import { memo, useCallback, useEffect, useRef, useState, type CSSProperties, type ReactNode } from 'react';
+import { memo, useCallback, useEffect, useRef, useState, type CSSProperties, type ReactNode, type SetStateAction } from 'react';
 import type { SiteManifest, SitePage } from '../server/preview';
 import { hostApp, hostReady } from './bridge';
 import { Icon } from './Icons';
@@ -110,7 +110,7 @@ const PageFrame = memo(function PageFrame({ page, storage, index, width, selecte
       }, 3000);
     }} />}
     </div>
-    <div className="page-caption" data-ready={ready} title={page.error}>{width} × {viewportHeight}{height > maxHeight ? ' · 页面内滚动' : ''} {page.status==='error'?`· 生成失败：${page.error}`:pending?`· ${page.status==='queued'?'等待生成':'正在生成'}`:ready?'':'· 加载中'}</div>
+    <div className="page-caption" data-ready={ready} title={page.error}>{width} × {viewportHeight}{page.status==='error'?` · ${page.error}`:''}</div>
   </article>;
 });
 
@@ -126,7 +126,15 @@ export function WebsiteCanvas({ background, projectId: pinnedProjectId, panelId,
   const [width, setWidth] = useState(1280);
   const [widths, setWidths] = useState<Record<string, number>>({});
   const [selected, setSelected] = useState('index.html');
-  const [view, setView] = useState<View>({ x: 28, y: 30, zoom: .26 });
+  const selectedRef=useRef(selected);selectedRef.current=selected;
+  const [view, setRenderedView] = useState<View>({ x: 28, y: 30, zoom: .26 });
+  const viewRef=useRef(view),viewFrame=useRef(0);
+  const setView=useCallback((next:SetStateAction<View>)=>{
+    viewRef.current=typeof next==='function'?next(viewRef.current):next;
+    if(!viewFrame.current)viewFrame.current=requestAnimationFrame(()=>{viewFrame.current=0;setRenderedView(viewRef.current);});
+  },[]);
+  useEffect(()=>()=>cancelAnimationFrame(viewFrame.current),[]);
+  const [syncToken,setSyncToken]=useState(0);
   const [panMode, setPanMode] = useState(false);
   const [dragging, setDragging] = useState(false);
   const stage = useRef<HTMLDivElement>(null);
@@ -140,7 +148,7 @@ export function WebsiteCanvas({ background, projectId: pinnedProjectId, panelId,
   const captureCurrent=useCallback((html:string,path:string,width:number)=>capturePage({panel_id:panelId!,thread_id:threadId,project_id:pinnedProjectId!,path,width},html),[panelId,threadId,pinnedProjectId]);
   useEffect(()=>{
     if(!pinnedProjectId||!panelId)return;let stopped=false,inflight=false;
-    const load=async()=>{if(inflight||stopped)return;inflight=true;try{const value=await manageProjects({action:'images',panel_id:panelId,thread_id:threadId,project_id:pinnedProjectId});if(!stopped)setAssets(value.images||[]);}catch(error){if(!stopped)setNotice((error as Error).message);}finally{inflight=false;}};
+    const load=async()=>{if(inflight||stopped)return;inflight=true;try{const value=await manageProjects({action:'images',panel_id:panelId,thread_id:threadId,project_id:pinnedProjectId});if(!stopped)setAssets(previous=>JSON.stringify(previous)===JSON.stringify(value.images||[])?previous:value.images||[]);}catch(error){if(!stopped)setNotice((error as Error).message);}finally{inflight=false;}};
     void load();const timer=setInterval(()=>void load(),2000);return()=>{stopped=true;clearInterval(timer);};
   },[pinnedProjectId,panelId,threadId]);
   const load = useCallback(async (directory: string) => {
@@ -189,8 +197,8 @@ export function WebsiteCanvas({ background, projectId: pinnedProjectId, panelId,
       while(!stopped){
         try{
           let value:any;
-          if(hostApp){const result=await hostApp.callServerTool({name:'project_sync',arguments:{since,known,thread_id:threadId,project_id:pinnedProjectId,wait_ms:probed?20000:0}},{signal:controller.signal,timeout:25000});if(result.isError)throw new Error('项目状态读取失败');value=result._meta?.sync;}
-          else if(config!.projectApi){const url=new URL(config!.projectApi);url.searchParams.set('since',since);url.searchParams.set('known',JSON.stringify(known));url.searchParams.set('wait',probed?'20000':'0');if(threadId)url.searchParams.set('thread_id',threadId);if(pinnedProjectId)url.searchParams.set('project_id',pinnedProjectId);const response=await fetch(url,{signal:controller.signal});if(!response.ok)throw new Error('项目状态读取失败');value=await response.json();}
+          if(hostApp){const result=await hostApp.callServerTool({name:'project_sync',arguments:{metadata_only:!probed,page_limit:1,priority_path:selectedRef.current,since,known,thread_id:threadId,project_id:pinnedProjectId,wait_ms:probed?20000:0}},{signal:controller.signal,timeout:25000});if(result.isError)throw new Error('项目状态读取失败');value=result._meta?.sync;}
+          else if(config!.projectApi){const url=new URL(config!.projectApi);url.searchParams.set('metadata_only',probed?'0':'1');url.searchParams.set('page_limit','1');url.searchParams.set('priority_path',selectedRef.current);url.searchParams.set('since',since);url.searchParams.set('known',JSON.stringify(known));url.searchParams.set('wait',probed?'20000':'0');if(threadId)url.searchParams.set('thread_id',threadId);if(pinnedProjectId)url.searchParams.set('project_id',pinnedProjectId);const response=await fetch(url,{signal:controller.signal});if(!response.ok)throw new Error('项目状态读取失败');value=await response.json();}
           else return;
           if(stopped)return;
           if(!value)throw new Error('项目状态响应无效');
@@ -199,13 +207,12 @@ export function WebsiteCanvas({ background, projectId: pinnedProjectId, panelId,
           const manifest=value.manifest as SiteManifest;
           if(!manifest?.projectId){if(projectMode.current){setSite(null);projectMode.current=false;projectId='';known={};}since=value.revision||'none';continue;}
           const changed=manifest.projectId!==projectId;
-          if(changed){known={};projectId=manifest.projectId;sequence.current++;projectMode.current=true;storage.current={};setWidths({});setSelected(manifest.pages[0]?.path||'');setView({x:28,y:30,zoom:.26});}
+          if(changed){known={};projectId=manifest.projectId;sequence.current++;projectMode.current=true;storage.current={};setWidths({});setSelected(manifest.pages.find(page=>page.path==='index.html')?.path||manifest.pages[0]?.path||'');setView({x:28,y:30,zoom:.26});}
           const decoded:Record<string,string>={},nextKnown={...known},decodeErrors:Record<string,string>={};
           for(const [path,payload]of Object.entries(value.pages||{})){
             try{decoded[path]=await unzip(payload as string | {resource:string});const page=manifest.pages.find(item=>item.path===path);if(page)nextKnown[path]=page.version||0;}
             catch(error){decodeErrors[path]=`预览传输失败，正在重试：${(error as Error).message}`;}
           }
-          for(const path of Object.keys(value.errors||{})){const page=manifest.pages.find(item=>item.path===path);if(page)nextKnown[path]=page.version||0;}
           if(stopped)return;
           setSite(previous=>({...manifest,pages:manifest.pages.map(page=>{
             const old=!changed?previous?.pages.find(item=>item.path===page.path):undefined;
@@ -214,14 +221,14 @@ export function WebsiteCanvas({ background, projectId: pinnedProjectId, panelId,
             return old&&Object.keys({...old,...next}).every(key=>old[key as keyof SitePage]===next[key as keyof SitePage])?old:next;
           })}));
           setDirectory(manifest.directory);setProjectList(value.projects||[]);setError('');setLoading(false);known=nextKnown;since=value.revision;
-          if(Object.keys(decodeErrors).length)await new Promise(resolve=>setTimeout(resolve,1000));
+          if(Object.keys(decodeErrors).length||Object.keys(value.errors||{}).length)await new Promise(resolve=>setTimeout(resolve,1000));
         }catch(error){if(stopped)return;probed=true;setNotice((error as Error).message);await new Promise(resolve=>setTimeout(resolve,3000));}
       }
     }
     void run();return()=>{stopped=true;controller.abort();};
-  },[config,pinnedProjectId,threadId]);
+  },[config,pinnedProjectId,threadId,syncToken]);
   const refreshView=async()=>{
-    if(projectMode.current){setNotice('项目预览已实时同步；生成完成后会自动更新。');return;}
+    if(projectMode.current){setSyncToken(value=>value+1);return;}
     if(site)await load(directory);
   };
   const switchProject=async(id:string)=>{
@@ -295,13 +302,14 @@ export function WebsiteCanvas({ background, projectId: pinnedProjectId, panelId,
             if (event.button !== 1 && !panMode && event.target !== event.currentTarget && !(event.target as HTMLElement).classList.contains('canvas-world')) return;
             if (event.button !== 0 && event.button !== 1) return;
             event.preventDefault(); event.currentTarget.setPointerCapture(event.pointerId);
-            drag.current = { x: event.clientX, y: event.clientY, view }; setDragging(true);
+            drag.current = { x: event.clientX, y: event.clientY, view:viewRef.current }; setDragging(true);
           }}
           onPointerMove={event => { if (drag.current) setView({ ...drag.current.view, x: drag.current.view.x + event.clientX - drag.current.x, y: drag.current.view.y + event.clientY - drag.current.y }); }}
           onPointerUp={() => { drag.current = null; setDragging(false); }} onPointerCancel={() => { drag.current = null; setDragging(false); }}>
           {background}
           {!site && loading && <div className="empty-state"><div className="canvas-loader" role="progressbar" aria-label="正在载入网站页面" /></div>}
           <div ref={world} className="canvas-world" data-columns={columns} style={{ gridTemplateColumns: `repeat(${columns}, max-content)`, transform: `translate(${view.x}px, ${view.y}px) scale(${view.zoom})` }}>
+            {pinnedProjectId&&!site?.pages.length&&<article className="page-panel initial-page" data-placeholder="initial-page" style={{width}} aria-busy="true" aria-label="正在生成页面"><div className="page-heading"><span className="page-label"><span className="page-icon"><Icon name="pages"/></span><span className="page-title">页面</span></span></div><div className="frame-glass is-loading" style={{height:900}}><div className="page-loader" role="progressbar" aria-label="正在生成页面"/></div></article>}
             {assets.length>0&&<div className="asset-gallery" style={{gridTemplateColumns:`repeat(${columns},max-content)`}}>{assets.map(asset=><CanvasImage key={asset.id} asset={asset} notify={setNotice}/>)}</div>}
             {site?.pages.map((page, index) => <PageFrame key={`${site.directory}/${page.path}`} page={page} storage={storage} index={index} width={widths[page.path] ?? width} selected={selected === page.path} select={setSelected} wheel={wheel} notify={setNotice} capture={panelId&&pinnedProjectId?captureCurrent:undefined} />)}
           </div>

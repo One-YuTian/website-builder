@@ -1,10 +1,10 @@
-import { useEffect, useState } from 'react';
+import { memo, useEffect, useState } from 'react';
 import { Icon } from './Icons';
 import { copyPNG,resourceBlob } from './clipboard';
 import { readResource } from './resources';
 
 export type CanvasAsset={id:string;name:string;path:string;url?:string;mime:string;status?:'generating'|'ready'|'error';error?:string;width?:number;height?:number};
-export function CanvasImage({asset,notify}:{asset:CanvasAsset;notify:(value:string)=>void}) {
+export const CanvasImage=memo(function CanvasImage({asset,notify}:{asset:CanvasAsset;notify:(value:string)=>void}) {
   const [width,setWidth]=useState(320);
   const [src,setSrc]=useState(''),[error,setError]=useState(''),[dimensions,setDimensions]=useState('');
   const [decoded,setDecoded]=useState(false);
@@ -16,4 +16,4 @@ export function CanvasImage({asset,notify}:{asset:CanvasAsset;notify:(value:stri
     <div className="asset-surface">{src&&!failure?<img src={src} alt={asset.name} onError={()=>setError('图片无法解码，请检查生成文件')} onLoad={event=>{const {naturalWidth:w,naturalHeight:h}=event.currentTarget;setDecoded(true);setDimensions(`${w} × ${h}`);setWidth(Math.max(320,Math.min(w,960,w*600/h)));}}/>:null}{!decoded&&<div className={`asset-placeholder${failure?' is-error':''}`} style={{width:'100%',height:Math.max(96,Math.min(600,(asset.height||600)*Math.min(1,plannedWidth/(asset.width||960))))}} role="status">{!failure&&<div className="page-loader"/>}<span>{failure||(asset.status==='generating'?'图片生成中…':'图片加载中…')}</span></div>}</div>
     <p className="asset-caption">{dimensions||asset.mime}</p>
   </article>;
-}
+});

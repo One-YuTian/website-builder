@@ -18,12 +18,39 @@ description: 规划电商页面并组合模板，协调文案、图片和商品�
 
 向各技能传递brief、国家/语言、槽位和已有内容，接收实际产物，不在主技能重复维护其工作流。已有有效数据、文案、图片直接复用；完整站点缺项则实际调用负责技能，不能只列链接后填占位。商品描述/价格归数据技能，非商品正文归文案技能；图片技能不生成商品图或头像。
 
+## 先创建项目，再进入详情，最后生成内容
+
+所有新建网站需求均遵循此顺序，包括插件首页输入框与 Codex 对话框。先从已有需求提取项目名称、国家、语言、类目、品牌，信息不全可先创建空项目。不得先导入商品、规划页面、选择模板、写设计文件、生成文案/图片/页面代码。已有网站局部修改继续复用对应项目。
+
+### 插件首页提交：复用当前面板
+
+无论从全局侧边栏还是对话内入口打开插件，UI 面板新建任务始终开启新对话并立即提交文字和附件（target=new, send=true）。发送失败时保留草稿，不回退到来源对话；创建成功后原面板跟随新对话绑定的项目。
+
+插件 UI 面板的新建任务通过 target=new、send=true 提交文字与附件，项目继续复用原面板。用户消息正文仅包含用户需求，不追加 panel_id/request_id、工具调用或流程说明。
+
+收到新建需求后，先查询 website_panel_context(thread_id=当前真实会话ID, requirement=用户需求原文)。requirement 使用完整原文（仅附件时为“请根据附件创建网站。”），不得改写或总结。后台仅匹配近期、未处理且需求一致的提交并返回 submission，不按全局最近项目猜测。submission_ambiguous=true 时停止自动关联并说明存在重复待处理需求，不选择任意面板。没有匹配时继续下方 Codex 对话提交流程。
+
+上下文或查询结果包含 submission（request_id、panel_id）时：
+
+1. 首个建站业务操作调用 website_projects(action="create", panel_id=上下文panel_id, request_id=上下文request_id, thread_id=当前真实会话ID, name, country, language, categories, brand)，创建空项目。不得遗漏 request_id，不复用旧项目，不传页面计划；同一 request_id 重试返回同一个项目。
+2. 原面板自动进入项目详情。查询 website_projects(action="submission", panel_id, request_id)，等待 detail_ready=true，之后才执行下方生成流程。未就绪继续查询，报错则处理并报告，不能另开面板绕过。
+3. **禁止调用 open_canvas、重新打开插件 UI 或再次打开详情页**；禁止 new_project=true。沿用返回的 project_id 与 directory。后续 website_project(action="open", project_id=该ID, ...) 仅补齐元数据。图片和文件随用户消息作为附件提供，进入详情后按相应技能读取。
+
+### Codex 对话提交
+
+无 submission 时先查询 website_panel_context(thread_id=当前真实会话ID)。新站调用 website_project(action="open", thread_id, new_project=true, name, country, language, categories, brand) 创建空项目，**此时不传 pages**；已有项目局部修改则传 project_id 复用。随后 open_canvas(thread_id=当前真实会话ID) 进入该项目详情，只打开一次；当前面板已显示对应项目详情时跳过。完成项目创建与详情进入后，才规划页面、准备数据和生成内容。
+
 ## 生成流程
 
+以下步骤仅在项目已创建且详情已进入后执行，全程沿用同一个 project_id，不再次新建项目或打开面板。
+
 1. 提取品牌、国家/语言、币种、商品来源和页面范围，读取[整站设计](references/visual-design.md)及[网站要求](references/site-requirements.md)。新站主版心在1200–1550px中实际随机取一个整数，每站仅取一次，记录maxContentWidthPx到metadata_directory/website-builder.design.json，并应用到js/app.js唯一Tailwind主题；后续页面复用，用户指定值优先。设计文件记录色板、明暗、字体、版心、板块与购物车方案。
-2. website_project(action="open",thread_id=当前真实会话ID,name,brief,language,pages)复用项目；仅明确新项目才new_project=true。完整站点规划首页、Shop、商品详情、心愿单、结算、登录、注册、About Us、Contact Us及实际政策页，订单路由随功能补齐。默认共享drawer cart；仅明确要求或保留已有页面模式才生成cart.html，不重复两种方案。Header桌面与移动均包含Home/Shop/About Us/Contact Us实际链接。
-3. 首次预览调用open_canvas(thread_id=当前真实会话ID)。所有正式成品只写返回directory；原始JSON、提示词、候选图、草稿、报告、记录只写metadata_directory，不向生产目录加临时或数据源文件。
-4. 按职责表准备内容；集成时读[SDK契约](references/commerce-data.md)。账户异步接口await，保持既有APP/SDK、数据和账户隔离，不另造状态库。
+2. website_project(action="open",thread_id=当前真实会话ID,project_id=已创建项目ID,name,brief,language,country,categories,brand)补齐元数据；website_project(action="plan",thread_id,project_id,pages)规划页面。完整站点规划首页、Shop、商品详情、心愿单、结算、登录、注册、About Us、Contact Us及实际政策页，订单路由随功能补齐。默认共享drawer cart；仅明确要求或保留已有页面模式才生成cart.html，不重复两种方案。Header桌面与移动均包含Home/Shop/About Us/Contact Us实际链接。
+项目标题元数据在open时显式提供：country为国家名称或ISO两位国家代码，language为实际语言代码，categories为最多两个主要商品类目，brand为品牌名。列表标题自动组合“国家 · 语言｜主要类目”，品牌保存为独立元数据供搜索与标题回退；卡片保持标题和时间两行，不额外增加品牌副标题。未知字段不猜测也不显示占位字样，可后续以open补齐。例：country="BR", language="pt-BR", categories=["家居","生活用品"], brand="Casa Sol"，显示“巴西 · 葡萄牙语｜家居与生活用品”。生成/改页前必须begin，页面完成write/finish，图片任务用begin/finish/fail如实登记；这些记录用于首页运行状态和删除保护。超过30分钟无更新的生成记录视为中断，继续任务先begin续期，不让失败任务长期占用运行状态。
+
+3. 所有正式成品只写返回directory；原始JSON、提示词、候选图、草稿、报告、记录只写metadata_directory，不向生产目录加临时或数据源文件。详情已在前述入口流程打开，此处不再调用open_canvas。
+4. 先按下节选择Home与实际组件并读取完整源码、整理素材槽位，再按职责表准备内容；不得在模板确定前固定生图数量。集成时读[SDK契约](references/commerce-data.md)。账户异步接口await，保持既有APP/SDK、数据和账户隔离，不另造状态库。
+图片任务数按最终所选模板/组件的实际槽位确定，不固定为5张；Logo、Favicon必须提供，Banner、About、分类图与图标等按需列清单并交给图片技能。适合统一风格网格图集的图标/分类图可合并生成后切割为独立文件，记录各槽位与成品路径。新增或修改图片使用新文件名保留旧图，仅改目标引用，不覆盖原素材。
 5. 按下节选择Home参考和实际组件。首次实现读[创建规范](references/creation-contract.md)；Shop另读[Shop接入](references/shop-integration.md)，同时读取所选Shop与Card完整源码。app.js由主技能随所选模板及站点design生成，包含实际主题、依赖/组件就绪、移动适配与数据初始化，不由商品工具生成、不从assets复制固定版本。运行时仅输出一份sdk.js，按sdk.js→data.js→app.js→共享组件→页面内联脚本加载；主题配置与唯一SDK.init都在app.js，静态目录初始化先于组件注册，异步就绪按SDK契约执行。
 6. 改页前begin，每完成一页立即website_write或直接落盘再finish，不等全站代码生成完。接口仍允许多HTML批量导入；按[代码输出](references/code-output.md)使用本地Prettier格式化。结束前finish收尾，使完成页面及时ready。
 7. 用真实内容检查375/768/1280px的代表页面与交互，仅报告实际结果。完整图片用website_screenshot等待加载/解码/稳定布局后获取，不以画布缩略图代替。全面验收仅由用户明确调用website-acceptance。

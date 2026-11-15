@@ -64,3 +64,41 @@
 .asset-surface{height:auto;min-height:0;display:flex;align-items:flex-start;justify-content:flex-start}
 .asset-surface img{width:auto;height:auto;max-width:100%;max-height:600px;object-position:left top}
 .asset-placeholder{position:relative;flex:none;display:grid;place-items:center;overflow:hidden;border-radius:6px;color:#65766e}.asset-placeholder>span{position:relative;z-index:3;font-size:18px}.asset-placeholder.is-error{background:#f7eae5;color:#975838}.asset-panel[aria-busy=true] .asset-surface img{display:none}
+:root .project-description strong{display:block;max-width:none;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;line-height:1.5;font-size:14px;font-weight:400}
+.project-description .project-brand{font-size:.875rem;color:#697078;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.project-description time{line-height:1.5;white-space:normal;font-variant-numeric:tabular-nums}
+.project-open{gap:13px}.project-thumbnail{width:48px;height:48px}
+.project-actions{flex:0 0 auto;display:flex;align-items:center;gap:.375rem;padding:0 .25rem}
+.project-actions .project-delete{opacity:1;margin:0;padding:.25rem}
+.project-status{display:flex;align-items:center;gap:.25rem;font-size:.875rem;white-space:nowrap;color:#697078}
+.project-status.completed{color:#327451}.project-status.failed{color:#a54d45}.project-status.generating,.project-status.modifying{color:#4b6783}
+.project-status-spinner{width:.625rem;height:.625rem;border:1px solid #bcc8d4;border-top-color:#4b6783;border-radius:50%;animation:project-spin 1s linear infinite}
+@keyframes project-spin{to{transform:rotate(360deg)}}
+@media(prefers-reduced-motion:reduce){.project-status-spinner{animation:none}}
+.dot-background{display:block;position:absolute;inset:0;pointer-events:none;overflow:hidden;z-index:0}
+.dot-background canvas{display:block;width:100%;height:100%;pointer-events:none}
+.project-compose,.page-stage{background-image:none}
+.project-prompt{height:260px;min-height:260px;padding:24px 24px 16px;gap:12px;position:relative;background:rgba(226,228,232,.92);border:1px solid #cbd0d4;border-radius:28px;box-shadow:none}
+.project-prompt textarea{flex:1;min-height:0;height:100%;max-height:none;resize:none;overflow:auto;font-size:17px;line-height:1.6;padding:0;border:0;border-radius:0;outline:none;user-select:text;-webkit-user-select:text}
+.project-prompt textarea:disabled{opacity:.7}
+.prompt-toolbar{display:flex;justify-content:space-between;align-items:center;flex:0 0 40px}
+.prompt-toolbar button{width:40px;height:40px;display:grid;place-items:center;border:0;border-radius:50%;padding:9px;background:transparent}
+.prompt-toolbar button svg{width:24px;height:24px}
+.prompt-toolbar .prompt-upload:hover{background:#d4d8dd}
+.prompt-toolbar .prompt-send{background:#343b40;color:white}
+.prompt-toolbar .prompt-send:disabled{background:#d3d7dc;color:#9199a0;opacity:1}
+.prompt-spinner{width:18px;height:18px;border:2px solid #b9c1c8;border-top-color:#505e68;border-radius:50%;animation:project-spin 1s linear infinite}
+.prompt-files{display:flex;gap:8px;overflow:auto;flex-shrink:0;max-height:34px}
+.prompt-files>span{display:flex;align-items:center;gap:8px;white-space:nowrap;max-width:240px;font-size:12px;background:#d5d9df;border-radius:8px;padding:4px 8px;overflow:hidden;text-overflow:ellipsis}
+.prompt-files button{border:0;background:transparent;padding:0 2px}
+.prompt-error{position:absolute;left:24px;right:24px;top:calc(100% + 8px);font-size:12px;color:#a24b42}
+@media(max-width:560px){.project-prompt{height:240px;min-height:240px}.project-prompt textarea{min-height:0;height:100%}.project-compose-inner{transform:none}}
+@media(prefers-reduced-motion:reduce){.prompt-spinner{animation:none}}
+
+.project-home{position:relative;background-image:none}
+.project-actions .project-delete,.project-running{width:2rem;height:2rem;padding:0;display:grid;place-items:center;flex-shrink:0;margin:0}
+.project-actions .project-delete svg,.project-status-spinner{width:1.25rem;height:1.25rem;box-sizing:border-box}
+.project-status-spinner{border-width:1.5px}
+.frame-glass{backdrop-filter:none;-webkit-backdrop-filter:none}
+.dragging iframe{transition:none}
+.initial-page{pointer-events:none}

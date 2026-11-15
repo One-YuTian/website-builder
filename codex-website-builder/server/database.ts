@@ -1,4 +1,5 @@
 import { DatabaseSync } from 'node:sqlite';
+import { threadRuntime } from './thread-runtime';
 import { mkdirSync, readFileSync, readdirSync, existsSync } from 'node:fs';
 import { join } from 'node:path';
 import type { WebsiteProject } from './projects';
@@ -31,6 +32,7 @@ export class ProjectDatabase {
         status TEXT NOT NULL, error TEXT NOT NULL DEFAULT '', baseline TEXT NOT NULL DEFAULT '',
         PRIMARY KEY(project_id,path)
       );
+      CREATE TABLE IF NOT EXISTS project_activity (project_id TEXT NOT NULL REFERENCES projects(id), task_key TEXT NOT NULL, expires_at INTEGER NOT NULL, PRIMARY KEY(project_id,task_key));
       PRAGMA user_version=1;`);
     // Import older JSON stores once. Existing rows (including tombstones) always win.
     const read = (file: string) => { try { return JSON.parse(readFileSync(file, 'utf8')); } catch (error) { if ((error as NodeJS.ErrnoException).code === 'ENOENT') return null; throw error; } };
@@ -55,6 +57,7 @@ export class ProjectDatabase {
   row(id: string): any { return this.sql.prepare('SELECT * FROM projects WHERE id=?').get(id); }
   project(id: string): WebsiteProject | null { const row = this.row(id); return row && !row.deleted_at ? JSON.parse(row.data) : null; }
   save(project: WebsiteProject) {
+    if(this.row(project.id)?.deleted_at)throw Error("项目已删除，不能继续写入");
     this.sql.prepare(`INSERT INTO projects(id,title,data,updated_at) VALUES (?,?,?,?)
       ON CONFLICT(id) DO UPDATE SET title=excluded.title,data=excluded.data,updated_at=excluded.updated_at WHERE projects.deleted_at IS NULL`)
       .run(project.id, project.name, JSON.stringify(project), project.updatedAt);
@@ -72,10 +75,10 @@ export class ProjectDatabase {
     this.sql.prepare('INSERT INTO threads VALUES (?,?) ON CONFLICT(thread_id) DO UPDATE SET project_id=excluded.project_id').run(binding.threadId, binding.projectId);
     this.sql.prepare("INSERT INTO settings VALUES ('active',?) ON CONFLICT(key) DO UPDATE SET value=excluded.value").run(JSON.stringify(binding));
   }
-  panel(panelId: string, thread: string, projectId: string | null) {
+  panel(panelId: string, thread: string, projectId: string | null, allowSubmissionHandoff = false) {
     if (projectId && !this.project(projectId)) throw Error('项目不存在或已删除');
     const existing: any = this.sql.prepare('SELECT thread_id FROM panels WHERE panel_id=?').get(panelId);
-    if (existing?.thread_id && existing.thread_id !== thread) throw Error('面板不属于当前会话');
+    if (existing?.thread_id && existing.thread_id !== thread && !allowSubmissionHandoff) throw Error('面板不属于当前会话');
     this.sql.prepare('INSERT INTO panels VALUES (?,?,?,?) ON CONFLICT(panel_id) DO UPDATE SET thread_id=excluded.thread_id,project_id=excluded.project_id,updated_at=excluded.updated_at')
       .run(panelId, thread, projectId, new Date().toISOString());
   }
@@ -87,10 +90,32 @@ export class ProjectDatabase {
     }
     return thread?this.sql.prepare('SELECT * FROM panels WHERE thread_id=? ORDER BY updated_at DESC LIMIT 1').get(thread):undefined;
   }
+  activity(id: string, key: string, running = true) {
+    if(!this.project(id))throw Error('项目不存在或已删除');
+    if(running)this.sql.prepare('DELETE FROM project_activity WHERE project_id=? AND expires_at<=?').run(id,Date.now());
+    if(running)this.sql.prepare('INSERT INTO project_activity VALUES (?,?,?) ON CONFLICT(project_id,task_key) DO UPDATE SET expires_at=excluded.expires_at').run(id,key,Date.now()+30*60*1000);
+    else this.sql.prepare('DELETE FROM project_activity WHERE project_id=? AND task_key=?').run(id,key);
+  }
+  status(id:string): 'pending'|'generating'|'modifying'|'completed'|'failed'|'paused' {
+    const p=this.project(id);if(!p)return 'failed';
+    const tasks=this.sql.prepare('SELECT expires_at FROM project_activity WHERE project_id=?').all(id) as {expires_at:number}[];
+    const images=this.sql.prepare('SELECT status FROM image_tasks WHERE project_id=?').all(id) as {status:string}[];
+    const pages=p.pages||[], recent=Date.now()-Date.parse(p.updatedAt)<30*60*1000;
+    const active=tasks.some(t=>t.expires_at>Date.now())||pages.some(p=>p.status==='generating')&&recent;
+    if(active){
+      const threads=this.sql.prepare('SELECT thread_id FROM threads WHERE project_id=?').all(id) as {thread_id:string}[];
+      const states=threads.map(row=>threadRuntime(row.thread_id));
+      if(states.length&&states.every(value=>value==='paused'||value==='complete'))return 'paused';
+    }
+    if(active)return (p.hasPublished??(pages.length>0&&pages.every(p=>p.status==='ready')))?'modifying':'generating';
+    if(tasks.some(t=>t.expires_at<=Date.now())||images.some(t=>t.status!=='ready')||pages.some(p=>p.status==='error'||p.status==='generating'))return 'failed';
+    return pages.length>0&&pages.every(p=>p.status==='ready')?'completed':'pending';
+  }
   remove(id: string) {
     if (!this.project(id)) throw Error('项目不存在或已删除');
     this.sql.exec('BEGIN IMMEDIATE');
     try {
+      if (['generating','modifying'].includes(this.status(id))) throw Error('项目正在处理，暂不可删除');
       this.sql.prepare('UPDATE projects SET deleted_at=? WHERE id=?').run(new Date().toISOString(), id);
       this.sql.prepare('UPDATE panels SET project_id=NULL WHERE project_id=?').run(id);
       this.sql.prepare('DELETE FROM threads WHERE project_id=?').run(id);

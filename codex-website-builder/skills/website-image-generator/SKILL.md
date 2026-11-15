@@ -10,18 +10,24 @@ description: 生成Logo、Banner、About配图与图标，在画布展示进度�
 
 本技能内置官方imagegen的工作流、提示词参考、CLI脚本及许可证，不要求另加载宿主同名技能。普通生成、编辑、透明背景均优先内置image_gen，不因尺寸/路径/批量需求自动改用API，也不要求API Key。
 
-- 实际调用前读[官方生成与编辑流程](references/imagegen-workflow.md)，按请求决定generate/edit、参考图角色和单图/多图策略。新图不为展示进度额外调用view_image；编辑未查看过的本地目标时仍先按工具要求查看。每个独立素材使用独立提示词；编辑明确必须保留的主体/文字/透明度。
+- 实际调用前读[官方生成与编辑流程](references/imagegen-workflow.md)，按请求决定generate/edit、参考图角色和单图/多图策略。新图不为展示进度额外调用view_image；编辑未查看过的本地目标时仍先按工具要求查看。独立场景素材分别描述；允许将满足下文条件的图标/分类图合成图集生成，逐格描述并切割交付。编辑明确必须保留的主体/文字/透明度。
 - 写提示词时按需查[提示词原则](references/prompting.md)与[提示词样例](references/sample-prompts.md)；只补足对构图必要的信息，不擅自添加品牌、人物、承诺或文案。
 - 网站素材的Logo裁边、1:1 favicon、多Banner差异、中心/版心安全区和多端裁切统一见[网站素材规范](references/website-assets.md)。默认不用商品图、头像或手绘SVG填槽位。
 - 内置工具失败时如实登记失败；仅用户明确选择/确认CLI或API后，读[CLI流程](references/cli.md)，使用本技能scripts/image_gen.py，不改脚本、不临时拼SDK runner、不静默切模型。可按需读[API参数](references/image-api.md)和[网络问题](references/codex-network.md)。WEBSITE_IMAGE_SKILL_DIR指本SKILL.md所在真实目录，CLI依赖/密钥规则沿用官方说明。
 
 ## 画布交付与状态
 
+数量由**选定模板的实际图片槽位**决定，不固定为5张。先阅读最终使用组件的源码，整理 Logo、Favicon、Banner/轮播、About、分类图、服务图标等所需用途、槽位数量、比例和已有可复用文件。Logo与Favicon必须有正式图片；其余按实际模板补齐，不为凑数生图，也不能漏掉分类图或图标。将清单记录在metadata_directory，逐个最终文件登记website_images。模板调整后同步更新清单。
+
+图标、分类插画等风格、比例、背景一致且可以独立裁切的素材，优先评估合成1张或N张规则网格图集生成；每格指定不同内容、足够分辨率、等尺寸网格和安全间隔，避免主体跨格、文字编号、水印。Logo、Favicon和需要独立构图的Banner/About不强行拼入图集。按素材数量与目标尺寸决定分组，不把全部素材塞进低分辨率大网格。取得真实图集后使用本地裁切工具（如Pillow或sharp）按明确坐标切出每个独立图片；裁切属于图集拆分，不用代码绘制图片主体。检查切割位置、完整主体、透明背景和最终尺寸。图集原图/坐标清单放metadata_directory，每个裁切成品单独落盘、登记finish并返回对应模板槽位路径；生图调用数量与交付文件数量分别如实统计。
+
+新增、修改、重生成素材一律使用未占用的新路径（如banner-home-v2.webp、category-kitchen-v2.png），保留原文件及原任务记录。编辑旧图时将旧图作为参考输入，输出新文件；仅更新用户要求修改的页面/组件引用，不覆盖旧路径或顺带替换其他页面图片。即使原文件当前未被引用也不自动删除。
+
 1. 逐张明确用途、实际导出宽高、PC/移动可见比例、透明需求、主体与文字安全区、最终项目相对路径。模板槽位与页面版心来自主技能，不凭空改变页面结构。
-2. 生图前调用website_images(action="begin",thread_id=真实会话ID,project_id,path,width,height)。path为最终文件路径，name可用图片文件名。先登记再生图，不写空白占位文件；状态保存在SQLite。需要打开面板时先复用website_project，再open_canvas(thread_id=真实会话ID)。
+2. 生图前调用website_images(action="begin",thread_id=真实会话ID,project_id,path,width,height)。path为最终文件路径，name可用图片文件名。先登记再生图，不写空白占位文件；状态保存在SQLite。沿用主技能已打开的项目详情；面板首页submission或已有对应详情时禁止再次open_canvas。仅确实没有面板时先复用website_project，再open_canvas(thread_id=真实会话ID)一次。
 3. 按官方流程实际调用image_gen。默认输出位于CODEX_HOME/generated_images等宿主目录，不假定临时目录或工具支持destination参数。取得工具真实返回的成品，再复制最终选中图片到生产assets/brand、assets/banners、assets/about或assets/icons。源图、候选、提示词和记录放metadata_directory或宿主生图目录；CLI工作目录也放metadata_directory/work，不在生产目录创建tmp/output。
-4. 复用工具已返回的视觉结果与UI实际加载状态，核对主体/裁切、清晰度、透明边缘和真实尺寸；不要对每张新图重复调用view_image、截图或图片读取API来播报过程。只有编辑要求或无法判断的视觉问题确实需要时才查看，不能为减少输出谎报视觉检查。编辑失败保留旧文件，除用户要求替换外使用新版本文件名。只把页面实际引用的正式图片交付到网站。
-5. 文件写入后website_images(action="finish",同一thread_id/project_id/path)。UI也会自动发现新文件并展示。重新生成同一路径前再次begin，旧图不能代表本次完成；失败或取消时action="fail",error=真实简短原因，重试前再begin。
+4. 复用工具已返回的视觉结果与UI实际加载状态，核对主体/裁切、清晰度、透明边缘和真实尺寸；不要对每张新图重复调用view_image、截图或图片读取API来播报过程。只有编辑要求或无法判断的视觉问题确实需要时才查看，不能为减少输出谎报视觉检查。编辑输出新版本文件名并保留旧文件。只把页面实际引用的正式图片交付到网站。
+5. 文件写入后website_images(action="finish",同一thread_id/project_id/path)。UI也会自动发现新文件并展示。禁止以已有成品路径begin；失败重试时尚无文件的路径可以重新begin，已有文件必须换新路径。失败或取消时action="fail",error=真实简短原因。
 6. 向主技能返回正式相对路径、实际尺寸、用途与使用页面，由其完成响应式引用和HTML排版。图片以UI画布为交付视图，不在对话重复嵌入生成图片、Base64或完整提示词；最终仅文字报告完成项、缺失项及必要路径。工具自身的原生结果不作为页面完成证明。UI无法显示时明确说明，不以无图的聊天文本冒充成功。
 
 网站路径和UI交付规则优先于迁入官方文档中的通用preview-inline及output/imagegen示例；保留真实生图、编辑与透明背景规则。不自动执行整站验收。

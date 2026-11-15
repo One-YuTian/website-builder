@@ -1,3 +1,4 @@
+import { previewMock } from './preview-mock';
 import { createServer } from 'node:http';
 import { readFile, readdir, realpath, stat } from 'node:fs/promises';
 import { basename, extname, isAbsolute, join, relative, resolve, sep } from 'node:path';
@@ -77,13 +78,16 @@ function instrument(html: string, embedded = false) {
   window.__websiteBuilderLocation = new URL(virtualUrl);
   const embedded = ${embedded};
   if (embedded) {
+    const mockFrame = ['checkout','wishlist','cart','orders','order','order-confirmation'].includes(window.__websiteBuilderLocation.pathname.split('/').pop().split('.')[0]);
+    window.__websiteBuilderMockFrame = mockFrame;
     let stored = "__WEBSITE_BUILDER_STORAGE__";
-    const storage = {getItem:key=>Object.prototype.hasOwnProperty.call(stored,key)?stored[key]:null,setItem(key,value){stored[String(key)]=String(value);parent.postMessage({type:'website-builder:storage',value:stored},'*');},removeItem(key){delete stored[key];parent.postMessage({type:'website-builder:storage',value:stored},'*');},clear(){stored={};parent.postMessage({type:'website-builder:storage',value:stored},'*');},key:index=>Object.keys(stored)[index]||null,get length(){return Object.keys(stored).length;}};
+    if(mockFrame)stored={...stored};
+    const storage = {getItem:key=>Object.prototype.hasOwnProperty.call(stored,key)?stored[key]:null,setItem(key,value){stored[String(key)]=String(value);if(!mockFrame)parent.postMessage({type:'website-builder:storage',value:stored},'*');},removeItem(key){delete stored[key];if(!mockFrame)parent.postMessage({type:'website-builder:storage',value:stored},'*');},clear(){stored={};if(!mockFrame)parent.postMessage({type:'website-builder:storage',value:stored},'*');},key:index=>Object.keys(stored)[index]||null,get length(){return Object.keys(stored).length;}};
     Object.defineProperty(window,'localStorage',{value:storage}); Object.defineProperty(window,'sessionStorage',{value:storage});
     // Preserve embedded images when the demo's optional URL formatter adds its CDN prefix.
     let imageFormatter;
     Object.defineProperty(window,'formatCdnUrl',{configurable:true,get:()=>imageFormatter,set:fn=>{imageFormatter=typeof fn==='function'?function(url,...args){return typeof url==='string' && /^(data:|blob:)/i.test(url)?url:fn.call(this,url,...args);}:fn;}});
-    addEventListener('message',event=>{if(event.source===parent && event.data?.type==='website-builder:storage-sync'){stored=event.data.value;dispatchEvent(new Event('storage'));}});
+    addEventListener('message',event=>{if(!mockFrame && event.source===parent && event.data?.type==='website-builder:storage-sync'){stored=event.data.value;dispatchEvent(new Event('storage'));}});
   }
   let previous = 0, pending = false;
   let scrollIdle;
@@ -150,7 +154,7 @@ function instrument(html: string, embedded = false) {
   },{passive:false});
 })();<\/script>`;
   const base = embedded ? '<base href="__WEBSITE_BUILDER_BASE_URL__">' : '';
-  return /<head\b[^>]*>/i.test(html) ? html.replace(/<head\b[^>]*>/i, match => match + base + script + proxyRuntime) : base + script + proxyRuntime + html;
+  return /<head\b[^>]*>/i.test(html) ? html.replace(/<head\b[^>]*>/i, match => match + base + script + (embedded?previewMock:'') + proxyRuntime) : base + script + (embedded?previewMock:'') + proxyRuntime + html;
 }
 
 export async function compileProjectPage(root:string,directory:string,path:string) {
@@ -160,7 +164,7 @@ export async function compileProjectPage(root:string,directory:string,path:strin
   return instrument(await snapshotCompiler(base,site,vendor,assets)(path),true);
 }
 
-export async function createPreview(ui: string, configuredRoot: string, defaultDirectory = 'www.noventrad.com', projectSync?: (input:{since?:string;known?:Record<string,number>;waitMs?:number;threadId?:string;projectId?:string})=>Promise<unknown>, manageProjects?: (input:any)=>Promise<unknown>) {
+export async function createPreview(ui: string, configuredRoot: string, defaultDirectory = 'www.noventrad.com', projectSync?: (input:{since?:string;known?:Record<string,number>;waitMs?:number;threadId?:string;projectId?:string;metadataOnly?:boolean;pageLimit?:number;priorityPath?:string})=>Promise<unknown>, manageProjects?: (input:any)=>Promise<unknown>) {
   // The reference library is optional. Resolve it only when explicitly read;
   // an unavailable drive must not prevent project tools or the canvas starting.
   const referenceRoot = () => realpath(configuredRoot);
@@ -214,7 +218,7 @@ export async function createPreview(ui: string, configuredRoot: string, defaultD
         res.setHeader('Content-Type', 'application/json'); res.end(JSON.stringify(manifest)); return;
       }
       if(route === '/api/project-sync' && projectSync) {
-        const value=await projectSync({since:url.searchParams.get('since')||'none',known:JSON.parse(url.searchParams.get('known')||'{}'),waitMs:Number(url.searchParams.get('wait')||'20000'),threadId:url.searchParams.get('thread_id')||undefined,projectId:url.searchParams.get('project_id')||undefined});
+        const value=await projectSync({metadataOnly:url.searchParams.get('metadata_only')==='1',pageLimit:url.searchParams.has('page_limit')?Number(url.searchParams.get('page_limit')):undefined,priorityPath:url.searchParams.get('priority_path')||undefined,since:url.searchParams.get('since')||'none',known:JSON.parse(url.searchParams.get('known')||'{}'),waitMs:Number(url.searchParams.get('wait')||'20000'),threadId:url.searchParams.get('thread_id')||undefined,projectId:url.searchParams.get('project_id')||undefined});
         res.setHeader('Content-Type','application/json');res.end(JSON.stringify(value));return;
       }
       if (route.startsWith('/vendor/')) {

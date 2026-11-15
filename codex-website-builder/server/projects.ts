@@ -10,7 +10,7 @@ import { ProjectDatabase } from './database';
 
 export type PageState = 'queued'|'generating'|'ready'|'error';
 export interface ProjectPage { path: string; title: string; status: PageState; version: number; error?: string; generationHash?: string; resourceSignature?: string }
-export interface WebsiteProject { id: string; name: string; brief: string; language: string; revision: string; pages: ProjectPage[]; updatedAt: string }
+export interface WebsiteProject { country?:string; categories?:string[]; brand?:string; hasPublished?:boolean; id: string; name: string; brief: string; language: string; revision: string; pages: ProjectPage[]; updatedAt: string }
 export interface ProjectView { project: WebsiteProject; threadId: string; directory: string; metadataDirectory: string; revision: string }
 export const DEFAULT_PAGES = ['index','shop','product','wishlist','checkout','login','register','about','contact','terms','privacy','return'].map(name=>({path:`${name}.html`,title:name}));
 const idPattern = /^[a-f0-9]{4}(?:-[a-f0-9]{4}){3}$/;
@@ -49,7 +49,7 @@ export class ProjectStore {
     const id=projectId || binding?.projectId;if(!id)return null;
     const project=await this.loadProject(id);if(!project){if(!projectId)return null;throw new Error('项目不存在或已删除');}
     const base=await realpath(this.root),folder=await realpath(this.folder(id)),rel=relative(base,folder);if(rel==='..'||rel.startsWith(`..${sep}`)||isAbsolute(rel))throw new Error('项目目录不能指向外部');
-    const currentThread=threadId || binding?.threadId || '';
+    const currentThread=threadId || (binding?.projectId===id?binding.threadId:'') || '';
     return {project,threadId:currentThread,directory:this.folder(id),metadataDirectory:this.metadataDirectory(id),revision:`${id}:${currentThread}:${project.revision}`};
   }
   async list() {await mkdir(this.root,{recursive:true});return this.database.list();}
@@ -64,21 +64,29 @@ export class ProjectStore {
     }
     return usage;
   }
-  async createProject(input: {name?:string;brief?:string;language?:string;pages?:{path:string;title:string}[]}) {
+  async createProject(input: {name?:string;brief?:string;language?:string;country?:string;categories?:string[];brand?:string;pages?:{path:string;title:string}[]}) {
     const id=randomBytes(8).toString('hex').match(/.{4}/g)!.join('-');
     const pages=(input.pages || DEFAULT_PAGES).map(page=>({...page,path:this.path(page.path,true),status:'queued' as const,version:0}));
     if(new Set(pages.map(page=>page.path)).size!==pages.length)throw new Error('页面路径重复');
-    const project:WebsiteProject={id,name:input.name||'Ecommerce website',brief:input.brief||'',language:input.language||'en',revision:'',pages,updatedAt:''};
+    const project:WebsiteProject={id,name:input.name||'Ecommerce website',brief:input.brief||'',language:input.language||'en',hasPublished:false,country:input.country,categories:input.categories,brand:input.brand,revision:'',pages,updatedAt:''};
     await mkdir(this.folder(id),{recursive:true});await this.save(project);
+    if(!pages.length)this.database.activity(id,'project:start');
     return {project,threadId:'',directory:this.folder(id),metadataDirectory:this.metadataDirectory(id),revision:`${id}::${project.revision}`};
   }
-  async open(input: {threadId:string;projectId?:string;newProject?:boolean;name?:string;brief?:string;language?:string;pages?:{path:string;title:string}[]}) {
+  async open(input: {threadId:string;projectId?:string;newProject?:boolean;name?:string;brief?:string;language?:string;country?:string;categories?:string[];brand?:string;pages?:{path:string;title:string}[]}) {
     return this.lock(`thread:${input.threadId}`,async()=>{
       let view = input.newProject ? null : await this.get(input.threadId,input.projectId);
       if(!view) {
         if(input.projectId)throw new Error('指定项目不存在，不会用相同名字创建替代项目');
         const created=await this.createProject(input);
         view={...created,threadId:input.threadId,revision:`${created.project.id}:${input.threadId}:${created.project.revision}`};
+      }
+      if(input.country!==undefined||input.categories!==undefined||input.brand!==undefined){
+        if(input.country!==undefined)view.project.country=input.country;
+        if(input.categories!==undefined)view.project.categories=input.categories;
+        if(input.brand!==undefined)view.project.brand=input.brand;
+        if(input.language!==undefined)view.project.language=input.language;
+        await this.save(view.project);
       }
       const binding={threadId:input.threadId,projectId:view.project.id};
       this.database.setActive(binding);
@@ -102,13 +110,13 @@ export class ProjectStore {
   }
   private async update(threadId: string, work:(view:ProjectView)=>Promise<void>) {
     const existing=await this.get(threadId);if(!existing)throw new Error('请先打开当前会话项目');
-    return this.lock(existing.project.id,async()=>{const view=(await this.get(threadId))!;if(view.project.id!==existing.project.id)throw new Error('会话项目已切换，请重新读取项目');await work(view);await this.save(view.project);return (await this.get(threadId))!;});
+    return this.lock(existing.project.id,async()=>{const view=(await this.get(threadId))!;if(view.project.id!==existing.project.id)throw new Error('会话项目已切换，请重新读取项目');const activity='write:'+randomUUID();this.database.activity(view.project.id,activity);const heartbeat=setInterval(()=>{try{this.database.activity(view.project.id,activity);}catch{}},60000);try{await work(view);await this.save(view.project);return (await this.get(threadId))!;}finally{clearInterval(heartbeat);this.database.sql.prepare('DELETE FROM project_activity WHERE project_id=? AND task_key=?').run(view.project.id,activity);}});
   }
   async plan(threadId:string,pages:{path:string;title:string}[]) {
     return this.update(threadId,async({project})=>{for(const page of pages){this.path(page.path,true);const current=project.pages.find(item=>item.path===page.path);if(current)current.title=page.title;else project.pages.push({...page,status:'queued',version:0});}});
   }
   async begin(threadId:string,paths:string[]) {
-    return this.update(threadId,async({project})=>{for(const path of paths){this.path(path,true);const page=project.pages.find(item=>item.path===path);if(!page)throw new Error(`页面未在计划内：${path}`);page.generationHash=await this.sourceHash(project.id,path);page.status='generating';page.version++;delete page.error;}});
+    return this.update(threadId,async({project})=>{project.hasPublished ??= project.pages.length>0&&project.pages.every(page=>page.status==='ready');for(const path of paths){this.path(path,true);const page=project.pages.find(item=>item.path===path);if(!page)throw new Error(`页面未在计划内：${path}`);page.generationHash=await this.sourceHash(project.id,path);page.status='generating';page.version++;delete page.error;}});
   }
   private async sourceHash(id:string,path:string) {
     const source=await readFile(await this.target(id,path)).catch(error=>{if(error.code==='ENOENT')return null;throw error;});
@@ -140,8 +148,8 @@ export class ProjectStore {
   }
   // Direct-file generation may finish without a tool callback. Only a complete,
   // changed document can leave generating; begin must not redisplay the old file.
-  async reconcile(threadId?:string) {
-    const view=await this.get(threadId);if(!view)return null;
+  async reconcile(threadId?:string,projectId?:string) {
+    const view=await this.get(threadId,projectId);if(!view)return null;
     const candidates=async(current:ProjectView)=>{
       const paths:string[]=[];
       for(const page of current.project.pages){
@@ -149,14 +157,19 @@ export class ProjectStore {
           if(page.resourceSignature!==await this.resourceSignature(current,page.path))paths.push(page.path);
           continue;
         }
-        if(page.status!=='generating'||page.generationHash===undefined)continue;
+        if(page.status!=='queued'&&(page.status!=='generating'||page.generationHash===undefined))continue;
         const source=await readFile(await this.target(current.project.id,page.path),'utf8').catch(()=>null);
         if(source&&/<html\b/i.test(source)&&/<body\b/i.test(source)&&/<\/body>/i.test(source)&&/<\/html>\s*$/i.test(source)&&createHash('sha256').update(source).digest('hex')!==page.generationHash)paths.push(page.path);
       }
       return paths;
     };
     if(!(await candidates(view)).length)return view;
-    return this.update(view.threadId,async current=>{await this.complete(current,await candidates(current));});
+    return this.lock(view.project.id,async()=>{
+      const current=await this.get(threadId,view.project.id);if(!current)return null;
+      const changed=await candidates(current);if(!changed.length)return current;
+      await this.complete(current,changed);await this.save(current.project);
+      return this.get(threadId,view.project.id);
+    });
   }
   async bindTemplates(threadId: string, bindings: TemplateBinding[]) {
     for (const binding of bindings) {
@@ -199,6 +212,8 @@ export class ProjectStore {
       } catch(error){page.status='error';page.error=(error as Error).message;page.version++;delete page.generationHash;}
       page.resourceSignature=await this.resourceSignature(view,path);
     }
+    if(view.project.pages.length>0&&view.project.pages.every(page=>page.status==='ready'))view.project.hasPublished=true;
+    if(view.project.pages.some(page=>page.status==='error')||view.project.pages.length>0&&view.project.pages.every(page=>page.status==='ready'))this.database.activity(view.project.id,'project:start',false);
   }
   async finish(threadId:string,paths:string[]) {return this.update(threadId,async view=>{await this.complete(view,paths.length?paths:view.project.pages.filter(page=>page.status!=='ready').map(page=>page.path));});}
   private async usesFiles(view:ProjectView,page:string,changed:Set<string>) {

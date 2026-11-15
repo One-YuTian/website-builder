@@ -1,3 +1,4 @@
+import { projectTitle, statusLabels } from './project-presentation';
 import { readFile, mkdir, copyFile, realpath, stat, readdir } from 'node:fs/promises';
 import { createHash } from 'node:crypto';
 import { dirname, extname, join, relative, sep, isAbsolute } from 'node:path';
@@ -47,14 +48,8 @@ export function projectManager(store: ProjectStore) {
         if (path && rel !== '..' && !rel.startsWith(`..${sep}`) && !isAbsolute(rel)) image = `data:image/png;base64,${(await readFile(path)).toString('base64')}`;
       }
       const details=store.database.project(project.id);
-      let domain=[...`${project.name} ${details?.brief||''}`.matchAll(/(?:https?:\/\/)?((?:[a-z0-9](?:[a-z0-9-]*[a-z0-9])?\.)+[a-z]{2,24})\b/gi)].map(match=>match[1].toLowerCase()).find(host=>! /\.(?:html?|css|js|json|png|jpe?g|webp|svg|avif)$/i.test(host));
-      if(!domain)for(const name of ['index.html','components/footer.js']){
-        try{const base=await realpath(join(store.root,project.id)),source=await readFile(await contained(base,name),'utf8');
-          domain=source.match(/<link\b(?=[^>]*\brel\s*=\s*["']canonical["'])[^>]*\bhref\s*=\s*["']https?:\/\/([^/"']+)/i)?.[1]||source.match(/support@([a-z0-9.-]+\.[a-z]{2,24})/i)?.[1];
-          if(domain)break;
-        }catch{/* Unfinished projects retain their existing title until a domain is known. */}
-      }
-      return { id: project.id, name: project.name, displayName:`网站-${domain||project.name}`, domain, updatedAt: project.updatedAt, thumbnail: image };
+      const status=store.database.status(project.id);
+      return { id:project.id,name:project.name,brand:details?.brand||project.name,country:details?.country,language:details?.language,categories:details?.categories||[],displayName:projectTitle(details||{}),status,statusLabel:statusLabels[status],deletable:!['generating','modifying'].includes(status),updatedAt:project.updatedAt,thumbnail:image };
     }));
   }
   async function context(thread?: string, panelId?: string) {
@@ -82,16 +77,33 @@ export function projectManager(store: ProjectStore) {
     await scan(view.directory);
     return store.database.sql.prepare('SELECT id,name,path,mime,size,thread_id FROM resources WHERE project_id=? ORDER BY name').all(id);
   }
-  async function run(input: {action?: string; panel_id?: string; thread_id?: string; project_id?: string; name?: string; source_path?: string; path?:string;width?:number;capture_id?:string;chunk?:string;offset?:number;final?:boolean}) {
+  async function run(input: {requirement?:string;request_id?:string;submission_start?:boolean;detail_ready?:boolean;cancel?:boolean;action?: string; panel_id?: string; thread_id?: string; project_id?: string; country?:string;language?:string;categories?:string[];brand?:string;name?: string; source_path?: string; path?:string;width?:number;capture_id?:string;chunk?:string;offset?:number;final?:boolean}) {
     const action = input.action || 'list';
     const panel=input.panel_id?store.database.panelById(input.panel_id):undefined;
     const thread = input.thread_id || process.env.CODEX_THREAD_ID || process.env.CODEX_SESSION_ID || panel?.thread_id || undefined;
-    if (action === 'list') return { projects: await list(), thread_id: thread || null };
+    if (action === 'list') return { projects: await list(), thread_id: panel?.thread_id || thread || null };
     // Global navigation has a panel identity before it has a chat identity.
     // Never substitute an anonymous/fake thread or another project's last chat.
-    if (action === 'context') return context(thread, input.panel_id);
+    if (action === 'context') {
+      const value=await context(thread,input.panel_id);
+      if(!input.requirement?.trim())return value;
+      const fingerprint=createHash('sha256').update(input.requirement.trim().replace(/\s+/g,' ')).digest('hex');
+      const rows=store.database.sql.prepare("SELECT key,value FROM settings WHERE key LIKE 'submission:%'").all() as {key:string;value:string}[];
+      const matches=rows.flatMap(row=>{try{const record=JSON.parse(row.value);return record.state==='pending'&&record.requirement_hash===fingerprint&&Date.now()-Date.parse(record.created_at)<10*60*1000?[{panel_id:row.key.slice('submission:'.length),request_id:record.request_id,action:'create'}]:[];}catch{return[];}});
+      if(matches.length===1)return {...value,submission:matches[0]};
+      return matches.length>1?{...value,submission_ambiguous:true}:value;
+    }
     if (!input.panel_id || !/^[a-zA-Z0-9_-]{8,128}$/.test(input.panel_id)) throw Error('需要当前面板 ID');
-    if(panel?.thread_id && thread && panel.thread_id!==thread)throw Error('面板不属于当前会话');
+    // A matching pending submission authorizes its new chat to claim this
+    // panel. Its originating UI can continue polling that same request after
+    // the handoff; unrelated requests still obey the panel/thread boundary.
+    const handoffRow=input.request_id?store.database.sql.prepare('SELECT value FROM settings WHERE key=?').get('submission:'+input.panel_id) as {value:string}|undefined:undefined;
+    const handoff=handoffRow?JSON.parse(handoffRow.value):null;
+    const submissionHandoff=!!input.request_id && handoff?.request_id===input.request_id && (
+      action==='create' && handoff.state==='pending' ||
+      action==='submission' && !input.submission_start
+    );
+    if(panel?.thread_id && thread && panel.thread_id!==thread && !submissionHandoff)throw Error('面板不属于当前会话');
     if(action==='resume') {
       if(!thread&&panel)return context(thread,input.panel_id);
       const binding=thread?store.database.binding(thread):null;
@@ -99,15 +111,38 @@ export function projectManager(store: ProjectStore) {
       store.database.panel(input.panel_id,thread||'',project?binding!.projectId:null);
       return context(thread,input.panel_id);
     }
+    const submissionKey='submission:'+input.panel_id;
+    const readSubmission=()=>{const row=store.database.sql.prepare('SELECT value FROM settings WHERE key=?').get(submissionKey) as {value:string}|undefined;return row?JSON.parse(row.value):null;};
+    const saveSubmission=(value:unknown)=>store.database.sql.prepare('INSERT INTO settings VALUES (?,?) ON CONFLICT(key) DO UPDATE SET value=excluded.value').run(submissionKey,JSON.stringify(value));
+    if(action==='submission'){
+      if(!input.request_id||!/^[-a-zA-Z0-9_]{8,128}$/.test(input.request_id))throw Error('提交标记无效');
+      const record=readSubmission();
+      if(input.cancel){if(record?.request_id===input.request_id)saveSubmission({...record,state:'cancelled'});return{state:'cancelled'};}
+      if(input.submission_start){
+        if(record?.request_id===input.request_id)return record;
+        saveSubmission({request_id:input.request_id,state:'pending',created_at:new Date().toISOString(),...(input.requirement?.trim()?{requirement_hash:createHash('sha256').update(input.requirement.trim().replace(/\s+/g,' ')).digest('hex')}:{})});return{state:'pending'};
+      }
+      if(record?.request_id!==input.request_id)throw Error('此提交已失效，请检查当前对话');
+      if(input.detail_ready){
+        if(record.state!=='created'||panel?.project_id!==record.project_id)throw Error('项目详情尚未绑定');
+        record.detail_ready=true;saveSubmission(record);
+      }
+      if(record.state==='created'){const view=await store.get(undefined,record.project_id);if(!view)throw Error('已创建的项目不可用');return{...record,project:{page:'project',panel_id:input.panel_id,...compactProject(view),thread_id:record.thread_id}};}
+      return record;
+    }
     const id = input.project_id;
     if (action === 'home') { store.database.panel(input.panel_id, thread||'', null); return context(thread, input.panel_id); }
     if (action === 'create' || action === 'open' || action === 'bind') {
       if (action !== 'create' && !id) throw Error('需要项目 ID');
-      const view = thread ? await store.open({ threadId: thread, projectId: id, newProject: action === 'create', name: input.name })
-        : action === 'create' ? await store.createProject({name:input.name}) : await store.get(undefined,id);
+      if(input.request_id){const record=readSubmission();if(record?.request_id!==input.request_id||record.state==='cancelled')throw Error('创建请求已取消或失效');if(record.state==='created'){const existing=await store.get(undefined,record.project_id);if(!existing)throw Error('项目不可用');return{page:'project',...compactProject(existing),thread_id:record.thread_id};}if(record.state==='creating')throw Error('项目正在创建，请稍后查询结果');if(record.state!=='pending')throw Error('创建请求已失效');saveSubmission({...record,state:'creating'});}
+      try {
+      const view = thread ? await store.open({ threadId: thread, projectId: id, newProject: action === 'create', name: input.name,country:input.country,language:input.language,categories:input.categories,brand:input.brand,...(action==='create'?{pages:[]}:{}) })
+        : action === 'create' ? await store.createProject({name:input.name,country:input.country,language:input.language,categories:input.categories,brand:input.brand,pages:[]}) : await store.get(undefined,id);
       if(!view)throw Error('项目不存在或已删除');
-      store.database.panel(input.panel_id, thread||'', view.project.id);
-      return { page: 'project', panel_id: input.panel_id, ...compactProject(view),thread_id:thread||null };
+      store.database.panel(input.panel_id, thread||'', view.project.id, action==='create' && submissionHandoff);
+      if(input.request_id)saveSubmission({request_id:input.request_id,state:'created',project_id:view.project.id,thread_id:thread||null});
+      return { page: 'project', panel_id: input.panel_id, ...compactProject(view),thread_id:thread||null,...(input.request_id?{ui_reused:true,request_id:input.request_id,next_action:'不要调用 open_canvas。查询 website_projects(action=submission, panel_id, request_id)，等待 detail_ready=true 后再规划页面或生成内容。'}:{}) };
+      }catch(error){if(input.request_id)saveSubmission({request_id:input.request_id,state:'failed',error:(error as Error).message});throw error;}
     }
     if (!id) throw Error('需要项目 ID');
     if(action==='restore') {
@@ -123,7 +158,7 @@ export function projectManager(store: ProjectStore) {
       const pending=new Map<string,any>();
       for(const task of tasks){
         const info=await contained(view.directory,task.path).then(file=>stat(file)).catch(()=>null);
-        if(task.status==='generating'&&info?.isFile()&&info.size>0&&`${info.size}:${info.mtimeMs}`!==task.baseline){task.status='ready';store.database.sql.prepare("UPDATE image_tasks SET status='ready',error='' WHERE project_id=? AND path=?").run(id,task.path);}
+        if(task.status==='generating'&&info?.isFile()&&info.size>0&&`${info.size}:${info.mtimeMs}`!==task.baseline){task.status='ready';store.database.activity(id,'image:'+task.path,false);store.database.sql.prepare("UPDATE image_tasks SET status='ready',error='' WHERE project_id=? AND path=?").run(id,task.path);}
         if(task.status!=='ready')pending.set(task.path,task);
       }
       for(const resource of await resources(id) as {id:string;name:string;path:string;mime:string;size:number}[]) {
@@ -180,6 +215,7 @@ export function projectManager(store: ProjectStore) {
     const view=await store.get(input.thread_id,input.project_id);if(!view)throw Error('项目不存在');
     const path=store.path(input.path);if(!mime(path).startsWith('image/'))throw Error('图片任务需要有效图片扩展名');
     const info=await contained(view.directory,path).then(file=>stat(file)).catch(()=>null);
+    if(input.action==='begin'&&info)throw Error('图片已存在，请使用新的版本文件名，保留原图');
     if(input.action==='begin')store.database.sql.prepare(`INSERT INTO image_tasks(project_id,path,name,width,height,status,error,baseline) VALUES (?,?,?,?,?,'generating','',?) ON CONFLICT(project_id,path) DO UPDATE SET name=excluded.name,width=excluded.width,height=excluded.height,status='generating',error='',baseline=excluded.baseline`).run(input.project_id,path,input.name||path.split('/').pop()!,input.width||960,input.height||600,info?`${info.size}:${info.mtimeMs}`:'');
     else {
       const task=store.database.sql.prepare('SELECT baseline FROM image_tasks WHERE project_id=? AND path=?').get(input.project_id,path) as {baseline:string}|undefined;
@@ -187,6 +223,7 @@ export function projectManager(store: ProjectStore) {
       if(input.action==='finish'&&(!info?.isFile()||!info.size||`${info.size}:${info.mtimeMs}`===task.baseline))throw Error('本次图片成品尚未写入项目');
       store.database.sql.prepare('UPDATE image_tasks SET status=?,error=? WHERE project_id=? AND path=?').run(input.action==='finish'?'ready':'error',input.action==='fail'?(input.error||'图片生成失败，请重试'):'',input.project_id,path);
     }
+    store.database.activity(input.project_id,'image:'+path,input.action==='begin');
     return {project_id:input.project_id,path,status:input.action==='begin'?'generating':input.action==='finish'?'ready':'error'};
   }
   return { run, context, thumbnail, imageTask, close:async()=>{shutdown.abort();await Promise.allSettled([...thumbnails.values()]);} };
