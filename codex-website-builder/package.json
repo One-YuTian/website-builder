@@ -11,7 +11,7 @@
     "start": "node dist/server/index.js",
     "test": "node scripts/smoke.mjs",
     "test:visual": "node scripts/visual.mjs",
-    "prepare:plugin": "pnpm build && pnpm test:skills && pnpm test:form-guidance && pnpm test:sdk-bootstrap && pnpm test && pnpm test:projects && pnpm test:proxy && pnpm test:commerce && pnpm test:templates && pnpm test:features && pnpm test:large-preview && pnpm test:ui && pnpm test:cdn && pnpm test:imports && pnpm test:output && pnpm test:startup && pnpm test:persistence && pnpm test:management && pnpm test:global-entry && pnpm test:preview-assets && pnpm test:canvas-copy && pnpm test:open-directory && pnpm test:progressive-preview && pnpm test:project-cards && pnpm test:prompt",
+    "prepare:plugin": "pnpm build && pnpm test:material-preview && pnpm test:canvas-loading && pnpm test:project-git && pnpm test:layout && pnpm test:gitlab && pnpm test:gitlab-ui && pnpm test:skills && pnpm test:form-guidance && pnpm test:sdk-bootstrap && pnpm test && pnpm test:projects && pnpm test:proxy && pnpm test:commerce && pnpm test:templates && pnpm test:features && pnpm test:large-preview && pnpm test:ui && pnpm test:cdn && pnpm test:imports && pnpm test:output && pnpm test:startup && pnpm test:persistence && pnpm test:management && pnpm test:global-entry && pnpm test:preview-assets && pnpm test:canvas-copy && pnpm test:open-directory && pnpm test:progressive-preview && pnpm test:project-cards && pnpm test:prompt",
     "install:plugin": "powershell -NoProfile -File scripts/install-plugin.ps1",
     "test:projects": "node scripts/projects.test.mjs",
     "test:proxy": "node scripts/proxy.test.mjs",
@@ -36,7 +36,13 @@
     "test:progressive-preview": "node scripts/progressive-preview.test.mjs",
     "test:project-cards": "node scripts/project-cards.test.mjs",
     "test:prompt": "node scripts/prompt.test.mjs",
-    "test:form-guidance": "node scripts/form-guidance.test.mjs"
+    "test:form-guidance": "node scripts/form-guidance.test.mjs",
+    "test:layout": "node scripts/project-layout.test.mjs",
+    "test:material-preview": "node scripts/material-preview.test.mjs",
+    "test:canvas-loading": "node scripts/canvas-loading.test.mjs",
+    "test:project-git": "node scripts/project-git.test.mjs",
+    "test:gitlab": "node scripts/gitlab.test.mjs",
+    "test:gitlab-ui": "node scripts/gitlab-ui.test.mjs"
   },
   "dependencies": {
     "@modelcontextprotocol/ext-apps": "^1.7.5",

@@ -9,6 +9,9 @@ import { screenshotPage } from './screenshot';
 import { registerPreviewFile, registerPreviewBuffer } from './resource-proxy';
 import { gunzipSync } from 'node:zlib';
 import { contained } from './preview';
+import { imageDimensions } from './image-dimensions';
+import { assertMainRepository } from './project-layout';
+import {assertEditable,operationLock} from './project-operations';
 
 const mime = (path: string) => ({'.png':'image/png','.jpg':'image/jpeg','.jpeg':'image/jpeg','.webp':'image/webp','.avif':'image/avif','.ico':'image/x-icon','.svg':'image/svg+xml','.gif':'image/gif','.pdf':'application/pdf','.json':'application/json'}[extname(path).toLowerCase()] || 'application/octet-stream');
 export function projectManager(store: ProjectStore) {
@@ -49,33 +52,44 @@ export function projectManager(store: ProjectStore) {
       }
       const details=store.database.project(project.id);
       const status=store.database.status(project.id);
-      return { id:project.id,name:project.name,brand:details?.brand||project.name,country:details?.country,language:details?.language,categories:details?.categories||[],displayName:projectTitle(details||{}),status,statusLabel:statusLabels[status],deletable:!['generating','modifying'].includes(status),updatedAt:project.updatedAt,thumbnail:image };
+      return { id:project.id,name:project.name,brand:details?.brand||project.name,country:details?.country,language:details?.language,categories:details?.categories||[],displayName:projectTitle(details||{}),status,statusLabel:statusLabels[status],deploying:!!operationLock(store.database,project.id),deletable:!operationLock(store.database,project.id)&&!['generating','modifying'].includes(status),updatedAt:project.updatedAt,thumbnail:image };
     }));
   }
   async function context(thread?: string, panelId?: string) {
     const panel = store.database.context(thread, panelId);
     const id = panel?.project_id;
-    if (id && store.database.project(id)) return { page: 'project', panel_id: panel.panel_id, ...compactProject((await store.get(thread, id))!),thread_id:thread||null };
+    const view=id?await store.get(thread,id).catch(()=>null):null;
+    if (view) return { page: 'project', panel_id: panel.panel_id, ...compactProject(view),thread_id:thread||null };
     return { page: 'home', panel_id: panel?.panel_id || panelId || null, projects: await store.list() };
   }
-  async function resources(id: string) {
-    const view = await store.get(undefined, id);
-    if (!view) throw Error('项目不存在');
-    // Index real user assets without following symlinks or loading bytes into model context.
+  async function materialResources(view:NonNullable<Awaited<ReturnType<ProjectStore['get']>>>) {
+    const id=view.project.id,found:{id:string;name:string;path:string;mime:string;size:number}[]=[];
+    // The live material tree owns the gallery; old database rows and deployment
+    // copies must never introduce additional pictures or duplicate originals.
     const scan = async (directory: string) => {
-      for (const entry of await readdir(directory, { withFileTypes: true })) {
+      for (const entry of await readdir(directory, { withFileTypes: true }).catch(error=>{if(error.code==='ENOENT')return [];throw error;})) {
         if (entry.name.startsWith('.') || entry.name === 'node_modules') continue;
         const path = join(directory, entry.name);
         if (entry.isDirectory()) await scan(path);
         else if (entry.isFile() && !/\.(?:html?|js|mjs|css)$/i.test(path)) {
-          const info = await stat(path);
+          const info = await stat(path).catch(error=>{if(error.code==='ENOENT')return null;throw error;});
+          if(!info)continue;
+          const resource={id:createHash('sha256').update(id+path).digest('hex'),name:entry.name,path,mime:mime(path),size:info.size};
+          found.push(resource);
           store.database.sql.prepare('INSERT INTO resources VALUES (?,?,?,?,?,?,?) ON CONFLICT(project_id,path) DO UPDATE SET size=excluded.size,mime=excluded.mime')
-            .run(createHash('sha256').update(id + path).digest('hex'), id, null, entry.name, path, mime(path), info.size);
+            .run(resource.id, id, null, entry.name, path, resource.mime, info.size);
         }
       }
     };
-    await scan(view.directory);
-    return store.database.sql.prepare('SELECT id,name,path,mime,size,thread_id FROM resources WHERE project_id=? ORDER BY name').all(id);
+    await scan(view.materialDirectory);
+    return found.sort((a,b)=>a.name.localeCompare(b.name,'en',{numeric:true}));
+  }
+  async function resources(id: string) {
+    const view = await store.get(undefined, id);
+    if (!view) throw Error('项目不存在');
+    const material=await materialResources(view);
+    const rows=store.database.sql.prepare('SELECT id,name,path,mime,size,thread_id FROM resources WHERE project_id=? ORDER BY name').all(id) as {path:string}[];
+    return [...material,...rows.filter(row=>{const rel=relative(join(view.metadataDirectory,'session-assets'),row.path);return rel!=='..'&&!rel.startsWith(`..${sep}`)&&!isAbsolute(rel);})];
   }
   async function run(input: {requirement?:string;request_id?:string;submission_start?:boolean;detail_ready?:boolean;cancel?:boolean;action?: string; panel_id?: string; thread_id?: string; project_id?: string; country?:string;language?:string;categories?:string[];brand?:string;name?: string; source_path?: string; path?:string;width?:number;capture_id?:string;chunk?:string;offset?:number;final?:boolean}) {
     const action = input.action || 'list';
@@ -107,7 +121,7 @@ export function projectManager(store: ProjectStore) {
     if(action==='resume') {
       if(!thread&&panel)return context(thread,input.panel_id);
       const binding=thread?store.database.binding(thread):null;
-      const project=binding&&store.database.project(binding.projectId);
+      const project=binding&&await store.get(thread,binding.projectId).catch(()=>null);
       store.database.panel(input.panel_id,thread||'',project?binding!.projectId:null);
       return context(thread,input.panel_id);
     }
@@ -154,20 +168,21 @@ export function projectManager(store: ProjectStore) {
     if (!view) throw Error('项目不存在');
     if(action==='images') {
       const images=[];
-      const tasks=store.database.sql.prepare('SELECT * FROM image_tasks WHERE project_id=? ORDER BY path').all(id) as any[];
+      const tasks=(store.database.sql.prepare('SELECT * FROM image_tasks WHERE project_id=? ORDER BY path').all(id) as any[])
+        .filter(task=>typeof task.path==='string'&&!/[\\/]/.test(task.path)&&mime(task.path).startsWith('image/'));
       const pending=new Map<string,any>();
       for(const task of tasks){
-        const info=await contained(view.directory,task.path).then(file=>stat(file)).catch(()=>null);
-        if(task.status==='generating'&&info?.isFile()&&info.size>0&&`${info.size}:${info.mtimeMs}`!==task.baseline){task.status='ready';store.database.activity(id,'image:'+task.path,false);store.database.sql.prepare("UPDATE image_tasks SET status='ready',error='' WHERE project_id=? AND path=?").run(id,task.path);}
+        const info=await contained(view.materialDirectory,task.path).then(file=>stat(file)).catch(()=>null);
+        if(task.status==='generating'&&info?.isFile()&&info.size>0&&`${info.size}:${info.mtimeMs}`!==task.baseline){await publishImage(view,task.path);task.status='ready';store.database.activity(id,'image:'+task.path,false);store.database.sql.prepare("UPDATE image_tasks SET status='ready',error='' WHERE project_id=? AND path=?").run(id,task.path);}
         if(task.status!=='ready')pending.set(task.path,task);
       }
-      for(const resource of await resources(id) as {id:string;name:string;path:string;mime:string;size:number}[]) {
+      for(const resource of await materialResources(view)) {
         if(!resource.mime.startsWith('image/'))continue;
         try {
-          const base=await realpath(view.directory),file=await realpath(resource.path),path=relative(base,file);
+          const base=await realpath(view.materialDirectory),file=await realpath(resource.path),path=relative(base,file);
           if(path==='..'||path.startsWith(`..${sep}`)||isAbsolute(path))continue;
           const relativePath=path.split(sep).join('/');if(pending.has(relativePath))continue;
-          images.push({...resource,path:relativePath,status:'ready',url:await registerPreviewFile(file,resource.mime)});
+          images.push({...resource,path:relativePath,status:'ready',...await imageDimensions(file),url:await registerPreviewFile(file,resource.mime)});
         }catch{/* Removed assets disappear from the next refresh. */}
       }
       for(const task of pending.values())images.push({id:createHash('sha256').update(id+task.path).digest('hex'),path:task.path,name:task.name,mime:mime(task.path),status:task.status,error:task.error,width:task.width,height:task.height});
@@ -189,10 +204,10 @@ export function projectManager(store: ProjectStore) {
       const image=await screenshotPage(store,{thread_id:thread,project_id:id,path:input.path,width:input.width,snapshot});
       return {resource:registerPreviewBuffer(image.bytes,'image/png'),width:image.width,fullPage:true,page:image.page};
     }
-    if (action === 'delete') { store.database.remove(id); return { page: 'home', projects: await list() }; }
+    if (action === 'delete') { assertEditable(store.database,id);store.database.remove(id); return { page: 'home', projects: await list() }; }
     if (action === 'folder') {
-      await openDirectory(view.directory);
-      return { directory: view.directory };
+      await openDirectory(view.projectDirectory);
+      return { directory: view.projectDirectory };
     }
     if (action === 'resources') return { resources: await resources(id) };
     if (action === 'attach') {
@@ -209,22 +224,38 @@ export function projectManager(store: ProjectStore) {
     }
     throw Error('不支持的项目管理操作');
   }
+  async function publishImage(view:NonNullable<Awaited<ReturnType<ProjectStore['get']>>>,path:string){
+    return store.exclusive(view.project.id,async()=>{
+    assertEditable(store.database,view.project.id);
+    await assertMainRepository(view.projectDirectory);
+    const source=await contained(view.materialDirectory,path);
+    await mkdir(join(view.directory,'images'),{recursive:true});
+    const images=await contained(view.directory,'images');
+    const target=join(images,path);
+    const previous=await stat(target).catch(()=>null);
+    if(previous)await contained(images,path); // Refuse a file symlink outside images.
+    await copyFile(source,target);
+    });
+  }
   async function imageTask(input:{thread_id:string;project_id:string;action:'begin'|'finish'|'fail';path:string;name?:string;width?:number;height?:number;error?:string}){
     const binding=store.database.binding(input.thread_id);
     if(binding?.projectId!==input.project_id)throw Error('图片任务不属于当前会话项目');
     const view=await store.get(input.thread_id,input.project_id);if(!view)throw Error('项目不存在');
-    const path=store.path(input.path);if(!mime(path).startsWith('image/'))throw Error('图片任务需要有效图片扩展名');
-    const info=await contained(view.directory,path).then(file=>stat(file)).catch(()=>null);
-    if(input.action==='begin'&&info)throw Error('图片已存在，请使用新的版本文件名，保留原图');
+    if(input.action!=='fail')assertEditable(store.database,view.project.id);
+    if(input.action==='begin')await assertMainRepository(view.projectDirectory);
+    const path=store.path(input.path);if(path.includes('/')||!mime(path).startsWith('image/'))throw Error('图片任务使用 material 内的图片文件名，例如 logo.png、banner1.png、about.png');
+    const info=await contained(view.materialDirectory,path).then(file=>stat(file)).catch(()=>null);
+    if(input.action==='begin')assertEditable(store.database,view.project.id);
     if(input.action==='begin')store.database.sql.prepare(`INSERT INTO image_tasks(project_id,path,name,width,height,status,error,baseline) VALUES (?,?,?,?,?,'generating','',?) ON CONFLICT(project_id,path) DO UPDATE SET name=excluded.name,width=excluded.width,height=excluded.height,status='generating',error='',baseline=excluded.baseline`).run(input.project_id,path,input.name||path.split('/').pop()!,input.width||960,input.height||600,info?`${info.size}:${info.mtimeMs}`:'');
     else {
       const task=store.database.sql.prepare('SELECT baseline FROM image_tasks WHERE project_id=? AND path=?').get(input.project_id,path) as {baseline:string}|undefined;
       if(!task)throw Error('请先登记图片生成任务');
       if(input.action==='finish'&&(!info?.isFile()||!info.size||`${info.size}:${info.mtimeMs}`===task.baseline))throw Error('本次图片成品尚未写入项目');
+      if(input.action==='finish')await publishImage(view,path);
       store.database.sql.prepare('UPDATE image_tasks SET status=?,error=? WHERE project_id=? AND path=?').run(input.action==='finish'?'ready':'error',input.action==='fail'?(input.error||'图片生成失败，请重试'):'',input.project_id,path);
     }
     store.database.activity(input.project_id,'image:'+path,input.action==='begin');
-    return {project_id:input.project_id,path,status:input.action==='begin'?'generating':input.action==='finish'?'ready':'error'};
+    return {project_id:input.project_id,path,material_path:join(view.materialDirectory,path),website_path:`images/${path}`,status:input.action==='begin'?'generating':input.action==='finish'?'ready':'error'};
   }
   return { run, context, thumbnail, imageTask, close:async()=>{shutdown.abort();await Promise.allSettled([...thumbnails.values()]);} };
 }

@@ -8,7 +8,7 @@ export function previewPayload(gzip:string):string|{resource:string} {
 }
 
 export function compactProject(view:ProjectView) {
-  return {project_id:view.project.id,thread_id:view.threadId,directory:view.directory,metadata_directory:view.metadataDirectory,name:view.project.name,country:view.project.country,categories:view.project.categories,brand:view.project.brand,language:view.project.language,brief:view.project.brief,pages:view.project.pages.map(({path,status,error})=>({path,status,...(error?{error}:{} )}))};
+  return {...(view.git?{git:view.git}:{}),project_id:view.project.id,thread_id:view.threadId,directory:view.directory,metadata_directory:view.metadataDirectory,project_directory:view.projectDirectory,source_directory:view.directory,material_directory:view.materialDirectory,format_version:view.project.formatVersion,name:view.project.name,country:view.project.country,categories:view.project.categories,brand:view.project.brand,language:view.project.language,brief:view.project.brief,pages:view.project.pages.map(({path,status,error})=>({path,status,...(error?{error}:{} )}))};
 }
 export function projectService(store:ProjectStore) {
   const cache=new Map<string,{version:number;gzip:string}>();
@@ -25,7 +25,7 @@ export function projectService(store:ProjectStore) {
     }
     if(!view)return{revision:'none',unchanged:true};
     if(!input.metadataOnly&&!missing&&view.revision===input.since)return{revision:view.revision,unchanged:true};
-    const manifest:SiteManifest={directory:view.project.id,name:view.project.name,projectId:view.project.id,threadId:view.threadId,revision:view.revision,order:'项目页面计划',warnings:[],pages:view.project.pages.map(page=>({...page,url:`https://website-builder.invalid/files/${view!.project.id}/${page.path.split('/').map(encodeURIComponent).join('/')}`}))};
+    const manifest:SiteManifest={directory:view.project.id,name:view.project.name,projectId:view.project.id,threadId:view.threadId,revision:view.revision,initializing:!view.project.hasPreview&&!view.project.hasPublished&&!view.project.pages.some(page=>page.status==='ready'),order:'项目页面计划',warnings:[],pages:view.project.pages.map(page=>({...page,url:`https://website-builder.invalid/files/${view!.project.id}/src/${page.path.split('/').map(encodeURIComponent).join('/')}`}))};
     const pages:Record<string,string|{resource:string}>={},errors:Record<string,string>={};let size=0;
     const ordered=[...view.project.pages].sort((a,b)=>Number(b.path===(input.priorityPath||'index.html'))-Number(a.path===(input.priorityPath||'index.html')));
     for(const page of input.metadataOnly?[]:ordered) {
@@ -34,7 +34,7 @@ export function projectService(store:ProjectStore) {
       const key=`${view.project.id}:${page.path}`;
       try {
         let saved=cache.get(key);
-        if(!saved||saved.version!==page.version){saved={version:page.version,gzip:gzipSync(await compileProjectPage(store.root,view.project.id,page.path)).toString('base64')};cache.set(key,saved);}
+        if(!saved||saved.version!==page.version){saved={version:page.version,gzip:gzipSync(await compileProjectPage(view.directory,page.path)).toString('base64')};cache.set(key,saved);}
         const payload=previewPayload(saved.gzip),length=typeof payload==='string'?payload.length:payload.resource.length;
         if(size>0&&size+length>2800000)break;
         pages[page.path]=payload;size+=length;

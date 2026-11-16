@@ -51,7 +51,7 @@ try {
   const project=await json('website_project',{thread_id:'features',name:'Features',pages});
   const ids={thread_id:project.thread_id,project_id:project.project_id};
   assert.ok(project.metadata_directory && !project.metadata_directory.startsWith(project.directory));
-  assert.deepEqual(await readdir(project.directory),[],'new production folder has no management manifest');
+  assert.deepEqual(await readdir(project.directory),['images'],'new production folder has no management manifest');
   await json('website_write',{...ids,files:[{path:'website-builder.design.json',content:'{"purpose":"design"}'}]});
   assert.equal(JSON.parse(await readFile(join(project.metadata_directory,'website-builder.design.json'),'utf8')).purpose,'design');
   await assert.rejects(readFile(join(project.directory,'website-builder.design.json')));
@@ -64,7 +64,7 @@ try {
   const screenshot=await call('website_screenshot',{...ids,path:'index.html',width:375});
   const result=JSON.parse(screenshot.content[0].text), bytes=await readFile(result.path);
   assert.ok(result.path.startsWith(project.metadata_directory),'screenshot stays outside production');
-  assert.deepEqual((await readdir(project.directory)).sort(),pages.map(page=>page.path).sort(),'production contains only submitted runtime pages; no default component is created');
+  assert.deepEqual((await readdir(project.directory)).sort(),['images',...pages.map(page=>page.path)].sort(),'production contains only submitted runtime pages; no default component is created');
   assert.equal(screenshot.content[1].type,'image');
   assert.equal(bytes.readUInt32BE(16),375);
   assert.ok(bytes.readUInt32BE(20)>2700,'full page includes async footer below fold');
@@ -136,7 +136,7 @@ try {
   const reused=await json('website_project',{action:'open',...legacyIds});
   assert.equal(reused.project_id,legacy.project_id);
   const audit=await json('website_templates',{mode:'audit',...legacyIds});
-  assert.equal(audit.bindings[0].id,'shop-01');
+  assert.deepEqual(audit.bindings,[],'current projects do not fall back to source-directory legacy records');
   await json('website_templates',{mode:'bind',...legacyIds,targets:[{file:'index.html',region:'catalog',id:'shop-02'}]});
   assert.equal(JSON.parse(await readFile(join(legacy.metadata_directory,'website-builder.templates.json'),'utf8')).bindings[0].id,'shop-02');
   assert.equal(await readFile(join(legacy.directory,'.website-builder.json'),'utf8'),oldManifest,'legacy source is not modified');
@@ -152,7 +152,7 @@ try {
     assert.deepEqual([...code.html.matchAll(/data-region="([^"]+)"/g)].map(match=>match[1]),layout.regions);
     assert.ok(!code.overview.includes('key metrics dashboard'));
   }
-  const report={result:'PASS',checks:['distinct About layouts and recorded template usage exposed to selection','production directory excludes control manifests, drafts and screenshots','metadata writes route outside production; temporary/report writes rejected','legacy project metadata read without deleting or rewriting old files','four Shop layout contracts match actual HTML','four Shop sources render 2/3/4 columns at 375/768/1280; mobile filters and grid/list switch','guest prompt + login redirect; rejected writes','safe login return paths and logout reset','registered account cart/wishlist and order creation','full PNG includes decoded lazy image and async footer','broken image and wrong project rejected','PC 5, tablet/mobile 7 columns'],screenshot:result.path};
+  const report={result:'PASS',checks:['distinct About layouts and recorded template usage exposed to selection','production directory excludes control manifests, drafts and screenshots','metadata writes route outside production; temporary/report writes rejected','legacy source metadata ignored without rewriting old files','four Shop layout contracts match actual HTML','four Shop sources render 2/3/4 columns at 375/768/1280; mobile filters and grid/list switch','guest prompt + login redirect; rejected writes','safe login return paths and logout reset','registered account cart/wishlist and order creation','full PNG includes decoded lazy image and async footer','broken image and wrong project rejected','PC 5, tablet/mobile 7 columns'],screenshot:result.path};
   await mkdir('artifacts',{recursive:true});await writeFile('artifacts/features-verification.json',JSON.stringify(report,null,2));
   console.log(JSON.stringify(report));
 } finally {if(browser)await browser.close();await client.close();}

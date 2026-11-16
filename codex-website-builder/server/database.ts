@@ -1,6 +1,6 @@
 import { DatabaseSync } from 'node:sqlite';
 import { threadRuntime } from './thread-runtime';
-import { mkdirSync, readFileSync, readdirSync, existsSync } from 'node:fs';
+import { mkdirSync } from 'node:fs';
 import { join } from 'node:path';
 import type { WebsiteProject } from './projects';
 
@@ -26,6 +26,8 @@ export class ProjectDatabase {
         UNIQUE(project_id,path)
       );
       CREATE TABLE IF NOT EXISTS settings (key TEXT PRIMARY KEY, value TEXT NOT NULL);
+      CREATE TABLE IF NOT EXISTS deployment_locks (project_id TEXT PRIMARY KEY,owner TEXT NOT NULL,expires_at INTEGER NOT NULL,stage TEXT NOT NULL);
+      CREATE TABLE IF NOT EXISTS deployment_requests (id TEXT PRIMARY KEY,project_id TEXT NOT NULL,thread_id TEXT NOT NULL,data TEXT NOT NULL,expires_at INTEGER NOT NULL,used INTEGER NOT NULL DEFAULT 0);
       CREATE TABLE IF NOT EXISTS image_tasks (
         project_id TEXT NOT NULL REFERENCES projects(id), path TEXT NOT NULL,
         name TEXT NOT NULL, width INTEGER NOT NULL, height INTEGER NOT NULL,
@@ -34,28 +36,19 @@ export class ProjectDatabase {
       );
       CREATE TABLE IF NOT EXISTS project_activity (project_id TEXT NOT NULL REFERENCES projects(id), task_key TEXT NOT NULL, expires_at INTEGER NOT NULL, PRIMARY KEY(project_id,task_key));
       PRAGMA user_version=1;`);
-    // Import older JSON stores once. Existing rows (including tombstones) always win.
-    const read = (file: string) => { try { return JSON.parse(readFileSync(file, 'utf8')); } catch (error) { if ((error as NodeJS.ErrnoException).code === 'ENOENT') return null; throw error; } };
-    const entries = (path: string) => existsSync(path) ? readdirSync(path, { withFileTypes: true }) : [];
-    for (const entry of entries(projectRoot)) {
-      if (!entry.isDirectory() || !/^[a-f0-9]{4}(?:-[a-f0-9]{4}){3}$/.test(entry.name)) continue;
-      if (this.row(entry.name)) continue;
-      const project = read(join(stateRoot, 'projects', entry.name, 'project.json')) || read(join(projectRoot, entry.name, '.website-builder.json'));
-      if (project?.id === entry.name) this.save(project);
-    }
-    for (const entry of entries(join(stateRoot, 'threads'))) {
-      if (!entry.isFile() || !entry.name.endsWith('.json')) continue;
-      const binding = read(join(stateRoot, 'threads', entry.name));
-      if (binding?.threadId && this.project(binding.projectId)) this.sql.prepare('INSERT OR IGNORE INTO threads VALUES (?,?)').run(binding.threadId, binding.projectId);
-    }
+    // Only this database owns current-format projects; never import legacy JSON/cache stores.
     this.sql.exec('INSERT OR IGNORE INTO project_sessions SELECT project_id,thread_id FROM threads');
-    if (!this.sql.prepare("SELECT value FROM settings WHERE key='active'").get()) {
-      const active = read(join(stateRoot, 'active.json'));
-      if (active?.threadId && this.project(active.projectId)) this.setActive(active);
-    }
   }
   row(id: string): any { return this.sql.prepare('SELECT * FROM projects WHERE id=?').get(id); }
-  project(id: string): WebsiteProject | null { const row = this.row(id); return row && !row.deleted_at ? JSON.parse(row.data) : null; }
+  project(id: string): WebsiteProject | null {
+    const row=this.row(id);if(!row||row.deleted_at)return null;
+    try {
+      const project=JSON.parse(row.data);
+      if(project?.id!==id||typeof project.name!=='string'||typeof project.brief!=='string'||typeof project.language!=='string'||!Array.isArray(project.pages))return null;
+      if(project.pages.some((page:any)=>!page||typeof page.path!=='string'||typeof page.title!=='string'||!['queued','generating','ready','error'].includes(page.status)||!Number.isSafeInteger(page.version)))return null;
+      return project;
+    }catch{return null;}
+  }
   save(project: WebsiteProject) {
     if(this.row(project.id)?.deleted_at)throw Error("项目已删除，不能继续写入");
     this.sql.prepare(`INSERT INTO projects(id,title,data,updated_at) VALUES (?,?,?,?)

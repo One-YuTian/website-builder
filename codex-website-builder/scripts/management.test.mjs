@@ -22,14 +22,14 @@ const manage=args=>json('website_projects',{panel_id:'manager-panel',thread_id:'
 let browser,host;
 try {
  await client.connect(new StdioClientTransport({command:process.execPath,args:[resolve('dist/server/index.js')],env}));
- assert.ok((await manage({action:'list'})).projects.some(project=>project.id===legacy));
+ assert.ok(!(await manage({action:'list'})).projects.some(project=>project.id===legacy),'unrecognized legacy project stays hidden');
  const first=await manage({action:'create',name:'Forest studio'});
  const second=await manage({action:'create',panel_id:'another-panel',thread_id:'another-thread',name:'Second project'});
  assert.equal((await json('website_panel_context',{thread_id:'manager-thread',panel_id:'manager-panel'})).project_id,first.project_id);
  assert.equal((await json('website_panel_context',{thread_id:'another-thread',panel_id:'another-panel'})).project_id,second.project_id);
  await manage({action:'home'});
  const home=await json('website_panel_context',{thread_id:'manager-thread',panel_id:'manager-panel'});
- assert.equal(home.page,'home');assert.ok(home.projects.length>=3);
+ assert.equal(home.page,'home');assert.ok(home.projects.length>=2);
  assert.equal((await json('website_panel_context',{thread_id:'another-thread',panel_id:'another-panel'})).project_id,second.project_id);
  await manage({action:'open',project_id:first.project_id});
  await json('website_project',{thread_id:'manager-thread',action:'plan',pages:[{path:'index.html',title:'Home'}]});
@@ -149,6 +149,6 @@ try {
  assert.equal(sql.prepare('SELECT deleted_at FROM projects WHERE id=?').get(first.project_id).deleted_at,null);
  assert.deepEqual(errors,[]);
  sql.close();
- console.log(`PASS: ${globalEntry?'global entry without chat ID; ':''}SQLite legacy import, scoped panel context, resources, 1:1 thumbnail, home/detail navigation, folder request, home composer without unsolicited messages, responsive UI and soft deletion`);
+ console.log(`PASS: ${globalEntry?'global entry without chat ID; ':''}legacy exclusion, scoped panel context, resources, 1:1 thumbnail, home/detail navigation, folder request, home composer without unsolicited messages, responsive UI and soft deletion`);
  console.log(`Visual preview: ${join(root,'project-home.png')}`);
 }finally{if(browser)await browser.close();if(host)await new Promise(resolve=>host.close(resolve));await client.close();}

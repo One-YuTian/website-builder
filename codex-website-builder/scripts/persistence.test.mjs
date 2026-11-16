@@ -21,7 +21,7 @@ const call = (root, input, overrides = {}) => JSON.parse(execFileSync(process.ex
   cwd: isolated, env: { ...env, ...overrides }, input: JSON.stringify(input), encoding: 'utf8',
 }));
 const first = call(installs[0], { action: 'open', name: 'Persistent project', pages: [{ path: 'index.html', title: 'Home' }] });
-assert.equal(first.directory, join(userData, 'project', first.project_id));
+assert.equal(first.directory, join(userData, 'project', first.project_id, 'src'));
 assert.equal(first.metadata_directory, join(userData, '.builder-state', 'projects', first.project_id));
 await writeFile(join(first.directory, 'index.html'), '<!doctype html><html><body>Preserved website</body></html>');
 await writeFile(join(first.metadata_directory, 'notes.json'), '{"preserve":true}');
@@ -47,7 +47,7 @@ assert.notEqual(custom.project_id, first.project_id);
 // The standard per-user data location also remains stable without a plugin override.
 if (process.platform !== 'win32') {
   const defaults = call(installs[1], { action: 'open' }, { WEBSITE_BUILDER_DATA_DIR: '', XDG_DATA_HOME: join(isolated, 'xdg-data') });
-  assert.equal(defaults.directory, join(isolated, 'xdg-data', 'codex-website-builder', 'project', defaults.project_id));
+  assert.equal(defaults.directory, join(isolated, 'xdg-data', 'codex-website-builder', 'project', defaults.project_id, 'src'));
 }
 console.log('PASS: separate installed versions reuse project files, metadata and thread bindings; custom root and user-data defaults');
 // Simulate a plugin cache upgrade: default global data imports an older sibling cache.
@@ -64,11 +64,8 @@ if (process.platform !== 'win32') {
   await mkdir(join(isolated,'migration-data','codex-website-builder','db'),{recursive:true});
   await writeFile(join(isolated,'migration-data','codex-website-builder','db','migration.lock'),'99999999');
   const restoredList=call(next,{action:'projects',mode:'list'},{WEBSITE_BUILDER_DATA_DIR:'',XDG_DATA_HOME:join(isolated,'migration-data')});
-  assert.ok(restoredList.projects.some(project=>project.id===legacyId));
-  const migrated=join(isolated,'migration-data','codex-website-builder','project',legacyId,'index.html');
-  assert.equal(await readFile(migrated,'utf8'),await readFile(join(old,'project',legacyId,'index.html'),'utf8'));
-  await writeFile(migrated,'Newer global website');
-  call(next,{action:'projects',mode:'list'},{WEBSITE_BUILDER_DATA_DIR:'',XDG_DATA_HOME:join(isolated,'migration-data')});
-  assert.equal(await readFile(migrated,'utf8'),'Newer global website','migration must never overwrite a newer global project');
-  console.log('PASS: automatic legacy cache migration preserves old files and does not overwrite global data');
+  assert.ok(!restoredList.projects.some(project=>project.id===legacyId));
+  await assert.rejects(stat(join(isolated,'migration-data','codex-website-builder','project',legacyId)));
+  assert.match(await readFile(join(old,'project',legacyId,'index.html'),'utf8'),/Legacy cache website/);
+  console.log('PASS: legacy cache is neither imported nor migrated automatically');
 }

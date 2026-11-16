@@ -9,7 +9,7 @@ import {resourceChunk} from './resource-proxy';
 import {proxyRuntime} from './proxy-runtime';
 
 export interface SitePage { path: string; title: string; url: string; html?: string; status?: 'queued'|'generating'|'ready'|'error'; version?: number; error?: string }
-export interface SiteManifest { directory: string; name: string; pages: SitePage[]; order: string; warnings: string[]; projectId?:string; threadId?:string; revision?:string }
+export interface SiteManifest { directory: string; name: string; pages: SitePage[]; order: string; warnings: string[]; projectId?:string; threadId?:string; revision?:string; initializing?:boolean }
 const mime: Record<string, string> = { '.html': 'text/html; charset=utf-8', '.htm': 'text/html; charset=utf-8', '.js': 'text/javascript; charset=utf-8', '.mjs': 'text/javascript; charset=utf-8', '.css': 'text/css; charset=utf-8', '.json': 'application/json', '.png': 'image/png', '.jpg': 'image/jpeg', '.jpeg': 'image/jpeg', '.gif': 'image/gif', '.webp': 'image/webp', '.svg': 'image/svg+xml', '.ico': 'image/x-icon', '.woff': 'font/woff', '.woff2': 'font/woff2', '.ttf': 'font/ttf', '.mp4': 'video/mp4', '.avif': 'image/avif' };
 const inside = (root: string, path: string) => { const rel = relative(root, path); return rel === '' || (!rel.startsWith(`..${sep}`) && rel !== '..' && !isAbsolute(rel)); };
 const natural = (a: string, b: string) => a.localeCompare(b, 'en', { numeric: true });
@@ -72,7 +72,7 @@ export async function scanSite(root: string, directory: string, prefix: string):
 
 // Injected only into the served response; the reference website is never modified.
 function instrument(html: string, embedded = false) {
-  const script = `<style>html,body,body *{-webkit-user-select:none!important;user-select:none!important}html{height:auto!important;min-height:0!important;scrollbar-width:thin;scrollbar-color:transparent transparent!important}html[data-wb-scrolling]{scrollbar-color:rgba(75,100,87,.48) transparent!important}html::-webkit-scrollbar{width:7px;height:7px}html::-webkit-scrollbar-track{background:transparent}html::-webkit-scrollbar-thumb{background:transparent;border-radius:8px}html[data-wb-scrolling]::-webkit-scrollbar-thumb{background:rgba(75,100,87,.48)}html::-webkit-scrollbar-button{display:none}body{min-height:0!important}</style><script>
+  const script = `<style>html,body,body *{-webkit-user-select:none!important;user-select:none!important}html{height:auto!important;min-height:0!important;scrollbar-width:thin;scrollbar-gutter:stable;overflow-y:scroll!important;overflow-anchor:none!important;scrollbar-color:transparent transparent!important}html[data-wb-scrolling]{scrollbar-color:rgba(75,100,87,.48) transparent!important}html::-webkit-scrollbar{width:7px;height:7px}html::-webkit-scrollbar-track{background:transparent}html::-webkit-scrollbar-thumb{background:transparent;border-radius:8px}html[data-wb-scrolling]::-webkit-scrollbar-thumb{background:rgba(75,100,87,.48)}html::-webkit-scrollbar-button{display:none}body{min-height:0!important}</style><script>
 (() => {
   const virtualUrl = ${embedded ? '"__WEBSITE_BUILDER_VIRTUAL_URL__"' : 'location.href'};
   window.__websiteBuilderLocation = new URL(virtualUrl);
@@ -97,7 +97,7 @@ function instrument(html: string, embedded = false) {
     // body.scrollHeight can equal the current iframe viewport even after content shrinks.
     // Measure normal-flow bounds separately so a formerly tall frame can become shorter.
     const bottom = Array.from(body.children).reduce((height,child) => getComputedStyle(child).position === 'fixed' ? height : Math.max(height,child.getBoundingClientRect().bottom + scrollY),0);
-    const height = Math.ceil(Math.max(body.offsetHeight, body.getBoundingClientRect().height, bottom, body.scrollHeight > innerHeight + 1 ? body.scrollHeight : 0) + parseFloat(styles.marginTop || 0) + parseFloat(styles.marginBottom || 0));
+    const height = Math.ceil(Math.max(body.offsetHeight + parseFloat(styles.marginTop || 0), bottom, body.scrollHeight > innerHeight + 1 ? body.scrollHeight : 0) + parseFloat(styles.marginBottom || 0));
     if (height !== previous) { previous = height; parent.postMessage({type:'website-builder:height',height}, '*'); }
   };
   const measure = () => { if (!pending) { pending = true; setTimeout(send, 80); } };
@@ -108,7 +108,16 @@ function instrument(html: string, embedded = false) {
     parent.postMessage({type:'website-builder:location',path:new URL(virtualUrl).pathname},'*');
   });
   addEventListener('load',measure,true); addEventListener('resize',measure);
-  addEventListener('message',event => { if(event.source === parent && event.data?.type === 'website-builder:measure') { document.documentElement.style.setProperty('overflow-y','auto','important');previous = 0; measure(); } });
+  addEventListener('load',async()=>{
+    try {
+      await window.websiteReady;
+      await document.fonts.ready;
+      await Promise.allSettled(Array.from(document.images).filter(image=>image.loading!=='lazy').map(image=>image.decode()));
+      await new Promise(resolve=>requestAnimationFrame(()=>requestAnimationFrame(resolve)));
+      send();parent.postMessage({type:'website-builder:ready'},'*');
+    }catch(error){parent.postMessage({type:'website-builder:render-error',error:String(error?.message||error)},'*');}
+  },{once:true});
+  addEventListener('message',event => { if(event.source === parent && event.data?.type === 'website-builder:measure') { measure(); } });
   const local = value => { try { const url = new URL(value,virtualUrl), current = new URL(virtualUrl); return url.origin === current.origin && url.pathname.startsWith(current.pathname.split('/files/')[0] + '/files/'); } catch { return false; } };
   const blocked = url => parent.postMessage({type:'website-builder:blocked',url:String(url)},'*');
   const navigate = url => blocked(new URL(url,virtualUrl).href);
@@ -136,7 +145,7 @@ function instrument(html: string, embedded = false) {
       event.preventDefault();event.stopImmediatePropagation();
       if(url.pathname === new URL(virtualUrl).pathname && url.hash) {
         const target=document.getElementById(decodeURIComponent(url.hash.slice(1)));
-        if(target)parent.postMessage({type:'website-builder:scroll-to',y:target.getBoundingClientRect().top},'*');
+        if(target){if(document.scrollingElement.scrollHeight>innerHeight+1)target.scrollIntoView({block:'start'});else parent.postMessage({type:'website-builder:scroll-to',y:target.getBoundingClientRect().top},'*');}
       } else navigate(url.href);
     }
     else if(anchor.target && anchor.target !== '_self') anchor.target = '_self';
@@ -148,7 +157,9 @@ function instrument(html: string, embedded = false) {
       let target = event.target;
       while(target && target !== document.body) { const css = getComputedStyle(target); if (/(auto|scroll)/.test(css.overflowY) && target.scrollHeight > target.clientHeight && ((event.deltaY > 0 && target.scrollTop + target.clientHeight < target.scrollHeight) || (event.deltaY < 0 && target.scrollTop > 0))) return; target = target.parentElement; }
       const root=document.scrollingElement;
-      if(root && root.scrollHeight>innerHeight+1 && ((event.deltaY>0 && root.scrollTop+innerHeight<root.scrollHeight-1)||(event.deltaY<0 && root.scrollTop>0)))return;
+      // A capped page owns its vertical wheel even at either boundary. Switching to
+      // world panning there makes long pages jump back and forth while scrolling.
+      if(root && root.scrollHeight>innerHeight+1 && !event.shiftKey && !event.deltaX)return;
     }
     event.preventDefault(); parent.postMessage({type:'website-builder:wheel',dx:event.shiftKey?event.deltaY:event.deltaX,dy:event.shiftKey?0:event.deltaY,zoom:event.ctrlKey||event.metaKey,x:event.clientX,y:event.clientY},'*');
   },{passive:false});
@@ -157,14 +168,14 @@ function instrument(html: string, embedded = false) {
   return /<head\b[^>]*>/i.test(html) ? html.replace(/<head\b[^>]*>/i, match => match + base + script + (embedded?previewMock:'') + proxyRuntime) : base + script + (embedded?previewMock:'') + proxyRuntime + html;
 }
 
-export async function compileProjectPage(root:string,directory:string,path:string) {
+export async function compileProjectPage(sourceDirectory:string,path:string) {
   const vendor=fileURLToPath(new URL('../vendor/',import.meta.url));
   const assets:Record<string,string>=JSON.parse(await readFile(join(vendor,'manifest.json'),'utf8'));
-  const base=await realpath(root),site=await contained(base,directory);
-  return instrument(await snapshotCompiler(base,site,vendor,assets)(path),true);
+  const source=await realpath(sourceDirectory);
+  return instrument(await snapshotCompiler(source,source,vendor,assets)(path),true);
 }
 
-export async function createPreview(ui: string, configuredRoot: string, defaultDirectory = 'www.noventrad.com', projectSync?: (input:{since?:string;known?:Record<string,number>;waitMs?:number;threadId?:string;projectId?:string;metadataOnly?:boolean;pageLimit?:number;priorityPath?:string})=>Promise<unknown>, manageProjects?: (input:any)=>Promise<unknown>) {
+export async function createPreview(ui: string, configuredRoot: string, defaultDirectory = 'www.noventrad.com', projectSync?: (input:{since?:string;known?:Record<string,number>;waitMs?:number;threadId?:string;projectId?:string;metadataOnly?:boolean;pageLimit?:number;priorityPath?:string})=>Promise<unknown>, manageProjects?: (input:any)=>Promise<unknown>, control?: (input:any)=>Promise<unknown>) {
   // The reference library is optional. Resolve it only when explicitly read;
   // an unavailable drive must not prevent project tools or the canvas starting.
   const referenceRoot = () => realpath(configuredRoot);
@@ -199,6 +210,7 @@ export async function createPreview(ui: string, configuredRoot: string, defaultD
       res.setHeader('Access-Control-Allow-Origin', '*');
       res.setHeader('X-Content-Type-Options', 'nosniff');
       const route = url.pathname.slice(prefix.length);
+      if(route === '/api/control' && control){if(req.method!=='POST'){res.writeHead(405).end();return;}let body='';for await(const chunk of req){body+=chunk;if(body.length>32000)throw Error('请求过大');}res.setHeader('Content-Type','application/json');res.end(JSON.stringify(await control(JSON.parse(body))));return;}
       if(route === '/api/projects' && manageProjects) {
         if(req.method !== 'POST') {res.writeHead(405).end();return;}
         let body='';for await(const chunk of req){body+=chunk;if(body.length>1000000)throw Error('请求过大');}

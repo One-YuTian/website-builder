@@ -73,7 +73,7 @@ Cart-01是来源参考，可将其inline结构用于独立页面，或适配为v
 
 异步页面必须在 js/app.js 中暴露 window.websiteReady Promise，涵盖 API 数据、SDK.init、组件注册与首轮渲染；失败 reject 并显示错误，不在 await 之前标记就绪。完整截图会等待该Promise、字体/图片解码与布局稳定，不能用定时延迟冒充就绪。加购、收藏及结算使用APP.auth.requireLogin()或等效登录守卫，提示后跳转登录页；登录成功用APP.auth.safeReturnTo解析returnTo，拒绝外部跳转。
 
-生产目录directory只保留网站运行产物；设计/来源/模板绑定/文案/图片记录、原始数据、临时文件和截图报告统一保存在工具返回的metadata_directory，直接写文件时必须使用该绝对目录，不写进网站。website_write会将根级website-builder.*.json管理记录路由到metadata_directory。此前记录文件的相对名称均按此规则解释。Header桌面与移动菜单必须有Home、Shop、About Us、Contact Us四个可用链接。
+project_directory是项目根，含本地.git（无远程）、README.md、src与material；directory/source_directory是src部署根，页面相对路径不加src/。material_directory存生成原图，src/images存固定命名的正式图片；README.md说明网站身份与运行方式。生产目录directory只保留网站运行产物；设计/来源/模板绑定/文案/图片记录、原始数据、临时文件和截图报告统一保存在工具返回的metadata_directory，直接写文件时必须使用该绝对目录，不写进网站。website_write会将根级website-builder.*.json管理记录路由到metadata_directory。此前记录文件的相对名称均按此规则解释。Header桌面与移动菜单必须有Home、Shop、About Us、Contact Us四个可用链接。
 
 
 ## Toast文档与装配

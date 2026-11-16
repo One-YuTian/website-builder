@@ -1,5 +1,7 @@
 import { readFile } from 'node:fs/promises';
 import { McpServer } from '@modelcontextprotocol/sdk/server/mcp.js';
+import {ResourceTemplate} from '@modelcontextprotocol/sdk/server/mcp.js';
+import {randomUUID} from 'node:crypto';
 import { StdioServerTransport } from '@modelcontextprotocol/sdk/server/stdio.js';
 import { registerAppResource, registerAppTool, RESOURCE_MIME_TYPE } from '@modelcontextprotocol/ext-apps/server';
 import { resolve } from 'node:path';
@@ -16,21 +18,60 @@ import { screenshotPage } from './screenshot';
 import { importProducts } from './product-import';
 import { dataPaths } from './data-paths';
 import { projectManager } from './project-manager';
-import { migrateLegacyData } from './migrate-data';
+import {PluginSettings,settingNames} from './plugin-settings';
+import {testGitLabConnection} from './gitlab-diagnostics';
+import {GitLabWorkflow} from './gitlab-workflow';
+import {registerGitLabTools} from './gitlab-tools';
+import {registerNativeSettings,settingsCapability} from './native-settings';
 
 const uri = 'ui://codex-website-builder/canvas';
 const sidebarIcon = await readFile(new URL('../../assets/icon.png', import.meta.url));
 const html = await readFile(new URL('../ui/index.html', import.meta.url), 'utf8');
 const paths = dataPaths();
-await migrateLegacyData(paths.project);
 const projects = new ProjectStore(paths.project);
+const settings=new PluginSettings(paths.root,paths.project);
+await settings.get();
+const gitlab=new GitLabWorkflow(projects,settings);
+const control=async(input:any)=>{
+ if(input.type==='panel'){
+  if(!['settings','deploy'].includes(input.view))throw Error('未知独立面板');
+  if(input.view==='deploy'){const panel=projects.database.panelById(input.panel_id);if(!panel||panel.project_id!==input.project_id||input.thread_id&&panel.thread_id!==input.thread_id)throw Error('发布面板不属于当前项目');}
+  const key=randomUUID();projects.database.sql.prepare('INSERT INTO settings VALUES (?,?)').run('modal:'+key,JSON.stringify({view:input.view,project_id:input.project_id,panel_id:input.panel_id,thread_id:input.thread_id,expires:Date.now()+600000}));
+  return {resource_uri:'ui://codex-website-builder/panel/'+key};
+ }
+ if(input.type==='settings'){
+  if(input.action==='get')return settings.public();
+  if(input.action==='test'){
+   const config=await settings.get(false);for(const name of settingNames){const value=input.values?.[name];if(typeof value==='string')config[name]=name==='GITLAB_TOKEN'?value:value.trim();}
+   if(input.clear_token)config.GITLAB_TOKEN='';config.GITLAB_DEFAULT_BRANCH ||= 'main';
+   return testGitLabConnection(config);
+  }
+  if(input.action==='save'){if(projects.database.sql.prepare('SELECT owner FROM deployment_locks WHERE expires_at>?').get(Date.now()))throw Error('部署期间不能更改配置，请先完成或取消');return settings.save(input.values||{});}
+  throw Error('未知配置操作');
+ }
+ const panel=projects.database.panelById(input.panel_id);
+ if(!panel||panel.project_id!==input.project_id||input.thread_id&&panel.thread_id!==input.thread_id)throw Error('部署请求不属于当前项目面板');
+ const actor='ui:'+input.panel_id;
+ if(input.action==='status')return gitlab.status(input.project_id);
+ if(input.action==='cancel')return gitlab.cancel(input.project_id,actor,input.confirmation_id);
+ if(input.action==='prepare')return gitlab.prepare({project_id:input.project_id,actor,intent:'deploy',domain:input.domain,environment:input.environment});
+ if(input.action==='execute')return gitlab.execute(input.confirmation_id,actor,input.decision,'deploy',input.project_id);
+ throw Error('未知部署操作');
+};
 const manager = projectManager(projects);
 const syncProject = projectService(projects);
-const preview = await createPreview(html, paths.reference, 'www.noventrad.com', syncProject, manager.run);
+const preview = await createPreview(html, paths.reference, 'www.noventrad.com', syncProject, manager.run,control);
 const skillRoot = (process.env.WEBSITE_BUILDER_SKILL_ROOT || resolve('skills/website-builder')).replaceAll('${PLUGIN_ROOT}',fileURLToPath(new URL('../../',import.meta.url)));
-const server = new McpServer({ name: 'codex-website-builder', version: '0.8.6', icons: [{ src: `data:image/png;base64,${sidebarIcon.toString('base64')}`, mimeType: 'image/png', sizes: ['200x200'] }] });
+const server = new McpServer({ name: 'codex-website-builder', version: '0.8.6', icons: [{ src: `data:image/png;base64,${sidebarIcon.toString('base64')}`, mimeType: 'image/png', sizes: ['200x200'] }] },{capabilities:{experimental:{'openai/settings':settingsCapability}}});
 const csp = { connectDomains: ['data:', 'blob:'], resourceDomains: ['data:', 'blob:'], frameDomains: ['blob:', 'data:'], baseUriDomains: ['https://website-builder.invalid'] };
 const legacyCsp = { connect_domains: csp.connectDomains, resource_domains: csp.resourceDomains, frame_domains: csp.frameDomains, base_uri_domains: csp.baseUriDomains };
+const panelContent=(resourceUri:string,context:unknown)=>({contents:[{uri:resourceUri,mimeType:RESOURCE_MIME_TYPE,text:preview.render().replace('</head>',`<script>window.__WEBSITE_PANEL_CONTEXT__=${JSON.stringify(context).replaceAll('<','\\u003c')}</script></head>`),_meta:{ui:{csp},'openai/widgetCSP':legacyCsp}}]});
+server.registerResource('independent-panel',new ResourceTemplate('ui://codex-website-builder/panel/{token}',{list:undefined}),{mimeType:RESOURCE_MIME_TYPE,_meta:{ui:{csp}}},async(resourceUri,variables)=>{
+ const row=projects.database.sql.prepare('SELECT value FROM settings WHERE key=?').get('modal:'+variables.token) as any;
+ const context=row?JSON.parse(row.value):null;if(!context||context.expires<Date.now())throw Error('面板请求已失效，请重新打开');
+ return panelContent(resourceUri.href,context);
+});
+registerNativeSettings(server,settings,values=>control({type:'settings',action:'save',values}),()=>control({type:'settings',action:'test'}));
 registerAppResource(server, 'canvas', uri, { _meta: { ui: { csp }, 'openai/widgetCSP': legacyCsp } }, async () => ({
   contents: [{ uri, mimeType: RESOURCE_MIME_TYPE, text: preview.render(), _meta: {
     ui: { csp, permissions:{clipboardWrite:{}} },
@@ -63,7 +104,7 @@ server.registerTool('website_projects', {
   annotations: { readOnlyHint:false,destructiveHint:false,openWorldHint:false },
 }, async input => { try {const value=await manager.run(input);return {content:[{type:'text',text:JSON.stringify(value)}],_meta:{manager:value}};} catch(error) {return {isError:true,content:[{type:'text',text:(error as Error).message}]};} });
 server.registerTool('website_images', {
-  description:'Track generated website images. Before calling imagegen register each intended project-relative output with begin and actual dimensions; after copying the final image call finish. Call fail with an honest reason if generation fails. Persistent UI placeholders update automatically when files arrive. Only the current thread project is allowed; never write fake placeholder image files.',
+  description:'Track generated website images. Before imagegen register a filename relative to material_directory, e.g. logo.png/favicon.png/banner1.png/about.png, with begin and actual dimensions; after copying the final image to material_directory call finish; it publishes the same filename to source_directory/images. Existing filenames may be regenerated; archive originals under material/history first. Call fail with an honest reason if generation fails. Persistent UI placeholders update automatically when files arrive. Only the current thread project is allowed; never write fake placeholder image files.',
   inputSchema:{thread_id:z.string(),project_id:z.string(),action:z.enum(['begin','finish','fail']),path:z.string(),name:z.string().max(200).optional(),width:z.number().int().min(1).max(32768).optional(),height:z.number().int().min(1).max(32768).optional(),error:z.string().max(1000).optional()},
   annotations:{readOnlyHint:false,destructiveHint:false,openWorldHint:false},
 },async input=>{try{return{content:[{type:'text',text:JSON.stringify(await manager.imageTask(input))}]};}catch(error){return{isError:true,content:[{type:'text',text:(error as Error).message}]};}});
@@ -93,7 +134,7 @@ server.registerTool('read_page', {
 const pageSchema=z.object({path:z.string(),title:z.string()});
 server.registerTool('website_project',{
   title:'Website Builder',
-  description:'Use the bundled skill and reuse the exact thread project. Create/open an empty project BEFORE planning pages or generating content. For a panel submission use website_projects(create,panel_id,request_id), wait for initial submission detail_ready=true; later the user may reopen open_canvas with the same real thread_id to resume the bound project, never create a replacement project. For chat requests create/open without pages, open_canvas once to enter details, THEN plan and generate. For a complete ecommerce site, explicitly plan home/shop/product/wishlist/checkout/login/register/about/contact/terms/privacy/return, Default to a shared drawer cart (no cart.html); include cart.html only for an explicit page-cart request or preserved existing page mode. Default to the chosen Home chain; excluding Header/Footer, generation permits at most 0–2 justified composition changes and N±1 main sections. Preserve independent component source structures; this is not an acceptance or readiness gate. Logo must be a transparent, tightly cropped brand wordmark image, favicon square. Fonts and third-party dependencies must use online CDN URLs. Implement project WebComponent Toast from the toast-01 template document before writing pages; the assembler only reuses that supplied component; overlay closing is a per-component documentation requirement, without a unified Overlay API. Product JSON must go through website_products/SDK. Avoid jsDelivr CDN; page-specific logic stays in inline script. never use browser alert. Avoid home categories when Header already provides category navigation. mobile html root font-size is 12px. Do not silently reduce a complete site to transaction pages. Existing custom names or partial user requests may differ. Header must include working Home, Shop, About Us and Contact Us links on desktop and mobile. The returned directory is production-only; keep drafts, reports and raw sources in metadata_directory. Plan missing pages, begin before edits, finish after complete files; finish without paths validates all unfinished planned pages and settles their status before ending the task. New projects require new_project=true.',
+  description:'Use the bundled skill and reuse the exact thread project. Create/open an empty project BEFORE planning pages or generating content. For a panel submission use website_projects(create,panel_id,request_id), wait for initial submission detail_ready=true; later the user may reopen open_canvas with the same real thread_id to resume the bound project, never create a replacement project. For chat requests create/open without pages, open_canvas once to enter details, THEN plan and generate. For a complete ecommerce site, explicitly plan home/shop/product/wishlist/checkout/login/register/about/contact/terms/privacy/return, Default to a shared drawer cart (no cart.html); include cart.html only for an explicit page-cart request or preserved existing page mode. Default to the chosen Home chain; excluding Header/Footer, generation permits at most 0–2 justified composition changes and N±1 main sections. Preserve independent component source structures; this is not an acceptance or readiness gate. Logo must be a transparent, tightly cropped brand wordmark image, favicon square. Fonts and third-party dependencies must use online CDN URLs. Implement project WebComponent Toast from the toast-01 template document before writing pages; the assembler only reuses that supplied component; overlay closing is a per-component documentation requirement, without a unified Overlay API. Product JSON must go through website_products/SDK. Avoid jsDelivr CDN; page-specific logic stays in inline script. never use browser alert. Avoid home categories when Header already provides category navigation. mobile html root font-size is 12px. Do not silently reduce a complete site to transaction pages. Existing custom names or partial user requests may differ. Header must include working Home, Shop, About Us and Contact Us links on desktop and mobile. Projects have project_directory containing README.md, src/, material/ and a local Git repository initialized and first committed on main without a remote. End every creation/modification round (including images/README-only changes) with finish to commit locally to main; no changes means no empty commit, never push. GIT_CONFIRMATION_REQUIRED means ask the user first, then use system Git for approved merge/branch/conflict handling; never auto-repair or bypass confirmation. directory/source_directory is src; source paths are relative to src, no src prefix. Generated originals go in material_directory, final website assets in src/images with fixed semantic filenames. Never migrate legacy formats automatically. The returned directory is production-only; keep drafts, reports and raw sources in metadata_directory. Plan missing pages, begin before edits, finish after complete files; finish without paths validates all unfinished planned pages and settles their status before ending the task. New projects require new_project=true.',
   inputSchema:{action:z.enum(['open','plan','begin','finish','status']).default('open'),thread_id:z.string().min(1),project_id:z.string().optional(),new_project:z.boolean().optional(),name:z.string().optional(),country:z.string().trim().max(100).optional(),categories:z.array(z.string().trim().min(1).max(100)).max(2).optional(),brand:z.string().trim().max(200).optional(),brief:z.string().optional(),language:z.string().optional(),pages:z.array(pageSchema).min(1).optional(),paths:z.array(z.string()).optional()},
   annotations:{readOnlyHint:false,destructiveHint:false,openWorldHint:false},
 },async input=>{
@@ -112,7 +153,7 @@ server.registerTool('website_project',{
   }catch(error){return{isError:true,content:[{type:'text',text:(error as Error).message}]};}
 });
 server.registerTool('website_write',{
-  description:'Write a completed page to disk immediately before generating the next page. Multiple HTML files and shared dependencies are accepted in one request, including batch imports. Save newly generated pages as soon as each is finished. Local vendored Prettier standalone formats HTML/inline scripts/styles/JS/CSS/JSON before atomic save; no npm dependency. Do not defer all pages into one batch. Never add temporary files, raw sources or reports to directory. website-builder.*.json records are routed to metadata_directory outside production; screenshots also live there. HTML fragment=true adds shared boilerplate and detects prepared commerce SDKs. JS/JSON syntax errors do not overwrite existing files. Submitted HTML and affected pages validate automatically even with finalize_pages: []; passing pages immediately become ready for UI sync. finalize_pages adds extra pages to validate. Never use for reference website files.',
+  description:'Write a completed page to disk immediately before generating the next page. Multiple HTML files and shared dependencies are accepted in one request, including batch imports. Save newly generated pages as soon as each is finished. Local vendored Prettier standalone formats HTML/inline scripts/styles/JS/CSS/JSON before atomic save; no npm dependency. Do not defer all pages into one batch. Source paths are relative to src (directory); README.md is the sole root-document exception and writes project_directory/README.md. Never add temporary files, raw sources or reports to directory. website-builder.*.json records are routed to metadata_directory outside production; screenshots also live there. HTML fragment=true adds shared boilerplate and detects prepared commerce SDKs. JS/JSON syntax errors do not overwrite existing files. Submitted HTML and affected pages validate automatically even with finalize_pages: []; passing pages immediately become ready for UI sync. finalize_pages adds extra pages to validate. Never use for reference website files.',
   inputSchema:{thread_id:z.string(),project_id:z.string(),files:z.array(z.object({path:z.string(),content:z.string(),fragment:z.boolean().optional(),title:z.string().optional()})).min(1),finalize_pages:z.array(z.string()).optional()},
   annotations:{readOnlyHint:false,destructiveHint:false,openWorldHint:false},
 },async input=>{
@@ -169,6 +210,8 @@ server.registerTool('project_sync',{
   inputSchema:{metadata_only:z.boolean().optional(),page_limit:z.number().int().min(1).max(10).optional(),priority_path:z.string().optional(),since:z.string().optional(),known:z.record(z.string(),z.number()).optional(),thread_id:z.string().optional(),project_id:z.string().optional(),wait_ms:z.number().int().min(0).max(20000).default(20000)},
   annotations:{readOnlyHint:true,destructiveHint:false,openWorldHint:false},_meta:{ui:{visibility:['app']}},
 },async input=>{try{return{content:[],_meta:{sync:await syncProject({metadataOnly:input.metadata_only,pageLimit:input.page_limit,priorityPath:input.priority_path,since:input.since,known:input.known,threadId:input.thread_id,projectId:input.project_id,waitMs:input.wait_ms})}};}catch(error){return{isError:true,content:[{type:'text',text:(error as Error).message}]};}});
+registerGitLabTools(server,gitlab,projects);
+server.registerTool('website_control',{description:'UI-only plugin configuration and deployment dialogs; settings fields are visible only to the app; redact credentials from diagnostics.',inputSchema:{type:z.enum(['settings','deploy','panel']),action:z.enum(['get','save','test','status','prepare','execute','cancel','open']),view:z.enum(['settings','deploy']).optional(),panel_id:z.string().optional(),thread_id:z.string().optional(),project_id:z.string().optional(),values:z.record(z.string(),z.string()).optional(),clear_token:z.boolean().optional(),domain:z.string().optional(),environment:z.enum(['test','production']).optional(),confirmation_id:z.string().optional(),decision:z.enum(['confirm','local','cloud']).optional()},annotations:{readOnlyHint:false,destructiveHint:true,openWorldHint:true},_meta:{ui:{visibility:['app']}}},async input=>{try{return{content:[],_meta:{control:await control(input)}};}catch(error){return{isError:true,content:[{type:'text',text:(error as Error).message}]};}});
 const shutdown = async () => { preview.service.closeAllConnections(); preview.service.close(); await manager.close(); };
 process.once('SIGTERM', () => { void shutdown().finally(()=>process.exit(0)); });
 process.once('SIGINT', () => { void shutdown().finally(()=>process.exit(0)); });

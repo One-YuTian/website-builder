@@ -24,7 +24,7 @@ try{
  assert.equal(needsMap.mode,'classification_required');assert.equal(needsMap.source_category_count,8);assert.deepEqual(needsMap.written,[]);
  const inspected=await call('website_products',{...request,action:'inspect'});
  assert.equal(inspected.product_count,24);assert.equal(inspected.source_category_count,8);assert.equal(inspected.category_count,6);assert.equal(inspected.main_categories.length,6);assert.ok(inspected.main_categories.every(group=>group.label.startsWith('Collection ')));
- assert.deepEqual(inspected.written,[]);assert.deepEqual(await readdir(state.directory),[]);
+ assert.deepEqual(inspected.written,[]);assert.deepEqual(await readdir(state.directory),['images']);
  const result=await call('website_products',request);assert.equal(result.mode,'imported');
  assert.equal(result.app_required,true);assert.ok(!result.written.includes('js/app.js'));await assert.rejects(readFile(join(state.directory,'js/app.js')));
  const generatedApp=`window.commerceConfig=${JSON.stringify(result.config_defaults)};window.SDK.init(window.productData,window.commerceConfig);window.websiteReady=Promise.resolve(window.SDK);`;

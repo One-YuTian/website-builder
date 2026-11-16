@@ -11,3 +11,4 @@ await cp(dirname(playwrightRequire.resolve('playwright-core/package.json')), new
 
 // Prettier is vendored standalone files, never an npm runtime dependency.
 await cp(new URL('../assets/prettier/', import.meta.url), new URL('../dist/runtime/prettier/', import.meta.url), { recursive: true });
+await cp(new URL('../assets/isomorphic-git/', import.meta.url), new URL('../dist/runtime/isomorphic-git/', import.meta.url), { recursive: true });

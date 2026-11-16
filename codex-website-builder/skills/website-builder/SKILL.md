@@ -48,11 +48,11 @@ description: 规划电商页面并组合模板，协调文案、图片和商品�
 2. website_project(action="open",thread_id=当前真实会话ID,project_id=已创建项目ID,name,brief,language,country,categories,brand)补齐元数据；website_project(action="plan",thread_id,project_id,pages)规划页面。完整站点规划首页、Shop、商品详情、心愿单、结算、登录、注册、About Us、Contact Us及实际政策页，订单路由随功能补齐。默认共享drawer cart；仅明确要求或保留已有页面模式才生成cart.html，不重复两种方案。Header桌面与移动均包含Home/Shop/About Us/Contact Us实际链接。
 项目标题元数据在open时显式提供：country为国家名称或ISO两位国家代码，language为实际语言代码，categories为最多两个主要商品类目，brand为品牌名。列表标题自动组合“国家 · 语言｜主要类目”，品牌保存为独立元数据供搜索与标题回退；卡片保持标题和时间两行，不额外增加品牌副标题。未知字段不猜测也不显示占位字样，可后续以open补齐。例：country="BR", language="pt-BR", categories=["家居","生活用品"], brand="Casa Sol"，显示“巴西 · 葡萄牙语｜家居与生活用品”。生成/改页前必须begin，页面完成write/finish，图片任务用begin/finish/fail如实登记；这些记录用于首页运行状态和删除保护。超过30分钟无更新的生成记录视为中断，继续任务先begin续期，不让失败任务长期占用运行状态。
 
-3. 所有正式成品只写返回directory；原始JSON、提示词、候选图、草稿、报告、记录只写metadata_directory，不向生产目录加临时或数据源文件。详情已在前述入口流程打开，此处不再调用open_canvas。
+3. 项目使用新版目录：project_directory为Git项目根（README.md、src/、material/、.git/）；directory/source_directory固定指向src，页面与组件相对路径从src起算，不再额外加src前缀。README.md介绍品牌、域名、国家/语言、页面范围与运行方法，由主技能随信息完善（website_write的README.md专门写入项目根）。生成原图与候选图片写material_directory；正式引用图片用src/images/logo.png、favicon.png、banner1.png、banner2.png、about.png等固定文件名。原始JSON、提示词、草稿、报告和记录只写metadata_directory；旧格式不兼容、不自动迁移。详情已在前述入口流程打开，此处不再调用open_canvas。
 4. 先按下节选择Home与实际组件并读取完整源码、整理素材槽位，再按职责表准备内容；不得在模板确定前固定生图数量。集成时读[SDK契约](references/commerce-data.md)。账户异步接口await，保持既有APP/SDK、数据和账户隔离，不另造状态库。
-图片任务数按最终所选模板/组件的实际槽位确定，不固定为5张；Logo、Favicon必须提供，Banner、About、分类图与图标等按需列清单并交给图片技能。适合统一风格网格图集的图标/分类图可合并生成后切割为独立文件，记录各槽位与成品路径。新增或修改图片使用新文件名保留旧图，仅改目标引用，不覆盖原素材。
+图片任务数按最终所选模板/组件的实际槽位确定，不固定为5张；Logo、Favicon必须提供，Banner、About、分类图与图标等按需列清单并交给图片技能。适合统一风格网格图集的图标/分类图可合并生成后切割为独立文件，记录各槽位与成品路径。生成原图保存在material_directory，修改时可将历史版本保留在material/history；网站只引用images下的固定语义文件名，按图片技能发布更新。
 5. 按下节选择Home参考和实际组件。首次实现读[创建规范](references/creation-contract.md)；Shop另读[Shop接入](references/shop-integration.md)，同时读取所选Shop与Card完整源码。app.js由主技能随所选模板及站点design生成，包含实际主题、依赖/组件就绪、移动适配与数据初始化，不由商品工具生成、不从assets复制固定版本。运行时仅输出一份sdk.js，按sdk.js→data.js→app.js→共享组件→页面内联脚本加载；主题配置与唯一SDK.init都在app.js，静态目录初始化先于组件注册，异步就绪按SDK契约执行。
-6. 改页前begin，每完成一页立即website_write或直接落盘再finish，不等全站代码生成完。接口仍允许多HTML批量导入；按[代码输出](references/code-output.md)使用本地Prettier格式化。结束前finish收尾，使完成页面及时ready。
+6. 改页前begin，每完成一页立即website_write或直接落盘再finish，不等全站代码生成完。接口仍允许多HTML批量导入；按[代码输出](references/code-output.md)使用本地Prettier格式化。结束前必须finish收尾，既使页面及时ready，也将该轮初始化/修改提交到网站项目的main；图片/文案/README等单独修改也不能省略，无变化不空提交，不推送。遵循[项目Git提交与异常确认](references/project-git.md)，遇到GIT_CONFIRMATION_REQUIRED等情况先询问用户，确认后才使用系统git处理。
 7. 用真实内容检查375/768/1280px的代表页面与交互，仅报告实际结果。完整图片用website_screenshot等待加载/解码/稳定布局后获取，不以画布缩略图代替。全面验收仅由用户明确调用website-acceptance。
 
 ## 模板选择
@@ -73,10 +73,18 @@ website_templates(mode="select")返回未排序候选及usage，不自动决定�
 
 先通过website_templates读取toast-01文档，按WebComponent规范实现项目共享components/toast.js及window.Toast API，移除演示按钮、骨架区与样例业务文案，样式匹配网站。共享组件先落盘，再生成页面；装配器仅在项目已有Toast时补齐引用和实例，不再从assets/ui复制默认实现。禁止alert，不建立统一Overlay接口；每个蒙层组件自行实现空白关闭、面板内点击不关闭。
 
-主题、状态样式和基础工具类按创建规范统一。页面专属逻辑放当前HTML的script；全站移动端html根字号12px，其他断点遵循所选组件。Logo必须是图片；图标不用字符/Emoji，商品及Banner不用自绘SVG。素材生成、图文主体安全区和画布加载状态归图片技能，主技能负责按实际图片/文案完成响应式排版。
+全站所有顾客可见文案均执行website-copywriter的正式网站要求，不能出现“目录准备中”“演示版本”等开发或未完成措辞；内容须贴近品牌、类目与真实使用场景，不能只在About/政策执行。共享Footer必须直接展示邮箱、带区号联系电话和完整地址，PC/移动及简化页脚均不得省略，资料全站一致；所选Footer缺项时选相容模板或补齐信息区。
+
+主题、状态样式和基础工具类按创建规范统一。页面专属逻辑放当前HTML的script；全站移动端html根字号12px，其他断点遵循所选组件。所有需要显示商品图的槽位/骨架/加载区使用纯白色#fff背景，包含卡片、详情主图/缩略图、分类商品坑位及购物车；不以灰色或渐变底替代。Logo必须是图片；图标不用字符/Emoji，商品及Banner不用自绘SVG。素材生成、图文主体安全区和画布加载状态归图片技能，主技能负责按实际图片/文案完成响应式排版。
 
 所有字体/第三方库通过在线CDN加载并避免jsDelivr，只输出实际依赖。预览资源异常先区分源码和传输，不为绕过限制删图、降质或删板块；预览代理不改写网站源文件。
 
 ## 工具未加载时
 
 用同包scripts/project.mjs通过stdin传JSON，支持open/plan/begin/write/finish/status/templates及commerce。使用真实CODEX_THREAD_ID及返回project_id，按脚本位置解析CLI，不写死机器路径。商品导入入口归website-import-data。需要CDN地址时读[CDN清单](references/cdn-links.json)，不预读全库。
+
+素材关系：material是完整素材库，src/images只是其中网站实际引用成品的子集；未采用的候选素材、原图和历史版本只保留material，不批量复制到images。详情页图库只展示material中的现存素材，不扫描src/images或附件目录，也不从过期资源索引补图。
+
+## GitLab仓库与部署（仅用户明确要求时）
+
+使用[GitLab配置与严格部署流程](references/gitlab-deployment.md)。配置位于插件自带管理页；普通建站不自动推送或发布。创建仓库、域名、内容来源与测试/正式发布必须通过UI模态框或Codex提问对话框取得真实确认；MCP返回confirmation_required时不能自动批准。部署期间禁止修改项目，冲突先确认后用系统Git处理。

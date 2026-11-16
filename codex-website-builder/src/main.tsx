@@ -2,6 +2,9 @@ import { StrictMode, useEffect, useRef } from 'react';
 import { createRoot } from 'react-dom/client';
 import './style.css';
 import { ProjectManager } from './ProjectManager';
+import {PluginSettings} from './PluginSettings';
+import {DeploymentPanel} from './DeploymentControls';
+import {closePluginModal} from './plugin-modal';
 declare global { interface Window { __WEBSITE_BUILDER__?: { api: string; projectApi?:string; managerApi?:string; resourceApi?:string; origin: string; defaultDirectory: string } } }
 
 function DotCanvas() {
@@ -72,4 +75,6 @@ function DotCanvas() {
   return <div className="dot-background" aria-hidden="true"><canvas ref={ref} /></div>;
 }
 
-createRoot(document.getElementById('root')!).render(<StrictMode><ProjectManager background={<DotCanvas />} /></StrictMode>);
+const panel=window.__WEBSITE_PANEL_CONTEXT__;
+if(panel)document.body.classList.add('independent-plugin-panel');
+createRoot(document.getElementById('root')!).render(<StrictMode>{panel?.view==='settings'?<PluginSettings close={closePluginModal}/>:panel?.view==='deploy'&&panel.project_id&&panel.panel_id?<DeploymentPanel projectId={panel.project_id} panelId={panel.panel_id} threadId={panel.thread_id}/>:<ProjectManager background={<DotCanvas />} />}</StrictMode>);

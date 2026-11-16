@@ -7,11 +7,13 @@ import { fileURLToPath } from 'node:url';
 import { regionMarkers, type TemplateBinding } from './template-source';
 import { readTemplates } from './templates';
 import { ProjectDatabase } from './database';
+import {assertEditable,operationLock} from './project-operations';
+import { PROJECT_FORMAT, recognizedProject, scaffoldProject, assertMainRepository, commitProject, type ProjectCommit } from './project-layout';
 
 export type PageState = 'queued'|'generating'|'ready'|'error';
 export interface ProjectPage { path: string; title: string; status: PageState; version: number; error?: string; generationHash?: string; resourceSignature?: string }
-export interface WebsiteProject { country?:string; categories?:string[]; brand?:string; hasPublished?:boolean; id: string; name: string; brief: string; language: string; revision: string; pages: ProjectPage[]; updatedAt: string }
-export interface ProjectView { project: WebsiteProject; threadId: string; directory: string; metadataDirectory: string; revision: string }
+export interface WebsiteProject { formatVersion?:number; country?:string; categories?:string[]; brand?:string; hasPublished?:boolean; hasPreview?:boolean; id: string; name: string; brief: string; language: string; revision: string; pages: ProjectPage[]; updatedAt: string }
+export interface ProjectView { project: WebsiteProject; threadId: string; directory: string; metadataDirectory: string; projectDirectory:string; materialDirectory:string; revision: string; git?:ProjectCommit }
 export const DEFAULT_PAGES = ['index','shop','product','wishlist','checkout','login','register','about','contact','terms','privacy','return'].map(name=>({path:`${name}.html`,title:name}));
 const idPattern = /^[a-f0-9]{4}(?:-[a-f0-9]{4}){3}$/;
 const pause = (ms: number) => new Promise(resolve=>setTimeout(resolve,ms));
@@ -34,6 +36,7 @@ export class ProjectStore {
   private binding(thread: string) { if(!thread.trim())throw new Error('需要当前真实 thread_id，不能使用共享匿名会话');return join(this.stateRoot,'threads',createHash('sha256').update(thread).digest('hex')+'.json'); }
   private folder(id: string) { if(!idPattern.test(id))throw new Error('项目 ID 无效');return join(this.root,id); }
   metadataDirectory(id: string) { this.folder(id); return join(this.stateRoot,'projects',id); }
+  async exclusive<T>(id:string,run:()=>Promise<T>){this.folder(id);return this.lock(id,run);}
   private manifest(id: string) { return join(this.metadataDirectory(id),'project.json'); }
   private async loadProject(id:string) { return this.database.project(id); }
   private async lock<T>(key: string, run: ()=>Promise<T>): Promise<T> {
@@ -48,16 +51,17 @@ export class ProjectStore {
     const binding = this.database.binding(threadId);
     const id=projectId || binding?.projectId;if(!id)return null;
     const project=await this.loadProject(id);if(!project){if(!projectId)return null;throw new Error('项目不存在或已删除');}
+    if(!await recognizedProject(this.folder(id),project.formatVersion)){if(projectId)throw new Error('项目格式无法识别，请使用当前格式项目');return null;}
     const base=await realpath(this.root),folder=await realpath(this.folder(id)),rel=relative(base,folder);if(rel==='..'||rel.startsWith(`..${sep}`)||isAbsolute(rel))throw new Error('项目目录不能指向外部');
     const currentThread=threadId || (binding?.projectId===id?binding.threadId:'') || '';
-    return {project,threadId:currentThread,directory:this.folder(id),metadataDirectory:this.metadataDirectory(id),revision:`${id}:${currentThread}:${project.revision}`};
+    return {project,threadId:currentThread,directory:join(this.folder(id),'src'),projectDirectory:this.folder(id),materialDirectory:join(this.folder(id),'material'),metadataDirectory:this.metadataDirectory(id),revision:`${id}:${currentThread}:${project.revision}`};
   }
-  async list() {await mkdir(this.root,{recursive:true});return this.database.list();}
+  async list() {await mkdir(this.root,{recursive:true});const rows=this.database.list();const checks=await Promise.all(rows.map(row=>this.database.project(row.id)?.formatVersion===PROJECT_FORMAT&&operationLock(this.database,row.id)?Promise.resolve(true):recognizedProject(this.folder(row.id),this.database.project(row.id)?.formatVersion)));return rows.filter((_,index)=>checks[index]);}
   async templateUsage() {
     const usage:Record<string,{projects:number;lastUsed?:string}>={};
     for(const project of await this.list()) {
       let data:any;
-      try { data=await json<any>(join(this.metadataDirectory(project.id),'website-builder.templates.json')) || await json<any>(join(this.folder(project.id),'website-builder.templates.json')); } catch { continue; }
+      try { data=await json<any>(join(this.metadataDirectory(project.id),'website-builder.templates.json')); } catch { continue; }
       const items=Array.isArray(data)?data:Array.isArray(data?.bindings)?data.bindings:Object.values(data||{});
       const ids=new Set<string>(items.map((item:any)=>typeof item==='string'?item:item?.id).filter((id:any)=>typeof id==='string'&&/^[a-z]+-[0-9]+$/.test(id)));
       for(const id of ids){const previous=usage[id];usage[id]={projects:(previous?.projects||0)+1,lastUsed:previous?.lastUsed&&previous.lastUsed>project.updatedAt?previous.lastUsed:project.updatedAt};}
@@ -68,10 +72,10 @@ export class ProjectStore {
     const id=randomBytes(8).toString('hex').match(/.{4}/g)!.join('-');
     const pages=(input.pages || DEFAULT_PAGES).map(page=>({...page,path:this.path(page.path,true),status:'queued' as const,version:0}));
     if(new Set(pages.map(page=>page.path)).size!==pages.length)throw new Error('页面路径重复');
-    const project:WebsiteProject={id,name:input.name||'Ecommerce website',brief:input.brief||'',language:input.language||'en',hasPublished:false,country:input.country,categories:input.categories,brand:input.brand,revision:'',pages,updatedAt:''};
-    await mkdir(this.folder(id),{recursive:true});await this.save(project);
+    const project:WebsiteProject={formatVersion:PROJECT_FORMAT,id,name:input.name||'Ecommerce website',brief:input.brief||'',language:input.language||'en',hasPublished:false,country:input.country,categories:input.categories,brand:input.brand,revision:'',pages,updatedAt:''};
+    const git=await scaffoldProject(this.folder(id),project);await this.save(project);
     if(!pages.length)this.database.activity(id,'project:start');
-    return {project,threadId:'',directory:this.folder(id),metadataDirectory:this.metadataDirectory(id),revision:`${id}::${project.revision}`};
+    return {project,threadId:'',directory:join(this.folder(id),'src'),projectDirectory:this.folder(id),materialDirectory:join(this.folder(id),'material'),metadataDirectory:this.metadataDirectory(id),revision:`${id}::${project.revision}`,git};
   }
   async open(input: {threadId:string;projectId?:string;newProject?:boolean;name?:string;brief?:string;language?:string;country?:string;categories?:string[];brand?:string;pages?:{path:string;title:string}[]}) {
     return this.lock(`thread:${input.threadId}`,async()=>{
@@ -81,7 +85,7 @@ export class ProjectStore {
         const created=await this.createProject(input);
         view={...created,threadId:input.threadId,revision:`${created.project.id}:${input.threadId}:${created.project.revision}`};
       }
-      if(input.country!==undefined||input.categories!==undefined||input.brand!==undefined){
+      if(input.country!==undefined||input.categories!==undefined||input.brand!==undefined){assertEditable(this.database,view.project.id);
         if(input.country!==undefined)view.project.country=input.country;
         if(input.categories!==undefined)view.project.categories=input.categories;
         if(input.brand!==undefined)view.project.brand=input.brand;
@@ -101,7 +105,7 @@ export class ProjectStore {
   private async target(id: string, value: string) {
     const path=this.path(value), metadata=/^website-builder\.[a-z-]+\.json$/.test(path);
     if(metadata)await mkdir(this.metadataDirectory(id),{recursive:true});
-    const root=await realpath(metadata?this.metadataDirectory(id):this.folder(id));
+    const root=await realpath(metadata?this.metadataDirectory(id):path==='README.md'?this.folder(id):join(this.folder(id),'src'));
     if(metadata){const base=await realpath(this.stateRoot),rel=relative(base,root);if(rel==='..'||rel.startsWith(`..${sep}`)||isAbsolute(rel))throw new Error('管理目录不能指向外部');}
     let folder=root;
     for(const part of path.split('/').slice(0,-1)){folder=join(folder,part);await mkdir(folder,{recursive:true});const actual=await realpath(folder);const rel=relative(root,actual);if(rel==='..'||rel.startsWith(`..${sep}`)||isAbsolute(rel))throw new Error('项目路径不能经过外部符号链接');}
@@ -110,13 +114,13 @@ export class ProjectStore {
   }
   private async update(threadId: string, work:(view:ProjectView)=>Promise<void>) {
     const existing=await this.get(threadId);if(!existing)throw new Error('请先打开当前会话项目');
-    return this.lock(existing.project.id,async()=>{const view=(await this.get(threadId))!;if(view.project.id!==existing.project.id)throw new Error('会话项目已切换，请重新读取项目');const activity='write:'+randomUUID();this.database.activity(view.project.id,activity);const heartbeat=setInterval(()=>{try{this.database.activity(view.project.id,activity);}catch{}},60000);try{await work(view);await this.save(view.project);return (await this.get(threadId))!;}finally{clearInterval(heartbeat);this.database.sql.prepare('DELETE FROM project_activity WHERE project_id=? AND task_key=?').run(view.project.id,activity);}});
+    return this.lock(existing.project.id,async()=>{const view=(await this.get(threadId))!;if(view.project.id!==existing.project.id)throw new Error('会话项目已切换，请重新读取项目');assertEditable(this.database,view.project.id);const activity='write:'+randomUUID();this.database.activity(view.project.id,activity);const heartbeat=setInterval(()=>{try{this.database.activity(view.project.id,activity);}catch{}},60000);try{await work(view);await this.save(view.project);return (await this.get(threadId))!;}finally{clearInterval(heartbeat);this.database.sql.prepare('DELETE FROM project_activity WHERE project_id=? AND task_key=?').run(view.project.id,activity);}});
   }
   async plan(threadId:string,pages:{path:string;title:string}[]) {
     return this.update(threadId,async({project})=>{for(const page of pages){this.path(page.path,true);const current=project.pages.find(item=>item.path===page.path);if(current)current.title=page.title;else project.pages.push({...page,status:'queued',version:0});}});
   }
   async begin(threadId:string,paths:string[]) {
-    return this.update(threadId,async({project})=>{project.hasPublished ??= project.pages.length>0&&project.pages.every(page=>page.status==='ready');for(const path of paths){this.path(path,true);const page=project.pages.find(item=>item.path===path);if(!page)throw new Error(`页面未在计划内：${path}`);page.generationHash=await this.sourceHash(project.id,path);page.status='generating';page.version++;delete page.error;}});
+    return this.update(threadId,async(view)=>{await assertMainRepository(view.projectDirectory);const {project}=view;project.hasPublished ??= project.pages.length>0&&project.pages.every(page=>page.status==='ready');for(const path of paths){this.path(path,true);const page=project.pages.find(item=>item.path===path);if(!page)throw new Error(`页面未在计划内：${path}`);page.generationHash=await this.sourceHash(project.id,path);page.status='generating';page.version++;delete page.error;}});
   }
   private async sourceHash(id:string,path:string) {
     const source=await readFile(await this.target(id,path)).catch(error=>{if(error.code==='ENOENT')return null;throw error;});
@@ -149,11 +153,11 @@ export class ProjectStore {
   // Direct-file generation may finish without a tool callback. Only a complete,
   // changed document can leave generating; begin must not redisplay the old file.
   async reconcile(threadId?:string,projectId?:string) {
-    const view=await this.get(threadId,projectId);if(!view)return null;
+    const view=await this.get(threadId,projectId);if(!view)return null;if(operationLock(this.database,view.project.id))return view;
     const candidates=async(current:ProjectView)=>{
       const paths:string[]=[];
       for(const page of current.project.pages){
-        if(page.status==='ready'||page.status==='error'&&page.resourceSignature){
+        if(page.status==='ready'||page.status==='error'&&(page.resourceSignature||/ENOENT|no such file or directory/.test(page.error||''))){
           if(page.resourceSignature!==await this.resourceSignature(current,page.path))paths.push(page.path);
           continue;
         }
@@ -166,6 +170,7 @@ export class ProjectStore {
     if(!(await candidates(view)).length)return view;
     return this.lock(view.project.id,async()=>{
       const current=await this.get(threadId,view.project.id);if(!current)return null;
+      if(operationLock(this.database,current.project.id))return current;
       const changed=await candidates(current);if(!changed.length)return current;
       await this.complete(current,changed);await this.save(current.project);
       return this.get(threadId,view.project.id);
@@ -179,7 +184,7 @@ export class ProjectStore {
     }
     const view = await this.update(threadId, async view => {
       const file = await this.target(view.project.id, 'website-builder.templates.json');
-      const previous = await json<{ bindings: TemplateBinding[] }>(file) || await json<{bindings:TemplateBinding[]}>(join(view.directory,'website-builder.templates.json'));
+      const previous = await json<{ bindings: TemplateBinding[] }>(file);
       const merged = [...(previous?.bindings || [])];
       for (const binding of bindings) {
         const index = merged.findIndex(item => item.file === binding.file && item.region === binding.region);
@@ -192,7 +197,7 @@ export class ProjectStore {
   async auditTemplates(threadId: string) {
     const view = await this.get(threadId);
     if (!view) throw new Error('请先打开当前会话项目');
-    const sources = await json<{bindings?:TemplateBinding[]}>(await this.target(view.project.id, 'website-builder.templates.json')) || await json<{bindings?:TemplateBinding[]}>(join(view.directory,'website-builder.templates.json'));
+    const sources = await json<{bindings?:TemplateBinding[]}>(await this.target(view.project.id, 'website-builder.templates.json'));
     return { advisory: true, configured: !!sources, bindings: sources?.bindings || [], message: 'Template fidelity is SKILL guidance only. No structure score or generation pass/fail is calculated. Page readiness uses complete HTML and local dependency validation.' };
   }
   private async complete(view:ProjectView,paths:string[]) {
@@ -206,16 +211,30 @@ export class ProjectStore {
           if(/^(?:[a-z]+:|\/\/)/i.test(match[1]))continue;
           // Keep both operands in the configured path namespace (e.g. macOS
           // /var vs /private/var); target() still validates realpath containment.
-          const relativePath=relative(view.directory,resolve(dirname(resolve(view.directory,path)),match[1])).split(sep).join('/');await stat(await this.target(view.project.id,relativePath));
+          const reference=decodeURIComponent(match[1]);
+          const target=reference.startsWith('/')?resolve(view.directory,reference.slice(1)):resolve(dirname(resolve(view.directory,path)),reference);
+          const relativePath=relative(view.directory,target).split(sep).join('/');await stat(await this.target(view.project.id,relativePath));
         }
         page.status='ready';page.version++;delete page.error;delete page.generationHash;
       } catch(error){page.status='error';page.error=(error as Error).message;page.version++;delete page.generationHash;}
       page.resourceSignature=await this.resourceSignature(view,path);
     }
+    if(view.project.pages.some(page=>page.status==='ready'))view.project.hasPreview=true;
     if(view.project.pages.length>0&&view.project.pages.every(page=>page.status==='ready'))view.project.hasPublished=true;
     if(view.project.pages.some(page=>page.status==='error')||view.project.pages.length>0&&view.project.pages.every(page=>page.status==='ready'))this.database.activity(view.project.id,'project:start',false);
   }
-  async finish(threadId:string,paths:string[]) {return this.update(threadId,async view=>{await this.complete(view,paths.length?paths:view.project.pages.filter(page=>page.status!=='ready').map(page=>page.path));});}
+  async finish(threadId:string,paths:string[]) {
+    let git:ProjectCommit|undefined;
+    const view=await this.update(threadId,async view=>{
+      await assertMainRepository(view.projectDirectory);
+      const targets=paths.length?paths:view.project.pages.filter(page=>page.status!=='ready').map(page=>page.path);
+      await this.complete(view,targets);
+      git=targets.some(path=>view.project.pages.find(page=>page.path===path)?.status!=='ready')
+        ? {branch:'main',committed:false,reason:'页面校验未通过，修复后再次 finish 提交'}
+        : await commitProject(view.projectDirectory,'Update website');
+    });
+    return {...view,git};
+  }
   private async usesFiles(view:ProjectView,page:string,changed:Set<string>) {
     const document=resolve(view.directory,page),visited=new Set<string>();
     const visit=async(file:string):Promise<boolean>=>{
@@ -242,6 +261,7 @@ export class ProjectStore {
       if(/(?:^|\/)(?:tmp|temp|artifacts|test-results|playwright-report)(?:\/|$)|\.(?:tmp|bak|log|psd)$/i.test(file.path))throw new Error('网站输出目录是生产目录；临时文件、报告与源素材请保存到 metadata_directory');
     });
     return this.update(threadId,async view=>{
+      await assertMainRepository(view.projectDirectory);
       for(const path of finalizePages||[])if(!view.project.pages.some(page=>page.path===path))throw new Error(`页面未在计划内：${path}`);
       for(const file of files)if(/\.html?$/i.test(file.path)&&!view.project.pages.some(page=>page.path===file.path))throw new Error(`请先将页面加入计划：${file.path}`);
       for(const file of files){const page=view.project.pages.find(page=>page.path===file.path);if(page&&file.title)page.title=file.title;}

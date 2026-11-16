@@ -115,10 +115,8 @@ try{
   const repeated=JSON.parse((await call('website_projects',args)).content[0].text);
   assert.equal(created.project_id,repeated.project_id,'creation retry is idempotent');
   await app.getByRole('main',{name:'网站展示画布',exact:true}).waitFor({timeout:10000});
-  await app.locator('[data-placeholder="initial-page"]').waitFor();
-  assert.equal(await app.locator('[data-placeholder="initial-page"] [role=progressbar]').count(),1);
-  assert.equal(await app.locator('.initial-skeleton').count(),0);
-  const initialAnimation=await app.locator('[data-placeholder="initial-page"] .page-loader').evaluate(el=>({background:getComputedStyle(el).backgroundImage,animation:getComputedStyle(el,'::before').animationName}));
+  await app.getByText('项目初始化中',{exact:true}).waitFor();
+  assert.equal(await app.locator('.initial-page').count(),0);
   let ready;
   for(let attempt=0;attempt<30;attempt++){
     ready=JSON.parse((await call('website_projects',{action:'submission',panel_id:submission.panel_id,request_id:submission.request_id,thread_id:'prompt-new-thread'})).content[0].text);
@@ -130,9 +128,7 @@ try{
   assert.equal(await page.evaluate(()=>window.toolCalls.filter(c=>c.name==='open_canvas').length),0,'submission reuses the original panel');
   assert.equal(page.frames().length,2,'empty detail remains inside the same host frame');
   await call('website_project',{action:'plan',thread_id:'prompt-new-thread',project_id:created.project_id,pages:[{path:'index.html',title:'Home'}]});
-  await app.locator('[data-page="index.html"]').waitFor();
-  assert.deepEqual(await app.locator('[data-page="index.html"] .page-loader').evaluate(el=>({background:getComputedStyle(el).backgroundImage,animation:getComputedStyle(el,'::before').animationName})),initialAnimation,'initial and formal page output use the same animation');
-  assert.equal(await app.locator('[data-placeholder="initial-page"]').count(),0,'real page plan replaces initial placeholder');
+  await app.locator('[data-page="index.html"] .page-loader').waitFor();assert.equal(await app.locator('iframe').count(),0,'planned panel sweeps before the real document arrives');
   await page.evaluate(()=>window.failPageOnce=true);
   await writeFile(join(created.directory,'index.html'),'<!doctype html><html><body><h1>Direct file output</h1></body></html>');
   await app.frameLocator('iframe[title="index.html"]').getByRole('heading',{name:'Direct file output'}).waitFor({timeout:20000});
@@ -145,8 +141,8 @@ try{
   const projectCount=JSON.parse((await call('website_projects',{action:'list'})).content[0].text).projects.length;
   await page.evaluate(()=>{const frame=document.createElement('iframe');frame.id='reopened';frame.style.cssText='position:fixed;inset:0;width:100vw;height:100vh;border:0;z-index:1000';frame.srcdoc=document.querySelector('#app').srcdoc;document.body.append(frame);});
   const reopened=page.frameLocator('#reopened');
-  await reopened.getByRole('textbox',{name:'项目需求',exact:true}).waitFor();
-  await page.waitForFunction(count=>window.contexts.length>count,contextCount);
+  await reopened.getByRole('main',{name:'网站展示画布',exact:true}).waitFor();
+  await page.waitForFunction(({count,id})=>window.contexts.slice(count).some(value=>value.structuredContent?.project_id===id),{count:contextCount,id:original.project_id});
   const reopenLaunch=await call('open_canvas',{thread_id:'prompt-new-thread'});
   await page.evaluate(params=>document.querySelector('#reopened').contentWindow.postMessage({jsonrpc:'2.0',method:'ui/notifications/tool-result',params},'*'),reopenLaunch);
   await reopened.frameLocator('iframe[title="index.html"]').getByRole('heading',{name:'Direct file updated'}).waitFor({timeout:20000});

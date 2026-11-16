@@ -16,3 +16,5 @@ description: 无商品数据或API时生成符合SDK的商品样本，准备分�
 Mock 只用于演示，不把模拟评分、销量和评论写成真实经营数据；该技能负责商品文案与价格，网站文案技能不参与。
 
 运行时仅使用一份js/sdk.js（同时提供SDK和兼容APP），依次加载sdk.js、data.js、app.js。SDK.init仅位于app.js，静态数据先同步初始化再注册组件，异步数据与页面就绪按[SDK契约](../website-builder/references/commerce-data.md)执行；不要在HTML或data.js重复初始化。已有自定义文件保留并按本轮授权显式合并，不批量改写已有网站。
+
+独立执行本技能并完成网站项目文件修改后，调用website_project(action="finish")将本轮修改本地提交到main；若由主建站技能协调，交还主技能统一收尾。不得push。异常分支/merge等先确认，获准后使用系统git，详见[项目Git提交](../website-builder/references/project-git.md)。

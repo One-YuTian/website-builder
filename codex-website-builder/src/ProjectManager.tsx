@@ -4,9 +4,11 @@ import { WebsiteCanvas } from './WebsiteCanvas';
 import { manageProjects } from './project-api';
 import { hostApp, hostReady, getLaunchThread } from './bridge';
 import { Icon } from './Icons';
+import {openPluginModal} from './plugin-modal';
+import {PluginSettings} from './PluginSettings';
 
 import { projectTime, statusLabels, type ProjectStatus } from '../server/project-presentation';
-type Project = {id:string;name:string;brand?:string;displayName?:string;country?:string;language?:string;categories?:string[];status?:ProjectStatus;deletable?:boolean;updatedAt:string;thumbnail?:string};
+type Project = {id:string;name:string;brand?:string;displayName?:string;country?:string;language?:string;categories?:string[];deploying?:boolean;status?:ProjectStatus;deletable?:boolean;updatedAt:string;thumbnail?:string};
 type Detail = {project_id:string;thread_id:string|null;name:string;directory:string};
 export function ProjectManager({background}:{background:ReactNode}) {
   useEffect(()=>{
@@ -20,8 +22,11 @@ export function ProjectManager({background}:{background:ReactNode}) {
   const activePanel=useRef(panelId);activePanel.current=panelId;
   const [projects,setProjects]=useState<Project[]>([]);
   const [detail,setDetail]=useState<Detail|null>(null);
+
+  const [showSettings,setShowSettings]=useState(false);
   const [query,setQuery]=useState('');
   const [error,setError]=useState('');
+  useEffect(()=>{if(!detail||!error)return;const timer=setTimeout(()=>setError(''),3000);return()=>clearTimeout(timer);},[detail?.project_id,error]);
   const [busy,setBusy]=useState(false);
   const [deleted,setDeleted]=useState<string|null>(null);
   const thread=useRef<string|undefined>(undefined);
@@ -93,6 +98,8 @@ export function ProjectManager({background}:{background:ReactNode}) {
     groups.set(label,[...(groups.get(label)||[]),project]);
   }
   return <div className={`project-manager ${detail?'is-detail':''}`}>
+
+    {showSettings&&<PluginSettings close={()=>setShowSettings(false)}/>}
     {deleted&&<div className="manager-error" role="status">项目已删除<button onClick={()=>void request({action:'restore',project_id:deleted}).then(()=>{setDeleted(null);return refresh();}).catch(error=>setError(error.message))}>撤销</button><button aria-label="关闭删除提示" onClick={()=>setDeleted(null)}>×</button></div>}
     {error&&<div className="manager-error" role="alert">{error}<button aria-label="关闭错误" onClick={()=>setError('')}>×</button></div>}
     {detail?<WebsiteCanvas key={detail.project_id} background={background} projectId={detail.project_id} panelId={panelId} threadId={detail.thread_id||undefined} onHome={()=>void home()} onProject={id=>void open(id)} onFolder={()=>void request({action:'folder',project_id:detail.project_id}).catch(error=>setError(error.message))}/>:<div className="project-home">{background}
@@ -100,10 +107,10 @@ export function ProjectManager({background}:{background:ReactNode}) {
         <label className="project-search"><Icon name="search"/><input aria-label="搜索项目" placeholder="搜索项目" value={query} onChange={event=>setQuery(event.target.value)}/></label>
         <div className="project-groups">{[...groups].map(([label,items])=><section key={label}><h2>{label}</h2>{items.map(project=><div className="project-row" data-project-id={project.id} key={project.id}>
           <button className="project-open" onClick={()=>void open(project.id)} disabled={busy}><span className="project-thumbnail">{project.thumbnail?<img src={project.thumbnail} alt=""/>:<Icon name="pages"/>}</span><span className="project-description"><strong title={project.displayName||`网站-${project.name}`}>{project.displayName||`网站-${project.name}`}</strong><time dateTime={project.updatedAt} title={projectTime(project.updatedAt)}>{projectTime(project.updatedAt)}</time></span></button>
-          <div className="project-actions">{project.deletable===false?<span className="project-running" role="status" aria-label={statusLabels[project.status||'generating']}><span className="project-status-spinner" aria-hidden="true"/></span>:<>{project.status==='failed'&&<span className="project-status failed" role="status" aria-label={statusLabels.failed}>{statusLabels.failed}</span>}<button className="project-delete" aria-label={`删除项目 ${project.name}`} title="删除项目" disabled={busy} onClick={()=>void remove(project.id)}><Icon name="trash"/></button></>}</div>
+          <div className="project-actions">{project.deletable===false?<span className="project-running" role="status" aria-label={project.deploying?'部署中':statusLabels[project.status||'generating']}><span className="project-status-spinner" aria-hidden="true"/></span>:<>{project.status==='failed'&&<span className="project-status failed" role="status" aria-label={statusLabels.failed}>{statusLabels.failed}</span>}<button className="project-delete" aria-label={`删除项目 ${project.name}`} title="删除项目" disabled={busy} onClick={()=>void remove(project.id)}><Icon name="trash"/></button></>}</div>
         </div>)}</section>)}{!projects.length&&<p className="projects-empty">暂无项目</p>}{projects.length>0&&!groups.size&&<p className="projects-empty">没有匹配的项目</p>}</div>
       </aside>
-      <section className="project-compose" aria-label="项目需求输入"><div className="project-compose-inner"><h2>开始构建你的网站</h2><ProjectPrompt send={sendPrompt} onCreated={created}/></div></section>
+      <section className="project-compose" aria-label="项目需求输入"><div className="project-compose-inner"><div className="project-compose-heading"><h2>开始构建你的网站</h2><button className="plugin-settings-button" aria-label="插件配置" title="插件配置" onClick={()=>void openPluginModal('settings').then(opened=>{if(!opened)setShowSettings(true);}).catch(error=>setError(error.message))}><Icon name="settings"/></button></div><ProjectPrompt send={sendPrompt} onCreated={created}/></div></section>
     </div>}
   </div>;
 }

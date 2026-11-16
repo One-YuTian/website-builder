@@ -41,3 +41,5 @@ mode:mock、fallback:true表示无法识别JSON/核心字段，不代表成功�
 完成时返回真实商品数、原分类数、主要展示分类、图片基址、回退状态与输出路径；页面通过SDK读取。核对SDK.get真实ID、分组数量与过滤结果、金额、相对图拼接及源JSON散列未变。
 
 运行时仅使用一份js/sdk.js（同时提供SDK和兼容APP），依次加载sdk.js、data.js、app.js。SDK.init仅位于app.js，静态数据先同步初始化再注册组件，异步数据与页面就绪按[SDK契约](../website-builder/references/commerce-data.md)执行；不要在HTML或data.js重复初始化。已有自定义文件保留并按本轮授权显式合并，不批量改写已有网站。
+
+独立执行本技能并完成网站项目文件修改后，调用website_project(action="finish")将本轮修改本地提交到main；若由主建站技能协调，交还主技能统一收尾。不得push。异常分支/merge等先确认，获准后使用系统git，详见[项目Git提交](../website-builder/references/project-git.md)。

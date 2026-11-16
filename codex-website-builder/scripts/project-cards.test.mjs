@@ -46,9 +46,9 @@ try {
   await json('website_project',{action:'begin',...ids,paths:['index.html']});
   assert.equal((await card()).status,'modifying');
   await json('website_project',{action:'finish',...ids,paths:['index.html']});
-  await json('website_images',{...ids,action:'begin',path:'assets/banner.png',name:'Banner'});
+  await json('website_images',{...ids,action:'begin',path:'banner1.png',name:'Banner'});
   assert.equal((await card()).deletable,false);
-  await json('website_images',{...ids,action:'fail',path:'assets/banner.png',error:'Test failure'});
+  await json('website_images',{...ids,action:'fail',path:'banner1.png',error:'Test failure'});
   assert.equal((await card()).status,'failed');
   // UI shows the title/brand/time and replaces deletion while running.
   host=spawn(process.execPath,['dist/server/index.js','--preview'],{env,stdio:['ignore','pipe','pipe']});

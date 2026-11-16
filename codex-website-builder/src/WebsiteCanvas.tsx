@@ -6,6 +6,7 @@ import {readResource} from './resources';
 import {manageProjects} from './project-api';
 import {CanvasImage,type CanvasAsset} from './CanvasImage';
 import {copyPNG,capturePage} from './clipboard';
+import {DeploymentControls} from './DeploymentControls';
 
 type View = { x: number; y: number; zoom: number };
 type Wheel = { dx: number; dy: number; zoom: boolean; x: number; y: number };
@@ -23,8 +24,6 @@ const PageFrame = memo(function PageFrame({ page, storage, index, width, selecte
   capture?:(html:string,path:string,width:number)=>Promise<Blob>;
 }) {
   const iframe = useRef<HTMLIFrameElement>(null);
-  const acknowledged = useRef(false);
-  const loadTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
   const [height, setHeight] = useState(900);
   const maxHeight = Math.floor(width * (width < 768 ? 5 : width <= 1024 ? 3 : 2.5));
   const viewportHeight = Math.min(height, maxHeight);
@@ -32,7 +31,6 @@ const PageFrame = memo(function PageFrame({ page, storage, index, width, selecte
   const [current, setCurrent] = useState('');
   const currentUrl = page.url;
   const [src, setSrc] = useState('');
-  const pending = !!page.status && page.status !== 'ready';
   const captures=useRef(new Map<string,{resolve:(html:string)=>void;reject:(error:Error)=>void;timer:ReturnType<typeof setTimeout>}>());
   const [copying,setCopying]=useState(false);
   const copy=()=>{
@@ -43,17 +41,17 @@ const PageFrame = memo(function PageFrame({ page, storage, index, width, selecte
       return capture(html,page.path,width);
     },notify).finally(()=>setCopying(false));
   };
-  const snapshot = pending ? undefined : page.html;
+  // Keep the last rendered version while a page is edited or a new payload is in transit.
+  const snapshot = page.html;
   useEffect(() => {
-    acknowledged.current=false;if(loadTimer.current)clearTimeout(loadTimer.current);
-    if (!snapshot) {setSrc('');setReady(false);if(loadTimer.current)clearTimeout(loadTimer.current);return;}
+    if (!snapshot) {setSrc('');setReady(false);return;}
     const escape = (value: unknown) => JSON.stringify(value).replaceAll('<', '\\u003c');
     const html = snapshot.replaceAll('"__WEBSITE_BUILDER_VIRTUAL_URL__"', escape(currentUrl)).replaceAll('"__WEBSITE_BUILDER_STORAGE__"', escape(storage.current)).replaceAll('__WEBSITE_BUILDER_BASE_URL__', currentUrl.replaceAll('&','&amp;').replaceAll('"','&quot;'));
     const blob = URL.createObjectURL(new Blob([html], { type: 'text/html' }));
     setSrc(blob); setReady(false);
     return () => URL.revokeObjectURL(blob);
   }, [snapshot, currentUrl, storage]);
-  useEffect(() => { setReady(false); setHeight(900); setCurrent(''); }, [page.url]);
+  useEffect(() => { setCurrent(''); }, [page.path]);
   useEffect(() => {
     const receive = (event: MessageEvent) => {
       if (event.source !== iframe.current?.contentWindow || event.origin !== 'null') return;
@@ -68,9 +66,13 @@ const PageFrame = memo(function PageFrame({ page, storage, index, width, selecte
       }
       if(data?.type==='website-builder:resource-error')notify(`资源代理加载失败：${data.error}`);
       if (data?.type === 'website-builder:height' && Number.isFinite(data.height) && data.height > 0) {
-        acknowledged.current = true;
-        setHeight(Math.max(200, Math.ceil(data.height))); setReady(true);
+        setHeight(previous=>{
+          const next=Math.max(200,Math.min(maxHeight,Math.ceil(data.height)));
+          return Math.abs(previous-next)<3?previous:next;
+        });
       }
+      if(data?.type==='website-builder:ready')setReady(true);
+      if(data?.type==='website-builder:render-error')notify(`页面加载失败：${data.error}`);
       if (data?.type === 'website-builder:location' && typeof data.path === 'string') setCurrent(decodeURIComponent(data.path.split('/').pop() || ''));
       if (data?.type === 'website-builder:blocked' && typeof data.url === 'string') notify(`已阻止页面跳转：${data.url}`);
       if (data?.type === 'website-builder:navigate' && typeof data.url === 'string') {
@@ -91,23 +93,17 @@ const PageFrame = memo(function PageFrame({ page, storage, index, width, selecte
     };
     window.addEventListener('message', receive);
     return () => window.removeEventListener('message', receive);
-  }, [page.url, page.path, width, wheel, notify, select, storage]);
-  useEffect(() => { iframe.current?.contentWindow?.postMessage({ type: 'website-builder:measure', capped: height > maxHeight }, '*'); }, [width, page.url, height, maxHeight]);
-  useEffect(() => () => { if(loadTimer.current)clearTimeout(loadTimer.current); }, []);
+  }, [page.url, page.path, width, maxHeight, wheel, notify, select, storage]);
+  useEffect(() => { iframe.current?.contentWindow?.postMessage({ type: 'website-builder:measure' }, '*'); }, [width, src]);
   useEffect(()=>()=>{for(const pending of captures.current.values()){clearTimeout(pending.timer);pending.reject(Error('页面已关闭'));}captures.current.clear();},[]);
-  return <article className={`page-panel ${selected ? 'is-selected' : ''}`} data-page={page.path} style={{ width }}>
+  return <article className={`page-panel ${selected ? 'is-selected' : ''}`} data-page={page.path} aria-busy={!!page.status&&page.status!=='ready'} style={{ width }}>
     <div className="page-heading"><button className="page-label" onClick={() => select(page.path)} title={`${page.path} - ${page.title}`}>
       <span className="page-icon"><Icon name="pages" /></span><span className="page-title">{page.path} - {page.title}</span><span className="page-number">{String(index + 1).padStart(2, '0')}</span>
     </button>{capture&&<button className="page-copy" aria-label={`复制 ${page.path} 完整截图`} title="复制当前页面完整截图" disabled={!ready||copying} onClick={copy}><Icon name="copy"/></button>}</div>
     <div className={`frame-glass ${ready ? 'is-ready' : 'is-loading'}`} style={{ height: viewportHeight }}>
-    {!ready && <div className="page-loader" role="progressbar" aria-label={`正在加载 ${page.path}`} />}
+    {!ready&&<div className="page-loader" role="progressbar" aria-label={`正在加载 ${page.path}`}/> }
     {src && <iframe ref={iframe} title={page.path} src={src} sandbox="allow-scripts allow-forms" scrolling="auto" style={{ width, height: viewportHeight }} onLoad={() => {
-      acknowledged.current = false;
       iframe.current?.contentWindow?.postMessage({ type: 'website-builder:measure' }, '*');
-      if(loadTimer.current)clearTimeout(loadTimer.current);
-      loadTimer.current = setTimeout(() => {
-        if(!acknowledged.current && iframe.current) { notify('已阻止离开本地页面，正在恢复预览'); iframe.current.src = src; }
-      }, 3000);
     }} />}
     </div>
     <div className="page-caption" data-ready={ready} title={page.error}>{width} × {viewportHeight}{page.status==='error'?` · ${page.error}`:''}</div>
@@ -119,8 +115,13 @@ export function WebsiteCanvas({ background, projectId: pinnedProjectId, panelId,
   const [site, setSite] = useState<SiteManifest | null>(null);
   const [directory, setDirectory] = useState('');
   const [error, setError] = useState('');
-  const [notice, setNotice] = useState('');
+  const [notice, writeNotice] = useState('');
+  const noticeTimer=useRef<ReturnType<typeof setTimeout>|undefined>(undefined);
+  const notify=useCallback((text:string)=>{writeNotice(text);clearTimeout(noticeTimer.current);if(text)noticeTimer.current=setTimeout(()=>writeNotice(''),3000);},[]);
+  useEffect(()=>()=>clearTimeout(noticeTimer.current),[]);
+  useEffect(()=>{if(!error)return;const timer=setTimeout(()=>setError(''),3000);return()=>clearTimeout(timer);},[error]);
   const [loading, setLoading] = useState(false);
+  const [deployLocked,setDeployLocked]=useState(false);
   const [popover, setPopover] = useState<'width'|'pages'|'zoom'|null>(null);
   const storage = useRef<Record<string, string>>({});
   const [width, setWidth] = useState(1280);
@@ -143,17 +144,19 @@ export function WebsiteCanvas({ background, projectId: pinnedProjectId, panelId,
   const drag = useRef<{ x: number; y: number; view: View } | null>(null);
   const sequence = useRef(0);
   const projectMode=useRef(false);
+  const displayedProject=useRef('');
+  const syncState=useRef<{projectId:string;since:string;known:Record<string,number>}>({projectId:'',since:'none',known:{}});
   const [projectList,setProjectList]=useState<{id:string;name:string}[]>([]);
   const [assets,setAssets]=useState<CanvasAsset[]>([]);
   const captureCurrent=useCallback((html:string,path:string,width:number)=>capturePage({panel_id:panelId!,thread_id:threadId,project_id:pinnedProjectId!,path,width},html),[panelId,threadId,pinnedProjectId]);
   useEffect(()=>{
     if(!pinnedProjectId||!panelId)return;let stopped=false,inflight=false;
-    const load=async()=>{if(inflight||stopped)return;inflight=true;try{const value=await manageProjects({action:'images',panel_id:panelId,thread_id:threadId,project_id:pinnedProjectId});if(!stopped)setAssets(previous=>JSON.stringify(previous)===JSON.stringify(value.images||[])?previous:value.images||[]);}catch(error){if(!stopped)setNotice((error as Error).message);}finally{inflight=false;}};
+    const load=async()=>{if(inflight||stopped)return;inflight=true;try{const value=await manageProjects({action:'images',panel_id:panelId,thread_id:threadId,project_id:pinnedProjectId});if(!stopped)setAssets(previous=>JSON.stringify(previous)===JSON.stringify(value.images||[])?previous:value.images||[]);}catch(error){if(!stopped)notify((error as Error).message);}finally{inflight=false;}};
     void load();const timer=setInterval(()=>void load(),2000);return()=>{stopped=true;clearInterval(timer);};
   },[pinnedProjectId,panelId,threadId]);
   const load = useCallback(async (directory: string) => {
     const id = ++sequence.current;
-    setLoading(true); setError(''); setNotice('');
+    setLoading(true); setError(''); notify('');
     try {
       if (!config) throw new Error('请通过插件入口或 pnpm preview 打开完整画布。');
       let data: SiteManifest;
@@ -189,7 +192,9 @@ export function WebsiteCanvas({ background, projectId: pinnedProjectId, panelId,
   }, [config]);
   useEffect(()=>{
     if(!config)return;
-    let stopped=false,probed=false,since='none',projectId='';let known:Record<string,number>={};
+    const previous=syncState.current.projectId===pinnedProjectId?syncState.current:null;
+    let stopped=false,probed=false,since=previous?.since||'none',projectId=previous?.projectId||'';
+    let known:Record<string,number>={...previous?.known};
     const controller=new AbortController();
     const unzip=decodePagePayload;
     async function run(){
@@ -197,8 +202,8 @@ export function WebsiteCanvas({ background, projectId: pinnedProjectId, panelId,
       while(!stopped){
         try{
           let value:any;
-          if(hostApp){const result=await hostApp.callServerTool({name:'project_sync',arguments:{metadata_only:!probed,page_limit:1,priority_path:selectedRef.current,since,known,thread_id:threadId,project_id:pinnedProjectId,wait_ms:probed?20000:0}},{signal:controller.signal,timeout:25000});if(result.isError)throw new Error('项目状态读取失败');value=result._meta?.sync;}
-          else if(config!.projectApi){const url=new URL(config!.projectApi);url.searchParams.set('metadata_only',probed?'0':'1');url.searchParams.set('page_limit','1');url.searchParams.set('priority_path',selectedRef.current);url.searchParams.set('since',since);url.searchParams.set('known',JSON.stringify(known));url.searchParams.set('wait',probed?'20000':'0');if(threadId)url.searchParams.set('thread_id',threadId);if(pinnedProjectId)url.searchParams.set('project_id',pinnedProjectId);const response=await fetch(url,{signal:controller.signal});if(!response.ok)throw new Error('项目状态读取失败');value=await response.json();}
+          if(hostApp){const result=await hostApp.callServerTool({name:'project_sync',arguments:{metadata_only:!probed,page_limit:3,priority_path:selectedRef.current,since,known,thread_id:threadId,project_id:pinnedProjectId,wait_ms:probed?20000:0}},{signal:controller.signal,timeout:25000});if(result.isError)throw new Error('项目状态读取失败');value=result._meta?.sync;}
+          else if(config!.projectApi){const url=new URL(config!.projectApi);url.searchParams.set('metadata_only',probed?'0':'1');url.searchParams.set('page_limit','3');url.searchParams.set('priority_path',selectedRef.current);url.searchParams.set('since',since);url.searchParams.set('known',JSON.stringify(known));url.searchParams.set('wait',probed?'20000':'0');if(threadId)url.searchParams.set('thread_id',threadId);if(pinnedProjectId)url.searchParams.set('project_id',pinnedProjectId);const response=await fetch(url,{signal:controller.signal});if(!response.ok)throw new Error('项目状态读取失败');value=await response.json();}
           else return;
           if(stopped)return;
           if(!value)throw new Error('项目状态响应无效');
@@ -206,7 +211,8 @@ export function WebsiteCanvas({ background, projectId: pinnedProjectId, panelId,
           probed=true;
           const manifest=value.manifest as SiteManifest;
           if(!manifest?.projectId){if(projectMode.current){setSite(null);projectMode.current=false;projectId='';known={};}since=value.revision||'none';continue;}
-          const changed=manifest.projectId!==projectId;
+          const changed=manifest.projectId!==displayedProject.current;
+          displayedProject.current=manifest.projectId;
           if(changed){known={};projectId=manifest.projectId;sequence.current++;projectMode.current=true;storage.current={};setWidths({});setSelected(manifest.pages.find(page=>page.path==='index.html')?.path||manifest.pages[0]?.path||'');setView({x:28,y:30,zoom:.26});}
           const decoded:Record<string,string>={},nextKnown={...known},decodeErrors:Record<string,string>={};
           for(const [path,payload]of Object.entries(value.pages||{})){
@@ -217,12 +223,13 @@ export function WebsiteCanvas({ background, projectId: pinnedProjectId, panelId,
           setSite(previous=>({...manifest,pages:manifest.pages.map(page=>{
             const old=!changed?previous?.pages.find(item=>item.path===page.path):undefined;
             const failure=value.errors?.[page.path]||decodeErrors[page.path];
-            const next={...page,...(failure?{status:'error' as const,error:failure}:{}),html:page.status==='ready'?(decoded[page.path]??(old?.version===page.version?old?.html:undefined)):undefined};
+            const next={...page,...(failure?{status:'error' as const,error:failure}:{}),html:decoded[page.path]??old?.html};
             return old&&Object.keys({...old,...next}).every(key=>old[key as keyof SitePage]===next[key as keyof SitePage])?old:next;
           })}));
           setDirectory(manifest.directory);setProjectList(value.projects||[]);setError('');setLoading(false);known=nextKnown;since=value.revision;
+          syncState.current={projectId:manifest.projectId,since,known};
           if(Object.keys(decodeErrors).length||Object.keys(value.errors||{}).length)await new Promise(resolve=>setTimeout(resolve,1000));
-        }catch(error){if(stopped)return;probed=true;setNotice((error as Error).message);await new Promise(resolve=>setTimeout(resolve,3000));}
+        }catch(error){if(stopped)return;probed=true;notify((error as Error).message);await new Promise(resolve=>setTimeout(resolve,3000));}
       }
     }
     void run();return()=>{stopped=true;controller.abort();};
@@ -233,9 +240,9 @@ export function WebsiteCanvas({ background, projectId: pinnedProjectId, panelId,
   };
   const switchProject=async(id:string)=>{
     if(onProject){onProject(id);return;}
-    if(!site?.threadId||!hostApp){setNotice('请在当前会话中指定要打开的项目');return;}
+    if(!site?.threadId||!hostApp){notify('请在当前会话中指定要打开的项目');return;}
     const result=await hostApp.callServerTool({name:'website_project',arguments:{action:'open',thread_id:site.threadId,project_id:id}});
-    if(result.isError)setNotice('无法打开该项目');
+    if(result.isError)notify('无法打开该项目');
   };
   const wheel = useCallback((event: Wheel) => {
     if (event.zoom) {
@@ -295,7 +302,7 @@ export function WebsiteCanvas({ background, projectId: pinnedProjectId, panelId,
     <div className="workspace">
       <section className="canvas-area">
         {error && <div className="message error" role="alert">{error}</div>}
-        {notice && <div className="message" role="status">{notice}<button aria-label="关闭提示" onClick={() => setNotice('')}>×</button></div>}
+        {notice && <div className="message" role="status">{notice}<button aria-label="关闭提示" onClick={() => notify('')}>×</button></div>}
         <div ref={stage} className={`page-stage ${panMode ? 'pan-mode' : ''} ${dragging ? 'dragging' : ''}`} aria-label="可平移缩放的网页画布" aria-busy={loading}
           style={{ '--canvas-scale': Math.max(view.zoom,.02), backgroundPosition: `${view.x}px ${view.y}px` } as CSSProperties}
           onPointerDown={event => {
@@ -307,19 +314,20 @@ export function WebsiteCanvas({ background, projectId: pinnedProjectId, panelId,
           onPointerMove={event => { if (drag.current) setView({ ...drag.current.view, x: drag.current.view.x + event.clientX - drag.current.x, y: drag.current.view.y + event.clientY - drag.current.y }); }}
           onPointerUp={() => { drag.current = null; setDragging(false); }} onPointerCancel={() => { drag.current = null; setDragging(false); }}>
           {background}
-          {!site && loading && <div className="empty-state"><div className="canvas-loader" role="progressbar" aria-label="正在载入网站页面" /></div>}
-          <div ref={world} className="canvas-world" data-columns={columns} style={{ gridTemplateColumns: `repeat(${columns}, max-content)`, transform: `translate(${view.x}px, ${view.y}px) scale(${view.zoom})` }}>
-            {pinnedProjectId&&!site?.pages.length&&<article className="page-panel initial-page" data-placeholder="initial-page" style={{width}} aria-busy="true" aria-label="正在生成页面"><div className="page-heading"><span className="page-label"><span className="page-icon"><Icon name="pages"/></span><span className="page-title">页面</span></span></div><div className="frame-glass is-loading" style={{height:900}}><div className="page-loader" role="progressbar" aria-label="正在生成页面"/></div></article>}
-            {assets.length>0&&<div className="asset-gallery" style={{gridTemplateColumns:`repeat(${columns},max-content)`}}>{assets.map(asset=><CanvasImage key={asset.id} asset={asset} notify={setNotice}/>)}</div>}
-            {site?.pages.map((page, index) => <PageFrame key={`${site.directory}/${page.path}`} page={page} storage={storage} index={index} width={widths[page.path] ?? width} selected={selected === page.path} select={setSelected} wheel={wheel} notify={setNotice} capture={panelId&&pinnedProjectId?captureCurrent:undefined} />)}
+          {site?.initializing&&!site.pages.length&&!assets.length&&<div className="project-initializing" role="status"><div className="initializing-panel"><p>项目初始化中</p><div className="initializing-progress"><span className="prompt-spinner" aria-hidden="true"/><span>Loading…</span></div></div></div>}
+          <div ref={world} inert={deployLocked} className="canvas-world" data-columns={columns} style={{ gridTemplateColumns: `repeat(${columns}, max-content)`, transform: `translate(${view.x}px, ${view.y}px) scale(${view.zoom})` }}>
+            {assets.length>0&&<div className="asset-gallery" style={{gridTemplateColumns:`repeat(${columns},max-content)`}}>{assets.map(asset=><CanvasImage key={asset.id} asset={asset} notify={notify}/>)}</div>}
+            {site?.pages.map((page, index) => <PageFrame key={`${site.directory}/${page.path}`} page={page} storage={storage} index={index} width={widths[page.path] ?? width} selected={selected === page.path} select={setSelected} wheel={wheel} notify={notify} capture={panelId&&pinnedProjectId?captureCurrent:undefined} />)}
           </div>
-          <nav className="tool-rail" aria-label="画布工具栏" onPointerDown={event => event.stopPropagation()}>
+          {deployLocked&&<div className="deployment-cover" aria-label="部署期间页面只读"/>}
+          <nav className={`tool-rail${deployLocked?' deployment-locked':''}`} aria-label="画布工具栏" onPointerDown={event => event.stopPropagation()}>
             <button aria-label="选择与交互" aria-pressed={!panMode} className={!panMode ? 'active' : ''} onClick={() => setPanMode(false)}><Icon name="select" /></button>
             <button aria-label="抓手平移" aria-pressed={panMode} className={panMode ? 'active' : ''} onClick={() => setPanMode(true)}><Icon name="hand" /></button>
             <button aria-label="查看全部" onClick={fitAll}><Icon name="fit" /></button>
             <button aria-label="页面宽度" aria-expanded={popover === 'width'} className={popover === 'width' ? 'open' : ''} onClick={() => setPopover(popover === 'width' ? null : 'width')}><Icon name="width" /></button>
             <button aria-label="页面目录" aria-expanded={popover === 'pages'} className={popover === 'pages' ? 'open' : ''} onClick={() => setPopover(popover === 'pages' ? null : 'pages')}><Icon name="pages" /></button>
             <button aria-label="刷新网站" disabled={loading} onClick={() => void refreshView()}><Icon name="refresh" /></button>
+            {pinnedProjectId&&panelId&&<DeploymentControls projectId={pinnedProjectId} panelId={panelId} threadId={threadId} onLocked={setDeployLocked}/>}
             <span className="rail-divider" />
             {onFolder&&<button aria-label="打开项目目录" title="打开项目目录" onClick={onFolder}><Icon name="folder"/></button>}
             <button aria-label="画布缩放" aria-expanded={popover === 'zoom'} className={popover === 'zoom' ? 'open' : ''} onClick={() => setPopover(popover === 'zoom' ? null : 'zoom')}><Icon name="zoom" /></button>
@@ -331,7 +339,6 @@ export function WebsiteCanvas({ background, projectId: pinnedProjectId, panelId,
             {popover === 'pages' && <>{site?.projectId?<><label>当前项目<select aria-label="当前项目" value={site.projectId} onChange={event=>void switchProject(event.target.value)}>{projectList.map(project=><option key={project.id} value={project.id}>{project.name}</option>)}</select></label><p className="resource-note">在会话中描述需求即可生成网站；指定页面可单独修改或重新生成。</p></>:<form onSubmit={event => { event.preventDefault(); void load(directory); }}><label htmlFor="site-directory">网站目录</label><input id="site-directory" value={directory} onChange={event => setDirectory(event.target.value)} /><button disabled={loading}>识别网站</button></form>}<div className="page-list">{site?.pages.map((page,index) => <button className={selected === page.path ? 'current' : ''} key={page.path} onClick={() => focusPage(page.path)}>{String(index+1).padStart(2,'0')}<span>{page.path}</span>{page.status&&page.status!=='ready'?<small>{page.status==='queued'?'待生成':page.status==='generating'?'生成中':'失败'}</small>:null}</button>)}</div>{site?.warnings.map(text => <p className="resource-note" key={text}>{text}</p>)}</>}
             {popover === 'zoom' && <><div className="zoom-row"><button aria-label="缩小画布" onClick={() => changeZoom(clamp(view.zoom / 1.25, .00001, 1.5))}>−</button><span>{view.zoom<.01?Number((view.zoom*100).toPrecision(2)):Math.round(view.zoom*100)}%</span><button aria-label="放大画布" onClick={() => changeZoom(clamp(view.zoom*1.25,.00001,1.5))}>+</button></div><input aria-label="缩放比例" type="range" min="0.001" max="150" step="0.001" value={view.zoom*100} onChange={event => changeZoom(Number(event.target.value)/100)} /><button className="full-button" onClick={fitAll}>所有页面适合画布</button></>}
           </div>}
-          <div className="canvas-help">空白处拖动画布 · 滚轮平移 · Ctrl / ⌘ + 滚轮缩放 · 页面内直接交互</div>
         </div>
       </section>
     </div>
