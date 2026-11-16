@@ -1,26 +1,25 @@
 ## Overview
 
-Core e-commerce product shelf grid block, integrating section title, fast category filter tabs, 4~5 column responsive product card matrix, and bottom View All CTA.
+Core e-commerce popular product carousel showcase block, integrating centered title skeleton placeholder, Swiper carousel track, and multi-breakpoint responsive product cards. Left and right navigation arrows are absolutely positioned over the carousel without occupying extra horizontal width.
 
 ### Regions
 Functional regions are annotated directly in the component code implementation via English comments.
 
-
 ### Dimensions & Responsiveness
-- Outer container strictly follows Tailwind centered container（`w-full max-w-content mx-auto px-4 lg:px-6`） with PC max content width 1200px centered.
-- Desktop (1024px+): 4~5 column grid layout with 16px~24px gutters.
-- Tablet (768px~1023px): Adapts to 3-column grid.
-- Mobile (under 768px): Adapts to 2 compact columns with 12px gap.
+- Outer container strictly follows Tailwind centered container (`w-full max-w-content mx-auto px-4 lg:px-6`) with PC max content width 1200px centered.
+- Navigation arrows are absolutely positioned floating over the carousel sides, avoiding extra width overhead.
+- Desktop (1024px+): 5-column carousel layout with 24px gutters.
+- Tablet (768px~1023px): 4-column carousel layout with 20px gutters.
+- Mobile (under 768px): Adapts to 2~3 compact carousel columns with 12~16px gap.
 
 ### Attributes & Props
 | Attribute | Description | Type | Default |
 | --- | --- | --- | --- |
-| `containerId` | Mount container selector ID | `string` | `'product-grid-01'` |
+| `containerId` | Mount container selector ID | `string` | `'product-slider-03'` |
 | `limit` | Max product cards rendered | `number` | `8` |
 
 ### Events
 - `product-navigate`: Dispatched when clicking an individual product card to view PDP.
-- `filter-change`: Dispatched when switching category filter tabs.
 
 ## Code
 
@@ -34,12 +33,12 @@ Functional regions are annotated directly in the component code implementation v
     <div data-region="section-title" class="mb-6 sm:mb-8 flex items-center justify-center">
       <span class="block h-[0.75em] w-48 sm:w-64 rounded-sm bg-accent text-2xl font-bold"></span>
     </div>
-    <div class="relative px-8">
+    <div class="relative group">
       <div class="swiper popular-products-swiper overflow-hidden">
         <div id="product-slider-03" class="swiper-wrapper"></div>
       </div>
-      <div class="swiper-button-prev !left-0 !text-primary !size-7 after:!text-base"></div>
-      <div class="swiper-button-next !right-0 !text-primary !size-7 after:!text-base"></div>
+      <div class="swiper-button-prev popular-products-prev-03 !left-2 md:!left-3 !size-8 md:!size-9 after:!text-sm md:after:!text-base !text-primary bg-surface/90 hover:bg-surface border border-outline/30 rounded-full shadow-md z-10 transition-colors"></div>
+      <div class="swiper-button-next popular-products-next-03 !right-2 md:!right-3 !size-8 md:!size-9 after:!text-sm md:after:!text-base !text-primary bg-surface/90 hover:bg-surface border border-outline/30 rounded-full shadow-md z-10 transition-colors"></div>
     </div>
   </div>
 </section>
@@ -81,8 +80,8 @@ $(function() {
       spaceBetween: 12,
       loop: true,
       navigation: {
-        nextEl: '.swiper-button-next',
-        prevEl: '.swiper-button-prev'
+        nextEl: '.popular-products-next-03',
+        prevEl: '.popular-products-prev-03'
       },
       breakpoints: {
         640: {

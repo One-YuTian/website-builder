@@ -10,7 +10,7 @@ import {
   projectManager,
   readTemplates,
   screenshotPage
-} from "./chunk-IYQ6HEC2.js";
+} from "./chunk-2XYVFXNQ.js";
 import "./chunk-WPQ5MXLX.js";
 
 // server/cli.ts
@@ -63,7 +63,7 @@ try {
     console.log(JSON.stringify(await prepareCommerce(store, skillRoot, { ...input, action: input.mode || "prepare", thread_id: thread })));
     process.exit(0);
   }
-  if (!input.action || input.action === "open") view = await store.open({ threadId: thread, projectId: input.project_id, newProject: input.new_project, name: input.name, brief: input.brief, language: input.language, pages: input.pages });
+  if (!input.action || input.action === "open") view = await store.open({ threadId: thread, projectId: input.project_id, newProject: input.new_project, name: input.name, brief: input.brief, country: input.country, categories: input.categories, brand: input.brand, language: input.language, pages: input.pages });
   else {
     const current = await store.get(thread);
     if (!current) throw new Error("\u8BF7\u5148\u6253\u5F00\u5F53\u524D\u4F1A\u8BDD\u9879\u76EE");

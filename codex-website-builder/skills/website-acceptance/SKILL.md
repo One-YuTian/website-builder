@@ -17,6 +17,6 @@ description: 按用户明确要求检查网站布局、多端适配、页面完�
 
 在生产目录外的 metadata_directory/artifacts/acceptance/ 保存各端截图和 report.json/report.md；每项包含页面、设备、步骤、期望、实际、pass/fail/blocked/not-tested、证据路径及严重程度。报告区分实际测试与未验证项，不以截图等同交易成功。发现问题先记录，用户已授权修复时修复并复测受影响项。最终给出通过项、阻断问题及未测试项和报告链接，不在未运行浏览器时宣称通过。
 
-核对Toast的WebComponent生命周期与断开清理；商品JSON通过导入工具/SDK读取且源数据未改，分类视图过滤完整；PC边缘对齐且Logo无多余边距，单页逻辑在HTML script，详情长内容可展开/分页且没有丢失。CDN应避免jsDelivr/jsdeliver。
+核对Toast的WebComponent生命周期与断开清理；商品JSON通过导入工具/SDK读取且源数据未改，分类视图过滤完整；PC边缘对齐且Logo无多余边距，单页逻辑在HTML script，详情长内容按模板适配且内容可达，不要求折叠/分页/更多展开。CDN应避免jsDelivr/jsdeliver。
 
 模板库全部组件/板块/页面可使用；不要仅因采用限时抢购模块就判为失败。文案按[已授权服务与事实边界](../website-copywriter/references/content-policy.md)核对，7×24小时服务、7天无理由退货和货到付款不是未授权承诺；仍检查商品数值来源和页面实现。

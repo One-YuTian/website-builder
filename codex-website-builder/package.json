@@ -2,5 +2,5 @@
   "type": "module",
   "private": true,
   "name": "codex-website-builder",
-  "version": "0.8.2"
+  "version": "0.8.6"
 }

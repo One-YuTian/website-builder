@@ -5822,7 +5822,7 @@ async function readTemplates(skillRoot, input) {
 // server/projects.ts
 import { mkdir, readFile as readFile3, rename, writeFile, open, unlink, realpath, stat } from "node:fs/promises";
 import { randomBytes, randomUUID, createHash } from "node:crypto";
-import { dirname, isAbsolute, join as join3, relative, resolve, sep } from "node:path";
+import { dirname, isAbsolute, join as join4, relative, resolve, sep } from "node:path";
 
 // server/assemble.ts
 import { posix } from "node:path";
@@ -5869,16 +5869,70 @@ function regionMarkers(binding) {
 }
 
 // server/database.ts
+import { DatabaseSync as DatabaseSync2 } from "node:sqlite";
+
+// server/thread-runtime.ts
 import { DatabaseSync } from "node:sqlite";
-import { mkdirSync, readFileSync, readdirSync, existsSync } from "node:fs";
+import { openSync, readSync, closeSync, statSync } from "node:fs";
+import { homedir } from "node:os";
 import { join as join2 } from "node:path";
+var cache = /* @__PURE__ */ new Map();
+function threadRuntime(threadId) {
+  const home = process.env.CODEX_HOME || join2(homedir(), ".codex");
+  const key = home + ":" + threadId, previous = cache.get(key);
+  if (previous && Date.now() - previous.time < 1e3) return previous.state;
+  let state = "unknown";
+  let db, fd;
+  try {
+    db = new DatabaseSync(join2(home, "state_5.sqlite"), { readOnly: true });
+    const row = db.prepare("SELECT rollout_path FROM threads WHERE id=?").get(threadId);
+    if (row?.rollout_path) {
+      fd = openSync(row.rollout_path, "r");
+      const size = statSync(row.rollout_path).size;
+      const start = Math.max(0, size - 256 * 1024), buffer = Buffer.alloc(size - start);
+      readSync(fd, buffer, 0, buffer.length, start);
+      const lines = buffer.toString("utf8").split("\n");
+      if (start) lines.shift();
+      for (let i = lines.length - 1; i >= 0; i--) {
+        try {
+          const event = JSON.parse(lines[i]), value = event.payload;
+          if (event.type !== "event_msg" || !value || value.root_turn_id && value.turn_id && value.root_turn_id !== value.turn_id) continue;
+          if (value.type === "turn_aborted") {
+            state = "paused";
+            break;
+          }
+          if (value.type === "task_complete") {
+            state = "complete";
+            break;
+          }
+          if (value.type === "task_started") {
+            state = "running";
+            break;
+          }
+        } catch {
+        }
+      }
+    }
+  } catch {
+  } finally {
+    if (fd !== void 0) closeSync(fd);
+    db?.close();
+  }
+  cache.set(key, { time: Date.now(), state });
+  if (cache.size > 512) cache.delete(cache.keys().next().value);
+  return state;
+}
+
+// server/database.ts
+import { mkdirSync, readFileSync, readdirSync, existsSync } from "node:fs";
+import { join as join3 } from "node:path";
 var ProjectDatabase = class {
   sql;
   path;
   constructor(base, projectRoot, stateRoot) {
-    mkdirSync(join2(base, "db"), { recursive: true });
-    this.path = join2(base, "db", "website-builder.sqlite");
-    this.sql = new DatabaseSync(this.path);
+    mkdirSync(join3(base, "db"), { recursive: true });
+    this.path = join3(base, "db", "website-builder.sqlite");
+    this.sql = new DatabaseSync2(this.path);
     this.sql.exec(`PRAGMA busy_timeout=5000; PRAGMA journal_mode=WAL; PRAGMA foreign_keys=ON;
       CREATE TABLE IF NOT EXISTS projects (
         id TEXT PRIMARY KEY, title TEXT NOT NULL, data TEXT NOT NULL,
@@ -5900,6 +5954,7 @@ var ProjectDatabase = class {
         status TEXT NOT NULL, error TEXT NOT NULL DEFAULT '', baseline TEXT NOT NULL DEFAULT '',
         PRIMARY KEY(project_id,path)
       );
+      CREATE TABLE IF NOT EXISTS project_activity (project_id TEXT NOT NULL REFERENCES projects(id), task_key TEXT NOT NULL, expires_at INTEGER NOT NULL, PRIMARY KEY(project_id,task_key));
       PRAGMA user_version=1;`);
     const read = (file) => {
       try {
@@ -5913,17 +5968,17 @@ var ProjectDatabase = class {
     for (const entry of entries(projectRoot)) {
       if (!entry.isDirectory() || !/^[a-f0-9]{4}(?:-[a-f0-9]{4}){3}$/.test(entry.name)) continue;
       if (this.row(entry.name)) continue;
-      const project = read(join2(stateRoot, "projects", entry.name, "project.json")) || read(join2(projectRoot, entry.name, ".website-builder.json"));
+      const project = read(join3(stateRoot, "projects", entry.name, "project.json")) || read(join3(projectRoot, entry.name, ".website-builder.json"));
       if (project?.id === entry.name) this.save(project);
     }
-    for (const entry of entries(join2(stateRoot, "threads"))) {
+    for (const entry of entries(join3(stateRoot, "threads"))) {
       if (!entry.isFile() || !entry.name.endsWith(".json")) continue;
-      const binding = read(join2(stateRoot, "threads", entry.name));
+      const binding = read(join3(stateRoot, "threads", entry.name));
       if (binding?.threadId && this.project(binding.projectId)) this.sql.prepare("INSERT OR IGNORE INTO threads VALUES (?,?)").run(binding.threadId, binding.projectId);
     }
     this.sql.exec("INSERT OR IGNORE INTO project_sessions SELECT project_id,thread_id FROM threads");
     if (!this.sql.prepare("SELECT value FROM settings WHERE key='active'").get()) {
-      const active = read(join2(stateRoot, "active.json"));
+      const active = read(join3(stateRoot, "active.json"));
       if (active?.threadId && this.project(active.projectId)) this.setActive(active);
     }
   }
@@ -5935,6 +5990,7 @@ var ProjectDatabase = class {
     return row && !row.deleted_at ? JSON.parse(row.data) : null;
   }
   save(project) {
+    if (this.row(project.id)?.deleted_at) throw Error("\u9879\u76EE\u5DF2\u5220\u9664\uFF0C\u4E0D\u80FD\u7EE7\u7EED\u5199\u5165");
     this.sql.prepare(`INSERT INTO projects(id,title,data,updated_at) VALUES (?,?,?,?)
       ON CONFLICT(id) DO UPDATE SET title=excluded.title,data=excluded.data,updated_at=excluded.updated_at WHERE projects.deleted_at IS NULL`).run(project.id, project.name, JSON.stringify(project), project.updatedAt);
   }
@@ -5954,10 +6010,10 @@ var ProjectDatabase = class {
     this.sql.prepare("INSERT INTO threads VALUES (?,?) ON CONFLICT(thread_id) DO UPDATE SET project_id=excluded.project_id").run(binding.threadId, binding.projectId);
     this.sql.prepare("INSERT INTO settings VALUES ('active',?) ON CONFLICT(key) DO UPDATE SET value=excluded.value").run(JSON.stringify(binding));
   }
-  panel(panelId, thread, projectId) {
+  panel(panelId, thread, projectId, allowSubmissionHandoff = false) {
     if (projectId && !this.project(projectId)) throw Error("\u9879\u76EE\u4E0D\u5B58\u5728\u6216\u5DF2\u5220\u9664");
     const existing = this.sql.prepare("SELECT thread_id FROM panels WHERE panel_id=?").get(panelId);
-    if (existing?.thread_id && existing.thread_id !== thread) throw Error("\u9762\u677F\u4E0D\u5C5E\u4E8E\u5F53\u524D\u4F1A\u8BDD");
+    if (existing?.thread_id && existing.thread_id !== thread && !allowSubmissionHandoff) throw Error("\u9762\u677F\u4E0D\u5C5E\u4E8E\u5F53\u524D\u4F1A\u8BDD");
     this.sql.prepare("INSERT INTO panels VALUES (?,?,?,?) ON CONFLICT(panel_id) DO UPDATE SET thread_id=excluded.thread_id,project_id=excluded.project_id,updated_at=excluded.updated_at").run(panelId, thread, projectId, (/* @__PURE__ */ new Date()).toISOString());
   }
   panelById(panelId) {
@@ -5970,10 +6026,33 @@ var ProjectDatabase = class {
     }
     return thread ? this.sql.prepare("SELECT * FROM panels WHERE thread_id=? ORDER BY updated_at DESC LIMIT 1").get(thread) : void 0;
   }
+  activity(id, key, running = true) {
+    if (!this.project(id)) throw Error("\u9879\u76EE\u4E0D\u5B58\u5728\u6216\u5DF2\u5220\u9664");
+    if (running) this.sql.prepare("DELETE FROM project_activity WHERE project_id=? AND expires_at<=?").run(id, Date.now());
+    if (running) this.sql.prepare("INSERT INTO project_activity VALUES (?,?,?) ON CONFLICT(project_id,task_key) DO UPDATE SET expires_at=excluded.expires_at").run(id, key, Date.now() + 30 * 60 * 1e3);
+    else this.sql.prepare("DELETE FROM project_activity WHERE project_id=? AND task_key=?").run(id, key);
+  }
+  status(id) {
+    const p = this.project(id);
+    if (!p) return "failed";
+    const tasks = this.sql.prepare("SELECT expires_at FROM project_activity WHERE project_id=?").all(id);
+    const images = this.sql.prepare("SELECT status FROM image_tasks WHERE project_id=?").all(id);
+    const pages = p.pages || [], recent = Date.now() - Date.parse(p.updatedAt) < 30 * 60 * 1e3;
+    const active = tasks.some((t) => t.expires_at > Date.now()) || pages.some((p2) => p2.status === "generating") && recent;
+    if (active) {
+      const threads = this.sql.prepare("SELECT thread_id FROM threads WHERE project_id=?").all(id);
+      const states = threads.map((row) => threadRuntime(row.thread_id));
+      if (states.length && states.every((value) => value === "paused" || value === "complete")) return "paused";
+    }
+    if (active) return p.hasPublished ?? (pages.length > 0 && pages.every((p2) => p2.status === "ready")) ? "modifying" : "generating";
+    if (tasks.some((t) => t.expires_at <= Date.now()) || images.some((t) => t.status !== "ready") || pages.some((p2) => p2.status === "error" || p2.status === "generating")) return "failed";
+    return pages.length > 0 && pages.every((p2) => p2.status === "ready") ? "completed" : "pending";
+  }
   remove(id) {
     if (!this.project(id)) throw Error("\u9879\u76EE\u4E0D\u5B58\u5728\u6216\u5DF2\u5220\u9664");
     this.sql.exec("BEGIN IMMEDIATE");
     try {
+      if (["generating", "modifying"].includes(this.status(id))) throw Error("\u9879\u76EE\u6B63\u5728\u5904\u7406\uFF0C\u6682\u4E0D\u53EF\u5220\u9664");
       this.sql.prepare("UPDATE projects SET deleted_at=? WHERE id=?").run((/* @__PURE__ */ new Date()).toISOString(), id);
       this.sql.prepare("UPDATE panels SET project_id=NULL WHERE project_id=?").run(id);
       this.sql.prepare("DELETE FROM threads WHERE project_id=?").run(id);
@@ -6022,7 +6101,7 @@ var ProjectStore = class {
   constructor(root) {
     this.root = root;
     this.root = resolve(root);
-    this.stateRoot = join3(dirname(this.root), ".builder-state");
+    this.stateRoot = join4(dirname(this.root), ".builder-state");
     this.database = new ProjectDatabase(dirname(this.root), this.root, this.stateRoot);
   }
   root;
@@ -6031,25 +6110,25 @@ var ProjectStore = class {
   database;
   binding(thread) {
     if (!thread.trim()) throw new Error("\u9700\u8981\u5F53\u524D\u771F\u5B9E thread_id\uFF0C\u4E0D\u80FD\u4F7F\u7528\u5171\u4EAB\u533F\u540D\u4F1A\u8BDD");
-    return join3(this.stateRoot, "threads", createHash("sha256").update(thread).digest("hex") + ".json");
+    return join4(this.stateRoot, "threads", createHash("sha256").update(thread).digest("hex") + ".json");
   }
   folder(id) {
     if (!idPattern.test(id)) throw new Error("\u9879\u76EE ID \u65E0\u6548");
-    return join3(this.root, id);
+    return join4(this.root, id);
   }
   metadataDirectory(id) {
     this.folder(id);
-    return join3(this.stateRoot, "projects", id);
+    return join4(this.stateRoot, "projects", id);
   }
   manifest(id) {
-    return join3(this.metadataDirectory(id), "project.json");
+    return join4(this.metadataDirectory(id), "project.json");
   }
   async loadProject(id) {
     return this.database.project(id);
   }
   async lock(key, run) {
-    await mkdir(join3(this.stateRoot, "locks"), { recursive: true });
-    const file = join3(this.stateRoot, "locks", createHash("sha256").update(key).digest("hex") + ".lock");
+    await mkdir(join4(this.stateRoot, "locks"), { recursive: true });
+    const file = join4(this.stateRoot, "locks", createHash("sha256").update(key).digest("hex") + ".lock");
     let handle;
     for (let attempt = 0; attempt < 100; attempt++) {
       try {
@@ -6089,7 +6168,7 @@ var ProjectStore = class {
     }
     const base = await realpath(this.root), folder = await realpath(this.folder(id)), rel = relative(base, folder);
     if (rel === ".." || rel.startsWith(`..${sep}`) || isAbsolute(rel)) throw new Error("\u9879\u76EE\u76EE\u5F55\u4E0D\u80FD\u6307\u5411\u5916\u90E8");
-    const currentThread = threadId || binding?.threadId || "";
+    const currentThread = threadId || (binding?.projectId === id ? binding.threadId : "") || "";
     return { project, threadId: currentThread, directory: this.folder(id), metadataDirectory: this.metadataDirectory(id), revision: `${id}:${currentThread}:${project.revision}` };
   }
   async list() {
@@ -6101,7 +6180,7 @@ var ProjectStore = class {
     for (const project of await this.list()) {
       let data2;
       try {
-        data2 = await json(join3(this.metadataDirectory(project.id), "website-builder.templates.json")) || await json(join3(this.folder(project.id), "website-builder.templates.json"));
+        data2 = await json(join4(this.metadataDirectory(project.id), "website-builder.templates.json")) || await json(join4(this.folder(project.id), "website-builder.templates.json"));
       } catch {
         continue;
       }
@@ -6118,9 +6197,10 @@ var ProjectStore = class {
     const id = randomBytes(8).toString("hex").match(/.{4}/g).join("-");
     const pages = (input.pages || DEFAULT_PAGES).map((page) => ({ ...page, path: this.path(page.path, true), status: "queued", version: 0 }));
     if (new Set(pages.map((page) => page.path)).size !== pages.length) throw new Error("\u9875\u9762\u8DEF\u5F84\u91CD\u590D");
-    const project = { id, name: input.name || "Ecommerce website", brief: input.brief || "", language: input.language || "en", revision: "", pages, updatedAt: "" };
+    const project = { id, name: input.name || "Ecommerce website", brief: input.brief || "", language: input.language || "en", hasPublished: false, country: input.country, categories: input.categories, brand: input.brand, revision: "", pages, updatedAt: "" };
     await mkdir(this.folder(id), { recursive: true });
     await this.save(project);
+    if (!pages.length) this.database.activity(id, "project:start");
     return { project, threadId: "", directory: this.folder(id), metadataDirectory: this.metadataDirectory(id), revision: `${id}::${project.revision}` };
   }
   async open(input) {
@@ -6131,10 +6211,17 @@ var ProjectStore = class {
         const created = await this.createProject(input);
         view = { ...created, threadId: input.threadId, revision: `${created.project.id}:${input.threadId}:${created.project.revision}` };
       }
+      if (input.country !== void 0 || input.categories !== void 0 || input.brand !== void 0) {
+        if (input.country !== void 0) view.project.country = input.country;
+        if (input.categories !== void 0) view.project.categories = input.categories;
+        if (input.brand !== void 0) view.project.brand = input.brand;
+        if (input.language !== void 0) view.project.language = input.language;
+        await this.save(view.project);
+      }
       const binding = { threadId: input.threadId, projectId: view.project.id };
       this.database.setActive(binding);
       await atomic(this.binding(input.threadId), JSON.stringify(binding));
-      await atomic(join3(this.stateRoot, "active.json"), JSON.stringify(binding));
+      await atomic(join4(this.stateRoot, "active.json"), JSON.stringify(binding));
       return view;
     });
   }
@@ -6153,13 +6240,13 @@ var ProjectStore = class {
     }
     let folder = root;
     for (const part of path.split("/").slice(0, -1)) {
-      folder = join3(folder, part);
+      folder = join4(folder, part);
       await mkdir(folder, { recursive: true });
       const actual = await realpath(folder);
       const rel = relative(root, actual);
       if (rel === ".." || rel.startsWith(`..${sep}`) || isAbsolute(rel)) throw new Error("\u9879\u76EE\u8DEF\u5F84\u4E0D\u80FD\u7ECF\u8FC7\u5916\u90E8\u7B26\u53F7\u94FE\u63A5");
     }
-    const file = join3(root, path);
+    const file = join4(root, path);
     try {
       const actual = await realpath(file);
       const rel = relative(root, actual);
@@ -6175,9 +6262,22 @@ var ProjectStore = class {
     return this.lock(existing.project.id, async () => {
       const view = await this.get(threadId);
       if (view.project.id !== existing.project.id) throw new Error("\u4F1A\u8BDD\u9879\u76EE\u5DF2\u5207\u6362\uFF0C\u8BF7\u91CD\u65B0\u8BFB\u53D6\u9879\u76EE");
-      await work(view);
-      await this.save(view.project);
-      return await this.get(threadId);
+      const activity = "write:" + randomUUID();
+      this.database.activity(view.project.id, activity);
+      const heartbeat = setInterval(() => {
+        try {
+          this.database.activity(view.project.id, activity);
+        } catch {
+        }
+      }, 6e4);
+      try {
+        await work(view);
+        await this.save(view.project);
+        return await this.get(threadId);
+      } finally {
+        clearInterval(heartbeat);
+        this.database.sql.prepare("DELETE FROM project_activity WHERE project_id=? AND task_key=?").run(view.project.id, activity);
+      }
     });
   }
   async plan(threadId, pages) {
@@ -6192,6 +6292,7 @@ var ProjectStore = class {
   }
   async begin(threadId, paths) {
     return this.update(threadId, async ({ project }) => {
+      project.hasPublished ??= project.pages.length > 0 && project.pages.every((page) => page.status === "ready");
       for (const path of paths) {
         this.path(path, true);
         const page = project.pages.find((item) => item.path === path);
@@ -6249,8 +6350,8 @@ var ProjectStore = class {
   }
   // Direct-file generation may finish without a tool callback. Only a complete,
   // changed document can leave generating; begin must not redisplay the old file.
-  async reconcile(threadId) {
-    const view = await this.get(threadId);
+  async reconcile(threadId, projectId) {
+    const view = await this.get(threadId, projectId);
     if (!view) return null;
     const candidates = async (current2) => {
       const paths = [];
@@ -6259,15 +6360,21 @@ var ProjectStore = class {
           if (page.resourceSignature !== await this.resourceSignature(current2, page.path)) paths.push(page.path);
           continue;
         }
-        if (page.status !== "generating" || page.generationHash === void 0) continue;
+        if (page.status !== "queued" && (page.status !== "generating" || page.generationHash === void 0)) continue;
         const source = await readFile3(await this.target(current2.project.id, page.path), "utf8").catch(() => null);
         if (source && /<html\b/i.test(source) && /<body\b/i.test(source) && /<\/body>/i.test(source) && /<\/html>\s*$/i.test(source) && createHash("sha256").update(source).digest("hex") !== page.generationHash) paths.push(page.path);
       }
       return paths;
     };
     if (!(await candidates(view)).length) return view;
-    return this.update(view.threadId, async (current2) => {
-      await this.complete(current2, await candidates(current2));
+    return this.lock(view.project.id, async () => {
+      const current2 = await this.get(threadId, view.project.id);
+      if (!current2) return null;
+      const changed = await candidates(current2);
+      if (!changed.length) return current2;
+      await this.complete(current2, changed);
+      await this.save(current2.project);
+      return this.get(threadId, view.project.id);
     });
   }
   async bindTemplates(threadId, bindings) {
@@ -6278,7 +6385,7 @@ var ProjectStore = class {
     }
     const view = await this.update(threadId, async (view2) => {
       const file = await this.target(view2.project.id, "website-builder.templates.json");
-      const previous = await json(file) || await json(join3(view2.directory, "website-builder.templates.json"));
+      const previous = await json(file) || await json(join4(view2.directory, "website-builder.templates.json"));
       const merged = [...previous?.bindings || []];
       for (const binding of bindings) {
         const index = merged.findIndex((item) => item.file === binding.file && item.region === binding.region);
@@ -6292,7 +6399,7 @@ var ProjectStore = class {
   async auditTemplates(threadId) {
     const view = await this.get(threadId);
     if (!view) throw new Error("\u8BF7\u5148\u6253\u5F00\u5F53\u524D\u4F1A\u8BDD\u9879\u76EE");
-    const sources = await json(await this.target(view.project.id, "website-builder.templates.json")) || await json(join3(view.directory, "website-builder.templates.json"));
+    const sources = await json(await this.target(view.project.id, "website-builder.templates.json")) || await json(join4(view.directory, "website-builder.templates.json"));
     return { advisory: true, configured: !!sources, bindings: sources?.bindings || [], message: "Template fidelity is SKILL guidance only. No structure score or generation pass/fail is calculated. Page readiness uses complete HTML and local dependency validation." };
   }
   async complete(view, paths) {
@@ -6303,7 +6410,7 @@ var ProjectStore = class {
         const file = await this.target(view.project.id, path);
         let html = await readFile3(file, "utf8");
         if (!/<html\b/i.test(html) || !/<\/html>\s*$/i.test(html) || !/<body\b/i.test(html) || !/<\/body>/i.test(html)) throw new Error("HTML \u5C1A\u672A\u5B8C\u6574\u8F93\u51FA");
-        const toastPath = join3(view.directory, "components/toast.js");
+        const toastPath = join4(view.directory, "components/toast.js");
         const enhanced = await formatSource(path, await stat(toastPath).catch(() => null) ? injectSharedUI(html, path) : html);
         if (enhanced !== html) {
           await atomic(file, enhanced);
@@ -6326,6 +6433,8 @@ var ProjectStore = class {
       }
       page.resourceSignature = await this.resourceSignature(view, path);
     }
+    if (view.project.pages.length > 0 && view.project.pages.every((page) => page.status === "ready")) view.project.hasPublished = true;
+    if (view.project.pages.some((page) => page.status === "error") || view.project.pages.length > 0 && view.project.pages.every((page) => page.status === "ready")) this.database.activity(view.project.id, "project:start", false);
   }
   async finish(threadId, paths) {
     return this.update(threadId, async (view) => {
@@ -6370,7 +6479,7 @@ var ProjectStore = class {
         const page = view.project.pages.find((page2) => page2.path === file.path);
         if (page && file.title) page.title = file.title;
       }
-      const hasFile = async (path) => files.some((file) => file.path === path) || !!await stat(join3(view.directory, path)).catch(() => null);
+      const hasFile = async (path) => files.some((file) => file.path === path) || !!await stat(join4(view.directory, path)).catch(() => null);
       const commerce = await hasFile("js/sdk.js");
       const cart = !await hasFile("components/cart.js") ? "none" : view.project.pages.some((page) => /(^|\/)cart\.html?$/i.test(page.path)) ? "page" : "drawer";
       const toast = await hasFile("components/toast.js");
@@ -6443,10 +6552,49 @@ import { gunzipSync, inflateSync, brotliDecompressSync } from "node:zlib";
 import { readFile as readFile5 } from "node:fs/promises";
 import { basename as basename2, dirname as dirname2, extname as extname2, resolve as resolve3 } from "node:path";
 
+// server/preview-mock.ts
+var previewMock = String.raw`<script>
+(() => {
+  if (!window.__websiteBuilderMockFrame) return;
+  let sdk;
+  const wrap = value => {
+    if (!value || typeof value.init !== 'function' || value.__previewMockWrapped) return value;
+    const initialize = value.init;
+    value.init = function(data, config) {
+      const fallback = [
+        {id:'PREVIEW001',name:'Preview product',price:49.9,final_price:49.9,category:'Preview',main_image:'',images:[]},
+        {id:'PREVIEW002',name:'Preview accessory',price:24.9,final_price:24.9,category:'Preview',main_image:'',images:[]}
+      ];
+      const products = Array.isArray(data) && data.length ? data : Array.isArray(window.productData) && window.productData.length ? window.productData : fallback;
+      const result = initialize.call(this, products, config);
+      const app = window.APP;
+      if (!app?.account || !app?.cart || !app?.wishlist) return result;
+      const scope = window.commerceConfig?.storageKey || 'website-builder-demo';
+      if (localStorage.getItem(scope + ':user') === null) localStorage.setItem(scope + ':user', JSON.stringify({id:'preview-user',username:'Preview',email:'preview@example.invalid',ext:{preview:true}}));
+      const user = app.account.current();
+      const items = products.filter(p => p && p.id).slice(0, 2);
+      if (user && localStorage.getItem(scope + ':cart:' + user.id) === null) for (const p of items) app.cart.add({id:p.id,name:p.name,image:p.main_image||p.image||'',price:Number(p.final_price??p.price)||0},1);
+      if (user && localStorage.getItem(scope + ':wishlist:' + user.id) === null) for (const p of items) app.wishlist.add(p.id);
+      const path = window.__websiteBuilderLocation.pathname.split('/').pop().split('.')[0];
+      if (user && ['orders','order','order-confirmation'].includes(path) && localStorage.getItem(scope + ':orders') === null && app.order?.create && app.cart.list().length) {
+        const savedCart = localStorage.getItem(scope + ':cart:' + user.id);
+        app.order.create({notes:'Preview Mock order',ext:{preview:true}});
+        if(savedCart!==null)localStorage.setItem(scope + ':cart:' + user.id,savedCart);
+      }
+      window.__websiteBuilderMockReady = true;
+      return result;
+    };
+    Object.defineProperty(value,'__previewMockWrapped',{value:true});
+    return value;
+  };
+  Object.defineProperty(window,'SDK',{configurable:true,get:()=>sdk,set:value=>{sdk=wrap(value);}});
+})();
+</script>`;
+
 // server/preview.ts
 import { createServer } from "node:http";
 import { readFile as readFile4, readdir as readdir2, realpath as realpath2, stat as stat2 } from "node:fs/promises";
-import { basename, extname, isAbsolute as isAbsolute2, join as join4, relative as relative2, resolve as resolve2, sep as sep2 } from "node:path";
+import { basename, extname, isAbsolute as isAbsolute2, join as join5, relative as relative2, resolve as resolve2, sep as sep2 } from "node:path";
 import { randomBytes as randomBytes2 } from "node:crypto";
 import { fileURLToPath as fileURLToPath2 } from "node:url";
 
@@ -6577,7 +6725,7 @@ async function scanSite(root, directory, prefix) {
   async function walk(folder) {
     for (const entry of (await readdir2(folder, { withFileTypes: true })).sort((a, b) => natural(a.name, b.name))) {
       if (entry.name.startsWith(".") || ["node_modules", "vendor"].includes(entry.name) || entry.isSymbolicLink()) continue;
-      const path = join4(folder, entry.name);
+      const path = join5(folder, entry.name);
       if (entry.isDirectory()) await walk(path);
       else if (/\.html?$/i.test(entry.name)) documents.set(relative2(site, path).split(sep2).join("/"), await readFile4(path, "utf8"));
     }
@@ -6590,10 +6738,10 @@ async function scanSite(root, directory, prefix) {
   };
   const warnings = [];
   try {
-    const data2 = await readFile4(await contained(root, join4(site, "js/data.js")), "utf8");
+    const data2 = await readFile4(await contained(root, join5(site, "js/data.js")), "utf8");
     if (data2.includes('"/img/')) {
       try {
-        await stat2(join4(site, "img"));
+        await stat2(join5(site, "img"));
       } catch {
         warnings.push("\u5546\u54C1\u56FE\u7247\u6CBF\u7528\u539F\u7AD9 CDN \u52A0\u8F7D\u3002");
       }
@@ -6602,7 +6750,7 @@ async function scanSite(root, directory, prefix) {
   }
   let order = "\u9996\u9875\u3001\u4E3B\u5BFC\u822A\u3001\u9875\u811A\u5BFC\u822A\u3001\u5176\u4F59\u9875\u9762\u81EA\u7136\u6392\u5E8F";
   try {
-    const file = await contained(root, join4(site, "website-builder.order.json"));
+    const file = await contained(root, join5(site, "website-builder.order.json"));
     const custom = JSON.parse(await readFile4(file, "utf8"));
     if (!Array.isArray(custom) || custom.some((path) => typeof path !== "string" || !documents.has(path))) throw new Error("\u6392\u5E8F\u6587\u4EF6\u5FC5\u987B\u4E3A\u73B0\u6709 HTML \u76F8\u5BF9\u8DEF\u5F84\u7684\u6570\u7EC4");
     custom.forEach(add);
@@ -6614,7 +6762,7 @@ async function scanSite(root, directory, prefix) {
   add("index.htm");
   for (const navigation of ["components/header.js", "components/footer.js", "index.html"]) {
     try {
-      const file = await contained(root, join4(site, navigation));
+      const file = await contained(root, join5(site, navigation));
       const html = await readFile4(file, "utf8");
       for (const match of html.matchAll(/<a\b[^>]*\bhref\s*=\s*["']([^"'#?]+\.html?)(?:[?#][^"']*)?["']/gi)) {
         const url = new URL(match[1], "https://site.local/");
@@ -6640,13 +6788,16 @@ function instrument(html, embedded = false) {
   window.__websiteBuilderLocation = new URL(virtualUrl);
   const embedded = ${embedded};
   if (embedded) {
+    const mockFrame = ['checkout','wishlist','cart','orders','order','order-confirmation'].includes(window.__websiteBuilderLocation.pathname.split('/').pop().split('.')[0]);
+    window.__websiteBuilderMockFrame = mockFrame;
     let stored = "__WEBSITE_BUILDER_STORAGE__";
-    const storage = {getItem:key=>Object.prototype.hasOwnProperty.call(stored,key)?stored[key]:null,setItem(key,value){stored[String(key)]=String(value);parent.postMessage({type:'website-builder:storage',value:stored},'*');},removeItem(key){delete stored[key];parent.postMessage({type:'website-builder:storage',value:stored},'*');},clear(){stored={};parent.postMessage({type:'website-builder:storage',value:stored},'*');},key:index=>Object.keys(stored)[index]||null,get length(){return Object.keys(stored).length;}};
+    if(mockFrame)stored={...stored};
+    const storage = {getItem:key=>Object.prototype.hasOwnProperty.call(stored,key)?stored[key]:null,setItem(key,value){stored[String(key)]=String(value);if(!mockFrame)parent.postMessage({type:'website-builder:storage',value:stored},'*');},removeItem(key){delete stored[key];if(!mockFrame)parent.postMessage({type:'website-builder:storage',value:stored},'*');},clear(){stored={};if(!mockFrame)parent.postMessage({type:'website-builder:storage',value:stored},'*');},key:index=>Object.keys(stored)[index]||null,get length(){return Object.keys(stored).length;}};
     Object.defineProperty(window,'localStorage',{value:storage}); Object.defineProperty(window,'sessionStorage',{value:storage});
     // Preserve embedded images when the demo's optional URL formatter adds its CDN prefix.
     let imageFormatter;
     Object.defineProperty(window,'formatCdnUrl',{configurable:true,get:()=>imageFormatter,set:fn=>{imageFormatter=typeof fn==='function'?function(url,...args){return typeof url==='string' && /^(data:|blob:)/i.test(url)?url:fn.call(this,url,...args);}:fn;}});
-    addEventListener('message',event=>{if(event.source===parent && event.data?.type==='website-builder:storage-sync'){stored=event.data.value;dispatchEvent(new Event('storage'));}});
+    addEventListener('message',event=>{if(!mockFrame && event.source===parent && event.data?.type==='website-builder:storage-sync'){stored=event.data.value;dispatchEvent(new Event('storage'));}});
   }
   let previous = 0, pending = false;
   let scrollIdle;
@@ -6713,18 +6864,18 @@ function instrument(html, embedded = false) {
   },{passive:false});
 })();</script>`;
   const base = embedded ? '<base href="__WEBSITE_BUILDER_BASE_URL__">' : "";
-  return /<head\b[^>]*>/i.test(html) ? html.replace(/<head\b[^>]*>/i, (match) => match + base + script + proxyRuntime) : base + script + proxyRuntime + html;
+  return /<head\b[^>]*>/i.test(html) ? html.replace(/<head\b[^>]*>/i, (match) => match + base + script + (embedded ? previewMock : "") + proxyRuntime) : base + script + (embedded ? previewMock : "") + proxyRuntime + html;
 }
 async function compileProjectPage(root, directory, path) {
   const vendor = fileURLToPath2(new URL("../vendor/", import.meta.url));
-  const assets = JSON.parse(await readFile4(join4(vendor, "manifest.json"), "utf8"));
+  const assets = JSON.parse(await readFile4(join5(vendor, "manifest.json"), "utf8"));
   const base = await realpath2(root), site = await contained(base, directory);
   return instrument(await snapshotCompiler(base, site, vendor, assets)(path), true);
 }
 async function createPreview(ui, configuredRoot, defaultDirectory = "www.noventrad.com", projectSync, manageProjects) {
   const referenceRoot = () => realpath2(configuredRoot);
   const vendor = fileURLToPath2(new URL("../vendor/", import.meta.url));
-  const assets = JSON.parse(await readFile4(join4(vendor, "manifest.json"), "utf8"));
+  const assets = JSON.parse(await readFile4(join5(vendor, "manifest.json"), "utf8"));
   const siteKeys = /* @__PURE__ */ new Set();
   async function readWebsite(directory, includeHtml = true) {
     const root = await referenceRoot();
@@ -6800,7 +6951,7 @@ async function createPreview(ui, configuredRoot, defaultDirectory = "www.noventr
         return;
       }
       if (route === "/api/project-sync" && projectSync) {
-        const value = await projectSync({ since: url.searchParams.get("since") || "none", known: JSON.parse(url.searchParams.get("known") || "{}"), waitMs: Number(url.searchParams.get("wait") || "20000"), threadId: url.searchParams.get("thread_id") || void 0, projectId: url.searchParams.get("project_id") || void 0 });
+        const value = await projectSync({ metadataOnly: url.searchParams.get("metadata_only") === "1", pageLimit: url.searchParams.has("page_limit") ? Number(url.searchParams.get("page_limit")) : void 0, priorityPath: url.searchParams.get("priority_path") || void 0, since: url.searchParams.get("since") || "none", known: JSON.parse(url.searchParams.get("known") || "{}"), waitMs: Number(url.searchParams.get("wait") || "20000"), threadId: url.searchParams.get("thread_id") || void 0, projectId: url.searchParams.get("project_id") || void 0 });
         res.setHeader("Content-Type", "application/json");
         res.end(JSON.stringify(value));
         return;
@@ -6913,7 +7064,7 @@ async function replaceAsync(value, regex, replace) {
   return value.replace(regex, () => values[index++]);
 }
 function snapshotCompiler(root, site, vendor, vendors) {
-  const cache2 = /* @__PURE__ */ new Map();
+  const cache3 = /* @__PURE__ */ new Map();
   let documentFile = "";
   const missing = "data:image/svg+xml;base64," + Buffer.from('<svg xmlns="http://www.w3.org/2000/svg" width="300" height="200"><rect width="100%" height="100%" fill="#f4f5f4"/><path d="M122 120l20-24 16 16 18-28 20 36z" fill="#d1d8d3"/></svg>').toString("base64");
   async function asset(url, from, external = false, preserveMissing = false) {
@@ -6935,7 +7086,7 @@ function snapshotCompiler(root, site, vendor, vendors) {
     const type = types2[extname2(file).toLowerCase()];
     if (!type) return url;
     const cacheKey = `${external ? "embedded" : "lazy"}:${preserveMissing ? "literal" : "resource"}:${file}`;
-    if (!cache2.has(cacheKey)) cache2.set(cacheKey, (async () => {
+    if (!cache3.has(cacheKey)) cache3.set(cacheKey, (async () => {
       try {
         const safe = await contained(file.startsWith(vendor) ? vendor : root, file);
         if (!external && /^(?:image\/(?!svg)|video\/|audio\/)/.test(type)) return registerPreviewFile(safe, type);
@@ -6951,7 +7102,7 @@ function snapshotCompiler(root, site, vendor, vendors) {
         return type.startsWith("image/") ? missing : `data:${type};base64,`;
       }
     })());
-    return cache2.get(cacheKey);
+    return cache3.get(cacheKey);
   }
   async function transform(text2, from, css = false, script = false) {
     if (css) {
@@ -7003,7 +7154,7 @@ import { readFile as readFile6, stat as stat3 } from "node:fs/promises";
 import { createHash as createHash2 } from "node:crypto";
 var maximum = 64 * 1024 * 1024;
 var privateAddress = (ip) => /^(?:0\.|10\.|127\.|169\.254\.|192\.168\.|172\.(?:1[6-9]|2\d|3[01])\.|22[4-9]\.|2[3-5]\d\.)/.test(ip) || ip.includes(":") && (/^(?:::|f[cd]|fe[89ab])/i.test(ip) || ip.toLowerCase().includes("ffff:"));
-var cache = /* @__PURE__ */ new Map();
+var cache2 = /* @__PURE__ */ new Map();
 var previewPrefix = "https://website-builder.invalid/preview-assets/";
 var previewFiles = /* @__PURE__ */ new Map();
 var previewBuffers = /* @__PURE__ */ new Map();
@@ -7099,7 +7250,7 @@ async function proxyResource(url, raw = false, chain = []) {
     return { bytes: await readFile6(entry2.file), mime: entry2.mime, url, status: 200 };
   }
   if (chain.includes(url)) throw new Error(`\u8D44\u6E90\u5FAA\u73AF\u4F9D\u8D56\uFF1A${url}`);
-  const existing = cache.get(key);
+  const existing = cache2.get(key);
   if (existing && Date.now() - existing.time < 6e5) return existing.value;
   const entry = { time: Date.now(), size: 0, value: Promise.resolve(null) };
   entry.value = (async () => {
@@ -7132,20 +7283,20 @@ async function proxyResource(url, raw = false, chain = []) {
       }
     }
     entry.size = resource.bytes.length;
-    let size = [...cache.values()].reduce((sum, value) => sum + value.size, 0);
-    for (const [key2, value] of cache) {
+    let size = [...cache2.values()].reduce((sum, value) => sum + value.size, 0);
+    for (const [key2, value] of cache2) {
       if (size < 128 * 1024 * 1024) break;
       if (value !== entry) {
-        cache.delete(key2);
+        cache2.delete(key2);
         size -= value.size;
       }
     }
     return resource;
   })().catch((error) => {
-    cache.delete(key);
+    cache2.delete(key);
     throw error;
   });
-  cache.set(key, entry);
+  cache2.set(key, entry);
   return entry.value;
 }
 async function resourceChunk(url, offset2 = 0, raw = false) {
@@ -7160,24 +7311,19 @@ function previewPayload(gzip) {
   return gzip.length <= 1e6 ? gzip : { resource: registerPreviewBuffer(Buffer.from(gzip, "base64"), "application/gzip") };
 }
 function compactProject(view) {
-  return { project_id: view.project.id, thread_id: view.threadId, directory: view.directory, metadata_directory: view.metadataDirectory, name: view.project.name, language: view.project.language, brief: view.project.brief, pages: view.project.pages.map(({ path, status, error }) => ({ path, status, ...error ? { error } : {} })) };
+  return { project_id: view.project.id, thread_id: view.threadId, directory: view.directory, metadata_directory: view.metadataDirectory, name: view.project.name, country: view.project.country, categories: view.project.categories, brand: view.project.brand, language: view.project.language, brief: view.project.brief, pages: view.project.pages.map(({ path, status, error }) => ({ path, status, ...error ? { error } : {} })) };
 }
 function projectService(store) {
-  const cache2 = /* @__PURE__ */ new Map();
+  const cache3 = /* @__PURE__ */ new Map();
   return async function sync(input) {
     const load2 = async () => {
       if (!input.projectId) return store.reconcile(input.threadId);
-      if (!input.threadId) {
-        const view2 = await store.get(void 0, input.projectId);
-        return view2 ? { ...view2, threadId: "", revision: `${view2.project.id}::${view2.project.revision}` } : null;
-      }
-      const binding = await store.get(input.threadId);
-      return binding?.project.id === input.projectId ? store.reconcile(input.threadId) : store.get(input.threadId, input.projectId);
+      return store.reconcile(input.threadId, input.projectId);
     };
     let view = await load2();
     const known = input.known || {};
     const missing = view?.project.pages.some((page) => page.status === "ready" && known[page.path] !== page.version);
-    if (!missing && (view?.revision || "none") === (input.since || "none")) {
+    if (!input.metadataOnly && !missing && (view?.revision || "none") === (input.since || "none")) {
       if (!input.projectId) view = await store.wait(input.since || "none", input.threadId, input.waitMs ?? 2e4);
       else {
         const deadline = Date.now() + Math.min(input.waitMs ?? 2e4, 2e4);
@@ -7188,18 +7334,20 @@ function projectService(store) {
       }
     }
     if (!view) return { revision: "none", unchanged: true };
-    if (!missing && view.revision === input.since) return { revision: view.revision, unchanged: true };
+    if (!input.metadataOnly && !missing && view.revision === input.since) return { revision: view.revision, unchanged: true };
     const manifest = { directory: view.project.id, name: view.project.name, projectId: view.project.id, threadId: view.threadId, revision: view.revision, order: "\u9879\u76EE\u9875\u9762\u8BA1\u5212", warnings: [], pages: view.project.pages.map((page) => ({ ...page, url: `https://website-builder.invalid/files/${view.project.id}/${page.path.split("/").map(encodeURIComponent).join("/")}` })) };
     const pages = {}, errors = {};
     let size = 0;
-    for (const page of view.project.pages) {
+    const ordered = [...view.project.pages].sort((a, b) => Number(b.path === (input.priorityPath || "index.html")) - Number(a.path === (input.priorityPath || "index.html")));
+    for (const page of input.metadataOnly ? [] : ordered) {
+      if (Object.keys(pages).length + Object.keys(errors).length >= (input.pageLimit ?? Infinity)) break;
       if (page.status !== "ready" || known[page.path] === page.version) continue;
       const key = `${view.project.id}:${page.path}`;
       try {
-        let saved = cache2.get(key);
+        let saved = cache3.get(key);
         if (!saved || saved.version !== page.version) {
           saved = { version: page.version, gzip: gzipSync(await compileProjectPage(store.root, view.project.id, page.path)).toString("base64") };
-          cache2.set(key, saved);
+          cache3.set(key, saved);
         }
         const payload = previewPayload(saved.gzip), length = typeof payload === "string" ? payload.length : payload.resource.length;
         if (size > 0 && size + length > 28e5) break;
@@ -7209,10 +7357,10 @@ function projectService(store) {
         errors[page.path] = error.message;
       }
     }
-    let cacheBytes = [...cache2.values()].reduce((sum, item) => sum + item.gzip.length, 0);
-    for (const [key, value] of cache2) {
+    let cacheBytes = [...cache3.values()].reduce((sum, item) => sum + item.gzip.length, 0);
+    for (const [key, value] of cache3) {
       if (cacheBytes <= 24e6) break;
-      cache2.delete(key);
+      cache3.delete(key);
       cacheBytes -= value.gzip.length;
     }
     return { revision: view.revision, manifest, pages, errors, projects: await store.list() };
@@ -7221,25 +7369,25 @@ function projectService(store) {
 
 // server/commerce.ts
 import { readFile as readFile8, realpath as realpath4 } from "node:fs/promises";
-import { join as join6, relative as relative4, sep as sep4, isAbsolute as isAbsolute4 } from "node:path";
+import { join as join7, relative as relative4, sep as sep4, isAbsolute as isAbsolute4 } from "node:path";
 import { createHash as createHash3 } from "node:crypto";
 
 // server/commerce-assets.ts
 import { readFile as readFile7, realpath as realpath3 } from "node:fs/promises";
-import { join as join5, relative as relative3, sep as sep3, isAbsolute as isAbsolute3 } from "node:path";
+import { join as join6, relative as relative3, sep as sep3, isAbsolute as isAbsolute3 } from "node:path";
 async function commerceAssets(directory, skillRoot) {
   const files = [], kept = [];
   for (const name of ["sdk.js", "app.js"]) {
     const path = `js/${name}`;
     try {
-      const file = await realpath3(join5(directory, path)), base = await realpath3(directory), rel = relative3(base, file);
+      const file = await realpath3(join6(directory, path)), base = await realpath3(directory), rel = relative3(base, file);
       if (rel === ".." || rel.startsWith(`..${sep3}`) || isAbsolute3(rel)) throw Error("\u8FD0\u884C\u6587\u4EF6\u4E0D\u80FD\u6307\u5411\u9879\u76EE\u5916\u90E8");
       await readFile7(file, "utf8");
       kept.push(path);
     } catch (error) {
       if (error.code !== "ENOENT") throw error;
       if (name === "app.js") continue;
-      const source = await readFile7(join5(skillRoot, "assets/commerce", name), "utf8");
+      const source = await readFile7(join6(skillRoot, "assets/commerce", name), "utf8");
       files.push({ path, content: source });
     }
   }
@@ -7249,7 +7397,7 @@ async function commerceAssets(directory, skillRoot) {
 // server/commerce.ts
 async function existingFile(directory, path) {
   try {
-    const file = await realpath4(join6(directory, path));
+    const file = await realpath4(join7(directory, path));
     const rel = relative4(await realpath4(directory), file);
     if (rel === ".." || rel.startsWith(`..${sep4}`) || isAbsolute4(rel)) throw new Error("\u5546\u54C1\u6587\u4EF6\u4E0D\u80FD\u6307\u5411\u9879\u76EE\u5916\u90E8");
     return await readFile8(file, "utf8");
@@ -7374,7 +7522,7 @@ async function prepareCommerce(store, skillRoot, input) {
   const existing = await existingFile(view.directory, "js/data.js");
   let imported = false;
   try {
-    const record = JSON.parse(await readFile8(join6(view.metadataDirectory, "website-builder.import.json"), "utf8"));
+    const record = JSON.parse(await readFile8(join7(view.metadataDirectory, "website-builder.import.json"), "utf8"));
     imported = ["sdk-import-v1", "sdk-import-v2"].includes(record.schema) && !!existing && record.runtime_data_sha256 === createHash3("sha256").update(existing).digest("hex");
   } catch (error) {
     if (error.code !== "ENOENT" && !(error instanceof SyntaxError)) throw error;
@@ -7449,7 +7597,7 @@ window.storeData = {
 // server/screenshot.ts
 import { createServer as createServer2 } from "node:http";
 import { readFile as readFile9, mkdir as mkdir2, writeFile as writeFile2 } from "node:fs/promises";
-import { dirname as dirname3, extname as extname3, join as join7 } from "node:path";
+import { dirname as dirname3, extname as extname3, join as join8 } from "node:path";
 import { fileURLToPath as fileURLToPath3 } from "node:url";
 import { randomBytes as randomBytes3 } from "node:crypto";
 var mime2 = { ".html": "text/html", ".js": "text/javascript", ".mjs": "text/javascript", ".css": "text/css", ".json": "application/json", ".png": "image/png", ".jpg": "image/jpeg", ".jpeg": "image/jpeg", ".webp": "image/webp", ".avif": "image/avif", ".gif": "image/gif", ".svg": "image/svg+xml", ".ico": "image/x-icon", ".woff": "font/woff", ".woff2": "font/woff2", ".ttf": "font/ttf" };
@@ -7467,7 +7615,7 @@ async function screenshotPage(store, input) {
     runtime2
   );
   const vendor = fileURLToPath3(new URL("../vendor/", import.meta.url));
-  const vendors = JSON.parse(await readFile9(join7(vendor, "manifest.json"), "utf8"));
+  const vendors = JSON.parse(await readFile9(join8(vendor, "manifest.json"), "utf8"));
   const token = randomBytes3(24).toString("hex");
   const prefix = `/${token}/`;
   const service = createServer2(async (req, res) => {
@@ -7596,7 +7744,7 @@ async function screenshotPage(store, input) {
         }, Array.from(bytes));
         bytes = Buffer.from(data2, "base64");
       }
-      const path = join7(view.metadataDirectory, "artifacts/screenshots", `${input.path.split(/[?#]/)[0].replace(/[^a-zA-Z0-9_-]/g, "-")}-${width}-${Date.now()}-${randomBytes3(3).toString("hex")}.png`);
+      const path = join8(view.metadataDirectory, "artifacts/screenshots", `${input.path.split(/[?#]/)[0].replace(/[^a-zA-Z0-9_-]/g, "-")}-${width}-${Date.now()}-${randomBytes3(3).toString("hex")}.png`);
       await mkdir2(dirname3(path), { recursive: true });
       await writeFile2(path, bytes);
       return { path, width, page: input.path, bytes };
@@ -7618,7 +7766,7 @@ async function screenshotPage(store, input) {
 
 // server/product-import.ts
 import { readFile as readFile10, stat as stat4 } from "node:fs/promises";
-import { isAbsolute as isAbsolute5, join as join8 } from "node:path";
+import { isAbsolute as isAbsolute5, join as join9 } from "node:path";
 import { createHash as createHash4 } from "node:crypto";
 import { runInNewContext } from "node:vm";
 var valueAt = (item, path) => path.split(".").reduce((value, key) => value && Object.hasOwn(value, key) ? value[key] : void 0, item);
@@ -7764,7 +7912,7 @@ async function importProducts(store, skillRoot, input) {
     return { mode: "mock", fallback: true, next_skill: "website-mock-data", reason: error.message, written: [], source_sha256: fingerprint, note: "\u539F\u59CBJSON\u548C\u73B0\u6709\u5546\u54C1\u6570\u636E\u672A\u6539\u5199\uFF1B\u4E3B\u6280\u80FD\u63A5\u7EEDMock Data\u5DE5\u4F5C\u6D41\uFF0C\u4E0D\u628A\u5931\u8D25\u5BFC\u5165\u5192\u5145\u6210\u529F\u3002" };
   }
   const window2 = { productData: normalized.products };
-  runInNewContext(await readFile10(join8(skillRoot, "assets/commerce/sdk.js"), "utf8"), { window: window2, Intl }, { timeout: 2e3 });
+  runInNewContext(await readFile10(join9(skillRoot, "assets/commerce/sdk.js"), "utf8"), { window: window2, Intl }, { timeout: 2e3 });
   const config = { currency: input.currency || "USD", locale: input.locale || "en-US", storageKey: `website-builder:${view.project.id}` };
   window2.SDK.init(normalized.products, config);
   const sourceCategories = window2.SDK.categories();
@@ -7837,37 +7985,37 @@ window.storeData = { getAll:()=>window.SDK.list().result(), getById:id=>window.S
 }
 
 // server/data-paths.ts
-import { homedir } from "node:os";
-import { isAbsolute as isAbsolute6, join as join9, resolve as resolve4 } from "node:path";
+import { homedir as homedir2 } from "node:os";
+import { isAbsolute as isAbsolute6, join as join10, resolve as resolve4 } from "node:path";
 import { fileURLToPath as fileURLToPath4 } from "node:url";
 function dataPaths(env = process.env) {
-  const home = homedir();
-  const base = process.platform === "win32" ? env.LOCALAPPDATA || join9(home, "AppData", "Local") : env.XDG_DATA_HOME && isAbsolute6(env.XDG_DATA_HOME) ? env.XDG_DATA_HOME : join9(home, ".local", "share");
-  const root = resolve4(env.WEBSITE_BUILDER_DATA_DIR || join9(base, "codex-website-builder"));
+  const home = homedir2();
+  const base = process.platform === "win32" ? env.LOCALAPPDATA || join10(home, "AppData", "Local") : env.XDG_DATA_HOME && isAbsolute6(env.XDG_DATA_HOME) ? env.XDG_DATA_HOME : join10(home, ".local", "share");
+  const root = resolve4(env.WEBSITE_BUILDER_DATA_DIR || join10(base, "codex-website-builder"));
   const expand = (value) => resolve4(value.replaceAll("${PLUGIN_ROOT}", fileURLToPath4(new URL("../../", import.meta.url))));
   return {
     root,
-    project: env.WEBSITE_BUILDER_PROJECT_ROOT ? expand(env.WEBSITE_BUILDER_PROJECT_ROOT) : join9(root, "project"),
-    reference: env.WEBSITE_BUILDER_ROOT ? expand(env.WEBSITE_BUILDER_ROOT) : join9(root, "reference")
+    project: env.WEBSITE_BUILDER_PROJECT_ROOT ? expand(env.WEBSITE_BUILDER_PROJECT_ROOT) : join10(root, "project"),
+    reference: env.WEBSITE_BUILDER_ROOT ? expand(env.WEBSITE_BUILDER_ROOT) : join10(root, "reference")
   };
 }
 
 // server/migrate-data.ts
 import { cp, mkdir as mkdir3, open as open2, readdir as readdir3, readFile as readFile11, rename as rename2, rm, stat as stat5, lstat } from "node:fs/promises";
-import { dirname as dirname4, join as join10, resolve as resolve5 } from "node:path";
+import { dirname as dirname4, join as join11, resolve as resolve5 } from "node:path";
 import { fileURLToPath as fileURLToPath5 } from "node:url";
 import { randomUUID as randomUUID2 } from "node:crypto";
 async function migrateLegacyData(projectRoot, sources) {
   if (!sources && (process.env.WEBSITE_BUILDER_PROJECT_ROOT || process.env.WEBSITE_BUILDER_DATA_DIR)) return;
   const pluginRoot = fileURLToPath5(new URL("../../", import.meta.url));
   if (!sources) {
-    sources = [join10(pluginRoot, "project")];
+    sources = [join11(pluginRoot, "project")];
     if (dirname4(pluginRoot).split(/[\\/]/).pop() === "codex-website-builder") {
       for (const entry of await readdir3(dirname4(pluginRoot), { withFileTypes: true })) {
         if (!entry.isDirectory()) continue;
-        const root = join10(dirname4(pluginRoot), entry.name);
-        const manifest = await readFile11(join10(root, "package.json"), "utf8").then(JSON.parse).catch(() => null);
-        if (manifest?.name === "codex-website-builder") sources.push(join10(root, "project"));
+        const root = join11(dirname4(pluginRoot), entry.name);
+        const manifest = await readFile11(join11(root, "package.json"), "utf8").then(JSON.parse).catch(() => null);
+        if (manifest?.name === "codex-website-builder") sources.push(join11(root, "project"));
       }
     }
   }
@@ -7875,8 +8023,8 @@ async function migrateLegacyData(projectRoot, sources) {
   for (const source of new Set(sources)) if (resolve5(source) !== resolve5(projectRoot) && (await stat5(source).catch(() => null))?.isDirectory()) existing.push(source);
   if (!existing.length) return;
   const base = dirname4(projectRoot);
-  await mkdir3(join10(base, "db"), { recursive: true });
-  const lockPath = join10(base, "db", "migration.lock");
+  await mkdir3(join11(base, "db"), { recursive: true });
+  const lockPath = join11(base, "db", "migration.lock");
   let lock;
   for (let attempt = 0; attempt < 100; attempt++) {
     try {
@@ -7908,17 +8056,17 @@ async function migrateLegacyData(projectRoot, sources) {
   if (!lock) throw Error("\u5168\u5C40\u9879\u76EE\u8FC1\u79FB\u6B63\u5728\u8FDB\u884C\uFF0C\u8BF7\u7A0D\u540E\u91CD\u65B0\u6253\u5F00\u63D2\u4EF6");
   try {
     await mkdir3(projectRoot, { recursive: true });
-    const state = join10(base, ".builder-state");
+    const state = join11(base, ".builder-state");
     for (const source of existing) {
-      const oldState = join10(dirname4(source), ".builder-state");
+      const oldState = join11(dirname4(source), ".builder-state");
       for (const entry of await readdir3(source, { withFileTypes: true })) {
         if (!entry.isDirectory() || !/^[a-f0-9]{4}(?:-[a-f0-9]{4}){3}$/.test(entry.name)) continue;
-        const target = join10(projectRoot, entry.name), metadata = join10(state, "projects", entry.name);
+        const target = join11(projectRoot, entry.name), metadata = join11(state, "projects", entry.name);
         if (await stat5(target).catch(() => null) || await stat5(metadata).catch(() => null)) continue;
-        const stage = join10(base, `.migration-${randomUUID2()}`);
+        const stage = join11(base, `.migration-${randomUUID2()}`);
         try {
-          await cp(join10(source, entry.name), stage, { recursive: true, errorOnExist: true, force: false, filter: async (path) => !(await lstat(path)).isSymbolicLink() });
-          const oldMeta = join10(oldState, "projects", entry.name);
+          await cp(join11(source, entry.name), stage, { recursive: true, errorOnExist: true, force: false, filter: async (path) => !(await lstat(path)).isSymbolicLink() });
+          const oldMeta = join11(oldState, "projects", entry.name);
           if (await stat5(oldMeta).catch(() => null)) {
             await mkdir3(dirname4(metadata), { recursive: true });
             await cp(oldMeta, metadata, { recursive: true, errorOnExist: true, force: false, filter: async (path) => !(await lstat(path)).isSymbolicLink() });
@@ -7928,10 +8076,10 @@ async function migrateLegacyData(projectRoot, sources) {
           await rm(stage, { recursive: true, force: true });
         }
       }
-      const threads = await readdir3(join10(oldState, "threads"), { withFileTypes: true }).catch(() => []);
-      await mkdir3(join10(state, "threads"), { recursive: true });
-      for (const entry of threads) if (entry.isFile() && entry.name.endsWith(".json")) await cp(join10(oldState, "threads", entry.name), join10(state, "threads", entry.name), { force: false });
-      if (await stat5(join10(oldState, "active.json")).catch(() => null)) await cp(join10(oldState, "active.json"), join10(state, "active.json"), { force: false });
+      const threads = await readdir3(join11(oldState, "threads"), { withFileTypes: true }).catch(() => []);
+      await mkdir3(join11(state, "threads"), { recursive: true });
+      for (const entry of threads) if (entry.isFile() && entry.name.endsWith(".json")) await cp(join11(oldState, "threads", entry.name), join11(state, "threads", entry.name), { force: false });
+      if (await stat5(join11(oldState, "active.json")).catch(() => null)) await cp(join11(oldState, "active.json"), join11(state, "active.json"), { force: false });
     }
   } finally {
     await lock.close();
@@ -7939,10 +8087,27 @@ async function migrateLegacyData(projectRoot, sources) {
   }
 }
 
+// server/project-presentation.ts
+var statusLabels = { pending: "\u5F85\u5F00\u59CB", generating: "\u751F\u6210\u4E2D", modifying: "\u4FEE\u6539\u4E2D", completed: "\u5DF2\u5B8C\u6210", failed: "\u6267\u884C\u5931\u8D25", paused: "\u5DF2\u6682\u505C" };
+function projectTitle(project) {
+  const country = project.country?.trim();
+  let region = country || "", language = "";
+  try {
+    if (country && /^[a-z]{2}$/i.test(country)) region = new Intl.DisplayNames(["zh-CN"], { type: "region" }).of(country.toUpperCase()) || country;
+    if (project.language) language = new Intl.DisplayNames(["zh-CN"], { type: "language" }).of(project.language.split("-")[0]) || project.language;
+  } catch {
+    language = project.language || language;
+  }
+  const categories = project.categories?.filter(Boolean).slice(0, 2).join("\u4E0E") || "";
+  const identity = [region, language].filter(Boolean).join(" \xB7 ");
+  const title = [identity, categories].filter(Boolean).join("\uFF5C");
+  return !region && !categories ? [project.brand || project.name, language].filter(Boolean).join(" \xB7 ") : title || project.brand || project.name || "";
+}
+
 // server/project-manager.ts
 import { readFile as readFile12, mkdir as mkdir4, copyFile, realpath as realpath6, stat as stat7, readdir as readdir4 } from "node:fs/promises";
 import { createHash as createHash5 } from "node:crypto";
-import { extname as extname4, join as join11, relative as relative5, sep as sep5, isAbsolute as isAbsolute7 } from "node:path";
+import { extname as extname4, join as join12, relative as relative5, sep as sep5, isAbsolute as isAbsolute7 } from "node:path";
 
 // server/open-directory.ts
 import { spawn } from "node:child_process";
@@ -8055,16 +8220,8 @@ function projectManager(store) {
         if (path && rel !== ".." && !rel.startsWith(`..${sep5}`) && !isAbsolute7(rel)) image = `data:image/png;base64,${(await readFile12(path)).toString("base64")}`;
       }
       const details = store.database.project(project.id);
-      let domain = [...`${project.name} ${details?.brief || ""}`.matchAll(/(?:https?:\/\/)?((?:[a-z0-9](?:[a-z0-9-]*[a-z0-9])?\.)+[a-z]{2,24})\b/gi)].map((match) => match[1].toLowerCase()).find((host) => !/\.(?:html?|css|js|json|png|jpe?g|webp|svg|avif)$/i.test(host));
-      if (!domain) for (const name of ["index.html", "components/footer.js"]) {
-        try {
-          const base = await realpath6(join11(store.root, project.id)), source = await readFile12(await contained(base, name), "utf8");
-          domain = source.match(/<link\b(?=[^>]*\brel\s*=\s*["']canonical["'])[^>]*\bhref\s*=\s*["']https?:\/\/([^/"']+)/i)?.[1] || source.match(/support@([a-z0-9.-]+\.[a-z]{2,24})/i)?.[1];
-          if (domain) break;
-        } catch {
-        }
-      }
-      return { id: project.id, name: project.name, displayName: `\u7F51\u7AD9-${domain || project.name}`, domain, updatedAt: project.updatedAt, thumbnail: image };
+      const status = store.database.status(project.id);
+      return { id: project.id, name: project.name, brand: details?.brand || project.name, country: details?.country, language: details?.language, categories: details?.categories || [], displayName: projectTitle(details || {}), status, statusLabel: statusLabels[status], deletable: !["generating", "modifying"].includes(status), updatedAt: project.updatedAt, thumbnail: image };
     }));
   }
   async function context(thread, panelId) {
@@ -8079,7 +8236,7 @@ function projectManager(store) {
     const scan = async (directory) => {
       for (const entry of await readdir4(directory, { withFileTypes: true })) {
         if (entry.name.startsWith(".") || entry.name === "node_modules") continue;
-        const path = join11(directory, entry.name);
+        const path = join12(directory, entry.name);
         if (entry.isDirectory()) await scan(path);
         else if (entry.isFile() && !/\.(?:html?|js|mjs|css)$/i.test(path)) {
           const info = await stat7(path);
@@ -8094,16 +8251,65 @@ function projectManager(store) {
     const action = input.action || "list";
     const panel = input.panel_id ? store.database.panelById(input.panel_id) : void 0;
     const thread = input.thread_id || process.env.CODEX_THREAD_ID || process.env.CODEX_SESSION_ID || panel?.thread_id || void 0;
-    if (action === "list") return { projects: await list(), thread_id: thread || null };
-    if (action === "context") return context(thread, input.panel_id);
+    if (action === "list") return { projects: await list(), thread_id: panel?.thread_id || thread || null };
+    if (action === "context") {
+      const value = await context(thread, input.panel_id);
+      if (!input.requirement?.trim()) return value;
+      const fingerprint = createHash5("sha256").update(input.requirement.trim().replace(/\s+/g, " ")).digest("hex");
+      const rows = store.database.sql.prepare("SELECT key,value FROM settings WHERE key LIKE 'submission:%'").all();
+      const matches = rows.flatMap((row) => {
+        try {
+          const record = JSON.parse(row.value);
+          return record.state === "pending" && record.requirement_hash === fingerprint && Date.now() - Date.parse(record.created_at) < 10 * 60 * 1e3 ? [{ panel_id: row.key.slice("submission:".length), request_id: record.request_id, action: "create" }] : [];
+        } catch {
+          return [];
+        }
+      });
+      if (matches.length === 1) return { ...value, submission: matches[0] };
+      return matches.length > 1 ? { ...value, submission_ambiguous: true } : value;
+    }
     if (!input.panel_id || !/^[a-zA-Z0-9_-]{8,128}$/.test(input.panel_id)) throw Error("\u9700\u8981\u5F53\u524D\u9762\u677F ID");
-    if (panel?.thread_id && thread && panel.thread_id !== thread) throw Error("\u9762\u677F\u4E0D\u5C5E\u4E8E\u5F53\u524D\u4F1A\u8BDD");
+    const handoffRow = input.request_id ? store.database.sql.prepare("SELECT value FROM settings WHERE key=?").get("submission:" + input.panel_id) : void 0;
+    const handoff = handoffRow ? JSON.parse(handoffRow.value) : null;
+    const submissionHandoff = !!input.request_id && handoff?.request_id === input.request_id && (action === "create" && handoff.state === "pending" || action === "submission" && !input.submission_start);
+    if (panel?.thread_id && thread && panel.thread_id !== thread && !submissionHandoff) throw Error("\u9762\u677F\u4E0D\u5C5E\u4E8E\u5F53\u524D\u4F1A\u8BDD");
     if (action === "resume") {
       if (!thread && panel) return context(thread, input.panel_id);
       const binding = thread ? store.database.binding(thread) : null;
       const project = binding && store.database.project(binding.projectId);
       store.database.panel(input.panel_id, thread || "", project ? binding.projectId : null);
       return context(thread, input.panel_id);
+    }
+    const submissionKey = "submission:" + input.panel_id;
+    const readSubmission = () => {
+      const row = store.database.sql.prepare("SELECT value FROM settings WHERE key=?").get(submissionKey);
+      return row ? JSON.parse(row.value) : null;
+    };
+    const saveSubmission = (value) => store.database.sql.prepare("INSERT INTO settings VALUES (?,?) ON CONFLICT(key) DO UPDATE SET value=excluded.value").run(submissionKey, JSON.stringify(value));
+    if (action === "submission") {
+      if (!input.request_id || !/^[-a-zA-Z0-9_]{8,128}$/.test(input.request_id)) throw Error("\u63D0\u4EA4\u6807\u8BB0\u65E0\u6548");
+      const record = readSubmission();
+      if (input.cancel) {
+        if (record?.request_id === input.request_id) saveSubmission({ ...record, state: "cancelled" });
+        return { state: "cancelled" };
+      }
+      if (input.submission_start) {
+        if (record?.request_id === input.request_id) return record;
+        saveSubmission({ request_id: input.request_id, state: "pending", created_at: (/* @__PURE__ */ new Date()).toISOString(), ...input.requirement?.trim() ? { requirement_hash: createHash5("sha256").update(input.requirement.trim().replace(/\s+/g, " ")).digest("hex") } : {} });
+        return { state: "pending" };
+      }
+      if (record?.request_id !== input.request_id) throw Error("\u6B64\u63D0\u4EA4\u5DF2\u5931\u6548\uFF0C\u8BF7\u68C0\u67E5\u5F53\u524D\u5BF9\u8BDD");
+      if (input.detail_ready) {
+        if (record.state !== "created" || panel?.project_id !== record.project_id) throw Error("\u9879\u76EE\u8BE6\u60C5\u5C1A\u672A\u7ED1\u5B9A");
+        record.detail_ready = true;
+        saveSubmission(record);
+      }
+      if (record.state === "created") {
+        const view2 = await store.get(void 0, record.project_id);
+        if (!view2) throw Error("\u5DF2\u521B\u5EFA\u7684\u9879\u76EE\u4E0D\u53EF\u7528");
+        return { ...record, project: { page: "project", panel_id: input.panel_id, ...compactProject(view2), thread_id: record.thread_id } };
+      }
+      return record;
     }
     const id = input.project_id;
     if (action === "home") {
@@ -8112,10 +8318,28 @@ function projectManager(store) {
     }
     if (action === "create" || action === "open" || action === "bind") {
       if (action !== "create" && !id) throw Error("\u9700\u8981\u9879\u76EE ID");
-      const view2 = thread ? await store.open({ threadId: thread, projectId: id, newProject: action === "create", name: input.name }) : action === "create" ? await store.createProject({ name: input.name }) : await store.get(void 0, id);
-      if (!view2) throw Error("\u9879\u76EE\u4E0D\u5B58\u5728\u6216\u5DF2\u5220\u9664");
-      store.database.panel(input.panel_id, thread || "", view2.project.id);
-      return { page: "project", panel_id: input.panel_id, ...compactProject(view2), thread_id: thread || null };
+      if (input.request_id) {
+        const record = readSubmission();
+        if (record?.request_id !== input.request_id || record.state === "cancelled") throw Error("\u521B\u5EFA\u8BF7\u6C42\u5DF2\u53D6\u6D88\u6216\u5931\u6548");
+        if (record.state === "created") {
+          const existing = await store.get(void 0, record.project_id);
+          if (!existing) throw Error("\u9879\u76EE\u4E0D\u53EF\u7528");
+          return { page: "project", ...compactProject(existing), thread_id: record.thread_id };
+        }
+        if (record.state === "creating") throw Error("\u9879\u76EE\u6B63\u5728\u521B\u5EFA\uFF0C\u8BF7\u7A0D\u540E\u67E5\u8BE2\u7ED3\u679C");
+        if (record.state !== "pending") throw Error("\u521B\u5EFA\u8BF7\u6C42\u5DF2\u5931\u6548");
+        saveSubmission({ ...record, state: "creating" });
+      }
+      try {
+        const view2 = thread ? await store.open({ threadId: thread, projectId: id, newProject: action === "create", name: input.name, country: input.country, language: input.language, categories: input.categories, brand: input.brand, ...action === "create" ? { pages: [] } : {} }) : action === "create" ? await store.createProject({ name: input.name, country: input.country, language: input.language, categories: input.categories, brand: input.brand, pages: [] }) : await store.get(void 0, id);
+        if (!view2) throw Error("\u9879\u76EE\u4E0D\u5B58\u5728\u6216\u5DF2\u5220\u9664");
+        store.database.panel(input.panel_id, thread || "", view2.project.id, action === "create" && submissionHandoff);
+        if (input.request_id) saveSubmission({ request_id: input.request_id, state: "created", project_id: view2.project.id, thread_id: thread || null });
+        return { page: "project", panel_id: input.panel_id, ...compactProject(view2), thread_id: thread || null, ...input.request_id ? { ui_reused: true, request_id: input.request_id, next_action: "\u521D\u6B21\u521B\u5EFA\u590D\u7528\u539F\u9762\u677F\uFF0C\u67E5\u8BE2website_projects(action=submission,panel_id,request_id)\u7B49\u5F85detail_ready=true\u518D\u751F\u6210\uFF1B\u4F1A\u8BDD\u9014\u4E2D\u53EF\u7528open_canvas(thread_id)\u91CD\u65B0\u8FDB\u5165\u540C\u4E00\u9879\u76EE\u8BE6\u60C5\uFF0C\u4E0D\u65B0\u5EFA\u66FF\u4EE3\u9879\u76EE\u3002" } : {} };
+      } catch (error) {
+        if (input.request_id) saveSubmission({ request_id: input.request_id, state: "failed", error: error.message });
+        throw error;
+      }
     }
     if (!id) throw Error("\u9700\u8981\u9879\u76EE ID");
     if (action === "restore") {
@@ -8133,6 +8357,7 @@ function projectManager(store) {
         const info = await contained(view.directory, task.path).then((file) => stat7(file)).catch(() => null);
         if (task.status === "generating" && info?.isFile() && info.size > 0 && `${info.size}:${info.mtimeMs}` !== task.baseline) {
           task.status = "ready";
+          store.database.activity(id, "image:" + task.path, false);
           store.database.sql.prepare("UPDATE image_tasks SET status='ready',error='' WHERE project_id=? AND path=?").run(id, task.path);
         }
         if (task.status !== "ready") pending.set(task.path, task);
@@ -8188,9 +8413,9 @@ function projectManager(store) {
       const source = await realpath6(input.source_path), info = await stat7(source);
       if (!info.isFile() || info.size > 64 * 1024 * 1024) throw Error("\u8D44\u6E90\u5FC5\u987B\u662F\u6587\u4EF6\u4E14\u4E0D\u8D85\u8FC7 64 MB");
       const bytes = await readFile12(source), hash = createHash5("sha256").update(bytes).digest("hex");
-      const folder = join11(view.metadataDirectory, "session-assets");
+      const folder = join12(view.metadataDirectory, "session-assets");
       await mkdir4(folder, { recursive: true });
-      const path = join11(folder, hash + extname4(source));
+      const path = join12(folder, hash + extname4(source));
       await copyFile(source, path);
       const name = source.split(/[\\/]/).pop();
       store.database.sql.prepare("INSERT INTO resources VALUES (?,?,?,?,?,?,?) ON CONFLICT(project_id,path) DO UPDATE SET thread_id=excluded.thread_id,name=excluded.name").run(createHash5("sha256").update(id + path).digest("hex"), id, thread || null, name, path, mime3(path), info.size);
@@ -8206,6 +8431,7 @@ function projectManager(store) {
     const path = store.path(input.path);
     if (!mime3(path).startsWith("image/")) throw Error("\u56FE\u7247\u4EFB\u52A1\u9700\u8981\u6709\u6548\u56FE\u7247\u6269\u5C55\u540D");
     const info = await contained(view.directory, path).then((file) => stat7(file)).catch(() => null);
+    if (input.action === "begin" && info) throw Error("\u56FE\u7247\u5DF2\u5B58\u5728\uFF0C\u8BF7\u4F7F\u7528\u65B0\u7684\u7248\u672C\u6587\u4EF6\u540D\uFF0C\u4FDD\u7559\u539F\u56FE");
     if (input.action === "begin") store.database.sql.prepare(`INSERT INTO image_tasks(project_id,path,name,width,height,status,error,baseline) VALUES (?,?,?,?,?,'generating','',?) ON CONFLICT(project_id,path) DO UPDATE SET name=excluded.name,width=excluded.width,height=excluded.height,status='generating',error='',baseline=excluded.baseline`).run(input.project_id, path, input.name || path.split("/").pop(), input.width || 960, input.height || 600, info ? `${info.size}:${info.mtimeMs}` : "");
     else {
       const task = store.database.sql.prepare("SELECT baseline FROM image_tasks WHERE project_id=? AND path=?").get(input.project_id, path);
@@ -8213,6 +8439,7 @@ function projectManager(store) {
       if (input.action === "finish" && (!info?.isFile() || !info.size || `${info.size}:${info.mtimeMs}` === task.baseline)) throw Error("\u672C\u6B21\u56FE\u7247\u6210\u54C1\u5C1A\u672A\u5199\u5165\u9879\u76EE");
       store.database.sql.prepare("UPDATE image_tasks SET status=?,error=? WHERE project_id=? AND path=?").run(input.action === "finish" ? "ready" : "error", input.action === "fail" ? input.error || "\u56FE\u7247\u751F\u6210\u5931\u8D25\uFF0C\u8BF7\u91CD\u8BD5" : "", input.project_id, path);
     }
+    store.database.activity(input.project_id, "image:" + path, input.action === "begin");
     return { project_id: input.project_id, path, status: input.action === "begin" ? "generating" : input.action === "finish" ? "ready" : "error" };
   }
   return { run, context, thumbnail, imageTask, close: async () => {
