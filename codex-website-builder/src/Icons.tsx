@@ -1,7 +1,7 @@
 export function Icon({ name }: { name: 'select'|'hand'|'fit'|'width'|'pages'|'refresh'|'zoom'|'reset'|'folder'|'search'|'trash'|'send'|'copy'|'images'|'deploy'|'settings' }) {
   const paths = {
     deploy:<><path d="M14 3c3-1 6-1 7 0 1 1 1 4 0 7l-7 7-7-7 7-7Z"/><circle cx="16" cy="7" r="2"/><path d="m7 10-4 1-2 5 6-1m7 2-1 5-5 1 1-6M5 19l-3 3"/></>,
-    settings:<><path d="m9 3 1-2h4l1 2 3 2 2 1v4l-2 1v3l2 1v4l-3 1-2 2h-5l-1-2-3-1-2-1v-4l2-1v-3l-2-1V6l3-1 2-2Z"/><circle cx="12" cy="12" r="3"/></>,
+    settings:<><polygon points={Array.from({length:8},(_,tooth)=>[-16,-9,9,16].map((offset,index)=>{const angle=(tooth*45+offset)*Math.PI/180,radius=index===0||index===3?7.5:9.5;return `${12+Math.cos(angle)*radius},${12+Math.sin(angle)*radius}`;})).flat().join(' ')}/><circle cx="12" cy="12" r="3.25"/></>,
     copy:<><rect x="8" y="8" width="12" height="13" rx="2"/><path d="M16 8V3H3v13h5"/></>,
     images:<><rect x="3" y="4" width="18" height="16" rx="2"/><circle cx="8" cy="9" r="1.5"/><path d="m3 16 5-4 4 3 4-5 5 6"/></>,
     folder: <path d="M3 7V5h7l2 2h9v13H3z"/>,

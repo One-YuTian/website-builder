@@ -5,7 +5,6 @@ import { manageProjects } from './project-api';
 import { hostApp, hostReady, getLaunchThread } from './bridge';
 import { Icon } from './Icons';
 import {openPluginModal} from './plugin-modal';
-import {PluginSettings} from './PluginSettings';
 
 import { projectTime, statusLabels, type ProjectStatus } from '../server/project-presentation';
 type Project = {id:string;name:string;brand?:string;displayName?:string;country?:string;language?:string;categories?:string[];deploying?:boolean;status?:ProjectStatus;deletable?:boolean;updatedAt:string;thumbnail?:string};
@@ -17,13 +16,13 @@ export function ProjectManager({background}:{background:ReactNode}) {
     return()=>{document.removeEventListener('selectstart',block,true);document.removeEventListener('contextmenu',block,true);};
   },[]);
   const activeSubmission=useRef<string|null>(null);
-  const detailSubmission=useRef<string|null>(null);
+  const detailSubmission=useRef<{request_id:string;panel_id:string}|null>(null);
   const [panelId,setPanelId]=useState(()=>crypto.randomUUID());
   const activePanel=useRef(panelId);activePanel.current=panelId;
   const [projects,setProjects]=useState<Project[]>([]);
   const [detail,setDetail]=useState<Detail|null>(null);
 
-  const [showSettings,setShowSettings]=useState(false);
+  const [openingSettings,setOpeningSettings]=useState(false);
   const [query,setQuery]=useState('');
   const [error,setError]=useState('');
   useEffect(()=>{if(!detail||!error)return;const timer=setTimeout(()=>setError(''),3000);return()=>clearTimeout(timer);},[detail?.project_id,error]);
@@ -35,9 +34,9 @@ export function ProjectManager({background}:{background:ReactNode}) {
   const request=useCallback((input:Record<string,unknown>)=>manageProjects({panel_id:panelId,thread_id:thread.current,...input}),[panelId]);
   useEffect(()=>{
     if(!detail||!detailSubmission.current)return;
-    const requestId=detailSubmission.current;
+    const submission=detailSubmission.current;
     let stopped=false;
-    const acknowledge=()=>{if(detailSubmission.current!==requestId)return;void request({action:'submission',request_id:requestId,detail_ready:true}).then(()=>{if(detailSubmission.current===requestId)detailSubmission.current=null;}).catch(error=>{if(!stopped)setError(error.message);});};
+    const acknowledge=()=>{if(detailSubmission.current!==submission)return;void request({action:'submission',panel_id:submission.panel_id,request_id:submission.request_id,visible_panel_id:panelId,detail_ready:true}).then(()=>{if(detailSubmission.current===submission)detailSubmission.current=null;}).catch(error=>{if(!stopped)setError(error.message);});};
     acknowledge();const timer=setInterval(acknowledge,2000);
     return()=>{stopped=true;clearInterval(timer);};
   },[detail?.project_id,request]);
@@ -56,15 +55,16 @@ export function ProjectManager({background}:{background:ReactNode}) {
       const launched=getLaunchThread();if(launched)thread.current=launched;
       const value=await request({action:'resume'});
       if(stopped||revision!==navigation.current)return;
-      if(value.page==='project'){thread.current=value.thread_id||undefined;current.current=value;setDetail(value);}
+      if(value.page==='project'){thread.current=value.thread_id||undefined;detailSubmission.current=value.submission||null;current.current=value;setDetail(value);}
       else {current.current=null;setDetail(null);}
       await refresh();if(!stopped&&revision===navigation.current)await publish(value);
     }catch(error){if(!stopped&&revision===navigation.current)setError((error as Error).message);}};
     // A reopened chat entry must not inherit an earlier launch's panel/thread affinity.
-    // Keep the initial submission handoff intact until its original panel acknowledges it.
-    const launched=()=>{if(activeSubmission.current||detailSubmission.current)return;setPanelId(crypto.randomUUID());};window.addEventListener('website-builder:launch',launched);
+    // Finish an in-flight send before attaching a reused view to the new chat.
+    let launchTimer:ReturnType<typeof setTimeout>|undefined;
+    const launched=()=>{clearTimeout(launchTimer);if(activeSubmission.current){launchTimer=setTimeout(launched,100);return;}detailSubmission.current=null;setPanelId(crypto.randomUUID());};window.addEventListener('website-builder:launch',launched);
     void start();const timer=setInterval(()=>void refresh().catch(error=>setError((error as Error).message)),5000);
-    return()=>{stopped=true;navigation.current++;clearInterval(timer);window.removeEventListener('website-builder:launch',launched);};
+    return()=>{stopped=true;navigation.current++;clearInterval(timer);clearTimeout(launchTimer);window.removeEventListener('website-builder:launch',launched);};
   },[refresh,request,publish]);
   const home=async()=>{navigation.current++;try{await request({action:'home'});current.current=null;setDetail(null);setError('');await refresh();await publish({page:'home'});}catch(error){setError((error as Error).message);}};
   const open=async(id:string)=>{navigation.current++;setBusy(true);try{const value=await request({action:'open',project_id:id});current.current=value;setDetail(value);setError('');await publish(value);}catch(error){setError((error as Error).message);}finally{setBusy(false);}};
@@ -76,13 +76,13 @@ export function ProjectManager({background}:{background:ReactNode}) {
     await request({action:'submission',submission_start:true,request_id:requestId,requirement:text.trim()||'请根据附件创建网站。'});
     activeSubmission.current=requestId;setBusy(true);
     try{
-      await hostApp.updateModelContext({structuredContent:{panel_id:panelId,page:'home',submission:{request_id:requestId,action:'create',panel_id:panelId,instructions:'用户从首页提交了新建网站需求。必须使用 website-builder SKILL，先调用 website_projects(action=create, panel_id=此panel_id, request_id=此request_id, thread_id=当前真实会话ID)，提供国家/语言/主要类目/品牌等元数据。先创建空项目，原面板自动进入详情；初次提交无需另开面板，会话途中用户可再次打开UI进入当前已绑定的项目详情，不新建项目。查询website_projects(action=submission,panel_id,request_id)直到detail_ready=true，再沿用project_id规划页面、导入商品和生成内容，不能复用旧项目；附件随用户消息提供。'}}});
+      await hostApp.updateModelContext({structuredContent:{panel_id:panelId,page:'home',submission:{request_id:requestId,action:'create',panel_id:panelId,instructions:'用户从首页提交了新建网站需求。必须使用 website-builder SKILL，先调用 website_projects(action=create, panel_id=此panel_id, request_id=此request_id, thread_id=当前真实会话ID)，提供国家/语言/主要类目/品牌等元数据。先创建空项目，再立即调用open_thread_canvas(thread_id=当前新对话真实ID)一次，在新对话打开侧边UI并进入详情，不新建重复项目。查询website_projects(action=submission,panel_id,request_id)直到chat_detail_ready=true，再沿用project_id规划页面、导入商品和生成内容，不能复用旧项目；附件随用户消息提供。'}}});
       const message={role:'user' as const,content,_meta:{'openai/message':{target:'new',send:true}}};
       const result=await hostApp.sendMessage(message,{timeout:60000});
       if(result.isError)throw Error('新对话未接受消息，请重试。草稿已保留。');
       while(!signal.aborted){
         const value=await request({action:'submission',request_id:requestId});
-          if(value.state==='created'){thread.current=value.project.thread_id||undefined;detailSubmission.current=requestId;return value.project;}
+          if(value.state==='created'){thread.current=value.project.thread_id||undefined;detailSubmission.current={request_id:requestId,panel_id:panelId};return value.project;}
         if(!['pending','creating'].includes(value.state))throw Error(value.error||'创建请求已取消或失效。');
         await new Promise<void>(resolve=>{const done=()=>{clearTimeout(timer);signal.removeEventListener('abort',done);resolve();};const timer=setTimeout(done,1000);signal.addEventListener('abort',done,{once:true});});
       }
@@ -99,7 +99,6 @@ export function ProjectManager({background}:{background:ReactNode}) {
   }
   return <div className={`project-manager ${detail?'is-detail':''}`}>
 
-    {showSettings&&<PluginSettings close={()=>setShowSettings(false)}/>}
     {deleted&&<div className="manager-error" role="status">项目已删除<button onClick={()=>void request({action:'restore',project_id:deleted}).then(()=>{setDeleted(null);return refresh();}).catch(error=>setError(error.message))}>撤销</button><button aria-label="关闭删除提示" onClick={()=>setDeleted(null)}>×</button></div>}
     {error&&<div className="manager-error" role="alert">{error}<button aria-label="关闭错误" onClick={()=>setError('')}>×</button></div>}
     {detail?<WebsiteCanvas key={detail.project_id} background={background} projectId={detail.project_id} panelId={panelId} threadId={detail.thread_id||undefined} onHome={()=>void home()} onProject={id=>void open(id)} onFolder={()=>void request({action:'folder',project_id:detail.project_id}).catch(error=>setError(error.message))}/>:<div className="project-home">{background}
@@ -110,7 +109,7 @@ export function ProjectManager({background}:{background:ReactNode}) {
           <div className="project-actions">{project.deletable===false?<span className="project-running" role="status" aria-label={project.deploying?'部署中':statusLabels[project.status||'generating']}><span className="project-status-spinner" aria-hidden="true"/></span>:<>{project.status==='failed'&&<span className="project-status failed" role="status" aria-label={statusLabels.failed}>{statusLabels.failed}</span>}<button className="project-delete" aria-label={`删除项目 ${project.name}`} title="删除项目" disabled={busy} onClick={()=>void remove(project.id)}><Icon name="trash"/></button></>}</div>
         </div>)}</section>)}{!projects.length&&<p className="projects-empty">暂无项目</p>}{projects.length>0&&!groups.size&&<p className="projects-empty">没有匹配的项目</p>}</div>
       </aside>
-      <section className="project-compose" aria-label="项目需求输入"><div className="project-compose-inner"><div className="project-compose-heading"><h2>开始构建你的网站</h2><button className="plugin-settings-button" aria-label="插件配置" title="插件配置" onClick={()=>void openPluginModal('settings').then(opened=>{if(!opened)setShowSettings(true);}).catch(error=>setError(error.message))}><Icon name="settings"/></button></div><ProjectPrompt send={sendPrompt} onCreated={created}/></div></section>
+      <section className="project-compose" aria-label="项目需求输入"><div className="project-compose-inner"><div className="project-compose-heading"><h2>开始构建你的网站</h2><button className="plugin-settings-button" aria-label="插件配置" title="插件配置" aria-haspopup="dialog" disabled={openingSettings} onClick={()=>{if(openingSettings)return;setOpeningSettings(true);void openPluginModal('settings',{},true).catch(error=>setError(error.message)).finally(()=>setOpeningSettings(false));}}><Icon name="settings"/></button></div><ProjectPrompt send={sendPrompt} onCreated={created}/></div></section>
     </div>}
   </div>;
 }

@@ -22,19 +22,19 @@ description: 规划电商页面并组合模板，协调文案、图片和商品�
 
 所有新建网站需求均遵循此顺序，包括插件首页输入框与 Codex 对话框。先从已有需求提取项目名称、国家、语言、类目、品牌，信息不全可先创建空项目。不得先导入商品、规划页面、选择模板、写设计文件、生成文案/图片/页面代码。已有网站局部修改继续复用对应项目。
 
-### 插件首页提交：复用当前面板
+### 插件首页提交：新对话自动打开项目详情
 
-无论从全局侧边栏还是对话内入口打开插件，UI 面板新建任务始终开启新对话并立即提交文字和附件（target=new, send=true）。发送失败时保留草稿，不回退到来源对话；创建成功后原面板跟随新对话绑定的项目。
+无论从全局侧边栏还是对话内入口打开插件，UI 面板新建任务始终开启新对话并立即提交文字和附件（target=new, send=true）。发送失败时保留草稿；创建项目后，必须在新对话自动打开一次侧边 UI 并进入该项目详情，不能只更新来源面板。
 
-插件 UI 面板的新建任务通过 target=new、send=true 提交文字与附件，项目继续复用原面板。用户消息正文仅包含用户需求，不追加 panel_id/request_id、工具调用或流程说明。
+用户消息正文仅包含用户需求和附件，不追加 panel_id/request_id、工具调用或流程说明。来源面板可以跟随创建结果，但不替代新对话的侧边 UI。
 
 收到新建需求后，先查询 website_panel_context(thread_id=当前真实会话ID, requirement=用户需求原文)。requirement 使用完整原文（仅附件时为“请根据附件创建网站。”），不得改写或总结。后台仅匹配近期、未处理且需求一致的提交并返回 submission，不按全局最近项目猜测。submission_ambiguous=true 时停止自动关联并说明存在重复待处理需求，不选择任意面板。没有匹配时继续下方 Codex 对话提交流程。
 
 上下文或查询结果包含 submission（request_id、panel_id）时：
 
-1. 首个建站业务操作调用 website_projects(action="create", panel_id=上下文panel_id, request_id=上下文request_id, thread_id=当前真实会话ID, name, country, language, categories, brand)，创建空项目。不得遗漏 request_id，不复用旧项目，不传页面计划；同一 request_id 重试返回同一个项目。
-2. 原面板自动进入项目详情。查询 website_projects(action="submission", panel_id, request_id)，等待 detail_ready=true，之后才执行下方生成流程。初次未就绪继续查询并处理报错。会话途中用户关闭/离开原面板后，可调用open_canvas(thread_id=当前真实会话ID)或open_thread_canvas(thread_id=当前真实会话ID)重新进入同一项目详情，不重建项目、不用重开动作替代首次submission关联。
-3. 初次提交默认复用原面板，避免自动反复打开；会话途中允许重新打开UI并进入该会话已绑定项目。禁止用重开动作调用new_project=true。沿用返回的 project_id 与 directory。后续 website_project(action="open", project_id=该ID, ...) 仅补齐元数据。图片和文件随用户消息作为附件提供，进入详情后按相应技能读取。
+1. 尚未创建项目时，首个建站业务操作调用 website_projects(action="create", panel_id=上下文panel_id, request_id=上下文request_id, thread_id=当前真实会话ID, name, country, language, categories, brand)，创建空项目。不得遗漏 request_id，不复用旧项目，不传页面计划；同一 request_id 重试返回同一个项目。
+2. 创建成功后立即调用 open_thread_canvas(thread_id=当前新对话真实ID) **一次**，在新对话中打开侧边 UI；它恢复本次已绑定项目并自动进入详情。随后查询 website_projects(action="submission", panel_id=来源提交panel_id, request_id)，等待 chat_detail_ready=true，再执行下方生成流程。不能只等待来源面板的 detail_ready，也不能仅在文字里说“已打开”；实际调用画布工具。已收到新对话详情就绪回执时跳过重复打开。未就绪继续查询并处理报错，不循环打开多个 UI。
+3. 如果上下文已返回 state="created" 的 submission，直接沿用既有项目执行第2步，不另建项目。会话中用户关闭UI后可按需重新打开同一项目。禁止用打开动作调用new_project=true。沿用返回的 project_id 与 directory；后续 website_project(action="open", project_id=该ID, ...) 仅补齐元数据。进入详情后才读取附件、规划页面或生成内容。
 
 ### Codex 对话提交
 

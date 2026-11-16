@@ -56,6 +56,10 @@ $(function() {
   });
 
   // Dynamic collapsible panels (Description, Specifications, Reviews)
+  // IMPLEMENTATION CONTRACT:
+  // Before modifying this logic, verify against the "GRADIENT FADE COLLAPSIBLE PANEL" contract in the HTML above.
+  // All modifications MUST preserve .collapsible-fade mask, floating .collapsible-toggle button,
+  // chevron rotation, and deferred re-measurement on tab switch. NEVER simplify with native <details> or plain text links.
   function updateCollapsibles() {
     $('.collapsible-content').each(function() {
       const $content = $(this);
@@ -76,6 +80,8 @@ $(function() {
   }
 
   setTimeout(updateCollapsibles, 50);
+  $(window).on('resize', function() { setTimeout(updateCollapsibles, 50); });
+  window.addEventListener('load', function() { setTimeout(updateCollapsibles, 50); });
 
   // Bidirectional toggle support (Expand / Collapse)
   $('.collapsible-toggle').on('click', function() {

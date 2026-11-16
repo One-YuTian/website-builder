@@ -125,6 +125,26 @@ try{
   }
   assert.equal(ready.detail_ready,true,'mounted detail acknowledges readiness before generation');
   assert.equal(ready.project.project_id,created.project_id);
+  assert.equal(ready.chat_detail_ready,undefined,'source detail alone must not count as opening the new conversation sidebar');
+  assert.ok(created.next_action.includes('open_thread_canvas'));
+  const destinationLaunch=await call('open_thread_canvas',{thread_id:'prompt-new-thread'});
+  const beforeDestination=JSON.parse((await call('website_projects',{action:'list'})).content[0].text).projects.length;
+  await page.evaluate(()=>{
+    const frame=document.createElement('iframe');frame.id='new-chat-sidebar';frame.style.cssText='position:fixed;inset:0;width:100vw;height:100vh;border:0;z-index:1000';frame.srcdoc=document.querySelector('#app').srcdoc;document.body.append(frame);
+    document.querySelector('#app').style.display='none';
+  });
+  const destination=page.frameLocator('#new-chat-sidebar');
+  await destination.getByRole('main',{name:'网站展示画布',exact:true}).waitFor();
+  await page.evaluate(params=>document.querySelector('#new-chat-sidebar').contentWindow.postMessage({jsonrpc:'2.0',method:'ui/notifications/tool-result',params},'*'),destinationLaunch);
+  for(let attempt=0;attempt<50;attempt++){
+    ready=JSON.parse((await call('website_projects',{action:'submission',panel_id:submission.panel_id,request_id:submission.request_id,thread_id:'prompt-new-thread'})).content[0].text);
+    if(ready.chat_detail_ready)break;await page.waitForTimeout(100);
+  }
+  assert.equal(ready.chat_detail_ready,true,'new-conversation sidebar mounts and acknowledges the matched project');
+  assert.notEqual(ready.chat_panel_id,submission.panel_id);
+  assert.equal(ready.project.project_id,created.project_id);
+  assert.equal(JSON.parse((await call('website_projects',{action:'list'})).content[0].text).projects.length,beforeDestination,'opening the destination sidebar must not create a second project');
+  await page.evaluate(()=>{document.querySelector('#new-chat-sidebar').remove();document.querySelector('#app').style.display='';});
   assert.equal(await page.evaluate(()=>window.toolCalls.filter(c=>c.name==='open_canvas').length),0,'submission reuses the original panel');
   assert.equal(page.frames().length,2,'empty detail remains inside the same host frame');
   await call('website_project',{action:'plan',thread_id:'prompt-new-thread',project_id:created.project_id,pages:[{path:'index.html',title:'Home'}]});
@@ -185,5 +205,22 @@ try{
   const planned=JSON.parse((await call('website_project',{action:'plan',thread_id:'chat-request-thread',project_id:chat.project_id,pages:[{path:'index.html',title:'Home'}]})).content[0].text);
   assert.equal(planned.pages.length,1);
   assert.equal(planned.project_id,chat.project_id);
+  // Opening the new chat must work even if no originating UI instance remains.
+  const closedSubmission={panel_id:'closed-source-panel',request_id:'closed-source-request'};
+  await call('website_projects',{action:'submission',submission_start:true,...closedSubmission,thread_id:'closed-source-thread',requirement:'Closed source submission'});
+  const closedProject=JSON.parse((await call('website_projects',{action:'create',...closedSubmission,thread_id:'closed-new-thread',name:'Closed source'})).content[0].text);
+  const closedLaunch=await call('open_thread_canvas',{thread_id:'closed-new-thread'});
+  await page.evaluate(()=>{const frame=document.createElement('iframe');frame.id='closed-source-sidebar';frame.srcdoc=document.querySelector('#app').srcdoc;document.body.append(frame);});
+  await page.frameLocator('#closed-source-sidebar').getByRole('main',{name:'网站展示画布',exact:true}).waitFor();
+  await page.evaluate(params=>document.querySelector('#closed-source-sidebar').contentWindow.postMessage({jsonrpc:'2.0',method:'ui/notifications/tool-result',params},'*'),closedLaunch);
+  let closedReady;
+  for(let attempt=0;attempt<50;attempt++){
+    closedReady=JSON.parse((await call('website_projects',{action:'submission',...closedSubmission,thread_id:'closed-new-thread'})).content[0].text);
+    if(closedReady.chat_detail_ready)break;await page.waitForTimeout(100);
+  }
+  assert.equal(closedReady.chat_detail_ready,true);
+  assert.equal(closedReady.project.project_id,closedProject.project_id);
+  await page.evaluate(()=>document.querySelector('#closed-source-sidebar').remove());
+  assert.deepEqual(errors,[]);
   console.log('PASS: hover, fixed input, top attachments, rejection recovery, single new-chat send, cross-thread panel handoff, global and thread entry, empty project before detail, detail readiness before planning, reused panel, navigation, clearing and responsive layout');
 }finally{await browser?.close();host?.close();await client.close();}

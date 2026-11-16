@@ -115,7 +115,7 @@ try{
   const {ElicitRequestSchema}=await import('@modelcontextprotocol/sdk/types.js');
   const native=await fixture(),server=new McpServer({name:'mock-gitlab',version:'1'});
   registerGitLabTools(server,native.workflow,native.store);
-  registerNativeSettings(server,native.settings,values=>native.settings.save(values),async()=>testGitLabConnection(await native.settings.get(false),native.io));
+  const openNative=registerNativeSettings(server,native.settings,values=>native.settings.save(values),async values=>testGitLabConnection({...await native.settings.get(false),...values},native.io));
   const client=new Client({name:'mock-codex',version:'1'},{capabilities:{elicitation:{form:{}}}}),dialogs=[];
   client.setRequestHandler(ElicitRequestSchema,async request=>{dialogs.push(request.params);return {action:'accept',content:request.params.requestedSchema.properties.domain?{domain:'www.example.com',environment:'test'}:{approved:true}};});
   const [clientSide,serverSide]=InMemoryTransport.createLinkedPair();await server.connect(serverSide);await client.connect(clientSide);
@@ -125,6 +125,20 @@ try{
     assert.ok(!response.isError,JSON.stringify(response));assert.equal(JSON.parse(response.content[0].text).status,'deployment_triggered');
     assert.equal(dialogs.length,3,'Codex form separately asks domain/environment, repository creation and final publish');
     assert.match(dialogs[1].message,/create/);assert.match(dialogs[2].message,/publish/);
+    const beforeNative=await native.settings.get(false),formRequests=[];
+    const answers=[{action:'accept',content:{operation:'test'}},{action:'cancel'}];
+    client.setRequestHandler(ElicitRequestSchema,async request=>{formRequests.push(request.params);return answers.shift();});
+    assert.equal((await openNative()).cancelled,true);
+    assert.equal(formRequests.length,2,'connection diagnostics are displayed in a second native form');
+    assert.match(formRequests[1].message,/连接测试/);
+    assert.deepEqual(await native.settings.get(false),beforeNative,'testing and cancellation do not save settings');
+    client.setRequestHandler(ElicitRequestSchema,async()=>({action:'accept',content:{operation:'save',PROJECT_DIR:'Z:/forbidden',GITLAB_DEFAULT_BRANCH:'native-modal-branch'}}));
+    await assert.rejects(openNative(),/does not match requested schema/,'host form rejects changes to the managed project directory');
+    assert.deepEqual(await native.settings.get(false),beforeNative);
+    client.setRequestHandler(ElicitRequestSchema,async()=>({action:'accept',content:{operation:'save',GITLAB_DEFAULT_BRANCH:'native-modal-branch'}}));
+    assert.equal((await openNative()).saved,true);
+    assert.equal((await native.settings.get(false)).GITLAB_DEFAULT_BRANCH,'native-modal-branch');
+    assert.equal((await native.settings.get(false)).PROJECT_DIR,native.store.root);
   }finally{await client.close();await server.close();native.store.database.sql.close();}
   const fallback=await fixture(),fallbackServer=new McpServer({name:'mock-fallback',version:'1'});
   registerGitLabTools(fallbackServer,fallback.workflow,fallback.store);

@@ -1,10 +1,11 @@
-import { StrictMode, useEffect, useRef } from 'react';
+import { StrictMode, useEffect, useRef, useState } from 'react';
 import { createRoot } from 'react-dom/client';
 import './style.css';
 import { ProjectManager } from './ProjectManager';
 import {PluginSettings} from './PluginSettings';
 import {DeploymentPanel} from './DeploymentControls';
-import {closePluginModal} from './plugin-modal';
+import {getPluginPanelContext,isPluginModal} from './plugin-modal';
+import {hostApp,hostReady} from './bridge';
 declare global { interface Window { __WEBSITE_BUILDER__?: { api: string; projectApi?:string; managerApi?:string; resourceApi?:string; origin: string; defaultDirectory: string } } }
 
 function DotCanvas() {
@@ -75,6 +76,18 @@ function DotCanvas() {
   return <div className="dot-background" aria-hidden="true"><canvas ref={ref} /></div>;
 }
 
-const panel=window.__WEBSITE_PANEL_CONTEXT__;
-if(panel)document.body.classList.add('independent-plugin-panel');
-createRoot(document.getElementById('root')!).render(<StrictMode>{panel?.view==='settings'?<PluginSettings close={closePluginModal}/>:panel?.view==='deploy'&&panel.project_id&&panel.panel_id?<DeploymentPanel projectId={panel.project_id} panelId={panel.panel_id} threadId={panel.thread_id}/>:<ProjectManager background={<DotCanvas />} />}</StrictMode>);
+function PanelRoot(){
+ const [panel,setPanel]=useState(getPluginPanelContext),[ready,setReady]=useState(!hostApp);
+ const [modal,setModal]=useState(isPluginModal);
+ useEffect(()=>{
+  let stopped=false;const sync=(event?:Event)=>{if(!stopped){setPanel(getPluginPanelContext((event as CustomEvent|undefined)?.detail?.globals));setModal(isPluginModal());}};
+  window.addEventListener('website-builder:panel-input',sync);window.addEventListener('openai:set_globals',sync);
+  void hostReady.then(()=>{if(!stopped){sync();setReady(true);}}).catch(()=>{if(!stopped)setReady(true);});
+  return()=>{stopped=true;window.removeEventListener('website-builder:panel-input',sync);window.removeEventListener('openai:set_globals',sync);};
+ },[]);
+ useEffect(()=>{document.body.classList.toggle('independent-plugin-panel',!!panel);document.documentElement.classList.toggle('independent-plugin-root',!!panel);},[panel]);
+ if(!ready)return null;
+ if(modal&&!panel)return <div className="empty-state" role="status">正在加载弹窗内容…</div>;
+ return panel?.view==='settings'?<PluginSettings/>:panel?.view==='deploy'&&panel.project_id&&panel.panel_id?<DeploymentPanel projectId={panel.project_id} panelId={panel.panel_id} threadId={panel.thread_id}/>:<ProjectManager background={<DotCanvas />} />;
+}
+createRoot(document.getElementById('root')!).render(<StrictMode><PanelRoot/></StrictMode>);

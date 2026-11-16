@@ -59,7 +59,11 @@ export function projectManager(store: ProjectStore) {
     const panel = store.database.context(thread, panelId);
     const id = panel?.project_id;
     const view=id?await store.get(thread,id).catch(()=>null):null;
-    if (view) return { page: 'project', panel_id: panel.panel_id, ...compactProject(view),thread_id:thread||null };
+    if (view) {
+      const rows=store.database.sql.prepare("SELECT key,value FROM settings WHERE key LIKE 'submission:%'").all() as {key:string;value:string}[];
+      const submission=rows.flatMap(row=>{try{const value=JSON.parse(row.value);return value.state==='created'&&value.project_id===view.project.id&&value.thread_id===thread?[{panel_id:row.key.slice('submission:'.length),request_id:value.request_id,state:'created'}]:[];}catch{return[];}})[0];
+      return { page: 'project', panel_id: panel.panel_id, ...compactProject(view),thread_id:thread||null,...(submission?{submission}:{}) };
+    }
     return { page: 'home', panel_id: panel?.panel_id || panelId || null, projects: await store.list() };
   }
   async function materialResources(view:NonNullable<Awaited<ReturnType<ProjectStore['get']>>>) {
@@ -91,7 +95,7 @@ export function projectManager(store: ProjectStore) {
     const rows=store.database.sql.prepare('SELECT id,name,path,mime,size,thread_id FROM resources WHERE project_id=? ORDER BY name').all(id) as {path:string}[];
     return [...material,...rows.filter(row=>{const rel=relative(join(view.metadataDirectory,'session-assets'),row.path);return rel!=='..'&&!rel.startsWith(`..${sep}`)&&!isAbsolute(rel);})];
   }
-  async function run(input: {requirement?:string;request_id?:string;submission_start?:boolean;detail_ready?:boolean;cancel?:boolean;action?: string; panel_id?: string; thread_id?: string; project_id?: string; country?:string;language?:string;categories?:string[];brand?:string;name?: string; source_path?: string; path?:string;width?:number;capture_id?:string;chunk?:string;offset?:number;final?:boolean}) {
+  async function run(input: {visible_panel_id?:string;requirement?:string;request_id?:string;submission_start?:boolean;detail_ready?:boolean;cancel?:boolean;action?: string; panel_id?: string; thread_id?: string; project_id?: string; country?:string;language?:string;categories?:string[];brand?:string;name?: string; source_path?: string; path?:string;width?:number;capture_id?:string;chunk?:string;offset?:number;final?:boolean}) {
     const action = input.action || 'list';
     const panel=input.panel_id?store.database.panelById(input.panel_id):undefined;
     const thread = input.thread_id || process.env.CODEX_THREAD_ID || process.env.CODEX_SESSION_ID || panel?.thread_id || undefined;
@@ -139,6 +143,11 @@ export function projectManager(store: ProjectStore) {
       if(record?.request_id!==input.request_id)throw Error('此提交已失效，请检查当前对话');
       if(input.detail_ready){
         if(record.state!=='created'||panel?.project_id!==record.project_id)throw Error('项目详情尚未绑定');
+        if(input.visible_panel_id&&input.visible_panel_id!==input.panel_id){
+          const visible=store.database.panelById(input.visible_panel_id);
+          if(visible?.project_id!==record.project_id||visible.thread_id!==record.thread_id)throw Error('新对话详情面板尚未绑定到本次项目');
+          record.chat_detail_ready=true;record.chat_panel_id=input.visible_panel_id;
+        }
         record.detail_ready=true;saveSubmission(record);
       }
       if(record.state==='created'){const view=await store.get(undefined,record.project_id);if(!view)throw Error('已创建的项目不可用');return{...record,project:{page:'project',panel_id:input.panel_id,...compactProject(view),thread_id:record.thread_id}};}
@@ -155,7 +164,7 @@ export function projectManager(store: ProjectStore) {
       if(!view)throw Error('项目不存在或已删除');
       store.database.panel(input.panel_id, thread||'', view.project.id, action==='create' && submissionHandoff);
       if(input.request_id)saveSubmission({request_id:input.request_id,state:'created',project_id:view.project.id,thread_id:thread||null});
-      return { page: 'project', panel_id: input.panel_id, ...compactProject(view),thread_id:thread||null,...(input.request_id?{ui_reused:true,request_id:input.request_id,next_action:'初次创建复用原面板，查询website_projects(action=submission,panel_id,request_id)等待detail_ready=true再生成；会话途中可用open_canvas(thread_id)重新进入同一项目详情，不新建替代项目。'}:{}) };
+      return { page: 'project', panel_id: input.panel_id, ...compactProject(view),thread_id:thread||null,...(input.request_id?{ui_reused:true,request_id:input.request_id,next_action:'必须调用open_thread_canvas(thread_id=本次新对话真实ID)一次，在新对话打开侧边UI并进入本项目；查询website_projects(action=submission,panel_id,request_id)等待chat_detail_ready=true再生成。不重建项目，不反复打开面板。'}:{}) };
       }catch(error){if(input.request_id)saveSubmission({request_id:input.request_id,state:'failed',error:(error as Error).message});throw error;}
     }
     if (!id) throw Error('需要项目 ID');
