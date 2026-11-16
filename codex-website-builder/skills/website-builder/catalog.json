@@ -560,6 +560,13 @@
     "summary": "OrderSuccess-01: Native Web Component specification, annotated regions, and responsive template."
   },
   {
+    "id": "myorder-01",
+    "group": "pages",
+    "category": "myorder",
+    "file": "pages/myorder/myorder-01.txt",
+    "summary": "MyOrder-01: Native Web Component specification, annotated regions, and responsive template."
+  },
+  {
     "id": "toast-01",
     "group": "components",
     "category": "toast",

@@ -2,6 +2,9 @@
 
 Flash sale and limited-time marketing section, integrating animated countdown timer blocks, promotional badges, flash cards with sold percentage progress, and View All CTA.
 
+### Mandatory Specifications
+- **Product Card Component MUST use `FlashCard` (`<flashcard-01>`)**: All product slides in this flash sale section MUST use the dedicated `<flashcard-01>` component featuring flash sale prices, discount badges, and inventory progress bars. Replacing with generic product cards (such as `card-01`) is strictly prohibited.
+
 ### Regions
 Functional regions are annotated directly in the component code implementation via English comments.
 
@@ -48,7 +51,8 @@ Functional regions are annotated directly in the component code implementation v
           <div class="h-3 sm:h-3.5 w-14 sm:w-24 bg-primary/70 rounded-xs"></div>
         </div>
       </div>
-      <div class="relative">
+      <!-- Region: Flash Sale Products Swiper - MANDATORY REQUIREMENT: Must use <flashcard-01> component for each product card inside Swiper slides -->
+      <div class="relative" data-region="products-swiper">
         <div class="swiper flash-sale-swiper-01 overflow-hidden">
           <div class="swiper-wrapper py-1">
             

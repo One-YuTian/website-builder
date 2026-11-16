@@ -83,3 +83,5 @@ Cart-01是来源参考，可将其inline结构用于独立页面，或适配为v
 组件使用Light DOM和唯一toast-component注册，按本站样式实现template/refresh、幂等连接、断开清理、重连恢复与安全文本。window.Toast只作薄门面；可在body之前接收早期消息，DOM可用后展示。运行文件先落盘再写页面，装配器仅复用已有实现，补齐单一实例、正确相对路径和早于app的引用，不再创建默认Toast文件，不覆盖现有组件。
 
 全站禁止业务alert。CDN与蒙层关闭要求见[网站要求](site-requirements.md)，不提供全局Overlay接口。Home的组件链只作组合参考，真实实现来自所选独立组件，不执行Home伪代码。
+
+生成表单与注册提交逻辑统一按[表单交互规范](form-interactions.md)；自动填充关闭不取消账户资料主动带入，所有focus取消原生outline但保留自定义键盘焦点。详情“更多”交互按模板，不自动加折叠门槛。

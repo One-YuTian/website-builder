@@ -141,7 +141,7 @@ export function projectManager(store: ProjectStore) {
       if(!view)throw Error('项目不存在或已删除');
       store.database.panel(input.panel_id, thread||'', view.project.id, action==='create' && submissionHandoff);
       if(input.request_id)saveSubmission({request_id:input.request_id,state:'created',project_id:view.project.id,thread_id:thread||null});
-      return { page: 'project', panel_id: input.panel_id, ...compactProject(view),thread_id:thread||null,...(input.request_id?{ui_reused:true,request_id:input.request_id,next_action:'不要调用 open_canvas。查询 website_projects(action=submission, panel_id, request_id)，等待 detail_ready=true 后再规划页面或生成内容。'}:{}) };
+      return { page: 'project', panel_id: input.panel_id, ...compactProject(view),thread_id:thread||null,...(input.request_id?{ui_reused:true,request_id:input.request_id,next_action:'初次创建复用原面板，查询website_projects(action=submission,panel_id,request_id)等待detail_ready=true再生成；会话途中可用open_canvas(thread_id)重新进入同一项目详情，不新建替代项目。'}:{}) };
       }catch(error){if(input.request_id)saveSubmission({request_id:input.request_id,state:'failed',error:(error as Error).message});throw error;}
     }
     if (!id) throw Error('需要项目 ID');

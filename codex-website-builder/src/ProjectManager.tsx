@@ -16,7 +16,8 @@ export function ProjectManager({background}:{background:ReactNode}) {
   },[]);
   const activeSubmission=useRef<string|null>(null);
   const detailSubmission=useRef<string|null>(null);
-  const [panelId]=useState(()=>crypto.randomUUID());
+  const [panelId,setPanelId]=useState(()=>crypto.randomUUID());
+  const activePanel=useRef(panelId);activePanel.current=panelId;
   const [projects,setProjects]=useState<Project[]>([]);
   const [detail,setDetail]=useState<Detail|null>(null);
   const [query,setQuery]=useState('');
@@ -39,11 +40,11 @@ export function ProjectManager({background}:{background:ReactNode}) {
     if(hostApp&&!activeSubmission.current){await hostReady;await hostApp.updateModelContext({structuredContent:{panel_id:panelId,...value}});}
   },[panelId]);
   const refresh=useCallback(async()=>{
-    const value=await request({action:'list'});thread.current=value.thread_id||undefined;setProjects(value.projects);
+    const value=await request({action:'list'});if(activePanel.current!==panelId)return value;thread.current=value.thread_id||undefined;setProjects(value.projects);
     if(current.current&&value.thread_id&&current.current.thread_id!==value.thread_id)setDetail({...current.current,thread_id:value.thread_id});
     if(current.current&&!value.projects.some((project:Project)=>project.id===current.current?.project_id)) {setDetail(null);await request({action:'home'});await publish({page:'home'});}
     return value;
-  },[request,publish]);
+  },[request,publish,panelId]);
   useEffect(()=>{
     let stopped=false;
     const start=async()=>{const revision=++navigation.current;try{
@@ -54,7 +55,9 @@ export function ProjectManager({background}:{background:ReactNode}) {
       else {current.current=null;setDetail(null);}
       await refresh();if(!stopped&&revision===navigation.current)await publish(value);
     }catch(error){if(!stopped&&revision===navigation.current)setError((error as Error).message);}};
-    const launched=()=>void start();window.addEventListener('website-builder:launch',launched);
+    // A reopened chat entry must not inherit an earlier launch's panel/thread affinity.
+    // Keep the initial submission handoff intact until its original panel acknowledges it.
+    const launched=()=>{if(activeSubmission.current||detailSubmission.current)return;setPanelId(crypto.randomUUID());};window.addEventListener('website-builder:launch',launched);
     void start();const timer=setInterval(()=>void refresh().catch(error=>setError((error as Error).message)),5000);
     return()=>{stopped=true;navigation.current++;clearInterval(timer);window.removeEventListener('website-builder:launch',launched);};
   },[refresh,request,publish]);
@@ -68,7 +71,7 @@ export function ProjectManager({background}:{background:ReactNode}) {
     await request({action:'submission',submission_start:true,request_id:requestId,requirement:text.trim()||'请根据附件创建网站。'});
     activeSubmission.current=requestId;setBusy(true);
     try{
-      await hostApp.updateModelContext({structuredContent:{panel_id:panelId,page:'home',submission:{request_id:requestId,action:'create',panel_id:panelId,instructions:'用户从首页提交了新建网站需求。必须使用 website-builder SKILL，先调用 website_projects(action=create, panel_id=此panel_id, request_id=此request_id, thread_id=当前真实会话ID)，提供国家/语言/主要类目/品牌等元数据。先创建空项目，原面板自动进入详情；禁止调用open_canvas或另开面板。查询website_projects(action=submission,panel_id,request_id)直到detail_ready=true，再沿用project_id规划页面、导入商品和生成内容，不能复用旧项目；附件随用户消息提供。'}}});
+      await hostApp.updateModelContext({structuredContent:{panel_id:panelId,page:'home',submission:{request_id:requestId,action:'create',panel_id:panelId,instructions:'用户从首页提交了新建网站需求。必须使用 website-builder SKILL，先调用 website_projects(action=create, panel_id=此panel_id, request_id=此request_id, thread_id=当前真实会话ID)，提供国家/语言/主要类目/品牌等元数据。先创建空项目，原面板自动进入详情；初次提交无需另开面板，会话途中用户可再次打开UI进入当前已绑定的项目详情，不新建项目。查询website_projects(action=submission,panel_id,request_id)直到detail_ready=true，再沿用project_id规划页面、导入商品和生成内容，不能复用旧项目；附件随用户消息提供。'}}});
       const message={role:'user' as const,content,_meta:{'openai/message':{target:'new',send:true}}};
       const result=await hostApp.sendMessage(message,{timeout:60000});
       if(result.isError)throw Error('新对话未接受消息，请重试。草稿已保留。');

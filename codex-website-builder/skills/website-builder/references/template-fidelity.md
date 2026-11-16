@@ -48,7 +48,7 @@ code 可以用 ids 批量读取；targets/bind 与来源标记仅用于可选追
 1. **模块精干**：原生 HTML/CSS/JS，复用模板、SDK、共享组件，禁止无故引入重型前端框架与多套重复实现。
 2. **零无用输出**：生产 JS 不输出调试 console.log、冗长无意义注释；保留模板来源及必要的复杂业务说明。
 3. **Tailwind 最大化**：样式由 class 渲染，遵守上一节；不自行搭建样式体系。
-4. **Swiper 轮播**：所有横幅与商品滑动货架使用 Swiper；保留所选模板的 wrapper/slide、比例、参数、移动行为及控件。禁止改成 CSS scroll-snap 或自己写计时器替代。
+4. **Swiper 轮播**：所有网站横向内容滑动均使用Swiper（包括横幅、货架、分类/标签与缩略图）；保留所选模板的 wrapper/slide、比例、参数、移动行为及控件。禁止用原生overflow-x滚动、CSS scroll-snap、scrollLeft拖拽或自己写计时器替代，不仅是隐藏原生滚动条。
 5. **jQuery 交互**：页面交互、事件委托和自定义广播统一 jQuery；命名空间绑定/解绑，不能重复监听。Web Component 生命周期、CustomEvent、SDK 与第三方内部事件按其平台接口运行，DOM 主结构不因换绑定方式改变。
 6. **LocalStorage 状态**：购物车、收藏、演示登录态与订单通过 APP 封装持久化；组件不得另写状态库。保留0.6版密码散列及项目/账户隔离，不恢复明文登录密码；前端演示不替代后端认证。
 7. **Cloudflare/cdnjs**：jQuery、Swiper、图标库等三方静态库统一 cdnjs 的已选版本，不重复加载或任意切换库。Tailwind 使用官方 Play CDN、Google Fonts 使用官方字体 CDN；预览层代理资源，不改原站代码。

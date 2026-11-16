@@ -1,6 +1,9 @@
 ## Overview
 
-User registration and account creation page, containing full name, email, password strength meter, confirm password, terms agreement checkbox, and sign in link.
+User registration and account creation page, containing full name, email, dedicated country code prefix phone number field, password strength meter, confirm password, terms agreement checkbox, and sign in link.
+
+### Mandatory Specifications
+- **Separated Country Code Prefix**: The mobile phone input MUST isolate the international dial code prefix (such as `+1`, `+63`, `+55`) into an independent attached addon block (`inline-flex items-center px-3.5 rounded-l-xl border border-r-0 bg-accent/40 text-sm font-semibold select-none`) displayed alongside the phone number input. Mixing dial code and mobile number in a single plain text input is strictly prohibited.
 
 ### Regions
 Functional regions are annotated directly in the component code implementation via English comments.
@@ -63,12 +66,12 @@ Functional regions are annotated directly in the component code implementation v
           </div>
         </div>
 
-        <!-- Phone Field with Country Code -->
-        <div>
+        <!-- Region: Phone Field with Separated Country Code - MANDATORY: The international country code (+XX) must be an independent block attached to the left of the phone input -->
+        <div data-region="phone-field">
           <div class="h-3 w-16 bg-content/80 rounded-xs mb-1.5"></div>
-          <div class="flex">
-            <span class="inline-flex items-center px-3 rounded-l-xl border border-r-0 border-outline/50 bg-accent/30 text-xs text-muted font-mono">+1</span>
-            <input type="text" readonly placeholder="" aria-label="Phone number" class="flex-1 px-4 py-2.5 bg-surface border border-outline/50 rounded-r-xl focus:border-primary text-sm shadow-2xs cursor-default">
+          <div class="flex" id="phone-container">
+            <span id="phone-prefix" class="inline-flex items-center px-3.5 rounded-l-xl border border-r-0 border-outline/50 bg-accent/40 text-xs sm:text-sm font-semibold font-mono text-content/75 select-none shrink-0">+1</span>
+            <input type="tel" readonly placeholder="" aria-label="Phone number" class="flex-1 min-w-0 px-4 py-2.5 bg-surface border border-outline/50 rounded-r-xl focus:border-primary text-sm shadow-2xs cursor-default">
           </div>
         </div>
 

@@ -24,7 +24,7 @@ description: 生成Logo、Banner、About配图与图标，在画布展示进度�
 新增、修改、重生成素材一律使用未占用的新路径（如banner-home-v2.webp、category-kitchen-v2.png），保留原文件及原任务记录。编辑旧图时将旧图作为参考输入，输出新文件；仅更新用户要求修改的页面/组件引用，不覆盖旧路径或顺带替换其他页面图片。即使原文件当前未被引用也不自动删除。
 
 1. 逐张明确用途、实际导出宽高、PC/移动可见比例、透明需求、主体与文字安全区、最终项目相对路径。模板槽位与页面版心来自主技能，不凭空改变页面结构。
-2. 生图前调用website_images(action="begin",thread_id=真实会话ID,project_id,path,width,height)。path为最终文件路径，name可用图片文件名。先登记再生图，不写空白占位文件；状态保存在SQLite。沿用主技能已打开的项目详情；面板首页submission或已有对应详情时禁止再次open_canvas。仅确实没有面板时先复用website_project，再open_canvas(thread_id=真实会话ID)一次。
+2. 生图前调用website_images(action="begin",thread_id=真实会话ID,project_id,path,width,height)。path为最终文件路径，name可用图片文件名。先登记再生图，不写空白占位文件；状态保存在SQLite。沿用主技能已打开的项目详情；面板首页submission初次创建时复用原面板；会话途中可按需open_canvas(thread_id=真实会话ID)重新进入已绑定详情，不因此新建项目。已有对应详情且无需恢复时避免自动重复打开。
 3. 按官方流程实际调用image_gen。默认输出位于CODEX_HOME/generated_images等宿主目录，不假定临时目录或工具支持destination参数。取得工具真实返回的成品，再复制最终选中图片到生产assets/brand、assets/banners、assets/about或assets/icons。源图、候选、提示词和记录放metadata_directory或宿主生图目录；CLI工作目录也放metadata_directory/work，不在生产目录创建tmp/output。
 4. 复用工具已返回的视觉结果与UI实际加载状态，核对主体/裁切、清晰度、透明边缘和真实尺寸；不要对每张新图重复调用view_image、截图或图片读取API来播报过程。只有编辑要求或无法判断的视觉问题确实需要时才查看，不能为减少输出谎报视觉检查。编辑输出新版本文件名并保留旧文件。只把页面实际引用的正式图片交付到网站。
 5. 文件写入后website_images(action="finish",同一thread_id/project_id/path)。UI也会自动发现新文件并展示。禁止以已有成品路径begin；失败重试时尚无文件的路径可以重新begin，已有文件必须换新路径。失败或取消时action="fail",error=真实简短原因。

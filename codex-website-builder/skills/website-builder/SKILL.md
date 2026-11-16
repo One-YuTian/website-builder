@@ -33,16 +33,16 @@ description: 规划电商页面并组合模板，协调文案、图片和商品�
 上下文或查询结果包含 submission（request_id、panel_id）时：
 
 1. 首个建站业务操作调用 website_projects(action="create", panel_id=上下文panel_id, request_id=上下文request_id, thread_id=当前真实会话ID, name, country, language, categories, brand)，创建空项目。不得遗漏 request_id，不复用旧项目，不传页面计划；同一 request_id 重试返回同一个项目。
-2. 原面板自动进入项目详情。查询 website_projects(action="submission", panel_id, request_id)，等待 detail_ready=true，之后才执行下方生成流程。未就绪继续查询，报错则处理并报告，不能另开面板绕过。
-3. **禁止调用 open_canvas、重新打开插件 UI 或再次打开详情页**；禁止 new_project=true。沿用返回的 project_id 与 directory。后续 website_project(action="open", project_id=该ID, ...) 仅补齐元数据。图片和文件随用户消息作为附件提供，进入详情后按相应技能读取。
+2. 原面板自动进入项目详情。查询 website_projects(action="submission", panel_id, request_id)，等待 detail_ready=true，之后才执行下方生成流程。初次未就绪继续查询并处理报错。会话途中用户关闭/离开原面板后，可调用open_canvas(thread_id=当前真实会话ID)或open_thread_canvas(thread_id=当前真实会话ID)重新进入同一项目详情，不重建项目、不用重开动作替代首次submission关联。
+3. 初次提交默认复用原面板，避免自动反复打开；会话途中允许重新打开UI并进入该会话已绑定项目。禁止用重开动作调用new_project=true。沿用返回的 project_id 与 directory。后续 website_project(action="open", project_id=该ID, ...) 仅补齐元数据。图片和文件随用户消息作为附件提供，进入详情后按相应技能读取。
 
 ### Codex 对话提交
 
-无 submission 时先查询 website_panel_context(thread_id=当前真实会话ID)。新站调用 website_project(action="open", thread_id, new_project=true, name, country, language, categories, brand) 创建空项目，**此时不传 pages**；已有项目局部修改则传 project_id 复用。随后 open_canvas(thread_id=当前真实会话ID) 进入该项目详情，只打开一次；当前面板已显示对应项目详情时跳过。完成项目创建与详情进入后，才规划页面、准备数据和生成内容。
+无 submission 时先查询 website_panel_context(thread_id=当前真实会话ID)。新站调用 website_project(action="open", thread_id, new_project=true, name, country, language, categories, brand) 创建空项目，**此时不传 pages**；已有项目局部修改则传 project_id 复用。随后 open_canvas(thread_id=当前真实会话ID) 进入该项目详情，初次打开一次；已有对应详情时跳过无谓重复，用户需要时可在会话途中再次打开同一项目详情。完成项目创建与详情进入后，才规划页面、准备数据和生成内容。
 
 ## 生成流程
 
-以下步骤仅在项目已创建且详情已进入后执行，全程沿用同一个 project_id，不再次新建项目或打开面板。
+以下步骤仅在项目已创建且详情已进入后执行，全程沿用同一个project_id，不再次新建项目；会话中可以按需重新打开面板并恢复该项目详情。
 
 1. 提取品牌、国家/语言、币种、商品来源和页面范围，读取[整站设计](references/visual-design.md)及[网站要求](references/site-requirements.md)。新站主版心在1200–1550px中实际随机取一个整数，每站仅取一次，记录maxContentWidthPx到metadata_directory/website-builder.design.json，并应用到js/app.js唯一Tailwind主题；后续页面复用，用户指定值优先。设计文件记录色板、明暗、字体、版心、板块与购物车方案。
 2. website_project(action="open",thread_id=当前真实会话ID,project_id=已创建项目ID,name,brief,language,country,categories,brand)补齐元数据；website_project(action="plan",thread_id,project_id,pages)规划页面。完整站点规划首页、Shop、商品详情、心愿单、结算、登录、注册、About Us、Contact Us及实际政策页，订单路由随功能补齐。默认共享drawer cart；仅明确要求或保留已有页面模式才生成cart.html，不重复两种方案。Header桌面与移动均包含Home/Shop/About Us/Contact Us实际链接。
@@ -64,6 +64,10 @@ website_templates(mode="select")返回未排序候选及usage，不自动决定�
 每批code读取1–12个确定使用ID。来源ID不作为生产标签，实际注册/挂载统一唯一xxx-component，嵌套标签/选择器同步映射，每个构造函数只注册一次。targets可追溯来源，不把绑定或旧audit当成功条件。
 
 完整首页应有主视觉、商品展示与合适的特色板块；原Home已含这些内容时不为凑“额外1–2块”重复新增，具体组合与数量服从上述生成硬约束。Header已有分类套件时，在自由额度内替换重复分类用途，尽量保持数量。库中所有组件/板块/页面均可选用，包含Home-03的限时抢购；不要因“未经确认的促销承诺”直接删模块。保留合适结构，按[文案边界与已授权服务](../website-copywriter/references/content-policy.md)填内容，商品数值仍取数据/SDK。
+
+## 表单与横向交互
+
+所有输入框关闭浏览器自动填充，聚焦不显示原生outline而采用统一自定义焦点样式。Contact校验通过后清空并Toast提示发送成功；注册先做宽松手机号校验，再按目标国家/域名执行IP检查并以Toast警告失败，具体执行[表单交互](references/form-interactions.md)。所有网站横向内容滚动统一Swiper，不使用原生横滚和滚动条。详情长内容与更多展示沿用模板，不强制新增折叠/分页。
 
 ## Toast、组件与资源
 

@@ -1,6 +1,13 @@
 ## Overview
 
-Full checkout and order payment page, integrating multi-step progress bar, shipping address entry form, payment method selector, and right-aligned sticky order summary card.
+Full checkout and order review page, integrating shipping address entry form, payment method selector, and right-aligned sticky order summary breakdown card.
+
+### Mandatory Specifications
+1. **No Step Numbering Badges**: Left form cards do NOT include circular 1 or 2 step numbering badges; headers display clean title skeletons directly.
+2. **Zero Currency Symbols or Abbreviations**: Do NOT display currency symbols, units, or hardcoded acronyms such as COD badges; prices use pure numerical format or skeleton placeholders.
+3. **Payment Methods Options**: The payment selection MUST provide:
+   - **Cash on Delivery**: Default active and selected radio option.
+   - **Online Payment**: Disabled state (radio disabled, opacity-60, cursor-not-allowed).
 
 ### Regions
 Functional regions are annotated directly in the component code implementation via English comments.
@@ -49,7 +56,6 @@ Functional regions are annotated directly in the component code implementation v
         <!-- Billing & Shipping Info Card -->
         <div class="bg-surface rounded-2xl shadow-sm border border-outline/30 p-6 sm:p-8">
           <div class="flex items-center gap-3 mb-6 pb-4 border-b border-outline/20">
-            <span class="size-7 rounded-lg bg-primary/10 text-primary flex items-center justify-center font-bold text-sm">1</span>
             <div class="h-5 w-40 bg-content/85 rounded-xs"></div>
           </div>
 
@@ -96,14 +102,15 @@ Functional regions are annotated directly in the component code implementation v
           </form>
         </div>
 
-        <!-- Payment Method Card -->
+        <!-- Payment Method Card - Mandatory: Cash on Delivery (active) and Online Payment (disabled) -->
         <div class="bg-surface rounded-2xl shadow-sm border border-outline/30 p-6 sm:p-8">
           <div class="flex items-center gap-3 mb-6 pb-4 border-b border-outline/20">
-            <span class="size-7 rounded-lg bg-primary/10 text-primary flex items-center justify-center font-bold text-sm">2</span>
             <div class="h-5 w-36 bg-content/85 rounded-xs"></div>
           </div>
 
-          <div class="space-y-3">
+          <!-- Region: Payment Methods Selection - Cash on Delivery (default active) & Online Payment (disabled) -->
+          <div class="space-y-3" data-region="payment-methods">
+            <!-- Option 1: Cash on Delivery (Active) -->
             <label class="flex items-center justify-between p-4 rounded-xl border-2 border-primary bg-primary/5 cursor-pointer">
               <div class="flex items-center gap-3">
                 <input type="radio" name="payment-method" checked class="size-4 text-primary accent-primary">
@@ -112,9 +119,10 @@ Functional regions are annotated directly in the component code implementation v
                   <div class="h-2.5 w-40 bg-muted/60 rounded-xs"></div>
                 </div>
               </div>
-              <span class="text-xs font-semibold text-primary px-2 py-0.5 rounded-sm bg-primary/10">COD</span>
+              <div class="h-3 w-10 bg-primary/20 rounded-xs"></div>
             </label>
 
+            <!-- Option 2: Online Payment (Disabled) -->
             <label class="flex items-center justify-between p-4 rounded-xl border border-outline/30 bg-surface opacity-60 cursor-not-allowed">
               <div class="flex items-center gap-3">
                 <input type="radio" name="payment-method" disabled class="size-4 text-muted">

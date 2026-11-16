@@ -9,6 +9,12 @@ import { StdioClientTransport } from '@modelcontextprotocol/sdk/client/stdio.js'
 const source=resolve('.'),repository=resolve(process.argv[2]),bundle=join(repository,'codex-website-builder');
 const json=async path=>JSON.parse(await readFile(path,'utf8'));
 const version=(await json(join(source,'package.json'))).version;
+for(const root of [source,bundle]){
+  const logs=(await readdir(root)).filter(name=>/^CHANGELOG.*\.md$/i.test(name));
+  assert.deepEqual(logs,['CHANGELOG.md'],'one consolidated changelog');
+  assert.ok((await readFile(join(root,'CHANGELOG.md'),'utf8')).includes(`## ${version}`));
+}
+assert.deepEqual(await readFile(join(bundle,'CHANGELOG.md')),await readFile(join(source,'CHANGELOG.md')));
 for(const path of ['package.json','plugin.json','.codex-plugin/plugin.json'])assert.equal((await json(join(bundle,path))).version,version,path);
 for(const path of ['.agents/plugins/marketplace.json','.codex-plugin/marketplace.json']){
   const market=await json(join(repository,path));assert.equal(market.name,'website-builder-beta');

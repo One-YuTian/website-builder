@@ -1,6 +1,6 @@
 # Website Builder
 
-当前版本0.8.2，见[版本说明](CHANGELOG-0.8.2.md)。beta分支提供可直接加载的预构建插件，使用Codex内置Node运行。
+当前版本0.8.6，见[版本说明](CHANGELOG.md)。beta分支提供可直接加载的预构建插件，使用Codex内置Node运行。
 
 ## 项目与画布
 
@@ -48,4 +48,4 @@ Toast通过toast-01文档由Agent实现为项目共享components/toast.js，移�
 
 原站/参考目录仅只读。预览代理仅转换传输内容，不写回网站；在线CDN资源由后端代理适配宿主CSP，大图片/HTML采用分片传输。依赖版权说明保留在各自运行包；官方imagegen版权见其LICENSE.txt。
 
-历史发布说明：[0.8.1](CHANGELOG-0.8.1.md)、[0.8.0](CHANGELOG-0.8.0.md)、[0.7.9-beta.3](CHANGELOG-0.7.9-beta.3.md)、[0.7.9-beta.2](CHANGELOG-0.7.9-beta.2.md)、[0.7.9-beta.1](CHANGELOG-0.7.9-beta.1.md)。
+所有历史版本说明统一见 [CHANGELOG.md](CHANGELOG.md)。
