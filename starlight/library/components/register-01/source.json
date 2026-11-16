@@ -1,0 +1,32 @@
+{
+  "id": "register-01",
+  "name": "Register-01",
+  "originalId": "register-1",
+  "site": "www.agoian.com",
+  "page": "register.html",
+  "target": "body",
+  "retainedLayout": [
+    "居中圆角卡片注册表单结构",
+    "用户名、邮箱、带国家区号前缀的电话字段",
+    "双重密码设置与切换控件",
+    "条款协议复选框与底部登录跳转入口"
+  ],
+  "retainedInteractions": [
+    "表单提交与拦截校验",
+    "密码明暗文切换交互",
+    "前往登录页导航跳转"
+  ],
+  "removed": [
+    "原站硬编码西班牙语业务文案",
+    "外部正则校验与本地账户存储强绑定"
+  ],
+  "acceptance": {
+    "status": "passed",
+    "date": "2026-11-09",
+    "results": [
+      "注册表单居中对齐与响应式表现通过",
+      "区号前缀与密码切换事件响应正常",
+      "全量静态断言与无业务文案校验通过"
+    ]
+  }
+}

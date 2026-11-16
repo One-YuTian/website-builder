@@ -1,0 +1,61 @@
+<!-- Region: Toast Preview Container - Interactive showcase with trigger controls and notification stack -->
+<div class="toast-preview-container w-full min-h-[380px] p-6 sm:p-8 bg-surface rounded-2xl border border-outline/30 flex flex-col justify-between relative overflow-hidden font-sans text-content">
+  <!-- Region: Trigger Controls - Quick action buttons to test different toast types in interactive preview -->
+  <div data-region="trigger-controls" class="space-y-4">
+    <div class="space-y-1.5">
+      <span class="block h-[1.25em] w-48 rounded-sm bg-accent text-xl font-bold"></span>
+      <span class="block h-[0.75em] w-72 rounded-sm bg-accent"></span>
+    </div>
+
+    <div class="flex flex-wrap gap-2.5 pt-2">
+      <button type="button" data-toast-trigger="success" class="px-4 py-2 rounded-lg bg-emerald-600 text-white text-xs font-semibold hover:bg-emerald-700 transition-colors cursor-pointer shadow-xs">
+        <span class="block h-[0.75em] w-14 rounded-xs bg-white/90 mx-auto"></span>
+      </button>
+      <button type="button" data-toast-trigger="error" class="px-4 py-2 rounded-lg bg-rose-600 text-white text-xs font-semibold hover:bg-rose-700 transition-colors cursor-pointer shadow-xs">
+        <span class="block h-[0.75em] w-12 rounded-xs bg-white/90 mx-auto"></span>
+      </button>
+      <button type="button" data-toast-trigger="warning" class="px-4 py-2 rounded-lg bg-amber-600 text-white text-xs font-semibold hover:bg-amber-700 transition-colors cursor-pointer shadow-xs">
+        <span class="block h-[0.75em] w-14 rounded-xs bg-white/90 mx-auto"></span>
+      </button>
+      <button type="button" data-toast-trigger="info" class="px-4 py-2 rounded-lg bg-primary text-white text-xs font-semibold hover:opacity-90 transition-opacity cursor-pointer shadow-xs">
+        <span class="block h-[0.75em] w-10 rounded-xs bg-white/90 mx-auto"></span>
+      </button>
+    </div>
+  </div>
+
+  <!-- Region: Toast Stack - Fixed overlay container hosting stacked notification cards -->
+  <div data-region="toast-stack" class="relative sm:absolute sm:top-6 sm:right-6 w-full max-w-sm space-y-3 pointer-events-none mt-6 sm:mt-0">
+    <!-- Region: Toast Notification Card - Success feedback notification -->
+    <div data-region="toast-card" data-type="success" class="pointer-events-auto flex items-start gap-3 p-4 rounded-xl bg-surface border border-emerald-500/30 shadow-lg shadow-emerald-500/5 transition-all">
+      <div class="size-6 rounded-full bg-emerald-500/15 text-emerald-600 flex items-center justify-center shrink-0 mt-0.5">
+        <svg class="size-3.5" fill="none" stroke="currentColor" stroke-width="2.5" viewBox="0 0 24 24" aria-hidden="true">
+          <path stroke-linecap="round" stroke-linejoin="round" d="M4.5 12.75l6 6 9-13.5"></path>
+        </svg>
+      </div>
+      <div class="flex-1 min-w-0 space-y-1">
+        <span class="block h-[0.85em] w-24 rounded-xs bg-content/85 font-semibold"></span>
+        <span class="block h-[0.7em] w-48 rounded-xs bg-muted/60"></span>
+      </div>
+      <button type="button" aria-label="Dismiss notification" class="text-muted hover:text-content transition-colors cursor-pointer p-0.5 rounded-sm shrink-0">
+        <span class="text-base leading-none">&times;</span>
+      </button>
+    </div>
+
+    <!-- Region: Toast Notification Card - Information announcement notification -->
+    <div data-region="toast-card" data-type="info" class="pointer-events-auto flex items-start gap-3 p-4 rounded-xl bg-surface border border-outline/40 shadow-lg transition-all">
+      <div class="size-6 rounded-full bg-primary/15 text-primary flex items-center justify-center shrink-0 mt-0.5">
+        <svg class="size-3.5" fill="none" stroke="currentColor" stroke-width="2.5" viewBox="0 0 24 24" aria-hidden="true">
+          <path stroke-linecap="round" stroke-linejoin="round" d="M11.25 11.25l.041-.02a.75.75 0 011.063.852l-.708 2.836a.75.75 0 001.063.853l.041-.021M21 12a9 9 0 11-18 0 9 9 0 0118 0zm-9-3.75h.008v.008H12V8.25z"></path>
+        </svg>
+      </div>
+      <div class="flex-1 min-w-0 space-y-1">
+        <span class="block h-[0.85em] w-20 rounded-xs bg-content/85 font-semibold"></span>
+        <span class="block h-[0.7em] w-40 rounded-xs bg-muted/60"></span>
+      </div>
+      <button type="button" aria-label="Dismiss notification" class="text-muted hover:text-content transition-colors cursor-pointer p-0.5 rounded-sm shrink-0">
+        <span class="text-base leading-none">&times;</span>
+      </button>
+    </div>
+  </div>
+</div>
+

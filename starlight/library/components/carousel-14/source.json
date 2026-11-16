@@ -1,0 +1,34 @@
+{
+  "id": "carousel-14",
+  "name": "Carousel-14",
+  "originalId": "carousel-14",
+  "site": "www.gearuniverses.com",
+  "page": "index.html",
+  "target": "html > body:nth-of-type(1) > main:nth-of-type(1) > section:nth-of-type(1)",
+  "retainedLayout": [
+    "桌面全宽高视觉大图横幅轮播（hidden lg:block，高度固定 500px，全宽 w-full）",
+    "左文右图布局：左侧浮层文案区内嵌大标题、多行描述与操作按钮骨架，右侧为硬件产品图展示区",
+    "移动端独立响应式轮播（lg:hidden，文案宽度缩窄至 60%，按比例紧凑排版）",
+    "底部居中指示点（swiper-pagination）"
+  ],
+  "retainedInteractions": [
+    "Swiper 循环自动播放（loop: true, autoplay: 3500ms）",
+    "分页指示点点击与触摸平滑滑动切换",
+    "操作按钮点击触发 carousel-navigate 事件"
+  ],
+  "removed": [
+    "原站硬编码业务文本 MEGA SALE / NEW ARRIVALS",
+    "原站真实数码硬件图片及静态链接",
+    "原站特定品牌红色硬编码，改用全局 primary 语义色彩"
+  ],
+  "acceptance": {
+    "status": "passed",
+    "date": "2026-11-06",
+    "results": [
+      "全宽 500px 桌面轮播与移动端独立轮播均正常运行",
+      "左侧大标题、多行描述与操作按钮骨架排版对齐原站结构",
+      "全量骨架屏占位，无真实业务文案与图片",
+      "断点切换无横向溢出，分页与轮播动画流畅"
+    ]
+  }
+}

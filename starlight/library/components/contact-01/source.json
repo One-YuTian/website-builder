@@ -1,0 +1,29 @@
+{
+  "id": "contact-01",
+  "name": "Contact-01",
+  "originalId": "contact-1",
+  "site": "www.agoian.com",
+  "page": "contact.html",
+  "target": "body",
+  "retainedLayout": [
+    "严格对齐原站页面布局结构与分栏模式",
+    "平板与移动端响应式排版适配",
+    "服务承诺与关键数据展示"
+  ],
+  "retainedInteractions": [
+    "留言表单提交与数据校验"
+  ],
+  "removed": [
+    "整站多语言切换与业务文案",
+    "外部第三方追踪脚本与硬编码样式"
+  ],
+  "acceptance": {
+    "status": "passed",
+    "date": "2026-11-06",
+    "results": [
+      "骨架屏与整体排版按原站精确还原",
+      "五大词规范与无业务文案校验通过",
+      "平板端与移动端响应式布局对齐原站通过"
+    ]
+  }
+}

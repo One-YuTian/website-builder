@@ -1,0 +1,29 @@
+{
+  "id": "services-03",
+  "name": "Services-03",
+  "originalId": "services-3",
+  "site": "www.mobilooms.com",
+  "page": "index.html",
+  "target": "html > body:nth-of-type(1) > main:nth-of-type(1) > section:nth-of-type(5)",
+  "retainedLayout": [
+    "主色调背景（bg-primary text-white）",
+    "3 列毛玻璃卡片（bg-white/10 backdrop-blur）"
+  ],
+  "retainedInteractions": [
+    "支持组件点击事件派发与响应式断点适配"
+  ],
+  "removed": [
+    "原站真实商业图片与多语言业务文本",
+    "写死品牌色与全局函数依赖"
+  ],
+  "acceptance": {
+    "status": "passed",
+    "date": "2026-11-06",
+    "results": [
+      "严格按照原组件 DOM 结构与布局复刻",
+      "全量骨架屏占位，无可见业务文案与外部图片",
+      "多断点适配正常，无横向溢出",
+      "静态检查与规范全部通过"
+    ]
+  }
+}

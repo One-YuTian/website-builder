@@ -2,7 +2,6 @@
 website/
 template/
 storybook/
-storybook2/
 codex-website-builder/dist/
 codex-website-builder/project/
 codex-website-builder/node_modules/
@@ -26,18 +25,12 @@ storybook-static/
 edge-profile-test/
 edge-profile*/
 
-# storybook2 generated artifacts (产物目录)
-storybook2/dist/
-storybook2/storybook-static/
-storybook2/src/generated/
-storybook2/public/code/
-storybook2/public/library/
-storybook2/public/playground/
-
 # starlight generated artifacts (产物目录)
 starlight/dist/
 starlight/.astro/
 starlight/public/llms/
+starlight/public/code/
+starlight/library/generated/
 
 # Testing & Reports
 coverage/

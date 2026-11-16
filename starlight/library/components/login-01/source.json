@@ -1,0 +1,32 @@
+{
+  "id": "login-01",
+  "name": "Login-01",
+  "originalId": "login-1",
+  "site": "www.agoian.com",
+  "page": "login.html",
+  "target": "body",
+  "retainedLayout": [
+    "居中圆角卡片身份验证表单布局",
+    "邮箱与密码输入字段（含密码可见性切换控件）",
+    "记住我与忘记密码双侧操作栏",
+    "底部注册账户引导入口"
+  ],
+  "retainedInteractions": [
+    "表单提交与拦截校验",
+    "密码明文/暗文切换交互",
+    "前往注册页导航跳转"
+  ],
+  "removed": [
+    "原站硬编码西班牙语业务文案",
+    "本地 localStorage/sessionStorage 存储强耦合"
+  ],
+  "acceptance": {
+    "status": "passed",
+    "date": "2026-11-09",
+    "results": [
+      "登录表单居中对齐与响应式表现通过",
+      "密码切换与提交事件响应正常",
+      "全量静态断言与无业务文案校验通过"
+    ]
+  }
+}

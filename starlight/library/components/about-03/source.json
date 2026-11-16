@@ -1,0 +1,29 @@
+{
+  "id": "about-03",
+  "name": "About-03",
+  "originalId": "about-3",
+  "site": "www.belanjatech.net",
+  "page": "about.html",
+  "target": "body",
+  "retainedLayout": [
+    "严格对齐原站页面布局结构与分栏模式",
+    "平板与移动端响应式排版适配",
+    "服务承诺与关键数据展示"
+  ],
+  "retainedInteractions": [
+    "特性卡片悬浮与折叠面板交互"
+  ],
+  "removed": [
+    "整站多语言切换与业务文案",
+    "外部第三方追踪脚本与硬编码样式"
+  ],
+  "acceptance": {
+    "status": "passed",
+    "date": "2026-11-06",
+    "results": [
+      "骨架屏与整体排版按原站精确还原",
+      "五大词规范与无业务文案校验通过",
+      "平板端与移动端响应式布局对齐原站通过"
+    ]
+  }
+}

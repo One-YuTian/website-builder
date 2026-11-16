@@ -1,0 +1,31 @@
+{
+  "id": "wishlist-01",
+  "name": "Wishlist-01",
+  "originalId": "wishlistsection-1",
+  "site": "www.agoian.com",
+  "page": "wishlist.html",
+  "target": "html > body:nth-of-type(1) > main:nth-of-type(1) > div:nth-of-type(1)",
+  "retainedLayout": [
+    "页面标题与批量操作工具栏",
+    "4列响应式商品卡片展示网格",
+    "心愿单为空时的缺省提示与导航按钮"
+  ],
+  "retainedInteractions": [
+    "清空全部心愿单交互与空状态切换",
+    "批量加入购物车交互",
+    "卡片点击跳转详情事件"
+  ],
+  "removed": [
+    "外部多语言包与硬编码西班牙论文案",
+    "原站全局登录校验拦截器"
+  ],
+  "acceptance": {
+    "status": "passed",
+    "date": "2026-11-09",
+    "results": [
+      "心愿单网格与空状态切换交互正常",
+      "卡片组件挂载与最大宽度适配通过",
+      "全量静态断言与无业务文案校验通过"
+    ]
+  }
+}

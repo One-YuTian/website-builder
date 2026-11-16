@@ -1,0 +1,30 @@
+{
+  "id": "flashcard-01",
+  "name": "FlashCard-01",
+  "originalId": "flashsalecard-1",
+  "site": "www.agoian.com",
+  "page": "index.html",
+  "target": "flash-sale-card",
+  "retainedLayout": [
+    "正方形图片展示区与左上角绝对定位折扣标签（-40%）",
+    "商品标题、特惠价格与划线原价",
+    "限时秒杀库存抢购进度条（百分比数值与圆角进度槽）"
+  ],
+  "retainedInteractions": [
+    "点击卡片派发 product-navigate 导航跳转事件"
+  ],
+  "removed": [
+    "原站真实商业图片与外链",
+    "硬编码墨西哥比索货币格式化与全局函数依赖"
+  ],
+  "acceptance": {
+    "status": "passed",
+    "date": "2026-11-06",
+    "results": [
+      "严格复刻原站 flash-sale-card 结构与排版",
+      "全量纯 CSS 骨架屏占位，无可见业务文案与外部媒体资源",
+      "作为标准 Web Component 支持在秒杀板块灵活复用",
+      "静态规范检查与五大关键词全部通过"
+    ]
+  }
+}

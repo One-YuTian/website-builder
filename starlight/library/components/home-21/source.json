@@ -1,0 +1,32 @@
+{
+  "id": "home-21",
+  "name": "Home-21",
+  "originalId": "home-21",
+  "site": "www.rompworld.com",
+  "page": "index.html",
+  "target": "body",
+  "retainedLayout": [
+    "标准首页纵向排布链路",
+    "顶部吸顶导航栏与首屏宽幅轮播",
+    "核心营销与商品推荐网格",
+    "全局通用页脚"
+  ],
+  "retainedInteractions": [
+    "首屏轮播自动切换与触摸滑动",
+    "商品卡片交互与路由跳转事件冒泡",
+    "营销板块与快捷分类联动"
+  ],
+  "removed": [
+    "原站私有全局样式表与侵入式脚本",
+    "硬编码业务文案与货币符号"
+  ],
+  "acceptance": {
+    "status": "passed",
+    "date": "2026-11-13",
+    "results": [
+      "子组件组合与展示预览正常",
+      "全量静态断言与无业务文案校验通过",
+      "多设备视口响应式排布正常无溢出"
+    ]
+  }
+}

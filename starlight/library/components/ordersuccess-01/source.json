@@ -1,0 +1,30 @@
+{
+  "id": "ordersuccess-01",
+  "name": "OrderSuccess-01",
+  "originalId": "ordersuccesssection-1",
+  "site": "www.agoian.com",
+  "page": "order-success.html",
+  "target": "html > body:nth-of-type(1) > main:nth-of-type(1) > div:nth-of-type(1)",
+  "retainedLayout": [
+    "绿色成功圆环图标与订单成功大标题",
+    "订单详情卡片（订单编号徽章、商品缩略清单、费用明细与配送信息）",
+    "重要提示警告框与返回订单/继续购物按钮组"
+  ],
+  "retainedInteractions": [
+    "查看我的订单导航交互",
+    "继续购物导航交互"
+  ],
+  "removed": [
+    "原站硬编码西班牙语业务文案与 WhatsApp 确认外链",
+    "本地 storage 临时订单数据"
+  ],
+  "acceptance": {
+    "status": "passed",
+    "date": "2026-11-09",
+    "results": [
+      "成功凭证卡片居中呈现与自适应正常",
+      "双列费用与物流信息在不同屏幕流动折行通过",
+      "全量静态断言与无业务文案校验通过"
+    ]
+  }
+}

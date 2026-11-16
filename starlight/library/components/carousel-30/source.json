@@ -1,0 +1,32 @@
+{
+  "id": "carousel-30",
+  "name": "Carousel-30",
+  "originalId": "carousel-30",
+  "site": "www.vibecarta.com",
+  "page": "index.html",
+  "target": "html > body:nth-of-type(1) > main:nth-of-type(1) > section:nth-of-type(1)",
+  "retainedLayout": [
+    "原站外层容器结构（section.banner-section.w-full.bg-[#ededed]）",
+    "内层定宽居中舞台（content-container，16:7 宽高比）",
+    "纯横幅图片轮播骨架",
+    "双侧切换箭头与分页指示点（swiper-button-next/prev, swiper-pagination）"
+  ],
+  "retainedInteractions": [
+    "循环自动播放（loop: true, autoplay: 4000ms）",
+    "双侧前后切换箭头与分页指示点交互"
+  ],
+  "removed": [
+    "原站泰文商业促销文案与硬编码绿色 #3f8429",
+    "原站产品图片与跳转链接"
+  ],
+  "acceptance": {
+    "status": "passed",
+    "date": "2026-11-06",
+    "results": [
+      "严格按照原组件 DOM 结构与层级复刻",
+      "纯横幅图片轮播骨架占位，无多余浮层文案与按钮",
+      "分页指示点与双侧导航箭头工作正常",
+      "静态检查与规范全部通过"
+    ]
+  }
+}

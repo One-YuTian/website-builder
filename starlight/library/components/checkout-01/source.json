@@ -1,0 +1,30 @@
+{
+  "id": "checkout-01",
+  "name": "Checkout-01",
+  "originalId": "checkoutsection-1",
+  "site": "www.agoian.com",
+  "page": "checkout.html",
+  "target": "html > body:nth-of-type(1) > main:nth-of-type(1) > div:nth-of-type(1)",
+  "retainedLayout": [
+    "面包屑导航与页面标题结构",
+    "左侧账单/配送双列输入表单与支付方式卡片",
+    "右侧粘性吸顶订单摘要（缩略商品清单、物流说明、费用分解与下单按钮）"
+  ],
+  "retainedInteractions": [
+    "支付渠道单选切换",
+    "提交订单行动呼吁交互"
+  ],
+  "removed": [
+    "原站硬编码西班牙语业务文案",
+    "外部地址库联动与本地 storage 结算数据"
+  ],
+  "acceptance": {
+    "status": "passed",
+    "date": "2026-11-09",
+    "results": [
+      "双栏自适应网格与右侧吸顶表现正常",
+      "移动端单列堆叠布局无溢出",
+      "全量静态断言与无业务文案校验通过"
+    ]
+  }
+}

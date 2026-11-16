@@ -1,14 +1,14 @@
 import fs from 'node:fs';
 import path from 'node:path';
 import { fileURLToPath } from 'node:url';
-import { catalog } from '../../storybook2/src/catalog.js';
-import { codeSnippets } from '../../storybook2/src/generated/examples.js';
-import { themeCss } from '../../storybook2/src/runtime/theme.js';
+import { catalog } from '../library/catalog.js';
+import { codeSnippets } from '../library/generated/examples.js';
+import { themeCss } from '../library/runtime/theme.js';
 
 const __dirname = path.dirname(fileURLToPath(import.meta.url));
 const starlightDir = path.resolve(__dirname, '..');
 const rootDir = path.resolve(starlightDir, '..');
-const storybook2Dir = path.resolve(rootDir, 'storybook2');
+const libraryDir = path.resolve(starlightDir, 'library');
 const contentDocsDir = path.resolve(starlightDir, 'src/content/docs');
 const publicDir = path.resolve(starlightDir, 'public');
 const publicLlmsDir = path.join(publicDir, 'llms');
@@ -40,7 +40,7 @@ fs.mkdirSync(publicLlmsDir, { recursive: true });
 // Helper: Extract actual component HTML from demo or source template
 function getComponentHtml(entry, fullHtml) {
   // If entry has a template.html in its source directory
-  const templatePath = path.join(storybook2Dir, `src/components/${entry.id}/template.html`);
+  const templatePath = path.join(libraryDir, `components/${entry.id}/template.html`);
   if (fs.existsSync(templatePath)) {
     const raw = fs.readFileSync(templatePath, 'utf8').trim();
     if (raw) return raw;
@@ -57,7 +57,7 @@ function getComponentHtml(entry, fullHtml) {
 
 // Helper: Extract pure component JavaScript (ONLY the component's own code, no sandbox/Skeleton/theme boilerplate)
 function getPureComponentJs(entry) {
-  const compDir = path.join(storybook2Dir, 'src/components', entry.id);
+  const compDir = path.join(libraryDir, 'components', entry.id);
   const indexPath = path.join(compDir, 'index.js');
   if (!fs.existsSync(indexPath)) return '';
 
@@ -121,8 +121,8 @@ for (const entry of catalog) {
   fs.mkdirSync(targetDir, { recursive: true });
   fs.mkdirSync(targetLlmsDir, { recursive: true });
 
-  const enReadmePath = path.join(storybook2Dir, 'src/components', entry.id, 'README.en.md');
-  const zhReadmePath = path.join(storybook2Dir, 'src/components', entry.id, 'README.md');
+  const enReadmePath = path.join(libraryDir, 'components', entry.id, 'README.en.md');
+  const zhReadmePath = path.join(libraryDir, 'components', entry.id, 'README.md');
 
   const enReadmeRaw = fs.existsSync(enReadmePath) ? fs.readFileSync(enReadmePath, 'utf8').trim() : '';
   const zhReadmeRaw = fs.existsSync(zhReadmePath) ? fs.readFileSync(zhReadmePath, 'utf8').trim() : '';
@@ -259,11 +259,11 @@ ${cssCode.trim()}
 
 // 5. Generate index.mdx
 const indexMdx = `---
-title: Storybook2 Component Library
+title: Standard Component Library
 description: Standard Native Web Components and Tailwind CSS Documentation
 template: splash
 hero:
-  tagline: Standard Native Web Components + Light DOM with Storybook 8 Design Aesthetics
+  tagline: Standard Native Web Components + Light DOM Documentation
   actions:
     - text: Browse Components / Header
       link: /components/header/header-01/
@@ -308,15 +308,15 @@ ${catalog.map(c => {
 fs.writeFileSync(path.join(contentDocsDir, 'index.mdx'), indexMdx, 'utf8');
 
 // 6. Generate guides/theme.mdx
-const themeJs = fs.readFileSync(path.join(storybook2Dir, 'src/config/theme.js'), 'utf8');
-const tailwindJs = fs.readFileSync(path.join(storybook2Dir, 'tailwind.config.js'), 'utf8');
-const resourcesJs = fs.readFileSync(path.join(storybook2Dir, 'src/config/resources.js'), 'utf8');
-const skeletonJs = fs.readFileSync(path.join(storybook2Dir, 'src/components/skeleton.js'), 'utf8');
-const markupJs = fs.readFileSync(path.join(storybook2Dir, 'src/components/shared/markup.js'), 'utf8');
+const themeJs = fs.readFileSync(path.join(libraryDir, 'config/theme.js'), 'utf8');
+const tailwindJs = fs.readFileSync(path.join(libraryDir, 'tailwind.config.js'), 'utf8');
+const resourcesJs = fs.readFileSync(path.join(libraryDir, 'config/resources.js'), 'utf8');
+const skeletonJs = fs.readFileSync(path.join(libraryDir, 'components/skeleton.js'), 'utf8');
+const markupJs = fs.readFileSync(path.join(libraryDir, 'components/shared/markup.js'), 'utf8');
 
 const themeMdx = `---
 title: Theme & Foundation Specifications
-description: Storybook2 theme configuration, resource links, and foundation skeleton source.
+description: Theme configuration, resource links, and foundation skeleton source.
 ---
 
 ## Global Tailwind Configuration (tailwind.config.js)

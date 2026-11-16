@@ -1,0 +1,30 @@
+{
+  "id": "myorder-01",
+  "name": "MyOrder-01",
+  "originalId": "myorderssection-1",
+  "site": "www.bahaynova.net",
+  "page": "my-orders.html",
+  "target": "html > body:nth-of-type(1) > main:nth-of-type(1) > div:nth-of-type(1)",
+  "retainedLayout": [
+    "面包屑与页面主标题区域",
+    "历史订单卡片列表（订单编号、状态徽章、下单时间、商品快照清单、数量统计、支付方式、订单总额与操作按键）",
+    "空状态提示面板与继续购物入口"
+  ],
+  "retainedInteractions": [
+    "订单详情跳转与再次购买事件派发",
+    "继续购物页面导航"
+  ],
+  "removed": [
+    "硬编码货币符号与真实订单数据",
+    "原站特定语言文案与第三方脚本依赖"
+  ],
+  "acceptance": {
+    "status": "passed",
+    "date": "2026-11-16",
+    "results": [
+      "1440/768/390 响应式布局自适应正常",
+      "订单卡片与状态标签交互派发正常",
+      "全量静态断言与无业务文案校验通过"
+    ]
+  }
+}

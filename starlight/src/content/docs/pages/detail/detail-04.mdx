@@ -22,7 +22,16 @@ import { Tabs, TabItem } from '@astrojs/starlight/components';
 <Tabs>
 <TabItem label="English">
 
-Product Detail Page (PDP), integrating multi-view gallery preview, purchase decision region (title, price comparison, SKU swatches, quantity stepper, Add to Cart/Buy Now), and bottom accordion tabs.
+Product Detail Page (PDP), integrating multi-view gallery preview, purchase decision region (title, price comparison, SKU swatches, quantity stepper, Add to Cart/Buy Now), and smart collapsible expandable panels for overflowing long content.
+
+### Expand / Collapse (Read More) Pattern & Specifications
+1. **Dynamic Overflow Detection**:
+   - Collapsible sections (Description `max-h-56`, Specifications `max-h-56`, Reviews `max-h-72`) have defined max-height constraints.
+   - On initialization, the script dynamically compares the inner scroll height against the clamped threshold. If content is short and does NOT exceed the height limit, the bottom gradient fade mask (`.collapsible-fade`) and toggle button (`.collapsible-toggle`) **MUST REMAIN HIDDEN** (`hidden`).
+   - The toggle button and fade mask appear only when actual content overflows the container height.
+2. **Bidirectional Toggle Support**:
+   - Clicking the toggle expands the container to full height (`max-h-none`), hides the gradient fade mask, and rotates the chevron arrow 180°.
+   - Clicking again toggles it back to the collapsed state, restoring the max-height clamp and fade overlay.
 
 ### Regions
 Functional regions are annotated directly in the component code implementation via English comments.
@@ -45,7 +54,16 @@ Functional regions are annotated directly in the component code implementation v
 </TabItem>
 <TabItem label="中文">
 
-商品详情页面（PDP），包含多视角画廊预览、购买决策核心区（标题、原价现价、SKU 规格选择器、步进器、加购/购买按键）及底部手风琴折叠面板。
+商品详情页面（PDP），包含多视角画廊预览、购买决策核心区（标题、原价现价、SKU 规格选择器、步进器、加购/购买按键）及超长内容智能折叠展示更多面板。
+
+### 折叠显示更多（Expand / Collapse）交互方案与规范
+1. **动态高度溢出检测（Dynamic Overflow Detection）**：
+   - 折叠区域（商品描述 `max-h-56`、规格参数表 `max-h-56`、用户评价列表 `max-h-72`）设置最大高度约束。
+   - 页面初始化时自动检测内容实际高度与容器约束高度：若文案或内容过短未超出限定高度，底部渐变遮罩（`.collapsible-fade`）和“展开/折叠”按键（`.collapsible-toggle`）**必须保持隐藏**（`hidden`），严禁无内容溢出时盲目展示折叠按键。
+   - 仅在内容实际高度超出限定高度时，才自动激活显示渐变遮罩与切换按钮。
+2. **双向展开与折叠支持（Bidirectional Expand / Collapse）**：
+   - 点击展开按键时移除高度限制（添加 `max-h-none`），隐藏渐变遮罩，指示箭头顺时针旋转 180°。
+   - 再次点击时重新收起折叠恢复限高，显示底部渐变遮罩，箭头复位，支持无缝双向循环交互。
 
 ### 区域划分
 本组件各功能区域通过英文注释直接标注于代码实现中。

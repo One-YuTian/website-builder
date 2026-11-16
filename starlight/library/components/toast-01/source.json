@@ -1,0 +1,35 @@
+{
+  "id": "toast-01",
+  "name": "Toast-01",
+  "originalId": "toast-1",
+  "site": "internal",
+  "page": "global",
+  "target": "toast-container",
+  "retainedLayout": [
+    "右上角浮层垂直堆叠通知容器",
+    "四类状态卡片（Success、Error、Warning、Info）与专属语义图标",
+    "标题与详细描述骨架文本排版",
+    "右侧轻量叉号快速关闭按钮"
+  ],
+  "retainedInteractions": [
+    "自动定时关闭（默认 4000ms）",
+    "鼠标悬停与键盘聚焦暂停计时、移出恢复计时",
+    "点击关闭按钮移除指定通知卡片",
+    "堆叠数量超出上限自动移除最旧条目",
+    "window.Toast 全局调用门面与自定义事件派发"
+  ],
+  "removed": [
+    "侵入式原生 window.alert 阻塞逻辑",
+    "外部样式表与图标字体依赖"
+  ],
+  "acceptance": {
+    "status": "passed",
+    "date": "2026-11-13",
+    "results": [
+      "Web Component 渲染与全局 API 注入正常",
+      "四类状态展示、定时销毁与手动关闭交互通过",
+      "全量静态断言、无业务文案、纯 SVG 图标通过"
+    ]
+  }
+}
+

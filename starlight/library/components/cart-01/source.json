@@ -1,0 +1,31 @@
+{
+  "id": "cart-01",
+  "name": "Cart-01",
+  "originalId": "cart-1",
+  "site": "www.agoian.com",
+  "page": "index.html",
+  "target": "[id=\"cart-drawer\"]",
+  "retainedLayout": [
+    "侧栏抽屉式购物车容器结构",
+    "商品清单条目（缩略图骨架、两行标题骨架、单价与步进器）",
+    "底部金额试算与结算跳转按钮组"
+  ],
+  "retainedInteractions": [
+    "关闭抽屉交互",
+    "数量步进器增减与删除事件",
+    "结算跳转行动呼吁事件"
+  ],
+  "removed": [
+    "原站全局多语言函数与外部存储模型",
+    "真实商品图与硬编码币种符号"
+  ],
+  "acceptance": {
+    "status": "passed",
+    "date": "2026-11-09",
+    "results": [
+      "Web Component 渲染与模式切换正常",
+      "数量增减与关闭事件派发正常",
+      "全量静态断言与无业务文案校验通过"
+    ]
+  }
+}

@@ -1,0 +1,31 @@
+{
+  "id": "carousel-28",
+  "name": "Carousel-28",
+  "originalId": "carousel-28",
+  "site": "www.telefonhub.net",
+  "page": "index.html",
+  "target": "html > body:nth-of-type(1) > main:nth-of-type(1) > section:nth-of-type(2)",
+  "retainedLayout": [
+    "桌面 450px 原站 DOM 结构",
+    "移动端 120px 细长横条独立 section DOM 结构",
+    "纯图片轮播骨架，无多余文字浮层"
+  ],
+  "retainedInteractions": [
+    "循环自动播放（loop: true, autoplay: 3500ms）",
+    "指示点切换与滑动交互"
+  ],
+  "removed": [
+    "原站手机数码真实产品素材与品牌文案",
+    "原站写死高度与红色 #ec0101 硬编码"
+  ],
+  "acceptance": {
+    "status": "passed",
+    "date": "2026-11-06",
+    "results": [
+      "严格按照原组件 DOM 结构与层级复刻",
+      "纯横幅图片轮播骨架占位，无多余浮层文案与按钮",
+      "分页指示点与双侧导航箭头工作正常",
+      "静态检查与规范全部通过"
+    ]
+  }
+}

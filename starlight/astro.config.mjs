@@ -1,7 +1,7 @@
 import { defineConfig } from 'astro/config';
 import starlight from '@astrojs/starlight';
 import starlightLlmsTxt from 'starlight-llms-txt';
-import { catalog } from '../storybook2/src/catalog.js';
+import { catalog } from './library/catalog.js';
 
 // Build customSets for starlight-llms-txt so each component gets an individual LLM route
 const componentCustomSets = catalog.map((c) => {
@@ -27,10 +27,10 @@ const dedicatedOptionalLinks = catalog.map((c) => {
 });
 
 export default defineConfig({
-  site: 'https://storybook2.internal',
+  site: 'https://starlight.internal',
   integrations: [
     starlight({
-      title: 'Storybook2 Docs',
+      title: 'Component Library Docs',
       defaultLocale: 'root',
       tableOfContents: false,
       locales: {
@@ -41,7 +41,7 @@ export default defineConfig({
       },
       plugins: [
         starlightLlmsTxt({
-          projectName: 'Storybook2 Web Components & Blocks',
+          projectName: 'Standard Web Components & Blocks',
           description: 'Production-ready Native Web Components, Tailwind CSS, and Light DOM templates.',
           details: 'Hierarchy is structured across Groups (Components / Blocks / Pages), Kinds (Header, Footer, Card, Carousel, ProductList, Shop, Detail, About, Contact), and Individual Components. Each component has an isolated LLM document specification.',
           customSets: componentCustomSets,
@@ -165,6 +165,10 @@ export default defineConfig({
             {
               label: 'OrderSuccess',
               autogenerate: { directory: 'pages/ordersuccess' },
+            },
+            {
+              label: 'MyOrder',
+              autogenerate: { directory: 'pages/myorder' },
             },
           ],
         },

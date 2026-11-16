@@ -1,0 +1,34 @@
+{
+  "id": "carousel-12",
+  "name": "Carousel-12",
+  "originalId": "carousel-12",
+  "site": "www.evercraftnepal.com",
+  "page": "index.html",
+  "target": "[id=\"main-content\"] > section:nth-of-type(1)",
+  "retainedLayout": [
+    "桌面端双栏并排横幅卡片网格（hidden md:grid grid-cols-2 gap-6，高度 h-64 lg:h-96）",
+    "移动端独立淡入淡出（fade）轮播卡片（block md:hidden，高度 h-64，带底部分页指示点）",
+    "卡片底部暗色渐变遮罩与图层文字排版（大标题与副标题骨架）",
+    "内容居中容器约束（content-container）"
+  ],
+  "retainedInteractions": [
+    "移动端 fade 模式循环自动播放（loop: true, autoplay: 3000ms）",
+    "分页指示点点击切换",
+    "卡片点击触发 carousel-navigate 事件"
+  ],
+  "removed": [
+    "原站硬编码业务文本与真实羊绒/手工艺品商品图片",
+    "window.location.href 页面跳转与内嵌 inline onclick 脚本",
+    "第三方字体与原站全局样式硬编码"
+  ],
+  "acceptance": {
+    "status": "passed",
+    "date": "2026-11-06",
+    "results": [
+      "桌面端在 768px 以上呈现双列并排横幅卡片，图文分布层次清晰",
+      "移动端在 768px 以下呈现 fade 淡入淡出轮播与分页指示点",
+      "全骨架屏无可见业务文案与图片，通过纯 CSS 实现背景与图标占位",
+      "无外部跳转 href，支持标准导航事件派发"
+    ]
+  }
+}

@@ -1,0 +1,33 @@
+{
+  "id": "carousel-16",
+  "name": "Carousel-16",
+  "originalId": "carousel-16",
+  "site": "www.hodbtc.com",
+  "page": "index.html",
+  "target": "html > body:nth-of-type(1) > main:nth-of-type(1) > section:nth-of-type(1)",
+  "retainedLayout": [
+    "原站外层容器结构（section.w-full.bg-accent）",
+    "内层定宽居中舞台（content-container，80:27 宽高比）",
+    "纯横幅图片轮播骨架（每 slide 内嵌图片骨架，无多余文字浮层）",
+    "双侧切换箭头与分页指示点（swiper-button-next/prev, swiper-pagination）"
+  ],
+  "retainedInteractions": [
+    "Swiper 循环自动播放（loop: true, autoplay: 4000ms）",
+    "双侧前后切换箭头交互与悬浮高亮",
+    "分页指示点点击与触摸平滑滑动"
+  ],
+  "removed": [
+    "原站真实商业横幅图片与促销文本",
+    "原站写死尺寸及全局字体硬编码"
+  ],
+  "acceptance": {
+    "status": "passed",
+    "date": "2026-11-06",
+    "results": [
+      "严格按照原组件 DOM 结构与层级复刻",
+      "纯横幅图片轮播骨架占位，无多余浮层文案与按钮",
+      "分页指示点与双侧导航箭头工作正常",
+      "静态检查与规范全部通过"
+    ]
+  }
+}

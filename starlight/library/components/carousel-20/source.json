@@ -1,0 +1,31 @@
+{
+  "id": "carousel-20",
+  "name": "Carousel-20",
+  "originalId": "carousel-20",
+  "site": "www.movilnova.net",
+  "page": "index.html",
+  "target": "html > body:nth-of-type(1) > main:nth-of-type(1) > section:nth-of-type(1)",
+  "retainedLayout": [
+    "桌面全宽 450px 原站 DOM 结构与底部渐变融合层",
+    "移动端独立 section 结构与 2.7:1 宽高比",
+    "纯横幅图片轮播骨架，严格还原原组件标签层级"
+  ],
+  "retainedInteractions": [
+    "循环自动播放（loop: true, autoplay: 3000ms）",
+    "指示点点击与触摸平滑滑动"
+  ],
+  "removed": [
+    "原站业务横幅及硬编码配色 #f57224 / #f1f1f1",
+    "原站全站依赖与脚本"
+  ],
+  "acceptance": {
+    "status": "passed",
+    "date": "2026-11-06",
+    "results": [
+      "严格按照原组件 DOM 结构与层级复刻",
+      "纯横幅图片轮播骨架占位，无多余浮层文案与按钮",
+      "分页指示点与双侧导航箭头工作正常",
+      "静态检查与规范全部通过"
+    ]
+  }
+}

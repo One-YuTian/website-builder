@@ -1,0 +1,32 @@
+{
+  "id": "welcomemodal-01",
+  "name": "WelcomeModal-01",
+  "originalId": "welcomemodal-1",
+  "site": "www.charmmarketplace.net",
+  "page": "index.html",
+  "target": "welcome-modal",
+  "retainedLayout": [
+    "居中圆角弹窗卡片结构与右上角快速关闭按钮",
+    "顶部品牌徽章与标题副标题骨架",
+    "虚线内嵌式优惠券权益卡片",
+    "绿色对勾服务特性清单列表",
+    "全宽主色行动按钮与底部轻量跳过入口"
+  ],
+  "retainedInteractions": [
+    "关闭按钮、提交转化按钮与跳过按钮交互",
+    "点击交互事件冒泡与状态传递"
+  ],
+  "removed": [
+    "Shadow DOM 与原站私有样式绑定",
+    "缅甸语硬编码业务文案与外部 session 存储依赖"
+  ],
+  "acceptance": {
+    "status": "passed",
+    "date": "2026-11-09",
+    "results": [
+      "弹窗卡片布局与响应式自适应表现正常",
+      "全量静态检查与纯 CSS 骨架屏合规",
+      "多设备视口居中呈现无溢出"
+    ]
+  }
+}
