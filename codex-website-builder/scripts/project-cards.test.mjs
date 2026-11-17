@@ -48,9 +48,10 @@ try {
   assert.equal((await card()).status,'modifying');
   await json('website_project',{action:'finish',...ids,paths:['index.html']});
   await json('website_images',{...ids,action:'begin',path:'banner1.png',name:'Banner'});
-  assert.equal((await card()).deletable,false);
+  assert.equal((await card()).deletable,true,'image-only work does not block page completion or deletion');
+  assert.equal((await card()).status,'completed');
   await json('website_images',{...ids,action:'fail',path:'banner1.png',error:'Test failure'});
-  assert.equal((await card()).status,'failed');
+  assert.equal((await card()).status,'completed','image failure is separate from page completion');
   // UI shows the title/brand/time and replaces deletion while running.
   host=spawn(process.execPath,['dist/server/index.js','--preview'],{env,stdio:['ignore','pipe','pipe']});
   const url=await new Promise((resolve,reject)=>{host.stdout.once('data',d=>resolve(d.toString().trim()));host.once('error',reject);});
