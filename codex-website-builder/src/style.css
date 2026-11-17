@@ -79,7 +79,7 @@
 .dot-background canvas{display:block;width:100%;height:100%;pointer-events:none}
 .project-compose,.page-stage{background-image:none}
 .project-prompt{height:260px;min-height:260px;padding:24px 24px 16px;gap:12px;position:relative;background:rgba(226,228,232,.92);border:1px solid #cbd0d4;border-radius:28px;box-shadow:none}
-.project-prompt textarea,.project-prompt .prompt-editor{flex:1;min-height:0;height:100%;max-height:none;resize:none;overflow:auto;font-size:17px;line-height:1.6;padding:0;border:0;border-radius:0;outline:none;user-select:text;-webkit-user-select:text;word-break:break-word;white-space:pre-wrap}
+.project-prompt textarea,.project-prompt .prompt-editor{flex:1;min-height:0;height:100%;max-height:none;resize:none;overflow:auto;font-size:17px;line-height:1.6;padding:0;border:0;border-radius:0;outline:none;user-select:text!important;-webkit-user-select:text!important;cursor:text;word-break:break-word;white-space:pre-wrap}
 .project-prompt textarea:disabled,.project-prompt .prompt-editor[contenteditable="false"]{opacity:.7;cursor:default}
 .project-prompt .prompt-editor:empty::before{content:attr(data-placeholder);color:#777c83;pointer-events:none}
 .prompt-chip{display:inline-flex;align-items:center;gap:6px;background:#d8dce2;border:1px solid #bcc3cc;color:#202428;border-radius:9999px;padding:2px 8px 2px 5px;margin:1px 3px;vertical-align:middle;font-size:13px;line-height:1.4;max-width:260px;box-sizing:border-box;user-select:none;-webkit-user-select:none}
@@ -90,14 +90,14 @@
 .prompt-chip .chip-title{overflow:hidden;text-overflow:ellipsis;white-space:nowrap;font-size:12px;font-weight:500}
 .prompt-chip .chip-close{border:0;background:transparent;padding:0 2px;margin-left:2px;font-size:15px;line-height:1;color:#606770;cursor:pointer;border-radius:50%;display:inline-flex;align-items:center;justify-content:center}
 .prompt-chip .chip-close:hover{color:#d32f2f;background:rgba(0,0,0,.08)}
-.prompt-lightbox-overlay{position:fixed;inset:0;background:rgba(0,0,0,.75);z-index:999;display:flex;flex-direction:column;align-items:center;justify-content:center;padding:24px;backdrop-filter:blur(6px);animation:prompt-fade-in .15s ease}
-.prompt-lightbox-box{position:relative;max-width:min(90vw,960px);max-height:85vh;display:flex;flex-direction:column;align-items:center;background:#1e2227;border-radius:16px;overflow:hidden;box-shadow:0 20px 60px rgba(0,0,0,.5);border:1px solid #333a42}
-.prompt-lightbox-header{display:flex;align-items:center;justify-content:space-between;width:100%;padding:10px 16px;background:#262b32;color:#e1e4e8;font-size:13px;font-weight:500;gap:12px;box-sizing:border-box}
+.prompt-lightbox-overlay{position:fixed;inset:0;width:100vw;height:100vh;background:rgba(0,0,0,.82);z-index:99999;display:flex;flex-direction:column;align-items:center;justify-content:center;padding:24px;backdrop-filter:blur(8px);-webkit-backdrop-filter:blur(8px);animation:prompt-fade-in .15s ease}
+.prompt-lightbox-box{position:relative;max-width:min(92vw,1100px);max-height:90vh;display:flex;flex-direction:column;align-items:center;background:#181b1f;border-radius:18px;overflow:hidden;box-shadow:0 24px 80px rgba(0,0,0,.6);border:1px solid #333a42}
+.prompt-lightbox-header{display:flex;align-items:center;justify-content:space-between;width:100%;padding:12px 18px;background:#20242a;color:#e1e4e8;font-size:14px;font-weight:500;gap:16px;box-sizing:border-box}
 .prompt-lightbox-header .lightbox-title{overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
-.prompt-lightbox-close{border:0;background:transparent;color:#9da5b0;font-size:20px;cursor:pointer;padding:2px 8px;border-radius:6px;line-height:1}
+.prompt-lightbox-close{border:0;background:transparent;color:#9da5b0;font-size:22px;cursor:pointer;padding:2px 8px;border-radius:6px;line-height:1}
 .prompt-lightbox-close:hover{color:#fff;background:#353c46}
-.prompt-lightbox-img-wrap{padding:16px;display:flex;align-items:center;justify-content:center;max-height:calc(85vh - 50px);overflow:auto}
-.prompt-lightbox-img-wrap img{max-width:100%;max-height:calc(85vh - 82px);object-fit:contain;border-radius:6px}
+.prompt-lightbox-img-wrap{padding:20px;display:flex;align-items:center;justify-content:center;max-height:calc(90vh - 60px);max-width:100%;overflow:auto}
+.prompt-lightbox-img-wrap img{max-width:100%;max-height:calc(90vh - 100px);object-fit:contain;border-radius:8px;box-shadow:0 8px 32px rgba(0,0,0,.4)}
 @keyframes prompt-fade-in{from{opacity:0}to{opacity:1}}
 .prompt-toolbar{display:flex;justify-content:space-between;align-items:center;flex:0 0 40px}
 .prompt-toolbar button{width:40px;height:40px;display:grid;place-items:center;border:0;border-radius:50%;padding:9px;background:transparent}

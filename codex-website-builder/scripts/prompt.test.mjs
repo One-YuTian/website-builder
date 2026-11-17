@@ -77,6 +77,8 @@ try{
   await imageThumb.click();
   await app.locator('.prompt-lightbox-overlay').waitFor();
   assert.ok(await app.locator('.prompt-lightbox-box img').isVisible());
+  const box=await app.locator('.prompt-lightbox-overlay').boundingBox();
+  assert.equal(box.width,1440);assert.equal(box.height,900);
   await app.locator('.prompt-lightbox-close').click();
   await app.locator('.prompt-lightbox-overlay').waitFor({state:'detached'});
   const extraFile=[{name:'extra.txt',mimeType:'text/plain',buffer:Buffer.from('extra')}];

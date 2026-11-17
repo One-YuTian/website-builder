@@ -1,4 +1,5 @@
 import { useEffect, useRef, useState, useCallback } from 'react';
+import { createPortal } from 'react-dom';
 import { Icon } from './Icons';
 import type { App } from '@modelcontextprotocol/ext-apps';
 
@@ -298,13 +299,24 @@ export function ProjectPrompt({send,onCreated}:{send:(text:string,content:Prompt
   };
 
   return (
-    <form className="project-prompt" aria-label="网站需求" aria-busy={pending} onSubmit={event => { event.preventDefault(); void submit(); }}>
+    <form
+      className="project-prompt"
+      aria-label="网站需求"
+      aria-busy={pending}
+      onClick={e => {
+        if (e.target !== picker.current && !(e.target as HTMLElement).closest('button, .prompt-chip')) {
+          editorRef.current?.focus();
+        }
+      }}
+      onSubmit={event => { event.preventDefault(); void submit(); }}
+    >
       <div
         ref={editorRef}
         className="prompt-editor"
         role="textbox"
         aria-label="项目需求"
         aria-multiline="true"
+        tabIndex={0}
         contentEditable={!pending}
         data-placeholder="描述你想构建的网站…"
         onInput={handleEditorChange}
@@ -377,7 +389,7 @@ export function ProjectPrompt({send,onCreated}:{send:(text:string,content:Prompt
       </div>
       {error && <div className="prompt-error" role="alert">{error}</div>}
 
-      {lightbox && (
+      {lightbox && typeof document !== 'undefined' && createPortal(
         <div
           className="prompt-lightbox-overlay"
           role="dialog"
@@ -402,7 +414,8 @@ export function ProjectPrompt({send,onCreated}:{send:(text:string,content:Prompt
               <img src={lightbox.url} alt={lightbox.name} />
             </div>
           </div>
-        </div>
+        </div>,
+        document.body
       )}
     </form>
   );
