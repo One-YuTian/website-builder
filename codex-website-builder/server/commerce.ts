@@ -197,7 +197,7 @@ window.storeData = {
 };
 ` });
   }
-  const configDefaults = { currency: input.currency || 'USD', locale: input.locale || 'en-US', storageKey: `website-builder:${view.project.id}` };
+  const configDefaults = { currency: input.currency || 'USD', locale: input.locale || 'en-US' };
   const runtime=await commerceAssets(view.directory,skillRoot);
   files.push(...runtime.files);
   const kept=runtime.kept;

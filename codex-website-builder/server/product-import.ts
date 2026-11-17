@@ -103,7 +103,7 @@ export async function importProducts(store:ProjectStore,skillRoot:string,input:I
   // Execute only the trusted bundled SDK, never JavaScript supplied by the data.
   const window:any={productData:normalized.products};
   runInNewContext(await readFile(join(skillRoot,'assets/commerce/sdk.js'),'utf8'),{window,Intl},{timeout:2000});
-  const config={currency:input.currency||'USD',locale:input.locale||'en-US',storageKey:`website-builder:${view.project.id}`};
+  const config={currency:input.currency||'USD',locale:input.locale||'en-US'};
   window.SDK.init(normalized.products,config);
   const sourceCategories:string[]=window.SDK.categories();
   const offset=input.category_offset??0,limit=input.category_limit??200;

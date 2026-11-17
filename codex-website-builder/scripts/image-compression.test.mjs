@@ -1,0 +1,35 @@
+import assert from 'node:assert/strict';
+import {writeFile,readFile,readdir} from 'node:fs/promises';
+import {join} from 'node:path';
+import {pngFixture} from './compression-fetch-fixture.mjs';
+import {compressImageWithRetry,compressFile,MAX_IMAGE_BYTES,validateImage} from '../skills/website-image-generator/scripts/compress-image.mjs';
+import {loadGitLabFixture} from './gitlab-test-support.mjs';
+const source=pngFixture(20,20,1024),small=pngFixture(20,20);validateImage(source,'banner.png');validateImage(small,'banner.png');
+let uploads=0,failures=0;
+const provider=async(input,options)=>{if(options?.method==='POST'){uploads++;if(failures>0){failures--;return new Response('offline',{status:503});}return Response.json({output:{size:small.length,url:'https://tinypng.com/backend/opt/output/test-image'}});}return new Response(small,{headers:{'content-length':String(small.length)}});};
+const {fixture,imagePublisher,projectManager}=await loadGitLabFixture(),f=await fixture(),manager=projectManager(f.store),ids={thread_id:'mock-thread',project_id:f.view.project.id},path='banner1.png';
+const stats=()=>f.store.database.sql.prepare('SELECT * FROM image_compressions WHERE project_id=? AND path=?').get(ids.project_id,path);
+try{
+ await manager.imageTask({...ids,action:'begin',path});await writeFile(join(f.view.materialDirectory,path),source);
+ const publisher=imagePublisher(f.store,(input,name,options)=>compressImageWithRetry(input,name,{...options,fetcher:provider,sleep:async()=>{}}));
+ failures=2;let report=await publisher.publish(f.view,path);assert.equal(report.attempts,3);assert.equal(uploads,3);assert.equal(report.compressed_size,small.length);
+ assert.deepEqual(await readFile(join(f.view.materialDirectory,path)),source);assert.deepEqual(await readFile(join(f.view.directory,'images',path)),small);
+ await publisher.publish(f.view,path);assert.equal(uploads,3,'repeat finish uses published bytes without recompressing');
+ const finished=await manager.imageTask({...ids,action:'finish',path});assert.equal(finished.compression.attempts,3);
+ await manager.imageTask({...ids,action:'begin',path});await writeFile(join(f.view.materialDirectory,path),pngFixture(21,20,1024));failures=10;
+ await assert.rejects(publisher.publish(f.view,path),/已尝试3次/);assert.equal(stats().attempts,3);assert.equal(stats().status,'failed');assert.equal(uploads,6);
+ await assert.rejects(publisher.publish(f.view,path));await assert.rejects(manager.imageTask({...ids,action:'finish',path}));assert.equal(uploads,6,'same failed task cannot reset its budget');
+ for(let i=0;i<3;i++)await manager.run({...ids,panel_id:'compression-panel',action:'images'});assert.equal(uploads,6,'gallery polling never restarts failed tasks');assert.deepEqual(await readFile(join(f.view.directory,'images',path)),small);
+ await manager.imageTask({...ids,action:'begin',path});await writeFile(join(f.view.materialDirectory,path),source);failures=0;
+ let release,entered;const barrier=new Promise(resolve=>release=resolve),reached=new Promise(resolve=>entered=resolve);
+ const one=imagePublisher(f.store,(input,name,options)=>compressImageWithRetry(input,name,{...options,fetcher:async(...args)=>{if(args[1]?.method==='POST'){entered();await barrier;}return provider(...args);},sleep:async()=>{}}));
+ const two=imagePublisher(f.store,(input,name,options)=>compressImageWithRetry(input,name,{...options,fetcher:provider,sleep:async()=>{}}));
+ const pending=one.publish(f.view,path);await reached;assert.equal((await two.publish(f.view,path)).pending,true);assert.equal((await manager.imageTask({...ids,action:'finish',path})).phase,'compressing');assert.throws(()=>two.reset(ids.project_id,path),/正在压缩/);release();await pending;assert.equal(stats().attempts,1);
+ const out=join(f.root,'cli-output.png');report=await compressFile(join(f.view.materialDirectory,path),out,{fetcher:provider,sleep:async()=>{}});assert.ok(report.compressed_size<report.original_size);assert.deepEqual(await readFile(out),small);
+ await assert.rejects(compressFile(out,out),/不得原地/);
+ const attacks=[async()=>Response.json({output:{size:small.length,url:'https://example.invalid/asset'}}),async(_url,init)=>init?.method==='POST'?Response.json({output:{size:small.length,url:'https://tinypng.com/web/output/truncated'}}):new Response(small.subarray(0,-1))];
+ for(const fetcher of attacks)await assert.rejects(compressFile(join(f.view.materialDirectory,path),out,{fetcher,sleep:async()=>{}}),/已尝试3次/);
+ assert.deepEqual(await readFile(out),small);assert.deepEqual(await readFile(join(f.view.materialDirectory,path)),source);assert.ok(!(await readdir(join(f.view.directory,'images'))).some(name=>name.endsWith('.tmp')));
+ await assert.rejects(compressImageWithRetry(Buffer.alloc(MAX_IMAGE_BYTES+1),'large.png',{sleep:async()=>{}}),/5.2 MB/);
+ console.log('PASS: pure-JS Lanhu/TinyPNG compression, smaller images publication/original preservation, persistent 3-attempt cap, polling/finish dedupe, concurrent publisher claim, CLI atomic output and invalid/truncated/untrusted responses preserve prior files; all uploads mocked');
+}finally{await manager.close();f.store.database.sql.close();}

@@ -45,12 +45,13 @@ try {
   await call('website_write',{thread_id:state.thread_id,project_id:state.project_id,files:[{path:'js/app.js',content:generatedApp}]});
   await assert.rejects(readFile(join(state.directory,'js/ec-sdk.js')));
   await assert.rejects(readFile(join(state.directory, 'js/commerce-config.js')), 'new projects must not create a separate configuration script');
-  assert.ok((await readFile(join(state.directory, 'js/app.js'), 'utf8')).includes(prepared.config_defaults.storageKey));
+  assert.equal("storageKey" in prepared.config_defaults,false);
+  assert.ok((await readFile(join(state.directory, 'js/app.js'), 'utf8')).includes("SDK.init"));
   const source = await readFile(join(state.directory, 'js/data.js'), 'utf8');
   assert.ok(source.split('\n').length > 100);
   const values = new Map();
   const context = vm.createContext({
-    window: { crypto: webcrypto, commerceConfig: { storageKey: 'test', currency: 'USD', locale: 'en-US' }, localStorage: { getItem: key => values.get(key) || null, setItem: (key, value) => values.set(key, value), removeItem: key => values.delete(key) } },
+    window: { crypto: webcrypto, commerceConfig: {  currency: 'USD', locale: 'en-US' }, localStorage: { getItem: key => values.get(key) || null, setItem: (key, value) => values.set(key, value), removeItem: key => values.delete(key) } },
     TextEncoder, Intl, crypto: webcrypto,
   });
   for (const path of ['js/sdk.js', 'js/data.js', 'js/app.js']) {

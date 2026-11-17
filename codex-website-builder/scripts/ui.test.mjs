@@ -23,7 +23,7 @@ try{
  const shell=body=>`<!doctype html><html><head><meta charset="utf-8"><title>UI</title><script src="js/sdk.js"></script><script src="js/data.js"></script><script src="app.js"></script></head><body>${body}</body></html>`;
  const html=shell('<button id="open" onclick="document.querySelector(\'#modal\').hidden=false">Open</button><button id="guest" onclick="APP.wishlist.add(\'B012345678\')">Save</button><div id="modal" data-overlay-root hidden><div data-overlay-backdrop style="position:fixed;inset:0;background:#0006"><span id="decoration" style="display:block;width:30px;height:30px">Backdrop</span></div><section data-overlay-panel style="position:fixed;right:0;top:50px;width:260px;background:white;padding:20px"><input aria-label="Inside"><button onclick="document.querySelector(\'#modal\').hidden=true">Close panel</button></section></div>');
  await call('website_write',{...ids,files:[
-  {path:'app.js',content:'window.uiMessages={close:"关闭"};window.commerceConfig={storageKey:"ui-test",loginUrl:"login.html",loginRequiredMessage:"请先登录"};window.SDK.init(window.productData,window.commerceConfig);document.addEventListener("DOMContentLoaded",()=>Toast.info("Template notification",{duration:0}));'},
+  {path:'app.js',content:'window.uiMessages={close:"关闭"};window.commerceConfig={loginUrl:"login.html",loginRequiredMessage:"请先登录"};window.SDK.init(window.productData,window.commerceConfig);document.addEventListener("DOMContentLoaded",()=>Toast.info("Template notification",{duration:0}));'},
   {path:'components/toast.js',content:suppliedToast},
   {path:'js/sdk.js',content:await readFile('skills/website-builder/assets/commerce/sdk.js','utf8')},
   {path:'index.html',content:html},

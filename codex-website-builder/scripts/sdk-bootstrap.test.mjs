@@ -10,7 +10,7 @@ assert.equal(sync.window.SDK.count(),0,'loading the SDK does not initialize the 
 sync.window.productData=products;
 assert.equal(sync.window.SDK.count(),0,'data.js is data only');
 // The caller generates this app for its chosen template; preparation never emits one.
-sync.run('window.commerceConfig={currency:"EUR",locale:"de-DE",storageKey:"site-theme"};window.SDK.init(window.productData,window.commerceConfig);window.websiteReady=Promise.resolve(window.SDK);');
+sync.run('window.commerceConfig={currency:"EUR",locale:"de-DE"};window.SDK.init(window.productData,window.commerceConfig);window.websiteReady=Promise.resolve(window.SDK);');
 await sync.window.websiteReady;
 assert.equal(sync.window.SDK.count(),1,'app initializes before following component definitions');
 assert.ok(sync.window.SDK.price(12.5).includes('€'));

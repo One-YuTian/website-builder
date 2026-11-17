@@ -1,3 +1,4 @@
+import './compression-fetch-fixture.mjs';
 import assert from 'node:assert/strict';
 import { mkdtemp, mkdir, readFile, writeFile, stat } from 'node:fs/promises';
 import { tmpdir } from 'node:os';
@@ -26,7 +27,7 @@ try {
  assert.ok(!(await manage({action:'list'})).projects.some(project=>project.id===legacy),'unrecognized legacy project stays hidden');
  const first=await manage({action:'create',name:'Forest studio',});
 
- const imageBytes=Buffer.from('iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAQAAAC1HAwCAAAAC0lEQVR42mP8/x8AAwMCAO+aX1sAAAAASUVORK5CYII=','base64');
+ const imageBytes=Buffer.from('iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAYAAAAfFcSJAAAADUlEQVR4nGNwaDjQAAAEhQIBw1cvNgAAAABJRU5ErkJggg==','base64');
  await json('website_images',{thread_id:'manager-thread',project_id:first.project_id,action:'begin',path:'logo.png'});
  await writeFile(join(first.material_directory,'logo.png'),imageBytes);
  await json('website_images',{thread_id:'manager-thread',project_id:first.project_id,action:'finish',path:'logo.png'});

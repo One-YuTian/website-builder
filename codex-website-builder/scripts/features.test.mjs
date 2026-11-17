@@ -28,7 +28,7 @@ try {
   }
   // Real account/cart/wishlist/order methods, plus visible login redirect guard.
   const values=new Map(),alerts=[],redirects=[];
-  const window={crypto:webcrypto,commerceConfig:{storageKey:'feature-test',loginRequiredMessage:'请先登录'},localStorage:{getItem:key=>values.get(key)||null,setItem:(key,value)=>values.set(key,value),removeItem:key=>values.delete(key)},location:{pathname:'/shop.html',search:'?category=trail',assign:url=>redirects.push(url)},Toast:{info:message=>alerts.push(message)}};
+  const window={crypto:webcrypto,commerceConfig:{loginRequiredMessage:'请先登录'},localStorage:{getItem:key=>values.get(key)||null,setItem:(key,value)=>values.set(key,value),removeItem:key=>values.delete(key)},location:{pathname:'/shop.html',search:'?category=trail',assign:url=>redirects.push(url)},Toast:{info:message=>alerts.push(message)}};
   vm.runInNewContext(await readFile('skills/website-builder/assets/commerce/sdk.js','utf8'),{window,TextEncoder,Intl,crypto:webcrypto});
   const {APP}=window;
   APP.cart.add({id:'B012345678',name:'Demo',price:42},1);

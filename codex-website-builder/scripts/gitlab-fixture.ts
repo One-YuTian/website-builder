@@ -12,6 +12,8 @@ export {registerGitLabTools} from '../server/gitlab-tools';
 export {nodeGitLabIO,gitlabHost} from '../server/gitlab-transport';
 export {testGitLabConnection} from '../server/gitlab-diagnostics';
 export {registerNativeSettings} from '../server/native-settings';
+export {R2Deployment,sourceSnapshot} from '../server/r2-deployment';
+export {R2Settings} from '../server/r2-settings';
 export async function fixture(){
   const root=await mkdtemp(join(tmpdir(),'website-gitlab-mock-')),store=new ProjectStore(join(root,'project'));
   const settings=new PluginSettings(root,store.root,{});
@@ -51,3 +53,8 @@ export async function fixture(){
     state.siteHead=await git.commit({fs,dir:remote.replaceAll('\\','/'),message:'Cloud initial',author:{name:'Cloud',email:'cloud@localhost'}});state.site={};state.remoteRoot=remote;return remote;
   }};
 }
+
+export {openPreviewBrowser} from '../server/open-browser';
+
+export {imagePublisher} from '../server/image-compression';
+export {projectManager} from '../server/project-manager';

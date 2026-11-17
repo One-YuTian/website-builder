@@ -6,7 +6,8 @@ import {readResource} from './resources';
 import {manageProjects} from './project-api';
 import {CanvasImage,type CanvasAsset} from './CanvasImage';
 import {copyPNG,capturePage} from './clipboard';
-import {DeploymentControls} from './DeploymentControls';
+// GitLab 暂停：import {DeploymentControls} from './DeploymentControls';
+import {R2DeploymentControls as DeploymentControls} from './R2DeploymentControls';
 
 type View = { x: number; y: number; zoom: number };
 type Wheel = { dx: number; dy: number; zoom: boolean; x: number; y: number };

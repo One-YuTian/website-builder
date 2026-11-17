@@ -12,9 +12,11 @@ import { contained } from './preview';
 import { imageDimensions } from './image-dimensions';
 import { assertMainRepository } from './project-layout';
 import {assertEditable,operationLock} from './project-operations';
+import {imagePublisher} from './image-compression';
 
 const mime = (path: string) => ({'.png':'image/png','.jpg':'image/jpeg','.jpeg':'image/jpeg','.webp':'image/webp','.avif':'image/avif','.ico':'image/x-icon','.svg':'image/svg+xml','.gif':'image/gif','.pdf':'application/pdf','.json':'application/json'}[extname(path).toLowerCase()] || 'application/octet-stream');
 export function projectManager(store: ProjectStore) {
+  const publisher=imagePublisher(store);
   const captures=new Map<string,{text:string;time:number}>();
   const thumbnails = new Map<string, Promise<void>>();
   const thumbnailRetry = new Map<string, number>();
@@ -182,7 +184,7 @@ export function projectManager(store: ProjectStore) {
       const pending=new Map<string,any>();
       for(const task of tasks){
         const info=await contained(view.materialDirectory,task.path).then(file=>stat(file)).catch(()=>null);
-        if(task.status==='generating'&&info?.isFile()&&info.size>0&&`${info.size}:${info.mtimeMs}`!==task.baseline){await publishImage(view,task.path);task.status='ready';store.database.activity(id,'image:'+task.path,false);store.database.sql.prepare("UPDATE image_tasks SET status='ready',error='' WHERE project_id=? AND path=?").run(id,task.path);}
+        if(task.status==='generating'&&info?.isFile()&&info.size>0&&`${info.size}:${info.mtimeMs}`!==task.baseline){void publisher.publish(view,task.path).catch(()=>{});}
         if(task.status!=='ready')pending.set(task.path,task);
       }
       for(const resource of await materialResources(view)) {
@@ -233,19 +235,6 @@ export function projectManager(store: ProjectStore) {
     }
     throw Error('不支持的项目管理操作');
   }
-  async function publishImage(view:NonNullable<Awaited<ReturnType<ProjectStore['get']>>>,path:string){
-    return store.exclusive(view.project.id,async()=>{
-    assertEditable(store.database,view.project.id);
-    await assertMainRepository(view.projectDirectory);
-    const source=await contained(view.materialDirectory,path);
-    await mkdir(join(view.directory,'images'),{recursive:true});
-    const images=await contained(view.directory,'images');
-    const target=join(images,path);
-    const previous=await stat(target).catch(()=>null);
-    if(previous)await contained(images,path); // Refuse a file symlink outside images.
-    await copyFile(source,target);
-    });
-  }
   async function imageTask(input:{thread_id:string;project_id:string;action:'begin'|'finish'|'fail';path:string;name?:string;width?:number;height?:number;error?:string}){
     const binding=store.database.binding(input.thread_id);
     if(binding?.projectId!==input.project_id)throw Error('图片任务不属于当前会话项目');
@@ -253,18 +242,19 @@ export function projectManager(store: ProjectStore) {
     if(input.action!=='fail')assertEditable(store.database,view.project.id);
     if(input.action==='begin')await assertMainRepository(view.projectDirectory);
     const path=store.path(input.path);if(path.includes('/')||!mime(path).startsWith('image/'))throw Error('图片任务使用 material 内的图片文件名，例如 logo.png、banner1.png、about.png');
+    let compression:any;
     const info=await contained(view.materialDirectory,path).then(file=>stat(file)).catch(()=>null);
-    if(input.action==='begin')assertEditable(store.database,view.project.id);
+    if(input.action==='begin'){assertEditable(store.database,view.project.id);publisher.reset(view.project.id,path);}
     if(input.action==='begin')store.database.sql.prepare(`INSERT INTO image_tasks(project_id,path,name,width,height,status,error,baseline) VALUES (?,?,?,?,?,'generating','',?) ON CONFLICT(project_id,path) DO UPDATE SET name=excluded.name,width=excluded.width,height=excluded.height,status='generating',error='',baseline=excluded.baseline`).run(input.project_id,path,input.name||path.split('/').pop()!,input.width||960,input.height||600,info?`${info.size}:${info.mtimeMs}`:'');
     else {
       const task=store.database.sql.prepare('SELECT baseline FROM image_tasks WHERE project_id=? AND path=?').get(input.project_id,path) as {baseline:string}|undefined;
       if(!task)throw Error('请先登记图片生成任务');
       if(input.action==='finish'&&(!info?.isFile()||!info.size||`${info.size}:${info.mtimeMs}`===task.baseline))throw Error('本次图片成品尚未写入项目');
-      if(input.action==='finish')await publishImage(view,path);
+      if(input.action==='finish'){compression=await publisher.publish(view,path);if(compression?.pending)return {project_id:input.project_id,path,material_path:join(view.materialDirectory,path),website_path:`images/${path}`,status:'generating',phase:'compressing',compression};}
       store.database.sql.prepare('UPDATE image_tasks SET status=?,error=? WHERE project_id=? AND path=?').run(input.action==='finish'?'ready':'error',input.action==='fail'?(input.error||'图片生成失败，请重试'):'',input.project_id,path);
     }
     store.database.activity(input.project_id,'image:'+path,input.action==='begin');
-    return {project_id:input.project_id,path,material_path:join(view.materialDirectory,path),website_path:`images/${path}`,status:input.action==='begin'?'generating':input.action==='finish'?'ready':'error'};
+    return {project_id:input.project_id,path,material_path:join(view.materialDirectory,path),website_path:`images/${path}`,compression,status:input.action==='begin'?'generating':input.action==='finish'?'ready':'error'};
   }
   return { run, context, thumbnail, imageTask, close:async()=>{shutdown.abort();await Promise.allSettled([...thumbnails.values()]);} };
 }

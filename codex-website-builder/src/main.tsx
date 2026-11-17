@@ -88,6 +88,7 @@ function PanelRoot(){
  useEffect(()=>{document.body.classList.toggle('independent-plugin-panel',!!panel);document.documentElement.classList.toggle('independent-plugin-root',!!panel);},[panel]);
  if(!ready)return null;
  if(modal&&!panel)return <div className="empty-state" role="status">正在加载弹窗内容…</div>;
- return panel?.view==='settings'?<PluginSettings/>:panel?.view==='deploy'&&panel.project_id&&panel.panel_id?<DeploymentPanel projectId={panel.project_id} panelId={panel.panel_id} threadId={panel.thread_id}/>:<ProjectManager background={<DotCanvas />} />;
+ // GitLab UI 暂停：return panel?.view==='settings'?<PluginSettings/>:panel?.view==='deploy'&&panel.project_id&&panel.panel_id?<DeploymentPanel projectId={panel.project_id} panelId={panel.panel_id} threadId={panel.thread_id}/>:<ProjectManager background={<DotCanvas />} />;
+ return <ProjectManager background={<DotCanvas/>}/>;
 }
 createRoot(document.getElementById('root')!).render(<StrictMode><PanelRoot/></StrictMode>);

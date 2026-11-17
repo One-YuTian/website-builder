@@ -1,3 +1,4 @@
+import './compression-fetch-fixture.mjs';
 import assert from 'node:assert/strict';
 import fs from 'node:fs';
 import {mkdtemp,readFile,writeFile,unlink,mkdir,rmdir} from 'node:fs/promises';
@@ -43,7 +44,7 @@ try{
   await writeFile(join(project.project_directory,'README.md'),'# Updated information\n');
   await writeFile(join(project.material_directory,'candidate.txt'),'Material information');
   assert.equal((await finish()).git.committed,true,'README/material-only modifications are committed');
-  const image=Buffer.from('iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAQAAAC1HAwCAAAAC0lEQVR42mP8/x8AAwMCAO+aX1sAAAAASUVORK5CYII=','base64');
+  const image=Buffer.from('iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAYAAAAfFcSJAAAADUlEQVR4nGNwaDjQAAAEhQIBw1cvNgAAAABJRU5ErkJggg==','base64');
   await call('website_images',{...ids,action:'begin',path:'icon1.png'});
   await writeFile(join(project.material_directory,'icon1.png'),image);
   await call('website_images',{...ids,action:'finish',path:'icon1.png'});

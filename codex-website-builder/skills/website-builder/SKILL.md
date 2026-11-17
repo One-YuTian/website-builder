@@ -73,7 +73,7 @@ website_templates(mode="select")返回未排序候选及usage，不自动决定�
 
 先通过website_templates读取toast-01文档，按WebComponent规范实现项目共享components/toast.js及window.Toast API，移除演示按钮、骨架区与样例业务文案，样式匹配网站。共享组件先落盘，再生成页面；装配器仅在项目已有Toast时补齐引用和实例，不再从assets/ui复制默认实现。禁止alert，不建立统一Overlay接口；每个蒙层组件自行实现空白关闭、面板内点击不关闭。
 
-全站所有顾客可见文案均执行website-copywriter的正式网站要求，不能出现“目录准备中”“演示版本”等开发或未完成措辞；内容须贴近品牌、类目与真实使用场景，不能只在About/政策执行。共享Footer必须直接展示邮箱、带区号联系电话和完整地址，PC/移动及简化页脚均不得省略，资料全站一致；所选Footer缺项时选相容模板或补齐信息区。
+全站所有顾客可见文案均执行website-copywriter的正式网站要求，不能出现“目录准备中”“演示版本”等开发或未完成措辞；内容须贴近品牌、类目与真实使用场景，不能只在About/政策执行。共享Footer必须直接展示邮箱、带区号联系电话和完整地址，PC/移动及简化页脚均不得省略，资料全站一致；Contact正文不预留重复联系方式，保留表单与必要引导，联系方式集中于Footer；所选Footer缺项时选相容模板或补齐信息区。
 
 主题、状态样式和基础工具类按创建规范统一。页面专属逻辑放当前HTML的script；全站移动端html根字号12px，其他断点遵循所选组件。所有需要显示商品图的槽位/骨架/加载区使用纯白色#fff背景，包含卡片、详情主图/缩略图、分类商品坑位及购物车；不以灰色或渐变底替代。Logo必须是图片；图标不用字符/Emoji，商品及Banner不用自绘SVG。素材生成、图文主体安全区和画布加载状态归图片技能，主技能负责按实际图片/文案完成响应式排版。
 
@@ -85,6 +85,10 @@ website_templates(mode="select")返回未排序候选及usage，不自动决定�
 
 素材关系：material是完整素材库，src/images只是其中网站实际引用成品的子集；未采用的候选素材、原图和历史版本只保留material，不批量复制到images。详情页图库只展示material中的现存素材，不扫描src/images或附件目录，也不从过期资源索引补图。
 
-## GitLab仓库与部署（仅用户明确要求时）
+## R2部署（仅用户明确要求时）
 
-使用[GitLab配置与严格部署流程](references/gitlab-deployment.md)。配置位于插件自带管理页；普通建站不自动推送或发布。创建仓库、域名、内容来源与测试/正式发布必须通过UI模态框或Codex提问对话框取得真实确认；MCP返回confirmation_required时不能自动批准。部署期间禁止修改项目，冲突先确认后用系统Git处理。
+使用[R2静态网站部署](references/r2-deployment.md)。仅用户明确要求时使用website_r2_deploy，按项目ID精确同步src并核验后返回链接；普通建站不自动上传。旧[GitLab流程](references/gitlab-deployment.md)暂停，代码/说明保留，勿调用其配置或部署工具。
+
+注册IP请求地址和合法国家统一配置在window.commerceConfig.registrationIP，不在页面复制独立配置。commerceConfig不包含storageKey，LocalStorage使用固定业务键，账户相关状态仍隔离。
+
+图片原始文件只写material；正式图片经website-image-generator的[压缩发布流程](../website-image-generator/references/image-compression.md)进入src/images，同一任务最多3次，失败不以原图直接替代发布。

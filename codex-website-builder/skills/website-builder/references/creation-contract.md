@@ -18,7 +18,7 @@
 |---|---|---|
 | `js/data.js` | 唯一 `window.productData`，商品数组与薄 SDK 门面 | 每页另造商品、随机改 ID、夹入购物车状态 |
 | `js/sdk.js` | 唯一SDK文件：商品查询/价格及账户、购物车、收藏、订单、持久化和事件；同时提供SDK与兼容APP | 再拆业务SDK、组件自行localStorage CRUD |
-| `js/app.js` | 顶部 Tailwind/品牌配置、currency/locale/storageKey、幂等初始化、移动适配、共享 UI 事件 | 定义/覆盖 `window.APP`、复制 SDK、在SDK/data加载前执行初始化 |
+| `js/app.js` | 顶部 Tailwind/品牌配置、currency/locale、幂等初始化、移动适配、共享 UI 事件 | 定义/覆盖 `window.APP`、复制 SDK、在SDK/data加载前执行初始化 |
 | `components/*.js` | 独立 Web Component 的模板、生命周期、数据绑定、局部刷新 | 页面整块 DOM 的拷贝、挂载两套相同组件 |
 | 对应HTML中的`script`标签 | 页面查询、筛选/排序/分页状态、页面表单和空/错状态 | 重新实现共享业务逻辑、跨页全局变量污染 |
 

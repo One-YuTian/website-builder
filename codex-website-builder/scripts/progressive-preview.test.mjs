@@ -24,7 +24,7 @@ try {
   await json('website_write', { ...ids, files: [
     { path: 'js/sdk.js', content: await readFile('skills/website-builder/assets/commerce/sdk.js', 'utf8') },
     { path: 'js/data.js', content: 'window.productData=[{id:"B000000001",name:"Actual catalog item",final_price:25,main_image:"",category:"Home"}];' },
-    { path: 'js/app.js', content: 'SDK.init(window.productData,{storageKey:"preview-test"});' },
+    { path: 'js/app.js', content: 'SDK.init(window.productData,{});' },
     ...paths.map(path => ({ path, content: html })),
   ] });
   const initial = (await call('project_sync', { ...ids, metadata_only: true, wait_ms: 0 }))._meta.sync;
@@ -61,7 +61,7 @@ try {
   const guest = await render('login.html');
   assert.equal(await guest.evaluate(() => APP.account.logged()), false);
   await guest.close();
-  const existing = { 'preview-test:user': JSON.stringify({ id: 'existing', email: 'existing@example.invalid' }), 'preview-test:cart:existing': '[]', 'preview-test:wishlist:existing': '[]' };
+  const existing = { 'user': JSON.stringify({ id: 'existing', email: 'existing@example.invalid' }), 'cart:existing': '[]', 'wishlist:existing': '[]' };
   const retained = await render('checkout.html', existing);
   assert.equal(await retained.evaluate(() => APP.account.current().id), 'existing');
   assert.equal(await retained.evaluate(() => APP.cart.list().length + APP.wishlist.list().length), 0);

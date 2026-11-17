@@ -1,6 +1,6 @@
 # Website Builder
 
-当前版本0.8.6，见[版本说明](CHANGELOG.md)。beta分支提供可直接加载的预构建插件，使用Codex内置Node运行。
+当前版本0.8.9，见[版本说明](CHANGELOG.md)。beta分支提供可直接加载的预构建插件，使用Codex内置Node运行。
 
 ## 项目与画布
 
@@ -65,3 +65,8 @@ Codex 插件管理页通过官方 openai/settings 扩展展示配置；Token 可
 配置页“测试连接”按网络、TLS/证书、Token、分组及部署仓库逐步诊断；只读检查不发布，错误提示区分TLS与鉴权失败。
 
 配置弹窗采用左侧属性、右侧连接测试结果布局，窄屏自动上下排列；首页设置按钮位于标题行最右侧。旧加密Token只用于兼容读取，后续保存为明文。
+
+当前启用R2部署：插件设置显示只读“S3配置”，两项凭据仅掩码展示。详情页部署按钮左侧显示内部进度/结果Popup，纯JS S3协议精确同步src到桶内项目ID目录。旧GitLab设置与MCP入口已注释保留。部署域名需要管理员已有通配符DNS/TLS与项目目录路由，详见skills/website-builder/references/r2-deployment.md。
+
+图片发布先保留material原图，再由website-image-generator/scripts/compress-image.mjs按蓝湖MCP的TinyPNG方式压缩并原子写入src/images。单任务总尝试数最多3次且持久化，失败保留原图/旧网站图片，UI轮询不会无限重试。支持PNG/JPEG/WebP及5.2MB服务上限；测试均Mock，不自动上传真实素材。
+部署结果框右侧内置复制图标，链接以超链接呈现并在系统外部浏览器打开；S3配置字段不显示额外说明文字。

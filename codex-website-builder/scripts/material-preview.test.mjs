@@ -1,3 +1,4 @@
+import './compression-fetch-fixture.mjs';
 import assert from 'node:assert/strict';
 import {mkdtemp,readFile,writeFile,unlink,stat} from 'node:fs/promises';
 import {join,resolve} from 'node:path';
@@ -18,7 +19,7 @@ try{
   const panel={thread_id:'material-thread',panel_id:'material-panel'};
   const project=await json('website_projects',{...panel,action:'create',name:'Material preview'});
   const ids={thread_id:panel.thread_id,project_id:project.project_id};
-  const image=Buffer.from('iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAQAAAC1HAwCAAAAC0lEQVR42mP8/x8AAwMCAO+aX1sAAAAASUVORK5CYII=','base64');
+  const image=Buffer.from('iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAYAAAAfFcSJAAAADUlEQVR4nGNwaDjQAAAEhQIBw1cvNgAAAABJRU5ErkJggg==','base64');
   await json('website_images',{...ids,action:'begin',path:'banner1.png'});
   await writeFile(join(project.material_directory,'banner1.png'),image);
   await json('website_images',{...ids,action:'finish',path:'banner1.png'});

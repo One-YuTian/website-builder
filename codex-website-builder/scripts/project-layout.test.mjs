@@ -1,3 +1,4 @@
+import './compression-fetch-fixture.mjs';
 import assert from 'node:assert/strict';
 import {mkdtemp,readFile,writeFile,mkdir,stat,rename} from 'node:fs/promises';
 import {join,resolve} from 'node:path';
@@ -34,7 +35,7 @@ try{
   await call('website_write',{...ids,files:[{path:'README.md',content:'# Layout brand\n\nWebsite information and static hosting instructions.\n'}]});
   assert.match(await readFile(join(project.project_directory,'README.md'),'utf8'),/static hosting/);
   await assert.rejects(stat(join(project.directory,'README.md')));
-  const image=Buffer.from('iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAQAAAC1HAwCAAAAC0lEQVR42mP8/x8AAwMCAO+aX1sAAAAASUVORK5CYII=','base64');
+  const image=Buffer.from('iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAYAAAAfFcSJAAAADUlEQVR4nGNwaDjQAAAEhQIBw1cvNgAAAABJRU5ErkJggg==','base64');
   await call('website_images',{...ids,action:'begin',path:'banner1.png',width:1200,height:600});
   await writeFile(join(project.material_directory,'banner1.png'),image);
   await call('website_images',{...ids,action:'finish',path:'banner1.png'});

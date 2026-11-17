@@ -1,6 +1,6 @@
 {
   "name": "codex-website-builder",
-  "version": "0.8.6",
+  "version": "0.8.9",
   "private": true,
   "type": "module",
   "packageManager": "pnpm@10.18.0",
@@ -11,7 +11,7 @@
     "start": "node dist/server/index.js",
     "test": "node scripts/smoke.mjs",
     "test:visual": "node scripts/visual.mjs",
-    "prepare:plugin": "pnpm build && pnpm test:material-preview && pnpm test:canvas-loading && pnpm test:project-git && pnpm test:layout && pnpm test:gitlab && pnpm test:gitlab-ui && pnpm test:skills && pnpm test:form-guidance && pnpm test:sdk-bootstrap && pnpm test && pnpm test:projects && pnpm test:proxy && pnpm test:commerce && pnpm test:templates && pnpm test:features && pnpm test:large-preview && pnpm test:ui && pnpm test:cdn && pnpm test:imports && pnpm test:output && pnpm test:startup && pnpm test:persistence && pnpm test:management && pnpm test:global-entry && pnpm test:preview-assets && pnpm test:canvas-copy && pnpm test:open-directory && pnpm test:progressive-preview && pnpm test:project-cards && pnpm test:prompt",
+    "prepare:plugin": "pnpm build && pnpm test:image-compression && pnpm test:material-preview && pnpm test:canvas-loading && pnpm test:project-git && pnpm test:layout && pnpm test:gitlab && pnpm test:r2 && pnpm test:r2-ui && pnpm test:skills && pnpm test:form-guidance && pnpm test:sdk-bootstrap && pnpm test && pnpm test:projects && pnpm test:proxy && pnpm test:commerce && pnpm test:templates && pnpm test:features && pnpm test:large-preview && pnpm test:ui && pnpm test:cdn && pnpm test:imports && pnpm test:output && pnpm test:startup && pnpm test:persistence && pnpm test:management && pnpm test:global-entry && pnpm test:preview-assets && pnpm test:canvas-copy && pnpm test:open-directory && pnpm test:progressive-preview && pnpm test:project-cards && pnpm test:prompt",
     "install:plugin": "powershell -NoProfile -File scripts/install-plugin.ps1",
     "test:projects": "node scripts/projects.test.mjs",
     "test:proxy": "node scripts/proxy.test.mjs",
@@ -42,7 +42,10 @@
     "test:canvas-loading": "node scripts/canvas-loading.test.mjs",
     "test:project-git": "node scripts/project-git.test.mjs",
     "test:gitlab": "node scripts/gitlab.test.mjs",
-    "test:gitlab-ui": "node scripts/gitlab-ui.test.mjs"
+    "test:gitlab-ui": "node scripts/gitlab-ui.test.mjs",
+    "test:r2": "node scripts/r2.test.mjs",
+    "test:r2-ui": "node scripts/r2-ui.test.mjs",
+    "test:image-compression": "node scripts/image-compression.test.mjs"
   },
   "dependencies": {
     "@modelcontextprotocol/ext-apps": "^1.7.5",
