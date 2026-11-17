@@ -92,6 +92,8 @@ try{
   const extraFile=[{name:'extra.txt',mimeType:'text/plain',buffer:Buffer.from('extra')}];
   await app.locator('input[type=file]').setInputFiles(extraFile);
   assert.equal(await app.locator('.prompt-editor .prompt-chip').count(),5);
+  const closeBtnBox=await app.locator('.prompt-editor .prompt-chip .chip-close').last().boundingBox();
+  assert.equal(Math.round(closeBtnBox.width),Math.round(closeBtnBox.height),'close button is a true circle');
   await app.locator('.prompt-editor .prompt-chip .chip-close').last().click();
   assert.equal(await app.locator('.prompt-editor .prompt-chip').count(),4,'close button removes inline bubble');
   await app.getByRole('button',{name:'发送需求',exact:true}).click();

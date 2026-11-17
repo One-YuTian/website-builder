@@ -88,7 +88,7 @@
 .prompt-chip .chip-icon{display:inline-flex;align-items:center;color:#555d65;flex-shrink:0}
 .prompt-chip .chip-icon svg{width:14px;height:14px}
 .prompt-chip .chip-title{overflow:hidden;text-overflow:ellipsis;white-space:nowrap;font-size:12px;font-weight:500}
-.prompt-chip .chip-close{border:0;background:transparent;padding:0 2px;margin-left:2px;font-size:15px;line-height:1;color:#606770;cursor:pointer;border-radius:50%;display:inline-flex;align-items:center;justify-content:center}
+.prompt-chip .chip-close{border:0;background:transparent;padding:0;margin-left:3px;width:16px;height:16px;min-width:16px;min-height:16px;aspect-ratio:1;box-sizing:border-box;font-size:14px;line-height:1;color:#606770;cursor:pointer;border-radius:50%;display:inline-flex;align-items:center;justify-content:center;transition:background-color .15s ease,color .15s ease}
 .prompt-chip .chip-close:hover{color:#d32f2f;background:rgba(0,0,0,.08)}
 .prompt-lightbox-overlay{position:fixed;inset:0;width:100vw;height:100vh;background:rgba(0,0,0,.82);z-index:99999;display:flex;flex-direction:column;align-items:center;justify-content:center;padding:24px;backdrop-filter:blur(8px);-webkit-backdrop-filter:blur(8px);animation:prompt-fade-in .15s ease}
 .prompt-lightbox-box{position:relative;max-width:min(92vw,1100px);max-height:90vh;display:flex;flex-direction:column;align-items:center;background:#181b1f;border-radius:18px;overflow:hidden;box-shadow:0 24px 80px rgba(0,0,0,.6);border:1px solid #333a42}
