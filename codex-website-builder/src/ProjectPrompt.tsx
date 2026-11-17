@@ -1,6 +1,8 @@
 import { useEffect, useRef, useState, useCallback } from 'react';
 import { createPortal } from 'react-dom';
 import { Icon } from './Icons';
+import { openPluginModal } from './plugin-modal';
+import { ImagePreviewPanel } from './ImagePreviewPanel';
 import type { App } from '@modelcontextprotocol/ext-apps';
 
 export type PromptContent = Parameters<App['sendMessage']>[0]['content'];
@@ -136,7 +138,11 @@ export function ProjectPrompt({send,onCreated}:{send:(text:string,content:Prompt
       btn.onclick = (e) => {
         e.preventDefault();
         e.stopPropagation();
-        setLightbox({ url: previewUrl, name: file.name });
+        void openPluginModal('image-preview', { url: previewUrl, name: file.name }, false).then(opened => {
+          if (!opened) {
+            setLightbox({ url: previewUrl, name: file.name });
+          }
+        });
       };
       const img = document.createElement('img');
       img.className = 'chip-thumb';
@@ -202,6 +208,7 @@ export function ProjectPrompt({send,onCreated}:{send:(text:string,content:Prompt
       filesMap.current.set(fileId, { file, previewUrl });
 
       const chip = createChip(fileId, file, previewUrl);
+      fragment.appendChild(document.createTextNode('\u200B'));
       fragment.appendChild(chip);
       fragment.appendChild(document.createTextNode('\u00A0'));
     }
@@ -298,14 +305,48 @@ export function ProjectPrompt({send,onCreated}:{send:(text:string,content:Prompt
     }
   };
 
+  const focusEditor = useCallback((e?: React.PointerEvent | React.MouseEvent) => {
+    const editor = editorRef.current;
+    if (!editor) return;
+    editor.focus();
+    const sel = window.getSelection();
+    if (sel) {
+      const range = document.createRange();
+      if (editor.childNodes.length === 0) {
+        range.setStart(editor, 0);
+        range.setEnd(editor, 0);
+      } else {
+        let collapseToStart = false;
+        if (e) {
+          const rect = editor.getBoundingClientRect();
+          if (e.clientY < rect.top + 36 && e.clientX < rect.left + 80) {
+            collapseToStart = true;
+          }
+        }
+        range.selectNodeContents(editor);
+        range.collapse(collapseToStart);
+      }
+      sel.removeAllRanges();
+      sel.addRange(range);
+    }
+  }, []);
+
   return (
     <form
       className="project-prompt"
       aria-label="网站需求"
       aria-busy={pending}
+      onPointerDown={e => {
+        if (e.target !== picker.current && !(e.target as HTMLElement).closest('button, .prompt-chip')) {
+          if (e.target !== editorRef.current) {
+            e.preventDefault();
+            focusEditor(e);
+          }
+        }
+      }}
       onClick={e => {
         if (e.target !== picker.current && !(e.target as HTMLElement).closest('button, .prompt-chip')) {
-          editorRef.current?.focus();
+          focusEditor(e);
         }
       }}
       onSubmit={event => { event.preventDefault(); void submit(); }}
@@ -391,28 +432,18 @@ export function ProjectPrompt({send,onCreated}:{send:(text:string,content:Prompt
 
       {lightbox && typeof document !== 'undefined' && createPortal(
         <div
-          className="prompt-lightbox-overlay"
+          className="plugin-modal-overlay prompt-lightbox-overlay"
           role="dialog"
           aria-modal="true"
           aria-label={`查看图片 ${lightbox.name}`}
           onClick={() => setLightbox(null)}
         >
-          <div className="prompt-lightbox-box" onClick={e => e.stopPropagation()}>
-            <div className="prompt-lightbox-header">
-              <span className="lightbox-title" title={lightbox.name}>{lightbox.name}</span>
-              <button
-                type="button"
-                className="prompt-lightbox-close"
-                aria-label="关闭预览"
-                title="关闭"
-                onClick={() => setLightbox(null)}
-              >
-                ×
-              </button>
-            </div>
-            <div className="prompt-lightbox-img-wrap">
-              <img src={lightbox.url} alt={lightbox.name} />
-            </div>
+          <div onClick={e => e.stopPropagation()}>
+            <ImagePreviewPanel
+              url={lightbox.url}
+              name={lightbox.name}
+              onClose={() => setLightbox(null)}
+            />
           </div>
         </div>,
         document.body

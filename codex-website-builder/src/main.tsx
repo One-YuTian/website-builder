@@ -4,6 +4,7 @@ import './style.css';
 import { ProjectManager } from './ProjectManager';
 import {PluginSettings} from './PluginSettings';
 import {DeploymentPanel} from './DeploymentControls';
+import {ImagePreviewPanel} from './ImagePreviewPanel';
 import {getPluginPanelContext,isPluginModal} from './plugin-modal';
 import {hostApp,hostReady} from './bridge';
 declare global { interface Window { __WEBSITE_BUILDER__?: { api: string; projectApi?:string; managerApi?:string; resourceApi?:string; origin: string; defaultDirectory: string } } }
@@ -88,6 +89,7 @@ function PanelRoot(){
  useEffect(()=>{document.body.classList.toggle('independent-plugin-panel',!!panel);document.documentElement.classList.toggle('independent-plugin-root',!!panel);},[panel]);
  if(!ready)return null;
  if(modal&&!panel)return <div className="empty-state" role="status">正在加载弹窗内容…</div>;
+ if(panel?.view==='image-preview'&&panel.url)return <ImagePreviewPanel url={panel.url} name={panel.name}/>;
  // GitLab UI 暂停：return panel?.view==='settings'?<PluginSettings/>:panel?.view==='deploy'&&panel.project_id&&panel.panel_id?<DeploymentPanel projectId={panel.project_id} panelId={panel.panel_id} threadId={panel.thread_id}/>:<ProjectManager background={<DotCanvas />} />;
  return <ProjectManager background={<DotCanvas/>}/>;
 }

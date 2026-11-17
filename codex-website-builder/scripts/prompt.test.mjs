@@ -56,7 +56,12 @@ try{
   await page.mouse.move(1,1);await page.waitForTimeout(200);const before=await pixel();
   await page.mouse.move(814,750);await page.waitForTimeout(500);assert.ok(await pixel()>before+30,'hover should highlight dots through foreground layers');
   assert.ok(await canvas.evaluate(()=>window.hoverDraw.max<1600),'hover only redraws nearby dots rather than the full viewport');
+  const promptBox=await app.locator('.project-prompt').boundingBox();
+  const promptIframe=await page.locator('#app').boundingBox();
+  await page.mouse.click(promptIframe.x+promptBox.x+10,promptIframe.y+promptBox.y+10);
+  await page.keyboard.type('测试');
   const textarea=app.getByRole('textbox',{name:'项目需求',exact:true});
+  assert.ok((await textarea.innerText()).includes('测试'),'clicking front section of prompt box focuses editor');
   await textarea.fill('创建巴西葡萄牙语家居电商网站');
   const height=await app.locator('.project-prompt').evaluate(n=>n.getBoundingClientRect().height);
   await textarea.fill('创建巴西葡萄牙语家居电商网站\n'.repeat(30));
