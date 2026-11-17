@@ -114,7 +114,7 @@ try {
  assert.equal(await app.getByRole('button',{name:'发送到当前项目会话',exact:true}).count(),0);
  await app.getByRole('button',{name:'返回主界面',exact:true}).click();
  assert.ok(await app.getByLabel('项目需求',{exact:true}).isEnabled());
- assert.equal(await app.getByLabel('项目需求',{exact:true}).getAttribute('placeholder'),'描述你想构建的网站…');
+ assert.equal(await app.getByLabel('项目需求',{exact:true}).getAttribute('data-placeholder'),'描述你想构建的网站…');
  assert.ok(await app.getByRole('button',{name:'发送需求',exact:true}).isDisabled());
  assert.equal(await page.evaluate(()=>window.sent.length),0,'empty composer must not send messages');
  const hidden=(await page.evaluate(()=>window.contexts)).at(-1);assert.equal(hidden.structuredContent.page,'home');
