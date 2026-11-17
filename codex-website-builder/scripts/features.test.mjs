@@ -143,7 +143,8 @@ try {
   assert.equal(JSON.parse(await readFile(join(legacy.directory,'website-builder.templates.json'),'utf8')).bindings[0].id,'shop-01');
   const selected=await json('website_templates',{mode:'select'});
   const shopCandidates=selected.find(item=>item.category==='shop').candidates;
-  assert.ok(shopCandidates.find(item=>item.id==='shop-02').usage.projects>=1);
+  assert.ok(shopCandidates.some(item=>item.id==='shop-02'));
+  assert.ok(selected.every(item=>item.candidates.every(candidate=>!('usage' in candidate))),'selection never exposes historical usage counts');
   const aboutCandidates=selected.find(item=>item.category==='about').candidates;
   assert.equal(new Set(aboutCandidates.map(item=>item.summary)).size,aboutCandidates.length);
   for(const candidate of aboutCandidates) {
@@ -152,7 +153,7 @@ try {
     assert.deepEqual([...code.html.matchAll(/data-region="([^"]+)"/g)].map(match=>match[1]),layout.regions);
     assert.ok(!code.overview.includes('key metrics dashboard'));
   }
-  const report={result:'PASS',checks:['distinct About layouts and recorded template usage exposed to selection','production directory excludes control manifests, drafts and screenshots','metadata writes route outside production; temporary/report writes rejected','legacy source metadata ignored without rewriting old files','four Shop layout contracts match actual HTML','four Shop sources render 2/3/4 columns at 375/768/1280; mobile filters and grid/list switch','guest prompt + login redirect; rejected writes','safe login return paths and logout reset','registered account cart/wishlist and order creation','full PNG includes decoded lazy image and async footer','broken image and wrong project rejected','PC 5, tablet/mobile 7 columns'],screenshot:result.path};
+  const report={result:'PASS',checks:['distinct About layouts and selection independent of recorded bindings','production directory excludes control manifests, drafts and screenshots','metadata writes route outside production; temporary/report writes rejected','legacy source metadata ignored without rewriting old files','four Shop layout contracts match actual HTML','four Shop sources render 2/3/4 columns at 375/768/1280; mobile filters and grid/list switch','guest prompt + login redirect; rejected writes','safe login return paths and logout reset','registered account cart/wishlist and order creation','full PNG includes decoded lazy image and async footer','broken image and wrong project rejected','PC 5, tablet/mobile 7 columns'],screenshot:result.path};
   await mkdir('artifacts',{recursive:true});await writeFile('artifacts/features-verification.json',JSON.stringify(report,null,2));
   console.log(JSON.stringify(report));
 } finally {if(browser)await browser.close();await client.close();}

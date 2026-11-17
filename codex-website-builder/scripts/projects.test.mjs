@@ -31,10 +31,14 @@ try{
  const templates=await call('website_templates',{mode:'summary'});assert.equal(JSON.parse(templates.content[0].text).length,catalog.length);
  const selected=await call('website_templates',{mode:'select',brief:'organic outdoor store'});const candidates=JSON.parse(selected.content[0].text);
  assert.ok(candidates.every(item=>item.candidates.length&&!item.id),'selection returns candidates, not automatic design choices');
- assert.equal(candidates.reduce((sum,item)=>sum+item.candidates.length,0),catalog.length,'all available templates are candidates, not mandatory page sections');
+ const home=candidates.find(item=>item.category==='home');
+ assert.equal(home.strategy,'uniform-random');assert.equal(home.poolSize,catalog.filter(item=>item.category==='home').length);
+ assert.deepEqual(home.candidates.map(item=>item.id),[home.selected.id]);
+ assert.ok(catalog.some(item=>item.category==='home'&&item.id===home.selected.id));
+ assert.equal(candidates.reduce((sum,item)=>sum+(item.poolSize??item.candidates.length),0),catalog.length);
  assert.ok(candidates.find(item=>item.category==='header').candidates.some(item=>item.id==='header-01'),'appropriate -01 candidates are retained');
  const secondSelection=JSON.parse((await call('website_templates',{mode:'select',brief:'luxury fashion store'})).content[0].text);
- assert.deepEqual(secondSelection,candidates,'brief does not randomly determine design; Agent decides from candidate summaries');
+ assert.deepEqual(secondSelection.filter(item=>item.category!=='home'),candidates.filter(item=>item.category!=='home'),'other component candidates remain available');
  const homeCode=JSON.parse((await call('website_templates',{mode:'code',ids:['home-01']})).content[0].text)[0];
  assert.equal(homeCode.referenceOnly,true);assert.ok(homeCode.doc.includes('Component Chain'));assert.equal(homeCode.html,undefined);assert.equal(homeCode.js,undefined);
  const toastCode=JSON.parse((await call('website_templates',{mode:'code',ids:['toast-01']})).content[0].text)[0];assert.ok(toastCode.js.includes('extends HTMLElement'));

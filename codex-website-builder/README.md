@@ -1,6 +1,6 @@
 # Website Builder
 
-当前版本0.8.9，见[版本说明](CHANGELOG.md)。beta分支提供可直接加载的预构建插件，使用Codex内置Node运行。
+当前版本0.9.1，见[版本说明](CHANGELOG.md)。beta分支提供可直接加载的预构建插件，使用Codex内置Node运行。
 
 ## 项目与画布
 
@@ -48,7 +48,7 @@ Toast通过toast-01文档由Agent实现为项目共享components/toast.js，移�
 
 工具不可用时使用skills/website-builder/scripts/project.mjs；导入有website-import-data/scripts/import-products.mjs入口。模板选择和页面装配统一由服务CLI维护，已移除旧重复读取/装配脚本。
 
-模板读取链路：MCP的website_templates与project.mjs(action="templates")均调用server/templates.ts的readTemplates；catalog.json提供ID、分类、文件路径和摘要，templates/提供实际文档与源码。select返回候选列表，summary返回摘要，doc返回Overview，code返回独立组件HTML/JS/CSS；Home的code只返回组合说明，因为其实现段是伪代码。原read-template.mjs独立脚本已合并为上述入口，不表示停止读取模板。
+模板读取链路：MCP的website_templates与project.mjs(action="templates")均调用server/templates.ts的readTemplates；catalog.json提供ID、分类、文件路径和摘要，templates/提供实际文档与源码。select对Home返回程序随机选中的一套，其他分类返回候选列表，summary返回摘要，doc返回Overview，code返回独立组件HTML/JS/CSS；Home的code只返回组合说明，因为其实现段是伪代码。原read-template.mjs独立脚本已合并为上述入口，不表示停止读取模板。
 
 原站/参考目录仅只读。预览代理仅转换传输内容，不写回网站；在线CDN资源由后端代理适配宿主CSP，大图片/HTML采用分片传输。依赖版权说明保留在各自运行包；官方imagegen版权见其LICENSE.txt。
 
@@ -92,3 +92,12 @@ R2 的五项参数固定在 server/r2-config.ts，随插件源码与服务端构
 Codex 插件设置里的 Device access 是宿主提供的权限区域，不是本插件 schema/layout 的配置项；插件侧只声明 S3 配置字段，无法在插件源码中删除该宿主区域。保留画布原有权限声明，以免影响复制链接等功能。
 
 验证：test:r2-settings 检查固定值不受环境/旧文件覆盖及凭据不进入前端；test:r2/test:r2-ui 仅使用模拟对象存储与本机 HTTP，不发起真实云部署。
+
+
+## Home 程序随机选型
+
+新站调用 website_templates(select,category=home) 一次，从 catalog 实际登记的全部 Home 中用 crypto.randomInt 等概率抽一套，返回 selected.id、strategy=uniform-random 和 poolSize；candidates 仅包含抽中的一套，后续按其文档和组件链生成，不由模型另选或反复重抽。当前目录有22套，数量随目录实际内容变化，不按最高编号推算。用户明确指定模板优先，已有站点局部修改保留版面。MCP和CLI共用该逻辑。
+
+选型不再读取或统计历史使用频率，不记录调用历史，不建立冷却/去重/轮询机制；独立随机允许连续重复。保留的设计说明和可选targets只描述当前项目采用的实现，不用于下一次抽样；既有项目文件不删除。Shop/About等独立页面和组件按内容与真实结构选择，保留至少3个Shop/About候选比较要求。
+
+Header/Footer可换且不计入主体额度；其余主体建议按需要替换0～2块，允许零替换，最多2项自由调整，继续遵守原主体数N±1及源码结构约束，不随机打乱板块链，不添加运行时门禁。

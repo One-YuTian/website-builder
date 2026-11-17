@@ -57,17 +57,6 @@ export class ProjectStore {
     return {project,threadId:currentThread,directory:join(this.folder(id),'src'),projectDirectory:this.folder(id),materialDirectory:join(this.folder(id),'material'),metadataDirectory:this.metadataDirectory(id),revision:`${id}:${currentThread}:${project.revision}`};
   }
   async list() {await mkdir(this.root,{recursive:true});const rows=this.database.list();const checks=await Promise.all(rows.map(row=>this.database.project(row.id)?.formatVersion===PROJECT_FORMAT&&operationLock(this.database,row.id)?Promise.resolve(true):recognizedProject(this.folder(row.id),this.database.project(row.id)?.formatVersion)));return rows.filter((_,index)=>checks[index]);}
-  async templateUsage() {
-    const usage:Record<string,{projects:number;lastUsed?:string}>={};
-    for(const project of await this.list()) {
-      let data:any;
-      try { data=await json<any>(join(this.metadataDirectory(project.id),'website-builder.templates.json')); } catch { continue; }
-      const items=Array.isArray(data)?data:Array.isArray(data?.bindings)?data.bindings:Object.values(data||{});
-      const ids=new Set<string>(items.map((item:any)=>typeof item==='string'?item:item?.id).filter((id:any)=>typeof id==='string'&&/^[a-z]+-[0-9]+$/.test(id)));
-      for(const id of ids){const previous=usage[id];usage[id]={projects:(previous?.projects||0)+1,lastUsed:previous?.lastUsed&&previous.lastUsed>project.updatedAt?previous.lastUsed:project.updatedAt};}
-    }
-    return usage;
-  }
   async createProject(input: {name?:string;brief?:string;language?:string;country?:string;categories?:string[];brand?:string;pages?:{path:string;title:string}[]}) {
     const id=randomBytes(8).toString('hex').match(/.{4}/g)!.join('-');
     const pages=(input.pages || DEFAULT_PAGES).map(page=>({...page,path:this.path(page.path,true),status:'queued' as const,version:0}));

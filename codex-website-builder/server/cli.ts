@@ -31,7 +31,7 @@ try {
         if(input.mode==='bind')console.log(JSON.stringify(binding));
         else console.log(JSON.stringify({templates:await readTemplates(root,{...input,mode:'code',section:'all',ids:[...new Set<string>(input.targets.map((target:{id:string})=>target.id))]}),binding}));
       }
-    }else console.log(JSON.stringify(await readTemplates(root,{...input,usage:input.mode==='select'?await store.templateUsage():undefined})));process.exit(0);
+    }else console.log(JSON.stringify(await readTemplates(root,input)));process.exit(0);
   }
   if(input.action==='format') { console.log(JSON.stringify({content:await formatSource(input.path,input.content)}));process.exit(0); }
   if(!thread)throw new Error('当前环境没有真实 CODEX_THREAD_ID；请提供 thread_id');

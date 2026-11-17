@@ -98,8 +98,7 @@ export class ProjectDatabase {
   }
   status(id:string): 'pending'|'generating'|'modifying'|'completed'|'failed'|'paused' {
     const p=this.project(id);if(!p)return 'failed';
-    const tasks=this.sql.prepare('SELECT expires_at FROM project_activity WHERE project_id=?').all(id) as {expires_at:number}[];
-    const images=this.sql.prepare('SELECT status FROM image_tasks WHERE project_id=?').all(id) as {status:string}[];
+    const tasks=this.sql.prepare("SELECT expires_at FROM project_activity WHERE project_id=? AND task_key NOT LIKE 'image:%'").all(id) as {expires_at:number}[];
     const pages=p.pages||[], recent=Date.now()-Date.parse(p.updatedAt)<30*60*1000;
     const active=tasks.some(t=>t.expires_at>Date.now())||pages.some(p=>p.status==='generating')&&recent;
     if(active){
@@ -108,7 +107,7 @@ export class ProjectDatabase {
       if(states.length&&states.every(value=>value==='paused'||value==='complete'))return 'paused';
     }
     if(active)return (p.hasPublished??(pages.length>0&&pages.every(p=>p.status==='ready')))?'modifying':'generating';
-    if(tasks.some(t=>t.expires_at<=Date.now())||images.some(t=>t.status!=='ready')||pages.some(p=>p.status==='error'||p.status==='generating'))return 'failed';
+    if(tasks.some(t=>t.expires_at<=Date.now())||pages.some(p=>p.status==='error'||p.status==='generating'))return 'failed';
     return pages.length>0&&pages.every(p=>p.status==='ready')?'completed':'pending';
   }
   remove(id: string) {

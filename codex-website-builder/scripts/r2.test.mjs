@@ -24,7 +24,7 @@ try{
  await assert.rejects(f.r2.start(id,'mock-thread'),/项目尚未完成/);assert.equal(f.calls.length,0);
  await f.store.update('mock-thread',async view=>{view.project.pages=view.project.pages.filter(page=>page.path!=='contact.html');});
  f.store.database.sql.prepare('INSERT INTO image_tasks(project_id,path,name,width,height,status) VALUES (?,?,?,?,?,?)').run(id,'bad.png','bad',10,10,'error');
- await assert.rejects(f.r2.start(id,'mock-thread'),/项目尚未完成/);assert.equal(f.calls.length,0);
+ assert.equal(f.store.database.status(id),'completed','image tasks do not block project completion');
  f.store.database.sql.prepare('DELETE FROM image_tasks WHERE project_id=?').run(id);
  assert.equal(f.store.database.status(id),'completed');
  await mkdir(join(f.view.directory,'images'),{recursive:true});await writeFile(join(f.view.directory,'images/图 & 1.png'),Buffer.from([1,2,3]));

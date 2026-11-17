@@ -1,5 +1,6 @@
 import { readFile } from 'node:fs/promises';
 import { join } from 'node:path';
+import { randomInt } from 'node:crypto';
 type ShopLayout={summary:string;columns:string;regions:string[];mobile:string};
 function overview(text:string,layout?:ShopLayout){
   const original=text.match(/## Overview([\s\S]*?)(?=## Code|$)/)?.[1].trim()||'';
@@ -7,7 +8,7 @@ function overview(text:string,layout?:ShopLayout){
   return original.replace(/^(?:Shop catalog page|About Us corporate brand page)[^\n]*/m,layout.summary).replace(/### Dimensions & Responsiveness[\s\S]*?(?=### Attributes)/,`### Dimensions & Responsiveness\n- Grid: ${layout.columns}.\n- Regions: ${layout.regions.join(', ')}.\n- Mobile: ${layout.mobile}.\n- Container follows selected source and site theme.\n\n`);
 }
 type Template={id:string;category:string;group:string;file:string;summary:string};
-export async function readTemplates(skillRoot:string,input:{mode:'select'|'summary'|'doc'|'code';ids?:string[];category?:string;brief?:string;section?:'html'|'js'|'css'|'all';usage?:Record<string,{projects:number;lastUsed?:string}>}) {
+export async function readTemplates(skillRoot:string,input:{mode:'select'|'summary'|'doc'|'code';ids?:string[];category?:string;brief?:string;section?:'html'|'js'|'css'|'all'}) {
   const shopLayouts:Record<string,ShopLayout>=JSON.parse(await readFile(join(skillRoot,'references/shop-layouts.json'),'utf8'));
   Object.assign(shopLayouts,JSON.parse(await readFile(join(skillRoot,'references/about-layouts.json'),'utf8')));
   const catalog:Template[]=JSON.parse(await readFile(join(skillRoot,'catalog.json'),'utf8'));
@@ -15,8 +16,14 @@ export async function readTemplates(skillRoot:string,input:{mode:'select'|'summa
   if(input.mode==='select') {
     const slots=[...new Set(catalog.map(item=>item.category))];
     return slots.filter(category=>!input.category||input.category===category).flatMap(category=>{
-      const candidates=catalog.filter(item=>item.category===category).map(({id,summary})=>({id,summary,...(input.usage?{usage:input.usage[id]||{projects:0}}:{})}));
-      return candidates.length?[{category,candidates,selection:'Unranked candidates. Agent chooses compatible templates after deciding the site palette, light/dark strategy, content widths and layout. Include only needed sections; -01 is valid. No theme or width is chosen by this tool. Compare at least 3 Shop/About candidates (or all if fewer). Use actual region/layout differences and project usage history to avoid always choosing the first or most-used layout; prefer a compatible less-used alternative for a new site. Existing-site edits retain the current layout unless redesign is requested.'}]:[];
+      const pool=catalog.filter(item=>item.category===category);
+      if(!pool.length)return [];
+      if(category==='home'){
+        const chosen=pool[randomInt(pool.length)];
+        return [{category,candidates:[{id:chosen.id,summary:chosen.summary}],selected:{id:chosen.id,summary:chosen.summary,referenceOnly:true},strategy:'uniform-random',poolSize:pool.length,selection:'The program has uniformly sampled one Home from the entire available Home catalog, independently of brief and prior calls. Use selected.id for this new site; do not choose another or reroll for preference. Read its Overview and Component Chain. Header/Footer may be replaced freely with compatible templates; excluding them, allow 0–2 justified main-section changes and retain source N±1 sections. Existing-site edits retain the current layout. No template-call history is read or written.'}];
+      }
+      const candidates=pool.map(({id,summary})=>({id,summary}));
+      return [{category,candidates,selection:'Unranked component/page candidates. Agent chooses compatible templates after deciding the site palette, light/dark strategy, content widths and layout. Include only needed sections; -01 is valid. Compare at least 3 Shop/About candidates (or all if fewer), based on actual layout and content needs. No past-usage statistics or call history are used. Existing-site edits retain the current layout unless redesign is requested.'}];
     });
   }
   const selected=input.ids?.length?input.ids.map(id=>{const found=catalog.find(item=>item.id===id);if(!found)throw new Error(`模板不存在：${id}`);return found;}):catalog.filter(item=>!input.category||item.category===input.category);
