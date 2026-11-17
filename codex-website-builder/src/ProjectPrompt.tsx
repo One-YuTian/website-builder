@@ -5,7 +5,7 @@ import type { App } from '@modelcontextprotocol/ext-apps';
 export type PromptContent = Parameters<App['sendMessage']>[0]['content'];
 export type CreatedProject = {project_id:string;thread_id:string|null;name:string;directory:string};
 
-export function ProjectPrompt({send,onCreated}:{send:(text:string,content:PromptContent,signal:AbortSignal)=>Promise<CreatedProject>;onCreated:(project:CreatedProject)=>void}) {
+export function ProjectPrompt({send,onCreated}:{send:(text:string,content:PromptContent,signal:AbortSignal,files:File[])=>Promise<CreatedProject>;onCreated:(project:CreatedProject)=>void}) {
   const [text,setText]=useState('');
   const [files,setFiles]=useState<File[]>([]);
   const [pending,setPending]=useState(false);
@@ -26,7 +26,7 @@ export function ProjectPrompt({send,onCreated}:{send:(text:string,content:Prompt
         if(/^image\/(png|jpeg|webp|gif)$/.test(mime))content.push({type:'image',data,mimeType:mime,_meta:{'openai/title':file.name}});
         else content.push({type:'resource',resource:{uri:`attachment://${crypto.randomUUID()}/${encodeURIComponent(file.name)}`,mimeType:mime,blob:data}});
       }
-      const project=await send(text.trim(),content,controller.signal);
+      const project=await send(text.trim(),content,controller.signal,files);
       if(controller.signal.aborted)return;
       setText('');setFiles([]);setPending(false);locked.current=false;onCreated(project);
     }catch(error){if(!controller.signal.aborted){setError((error as Error).message);setPending(false);locked.current=false;}}

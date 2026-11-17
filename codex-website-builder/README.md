@@ -70,3 +70,23 @@ Codex 插件管理页通过官方 openai/settings 扩展展示配置；Token 可
 
 图片发布先保留material原图，再由website-image-generator/scripts/compress-image.mjs按蓝湖MCP的TinyPNG方式压缩并原子写入src/images。单任务总尝试数最多3次且持久化，失败保留原图/旧网站图片，UI轮询不会无限重试。支持PNG/JPEG/WebP及5.2MB服务上限；测试均Mock，不自动上传真实素材。
 部署结果框右侧内置复制图标，链接以超链接呈现并在系统外部浏览器打开；S3配置字段不显示额外说明文字。
+
+
+## 首页附件导入项目 files 目录
+
+从首页输入口选择的所有文件（图片、商品 JSON、PDF 等）在发送新聊天前先以分片上传并持久化。创建请求包含附件数量；只有全部附件完整上传且 SHA-256 校验通过，才允许创建项目。创建完成前将原件复制到 project_directory/files/ 并登记资源；同名不同内容另名保留，重试不覆盖已有文件、不重复归档。空文件保留原始零字节内容。上传失败时保留输入与附件，不发送不完整的新聊天请求。
+
+website_project/website_projects 的项目结果新增 files_directory，匹配首页请求的创建结果提供 files（本地绝对路径、文件名、大小、类型、散列）；website_projects(resources) 可查询 files/ 下的附件。图片预览和宿主 attachment:// 引用仍可随消息发送，但完整原件不依赖宿主引用解析。商品 JSON 应使用返回的本地路径调用 website_products(file_path)，原件不进入 src/ 或部署包，也不在导入时格式化或改写。其他附件与 material 图片库保持各自用途。
+
+原先只有 attachment:// 而未落盘的历史附件无法凭引用自动恢复，需从首页重新选择原文件提交。现有本地 session-assets 资源仍兼容读取。
+
+验证：test:prompt 覆盖首页真实文件选择、分片上传、重名 JSON/图片/PDF 字节校验、资源列表、137 条商品完整统计与导入；test:submission-files 覆盖中断重启、并发分片重试、完整性/取消检查和空文件。
+
+
+## 固定 R2 配置
+
+R2 的五项参数固定在 server/r2-config.ts，随插件源码与服务端构建产物分发，可按项目所有者授权纳入 Git。运行时不再读取 R2 环境变量、本机 config/r2-config.json 或 r2-key.bin；旧本机文件保留但不影响固定值，原 provision-r2 脚本已移除。配置页依旧只读，访问密钥及签名密钥在配置读取工具中只显示掩码，不打包进前端 HTML。修改参数需编辑固定配置并重新构建、安装/重载。
+
+Codex 插件设置里的 Device access 是宿主提供的权限区域，不是本插件 schema/layout 的配置项；插件侧只声明 S3 配置字段，无法在插件源码中删除该宿主区域。保留画布原有权限声明，以免影响复制链接等功能。
+
+验证：test:r2-settings 检查固定值不受环境/旧文件覆盖及凭据不进入前端；test:r2/test:r2-ui 仅使用模拟对象存储与本机 HTTP，不发起真实云部署。

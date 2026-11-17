@@ -1,17 +1,12 @@
-import {readFile} from 'node:fs/promises';
-import {join} from 'node:path';
-import {createDecipheriv} from 'node:crypto';
 import {z} from 'zod';
 import type {McpServer} from '@modelcontextprotocol/sdk/server/mcp.js';
-export const r2Fields=['R2_ACCOUNT_ID','R2_BUCKET_NAME','R2_ACCESS_KEY_ID','R2_SECRET_ACCESS_KEY','R2_DEPLOY_HOST'] as const;
-export type R2Config=Record<typeof r2Fields[number],string>;
+import {r2Config,r2Fields,type R2Config} from './r2-config';
+export {r2Fields,type R2Config} from './r2-config';
 const mask='••••••••';
 export class R2Settings {
- constructor(readonly root:string,private env=process.env){}
+ constructor(readonly root:string,_env=process.env){}
  async get():Promise<R2Config>{
-  let data:any={};try{data=JSON.parse(await readFile(join(this.root,'config/r2-config.json'),'utf8'));}catch(error){if((error as NodeJS.ErrnoException).code!=='ENOENT')throw Error('R2 本机配置不可读取');}
-  if(data.credentials){try{const key=await readFile(join(this.root,'config/r2-key.bin')),cipher=createDecipheriv('aes-256-gcm',key,Buffer.from(data.credentials.iv,'hex'));cipher.setAuthTag(Buffer.from(data.credentials.tag,'hex'));Object.assign(data,JSON.parse(Buffer.concat([cipher.update(Buffer.from(data.credentials.value,'hex')),cipher.final()]).toString()));}catch{throw Error('R2 本机凭据不可读取，请联系配置管理员');}}
-  return Object.fromEntries(r2Fields.map(name=>[name,String(data[name]??this.env[name]??'')])) as R2Config;
+  return {...r2Config};
  }
  async public(){const data=await this.get();return {...data,R2_ACCESS_KEY_ID:data.R2_ACCESS_KEY_ID?mask:'未配置',R2_SECRET_ACCESS_KEY:data.R2_SECRET_ACCESS_KEY?mask:'未配置'};}
 }

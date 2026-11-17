@@ -13,10 +13,12 @@ import { imageDimensions } from './image-dimensions';
 import { assertMainRepository } from './project-layout';
 import {assertEditable,operationLock} from './project-operations';
 import {imagePublisher} from './image-compression';
+import {SubmissionFiles,type UploadInput} from './submission-files';
 
 const mime = (path: string) => ({'.png':'image/png','.jpg':'image/jpeg','.jpeg':'image/jpeg','.webp':'image/webp','.avif':'image/avif','.ico':'image/x-icon','.svg':'image/svg+xml','.gif':'image/gif','.pdf':'application/pdf','.json':'application/json'}[extname(path).toLowerCase()] || 'application/octet-stream');
 export function projectManager(store: ProjectStore) {
   const publisher=imagePublisher(store);
+  const uploads=new SubmissionFiles(store);
   const captures=new Map<string,{text:string;time:number}>();
   const thumbnails = new Map<string, Promise<void>>();
   const thumbnailRetry = new Map<string, number>();
@@ -63,7 +65,7 @@ export function projectManager(store: ProjectStore) {
     const view=id?await store.get(thread,id).catch(()=>null):null;
     if (view) {
       const rows=store.database.sql.prepare("SELECT key,value FROM settings WHERE key LIKE 'submission:%'").all() as {key:string;value:string}[];
-      const submission=rows.flatMap(row=>{try{const value=JSON.parse(row.value);return value.state==='created'&&value.project_id===view.project.id&&value.thread_id===thread?[{panel_id:row.key.slice('submission:'.length),request_id:value.request_id,state:'created'}]:[];}catch{return[];}})[0];
+      const submission=rows.flatMap(row=>{try{const value=JSON.parse(row.value);return value.state==='created'&&value.project_id===view.project.id&&value.thread_id===thread?[{panel_id:row.key.slice('submission:'.length),request_id:value.request_id,state:'created',files:value.files||[]}]:[];}catch{return[];}})[0];
       return { page: 'project', panel_id: panel.panel_id, ...compactProject(view),thread_id:thread||null,...(submission?{submission}:{}) };
     }
     return { page: 'home', panel_id: panel?.panel_id || panelId || null, projects: await store.list() };
@@ -95,9 +97,19 @@ export function projectManager(store: ProjectStore) {
     if (!view) throw Error('项目不存在');
     const material=await materialResources(view);
     const rows=store.database.sql.prepare('SELECT id,name,path,mime,size,thread_id FROM resources WHERE project_id=? ORDER BY name').all(id) as {path:string}[];
-    return [...material,...rows.filter(row=>{const rel=relative(join(view.metadataDirectory,'session-assets'),row.path);return rel!=='..'&&!rel.startsWith(`..${sep}`)&&!isAbsolute(rel);})];
+    const files=[];
+    const directory=join(view.projectDirectory,'files');
+    const base=await realpath(directory).catch(()=>null),root=await realpath(view.projectDirectory);
+    if(base&&relative(root,base)!=='files')throw Error('项目 files 目录不能指向外部');
+    if(base)for(const entry of await readdir(base,{withFileTypes:true})){
+      if(!entry.isFile())continue;
+      const path=join(base,entry.name),info=await stat(path);
+      const row=rows.find(row=>row.path===path) as any;
+      files.push({id:row?.id||createHash('sha256').update(id+path).digest('hex'),name:entry.name,path,mime:row?.mime||mime(path),size:info.size,thread_id:row?.thread_id||null});
+    }
+    return [...material,...files,...rows.filter(row=>{const rel=relative(join(view.metadataDirectory,'session-assets'),row.path);return rel!=='..'&&!rel.startsWith(`..${sep}`)&&!isAbsolute(rel);})];
   }
-  async function run(input: {visible_panel_id?:string;requirement?:string;request_id?:string;submission_start?:boolean;detail_ready?:boolean;cancel?:boolean;action?: string; panel_id?: string; thread_id?: string; project_id?: string; country?:string;language?:string;categories?:string[];brand?:string;name?: string; source_path?: string; path?:string;width?:number;capture_id?:string;chunk?:string;offset?:number;final?:boolean}) {
+  async function run(input: UploadInput & {file_count?:number;visible_panel_id?:string;requirement?:string;request_id?:string;submission_start?:boolean;detail_ready?:boolean;cancel?:boolean;action?: string; panel_id?: string; thread_id?: string; project_id?: string; country?:string;language?:string;categories?:string[];brand?:string;name?: string; source_path?: string; path?:string;width?:number;capture_id?:string}) {
     const action = input.action || 'list';
     const panel=input.panel_id?store.database.panelById(input.panel_id):undefined;
     const thread = input.thread_id || process.env.CODEX_THREAD_ID || process.env.CODEX_SESSION_ID || panel?.thread_id || undefined;
@@ -134,13 +146,22 @@ export function projectManager(store: ProjectStore) {
     const submissionKey='submission:'+input.panel_id;
     const readSubmission=()=>{const row=store.database.sql.prepare('SELECT value FROM settings WHERE key=?').get(submissionKey) as {value:string}|undefined;return row?JSON.parse(row.value):null;};
     const saveSubmission=(value:unknown)=>store.database.sql.prepare('INSERT INTO settings VALUES (?,?) ON CONFLICT(key) DO UPDATE SET value=excluded.value').run(submissionKey,JSON.stringify(value));
+    if(action==='upload'){
+      const record=readSubmission();
+      if(!input.request_id||record?.request_id!==input.request_id||record.state!=='pending')throw Error('附件所属提交已取消或失效');
+      if(!record.file_count)throw Error('当前提交没有声明附件');
+      const result=await uploads.upload(input.panel_id,input.request_id,input);
+      if(uploads.rows(input.panel_id,input.request_id).length>record.file_count)throw Error('附件数量超出本次提交声明');
+      return result;
+    }
     if(action==='submission'){
       if(!input.request_id||!/^[-a-zA-Z0-9_]{8,128}$/.test(input.request_id))throw Error('提交标记无效');
       const record=readSubmission();
       if(input.cancel){if(record?.request_id===input.request_id)saveSubmission({...record,state:'cancelled'});return{state:'cancelled'};}
       if(input.submission_start){
         if(record?.request_id===input.request_id)return record;
-        saveSubmission({request_id:input.request_id,state:'pending',created_at:new Date().toISOString(),...(input.requirement?.trim()?{requirement_hash:createHash('sha256').update(input.requirement.trim().replace(/\s+/g,' ')).digest('hex')}:{})});return{state:'pending'};
+        const count=input.file_count??0;if(!Number.isInteger(count)||count<0||count>10)throw Error('附件数量无效');
+        saveSubmission({request_id:input.request_id,state:'pending',file_count:count,created_at:new Date().toISOString(),...(input.requirement?.trim()?{requirement_hash:createHash('sha256').update(input.requirement.trim().replace(/\s+/g,' ')).digest('hex')}:{})});return{state:'pending'};
       }
       if(record?.request_id!==input.request_id)throw Error('此提交已失效，请检查当前对话');
       if(input.detail_ready){
@@ -159,14 +180,15 @@ export function projectManager(store: ProjectStore) {
     if (action === 'home') { store.database.panel(input.panel_id, thread||'', null); return context(thread, input.panel_id); }
     if (action === 'create' || action === 'open' || action === 'bind') {
       if (action !== 'create' && !id) throw Error('需要项目 ID');
-      if(input.request_id){const record=readSubmission();if(record?.request_id!==input.request_id||record.state==='cancelled')throw Error('创建请求已取消或失效');if(record.state==='created'){const existing=await store.get(undefined,record.project_id);if(!existing)throw Error('项目不可用');return{page:'project',...compactProject(existing),thread_id:record.thread_id};}if(record.state==='creating')throw Error('项目正在创建，请稍后查询结果');if(record.state!=='pending')throw Error('创建请求已失效');saveSubmission({...record,state:'creating'});}
+      if(input.request_id){const record=readSubmission();if(record?.request_id!==input.request_id||record.state==='cancelled')throw Error('创建请求已取消或失效');if(record.state==='created'){const existing=await store.get(undefined,record.project_id);if(!existing)throw Error('项目不可用');return{page:'project',...compactProject(existing),thread_id:record.thread_id,files:record.files||[]};}if(record.state==='creating')throw Error('项目正在创建，请稍后查询结果');if(record.state!=='pending')throw Error('创建请求已失效');const attached=uploads.rows(input.panel_id,input.request_id);if(attached.length!==(record.file_count||0)||attached.some(file=>file.status!=='ready'))throw Error('附件尚未完整上传，不能创建项目');saveSubmission({...record,state:'creating'});}
       try {
       const view = thread ? await store.open({ threadId: thread, projectId: id, newProject: action === 'create', name: input.name,country:input.country,language:input.language,categories:input.categories,brand:input.brand,...(action==='create'?{pages:[]}:{}) })
         : action === 'create' ? await store.createProject({name:input.name,country:input.country,language:input.language,categories:input.categories,brand:input.brand,pages:[]}) : await store.get(undefined,id);
       if(!view)throw Error('项目不存在或已删除');
       store.database.panel(input.panel_id, thread||'', view.project.id, action==='create' && submissionHandoff);
-      if(input.request_id)saveSubmission({request_id:input.request_id,state:'created',project_id:view.project.id,thread_id:thread||null});
-      return { page: 'project', panel_id: input.panel_id, ...compactProject(view),thread_id:thread||null,...(input.request_id?{ui_reused:true,request_id:input.request_id,next_action:'必须调用open_thread_canvas(thread_id=本次新对话真实ID)一次，在新对话打开侧边UI并进入本项目；查询website_projects(action=submission,panel_id,request_id)等待chat_detail_ready=true再生成。不重建项目，不反复打开面板。'}:{}) };
+      const attachedFiles=input.request_id?await store.exclusive(view.project.id,()=>uploads.import(input.panel_id!,input.request_id!,view)):[];
+      if(input.request_id)saveSubmission({request_id:input.request_id,state:'created',project_id:view.project.id,thread_id:thread||null,files:attachedFiles});
+      return { page: 'project', panel_id: input.panel_id, ...compactProject(view),thread_id:thread||null,files:attachedFiles,...(input.request_id?{ui_reused:true,request_id:input.request_id,next_action:'必须调用open_thread_canvas(thread_id=本次新对话真实ID)一次，在新对话打开侧边UI并进入本项目；查询website_projects(action=submission,panel_id,request_id)等待chat_detail_ready=true再生成。附件已存入files_directory，先用website_projects(resources)获取本地绝对路径，商品JSON交给website_products(file_path)，不读取attachment://引用。不重建项目，不反复打开面板。'}:{}) };
       }catch(error){if(input.request_id)saveSubmission({request_id:input.request_id,state:'failed',error:(error as Error).message});throw error;}
     }
     if (!id) throw Error('需要项目 ID');

@@ -1,7 +1,7 @@
 import { ProjectPrompt, type PromptContent, type CreatedProject } from './ProjectPrompt';
 import { useCallback, useEffect, useRef, useState, type ReactNode } from 'react';
 import { WebsiteCanvas } from './WebsiteCanvas';
-import { manageProjects } from './project-api';
+import { manageProjects, uploadPromptFiles } from './project-api';
 import { hostApp, hostReady, getLaunchThread } from './bridge';
 import { Icon } from './Icons';
 import {openPluginModal} from './plugin-modal';
@@ -69,14 +69,16 @@ export function ProjectManager({background}:{background:ReactNode}) {
   const home=async()=>{navigation.current++;try{await request({action:'home'});current.current=null;setDetail(null);setError('');await refresh();await publish({page:'home'});}catch(error){setError((error as Error).message);}};
   const open=async(id:string)=>{navigation.current++;setBusy(true);try{const value=await request({action:'open',project_id:id});current.current=value;setDetail(value);setError('');await publish(value);}catch(error){setError((error as Error).message);}finally{setBusy(false);}};
   const remove=async(id:string)=>{setBusy(true);try{await request({action:'delete',project_id:id});setDeleted(id);if(detail?.project_id===id)setDetail(null);await refresh();setError('');}catch(error){setError((error as Error).message);}finally{setBusy(false);}};
-  const sendPrompt=async(text:string,content:PromptContent,signal:AbortSignal):Promise<CreatedProject>=>{
+  const sendPrompt=async(text:string,content:PromptContent,signal:AbortSignal,files:File[]):Promise<CreatedProject>=>{
     if(!hostApp)throw Error('请在 Codex 插件面板中发送需求。');
     await hostReady;
     const requestId=crypto.randomUUID();
-    await request({action:'submission',submission_start:true,request_id:requestId,requirement:text.trim()||'请根据附件创建网站。'});
+    await request({action:'submission',submission_start:true,request_id:requestId,file_count:files.length,requirement:text.trim()||'请根据附件创建网站。'});
     activeSubmission.current=requestId;setBusy(true);
     try{
-      await hostApp.updateModelContext({structuredContent:{panel_id:panelId,page:'home',submission:{request_id:requestId,action:'create',panel_id:panelId,instructions:'用户从首页提交了新建网站需求。必须使用 website-builder SKILL，先调用 website_projects(action=create, panel_id=此panel_id, request_id=此request_id, thread_id=当前真实会话ID)，提供国家/语言/主要类目/品牌等元数据。先创建空项目，再立即调用open_thread_canvas(thread_id=当前新对话真实ID)一次，在新对话打开侧边UI并进入详情，不新建重复项目。查询website_projects(action=submission,panel_id,request_id)直到chat_detail_ready=true，再沿用project_id规划页面、导入商品和生成内容，不能复用旧项目；附件随用户消息提供。'}}});
+      const uploadedFiles=await uploadPromptFiles(request,requestId,files,signal);
+      if(signal.aborted)throw Error('附件上传已取消');
+      await hostApp.updateModelContext({structuredContent:{panel_id:panelId,page:'home',submission:{request_id:requestId,action:'create',panel_id:panelId,files:uploadedFiles,instructions:'用户从首页提交了新建网站需求。必须使用 website-builder SKILL，先调用 website_projects(action=create, panel_id=此panel_id, request_id=此request_id, thread_id=当前真实会话ID)，提供国家/语言/主要类目/品牌等元数据。先创建空项目，再立即调用open_thread_canvas(thread_id=当前新对话真实ID)一次，在新对话打开侧边UI并进入详情，不新建重复项目。查询website_projects(action=submission,panel_id,request_id)直到chat_detail_ready=true，再沿用project_id规划页面、导入商品和生成内容，不能复用旧项目。附件完整原件已由插件保存，创建后自动导入项目files_directory；先查询website_projects(action=resources,project_id,panel_id)获取本地绝对路径，商品JSON使用website_products(file_path=该路径)，不要读取attachment://，不要用新建Mock替代用户商品数据。'}}});
       const message={role:'user' as const,content,_meta:{'openai/message':{target:'new',send:true}}};
       const result=await hostApp.sendMessage(message,{timeout:60000});
       if(result.isError)throw Error('新对话未接受消息，请重试。草稿已保留。');

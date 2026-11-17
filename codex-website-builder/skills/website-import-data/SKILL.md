@@ -8,6 +8,8 @@ description: 通过SDK导入商品JSON，统计商品与分类，完成二次归
 
 ## 工具与脚本
 
+从插件首页上传的附件原件由插件自动保存到项目根目录的 `files/`（`files_directory`），不在网站 `src/` 中。先查看创建结果的 `files`，或调用 `website_projects(action="resources",panel_id,thread_id,project_id)` 获取本项目 JSON 的本地绝对路径，再将该路径交给 `website_products(file_path=...)`。聊天中的 `attachment://` 只是宿主引用，不作为文件路径；资源已落盘时不要因引用不可读而停止统计或改用 Mock。保持原件字节不变，同名不同内容的文件由插件另名保留。
+
 调用website_products，传thread_id、project_id及file_path（用户明确提供的.json绝对路径）或source_json（用户消息已给的JSON字符串），两者只提供一个。action为inspect时只读统计、不写任何项目文件；import时写运行适配数据并安装缺失SDK，保留已有SDK/app配置。还支持category_map、category_offset/category_limit、website_domain、image_cdn、currency、locale和field_map（目标字段→源字段的点路径）。
 
 工具尚未加载时运行本技能scripts/import-products.mjs，通过stdin传同样JSON参数；mode为inspect/import，脚本自动使用真实CODEX_THREAD_ID并调用同包CLI。不要另写一次性商品读取脚本。示例：

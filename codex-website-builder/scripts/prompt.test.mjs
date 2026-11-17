@@ -1,6 +1,7 @@
 import assert from 'node:assert/strict';
-import { mkdtemp, mkdir, writeFile } from 'node:fs/promises';
-import { join, resolve } from 'node:path';
+import { mkdtemp, mkdir, writeFile, readFile, readdir, realpath } from 'node:fs/promises';
+import { join, resolve, relative, isAbsolute } from 'node:path';
+import { createHash } from 'node:crypto';
 import { tmpdir } from 'node:os';
 import { createServer } from 'node:http';
 import { chromium } from '@playwright/test';
@@ -61,8 +62,12 @@ try{
   await textarea.fill('创建巴西葡萄牙语家居电商网站\n'.repeat(30));
   assert.equal(await app.locator('.project-prompt').evaluate(n=>n.getBoundingClientRect().height),height);
   const png=Buffer.from('iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAQAAAC1HAwCAAAAC0lEQVR42mP8/x8AAwMCAO+aRWQAAAAASUVORK5CYII=','base64');
-  await app.locator('input[type=file]').setInputFiles([{name:'reference.png',mimeType:'image/png',buffer:png},{name:'products.json',mimeType:'application/json',buffer:Buffer.from('[{"id":"1"}]')}]);
-  assert.equal(await app.locator('.prompt-files>span').count(),2);
+  const products=Buffer.from(JSON.stringify(Array.from({length:137},(_,index)=>({id:String(index+1),name:'商品 '+index,category:'Home',price:12,main_image:'/img/'+index+'.png',description:'完整原文'.repeat(800)}))));
+  const duplicate=Buffer.from('[{"id":"different","name":"Other","category":"Home","price":10}]');
+  const pdf=Buffer.from('%PDF-1.7\nOriginal brief\x00\xff\n');
+  const attachments=[{name:'reference.png',mimeType:'image/png',buffer:png},{name:'products.json',mimeType:'application/json',buffer:products},{name:'products.json',mimeType:'application/json',buffer:duplicate},{name:'需求文件.pdf',mimeType:'application/pdf',buffer:pdf}];
+  await app.locator('input[type=file]').setInputFiles(attachments);
+  assert.equal(await app.locator('.prompt-files>span').count(),4);
   assert.ok(await app.locator('.project-prompt').evaluate(form=>{
     const files=form.querySelector('.prompt-files').getBoundingClientRect();
     const input=form.querySelector('textarea').getBoundingClientRect();
@@ -71,7 +76,7 @@ try{
   await app.getByRole('button',{name:'发送需求',exact:true}).click();
   await app.getByRole('alert').filter({hasText:'未接受消息'}).waitFor();
   assert.ok((await textarea.inputValue()).includes('巴西'));
-  assert.equal(await app.locator('.prompt-files>span').count(),2,'rejection retains attachments');
+  assert.equal(await app.locator('.prompt-files>span').count(),4,'rejection retains attachments');
   await page.evaluate(()=>window.rejectMessage=false);
   await app.getByRole('button',{name:'发送需求',exact:true}).click();
   await app.getByRole('button',{name:'正在创建项目'}).waitFor();
@@ -110,10 +115,27 @@ try{
   const polling=JSON.parse((await call('website_projects',{action:'submission',panel_id:submission.panel_id,request_id:submission.request_id,thread_id:'prompt-thread'})).content[0].text);
   assert.equal(polling.project.thread_id,'prompt-new-thread','originating panel can poll its matching handoff');
   assert.deepEqual(created.pages,[],'create an empty project before entering detail');
+  assert.equal(created.files.length,4,'all home prompt attachments are persisted before returning the new project');
+  assert.equal(relative(created.project_directory,created.files_directory),'files');
+  const expected=attachments.map(file=>createHash('sha256').update(file.buffer).digest('hex')).sort();
+  const actual=[];
+  for(const file of created.files){assert.ok(isAbsolute(file.path));assert.equal(relative(await realpath(created.files_directory),file.path).includes('..'),false);actual.push(createHash('sha256').update(await readFile(file.path)).digest('hex'));}
+  assert.deepEqual(actual.sort(),expected,'chunked JSON, image and PDF bytes are preserved exactly');
+  assert.equal(new Set(created.files.map(file=>file.path)).size,4,'same-name different-content files must not overwrite each other');
+  assert.equal((await readdir(created.files_directory)).length,4);
+  const resources=JSON.parse((await call('website_projects',{action:'resources',panel_id:submission.panel_id,thread_id:'prompt-new-thread',project_id:created.project_id})).content[0].text).resources;
+  assert.equal(resources.filter(file=>created.files.some(saved=>saved.path===file.path)).length,4);
+  const source=created.files.find(file=>file.sha256===createHash('sha256').update(products).digest('hex'));
+  const inspected=JSON.parse((await call('website_products',{action:'inspect',thread_id:'prompt-new-thread',project_id:created.project_id,file_path:source.path})).content[0].text);
+  assert.equal(inspected.product_count,137,'product tool reads the complete persisted file by absolute path');
+  const imported=JSON.parse((await call('website_products',{action:'import',thread_id:'prompt-new-thread',project_id:created.project_id,file_path:source.path})).content[0].text);
+  assert.equal(imported.product_count,137);
+  assert.deepEqual(await readFile(source.path),products,'product import never alters the original attachment');
   const projects=JSON.parse((await call('website_projects',{action:'list'})).content[0].text).projects;
   assert.equal(projects.find(p=>p.id===created.project_id).status,'generating','task starts before page planning');
   const repeated=JSON.parse((await call('website_projects',args)).content[0].text);
   assert.equal(created.project_id,repeated.project_id,'creation retry is idempotent');
+  assert.equal((await readdir(created.files_directory)).length,4,'creation retry does not duplicate uploaded files');
   await app.getByRole('main',{name:'网站展示画布',exact:true}).waitFor({timeout:10000});
   await app.getByText('项目初始化中',{exact:true}).waitFor();
   assert.equal(await app.locator('.initial-page').count(),0);

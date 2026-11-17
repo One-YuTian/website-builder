@@ -1,3 +1,4 @@
+import {join} from 'node:path';
 import { gzipSync } from 'node:zlib';
 import { ProjectStore, type ProjectView } from './projects';
 import { compileProjectPage, type SiteManifest } from './preview';
@@ -8,7 +9,7 @@ export function previewPayload(gzip:string):string|{resource:string} {
 }
 
 export function compactProject(view:ProjectView) {
-  return {...(view.git?{git:view.git}:{}),project_id:view.project.id,thread_id:view.threadId,directory:view.directory,metadata_directory:view.metadataDirectory,project_directory:view.projectDirectory,source_directory:view.directory,material_directory:view.materialDirectory,format_version:view.project.formatVersion,name:view.project.name,country:view.project.country,categories:view.project.categories,brand:view.project.brand,language:view.project.language,brief:view.project.brief,pages:view.project.pages.map(({path,status,error})=>({path,status,...(error?{error}:{} )}))};
+  return {...(view.git?{git:view.git}:{}),project_id:view.project.id,thread_id:view.threadId,directory:view.directory,metadata_directory:view.metadataDirectory,project_directory:view.projectDirectory,files_directory:join(view.projectDirectory,'files'),source_directory:view.directory,material_directory:view.materialDirectory,format_version:view.project.formatVersion,name:view.project.name,country:view.project.country,categories:view.project.categories,brand:view.project.brand,language:view.project.language,brief:view.project.brief,pages:view.project.pages.map(({path,status,error})=>({path,status,...(error?{error}:{} )}))};
 }
 export function projectService(store:ProjectStore) {
   const cache=new Map<string,{version:number;gzip:string}>();
