@@ -1,11 +1,12 @@
 import { createRequire } from 'node:module'; const require = createRequire(import.meta.url);
 import {
   ProjectStore,
+  assertEditable,
   compactProject,
   createPreview,
   dataPaths,
   importProducts,
-  migrateLegacyData,
+  operationLock,
   prepareCommerce,
   previewPayload,
   projectManager,
@@ -13,7 +14,7 @@ import {
   readTemplates,
   resourceChunk,
   screenshotPage
-} from "./chunk-2XYVFXNQ.js";
+} from "./chunk-MZQSQIFN.js";
 import {
   $ZodObject,
   $ZodType,
@@ -3932,50 +3933,50 @@ var require_fast_uri = __commonJS({
       schemelessOptions.skipEscape = true;
       return serialize(resolved, schemelessOptions);
     }
-    function resolveComponent(base, relative, options, skipNormalization) {
+    function resolveComponent(base, relative2, options, skipNormalization) {
       const target = {};
       if (!skipNormalization) {
         base = parse2(serialize(base, options), options);
-        relative = parse2(serialize(relative, options), options);
+        relative2 = parse2(serialize(relative2, options), options);
       }
       options = options || {};
-      if (!options.tolerant && relative.scheme) {
-        target.scheme = relative.scheme;
-        target.userinfo = relative.userinfo;
-        target.host = relative.host;
-        target.port = relative.port;
-        target.path = removeDotSegments(relative.path || "");
-        target.query = relative.query;
+      if (!options.tolerant && relative2.scheme) {
+        target.scheme = relative2.scheme;
+        target.userinfo = relative2.userinfo;
+        target.host = relative2.host;
+        target.port = relative2.port;
+        target.path = removeDotSegments(relative2.path || "");
+        target.query = relative2.query;
       } else {
-        if (relative.userinfo !== void 0 || relative.host !== void 0 || relative.port !== void 0) {
-          target.userinfo = relative.userinfo;
-          target.host = relative.host;
-          target.port = relative.port;
-          target.path = removeDotSegments(relative.path || "");
-          target.query = relative.query;
+        if (relative2.userinfo !== void 0 || relative2.host !== void 0 || relative2.port !== void 0) {
+          target.userinfo = relative2.userinfo;
+          target.host = relative2.host;
+          target.port = relative2.port;
+          target.path = removeDotSegments(relative2.path || "");
+          target.query = relative2.query;
         } else {
-          if (!relative.path) {
+          if (!relative2.path) {
             target.path = base.path;
-            if (relative.query !== void 0) {
-              target.query = relative.query;
+            if (relative2.query !== void 0) {
+              target.query = relative2.query;
             } else {
               target.query = base.query;
             }
           } else {
-            if (relative.path[0] === "/") {
-              target.path = removeDotSegments(relative.path);
+            if (relative2.path[0] === "/") {
+              target.path = removeDotSegments(relative2.path);
             } else {
               const baseHasAuthority = base.userinfo !== void 0 || base.host !== void 0 || base.port !== void 0;
               if (baseHasAuthority && !base.path) {
-                target.path = "/" + relative.path;
+                target.path = "/" + relative2.path;
               } else if (!base.path) {
-                target.path = relative.path;
+                target.path = relative2.path;
               } else {
-                target.path = base.path.slice(0, base.path.lastIndexOf("/") + 1) + relative.path;
+                target.path = base.path.slice(0, base.path.lastIndexOf("/") + 1) + relative2.path;
               }
               target.path = base.scheme === void 0 && !baseHasAuthority && target.path[0] !== "/" ? removeDotSegmentsRelative(target.path) : removeDotSegments(target.path);
             }
-            target.query = relative.query;
+            target.query = relative2.query;
           }
           target.userinfo = base.userinfo;
           target.host = base.host;
@@ -3983,7 +3984,7 @@ var require_fast_uri = __commonJS({
         }
         target.scheme = base.scheme;
       }
-      target.fragment = relative.fragment;
+      target.fragment = relative2.fragment;
       return target;
     }
     function equal(uriA, uriB, options) {
@@ -7277,7 +7278,7 @@ var require_dist = __commonJS({
 });
 
 // server/index.ts
-import { readFile } from "node:fs/promises";
+import { readFile as readFile2 } from "node:fs/promises";
 
 // node_modules/.pnpm/zod@4.6.7/node_modules/zod/v3/helpers/util.js
 var util;
@@ -9785,10 +9786,10 @@ var ZodObject = class _ZodObject extends ZodType {
       catchall: index
     });
   }
-  pick(mask) {
+  pick(mask2) {
     const shape = {};
-    for (const key of util.objectKeys(mask)) {
-      if (mask[key] && this.shape[key]) {
+    for (const key of util.objectKeys(mask2)) {
+      if (mask2[key] && this.shape[key]) {
         shape[key] = this.shape[key];
       }
     }
@@ -9797,10 +9798,10 @@ var ZodObject = class _ZodObject extends ZodType {
       shape: () => shape
     });
   }
-  omit(mask) {
+  omit(mask2) {
     const shape = {};
     for (const key of util.objectKeys(this.shape)) {
-      if (!mask[key]) {
+      if (!mask2[key]) {
         shape[key] = this.shape[key];
       }
     }
@@ -9815,11 +9816,11 @@ var ZodObject = class _ZodObject extends ZodType {
   deepPartial() {
     return deepPartialify(this);
   }
-  partial(mask) {
+  partial(mask2) {
     const newShape = {};
     for (const key of util.objectKeys(this.shape)) {
       const fieldSchema = this.shape[key];
-      if (mask && !mask[key]) {
+      if (mask2 && !mask2[key]) {
         newShape[key] = fieldSchema;
       } else {
         newShape[key] = fieldSchema.optional();
@@ -9830,10 +9831,10 @@ var ZodObject = class _ZodObject extends ZodType {
       shape: () => newShape
     });
   }
-  required(mask) {
+  required(mask2) {
     const newShape = {};
     for (const key of util.objectKeys(this.shape)) {
-      if (mask && !mask[key]) {
+      if (mask2 && !mask2[key]) {
         newShape[key] = this.shape[key];
       } else {
         const fieldSchema = this.shape[key];
@@ -14559,7 +14560,7 @@ var Protocol = class {
         }
         await this.notification(notification, notificationOptions);
       },
-      sendRequest: async (r2, resultSchema, options) => {
+      sendRequest: async (r3, resultSchema, options) => {
         if (abortController.signal.aborted) {
           throw new McpError(ErrorCode.ConnectionClosed, "Request was cancelled");
         }
@@ -14571,7 +14572,7 @@ var Protocol = class {
         if (effectiveTaskId && taskStore) {
           await taskStore.updateTaskStatus(effectiveTaskId, "input_required");
         }
-        return await this.request(r2, resultSchema, requestOptions);
+        return await this.request(r3, resultSchema, requestOptions);
       },
       authInfo: extra?.authInfo,
       requestId: request.id,
@@ -17059,19 +17060,266 @@ function N3(Z, $, J, X, V) {
 import { resolve } from "node:path";
 import { gzipSync } from "node:zlib";
 import { fileURLToPath } from "node:url";
+
+// server/r2-settings.ts
+import { readFile } from "node:fs/promises";
+import { join } from "node:path";
+import { createDecipheriv } from "node:crypto";
+var r2Fields = ["R2_ACCOUNT_ID", "R2_BUCKET_NAME", "R2_ACCESS_KEY_ID", "R2_SECRET_ACCESS_KEY", "R2_DEPLOY_HOST"];
+var mask = "\u2022\u2022\u2022\u2022\u2022\u2022\u2022\u2022";
+var R2Settings = class {
+  constructor(root, env = process.env) {
+    this.root = root;
+    this.env = env;
+  }
+  root;
+  env;
+  async get() {
+    let data = {};
+    try {
+      data = JSON.parse(await readFile(join(this.root, "config/r2-config.json"), "utf8"));
+    } catch (error) {
+      if (error.code !== "ENOENT") throw Error("R2 \u672C\u673A\u914D\u7F6E\u4E0D\u53EF\u8BFB\u53D6");
+    }
+    if (data.credentials) {
+      try {
+        const key = await readFile(join(this.root, "config/r2-key.bin")), cipher = createDecipheriv("aes-256-gcm", key, Buffer.from(data.credentials.iv, "hex"));
+        cipher.setAuthTag(Buffer.from(data.credentials.tag, "hex"));
+        Object.assign(data, JSON.parse(Buffer.concat([cipher.update(Buffer.from(data.credentials.value, "hex")), cipher.final()]).toString()));
+      } catch {
+        throw Error("R2 \u672C\u673A\u51ED\u636E\u4E0D\u53EF\u8BFB\u53D6\uFF0C\u8BF7\u8054\u7CFB\u914D\u7F6E\u7BA1\u7406\u5458");
+      }
+    }
+    return Object.fromEntries(r2Fields.map((name) => [name, String(data[name] ?? this.env[name] ?? "")]));
+  }
+  async public() {
+    const data = await this.get();
+    return { ...data, R2_ACCESS_KEY_ID: data.R2_ACCESS_KEY_ID ? mask : "\u672A\u914D\u7F6E", R2_SECRET_ACCESS_KEY: data.R2_SECRET_ACCESS_KEY ? mask : "\u672A\u914D\u7F6E" };
+  }
+};
+var r2SettingsCapability = { readTool: "website_s3_settings_read", updateTool: "website_s3_settings_update" };
+function registerR2Settings(server2, settings) {
+  const read = async () => {
+    const values = await settings.public();
+    return { schema: { type: "object", properties: Object.fromEntries(r2Fields.map((name) => [name, { type: "string", title: name, readOnly: true }])) }, values, layout: [{ kind: "group", title: "S3\u914D\u7F6E", items: r2Fields.map((property) => ({ kind: "property", property })) }] };
+  };
+  server2.registerTool(r2SettingsCapability.readTool, { title: "\u8BFB\u53D6 S3 \u914D\u7F6E", inputSchema: {}, outputSchema: { schema: external_exports.record(external_exports.string(), external_exports.unknown()), values: external_exports.record(external_exports.string(), external_exports.string()), layout: external_exports.array(external_exports.record(external_exports.string(), external_exports.unknown())) }, annotations: { readOnlyHint: true, openWorldHint: false }, _meta: { ui: { visibility: ["app"] } } }, async () => ({ content: [], structuredContent: await read() }));
+  server2.registerTool(r2SettingsCapability.updateTool, { title: "S3 \u914D\u7F6E\u53EA\u8BFB", inputSchema: { set: external_exports.record(external_exports.string(), external_exports.union([external_exports.string(), external_exports.number(), external_exports.boolean()])) }, outputSchema: { values: external_exports.record(external_exports.string(), external_exports.string()) }, annotations: { readOnlyHint: true, openWorldHint: false }, _meta: { ui: { visibility: ["app"] } } }, async () => ({ content: [{ type: "text", text: "S3 \u914D\u7F6E\u4E0D\u53EF\u4FEE\u6539\uFF0C\u5DF2\u6062\u590D\u9884\u914D\u7F6E\u503C\u3002" }], structuredContent: { values: (await read()).values } }));
+}
+
+// server/r2-deployment.ts
+import { readdir, lstat, realpath } from "node:fs/promises";
+import { createReadStream } from "node:fs";
+import { createHash, randomUUID } from "node:crypto";
+import { join as join2, relative, isAbsolute, sep, extname } from "node:path";
+var mime = { ".html": "text/html; charset=utf-8", ".htm": "text/html; charset=utf-8", ".js": "text/javascript; charset=utf-8", ".mjs": "text/javascript; charset=utf-8", ".css": "text/css; charset=utf-8", ".json": "application/json", ".svg": "image/svg+xml", ".png": "image/png", ".jpg": "image/jpeg", ".jpeg": "image/jpeg", ".webp": "image/webp", ".avif": "image/avif", ".gif": "image/gif", ".ico": "image/x-icon", ".woff": "font/woff", ".woff2": "font/woff2", ".ttf": "font/ttf", ".txt": "text/plain; charset=utf-8", ".xml": "application/xml", ".mp4": "video/mp4", ".pdf": "application/pdf", ".webmanifest": "application/manifest+json" };
+async function sourceSnapshot(root) {
+  const canonical = await realpath(root), files = [];
+  const walk = async (folder) => {
+    for (const entry of (await readdir(folder, { withFileTypes: true })).sort((a, b) => a.name.localeCompare(b.name))) {
+      if (entry.name === ".git" || /^\.env(?:\.|$)/.test(entry.name)) throw Error("src \u5305\u542B\u79C1\u6709\u914D\u7F6E\u76EE\u5F55\u6216\u6587\u4EF6\uFF0C\u4E0D\u80FD\u90E8\u7F72");
+      const file = join2(folder, entry.name), info = await lstat(file);
+      if (info.isSymbolicLink()) throw Error("src \u5305\u542B\u7B26\u53F7\u94FE\u63A5\uFF0C\u4E0D\u80FD\u90E8\u7F72");
+      const actual = await realpath(file), rel = relative(canonical, actual);
+      if (rel === ".." || rel.startsWith(".." + sep) || isAbsolute(rel)) throw Error("src \u8D44\u6E90\u8DEF\u5F84\u8D8A\u754C");
+      if (info.isDirectory()) await walk(file);
+      else if (info.isFile()) {
+        if (/(?:^|\/)(?:\.git|\.env(?:\..*)?)$/.test(rel.split(sep).join("/"))) throw Error("src \u5305\u542B\u79C1\u6709\u914D\u7F6E\u6587\u4EF6\uFF0C\u4E0D\u80FD\u90E8\u7F72");
+        const hash = createHash("sha256");
+        for await (const chunk of createReadStream(file)) hash.update(chunk);
+        files.push({ path: relative(root, file).split(sep).join("/"), file, size: info.size, sha256: hash.digest("hex"), contentType: mime[extname(file).toLowerCase()] || "application/octet-stream" });
+      }
+    }
+  };
+  await walk(root);
+  return files;
+}
+var fingerprint = (files) => JSON.stringify(files.map(({ path, size, sha256 }) => ({ path, size, sha256 })));
+var R2Deployment = class {
+  constructor(store, settings, factory) {
+    this.store = store;
+    this.settings = settings;
+    this.factory = factory;
+  }
+  store;
+  settings;
+  factory;
+  active = /* @__PURE__ */ new Map();
+  read(id) {
+    const row = this.store.database.sql.prepare("SELECT value FROM settings WHERE key=?").get("r2:" + id);
+    return row ? JSON.parse(row.value) : null;
+  }
+  write(id, value) {
+    this.store.database.sql.prepare("INSERT INTO settings VALUES (?,?) ON CONFLICT(key) DO UPDATE SET value=excluded.value").run("r2:" + id, JSON.stringify({ ...value, updated_at: (/* @__PURE__ */ new Date()).toISOString() }));
+  }
+  status(id) {
+    let job = this.read(id);
+    const lock = operationLock(this.store.database, id);
+    if (job && ["running", "cancelling"].includes(job.status) && !lock) job = { ...job, status: "failed", phase: "\u90E8\u7F72\u5DF2\u4E2D\u65AD", message: "\u90E8\u7F72\u8FDB\u7A0B\u6216\u5199\u5165\u9501\u5DF2\u5931\u6548\uFF0C\u8BF7\u91CD\u65B0\u90E8\u7F72\u5B8C\u6210\u540C\u6B65" };
+    return { ...job, locked: !!lock, cancellable: !!lock && !!job && lock.owner === job.id };
+  }
+  checkpoint(project, id, signal) {
+    signal.throwIfAborted();
+    assertEditable(this.store.database, project, id);
+    const row = this.store.database.sql.prepare("SELECT used FROM deployment_requests WHERE id=?").get(id);
+    if (row?.used === 2) throw Error("R2_DEPLOY_CANCELLED");
+  }
+  cancel(project, actor) {
+    const job = this.read(project), lock = operationLock(this.store.database, project);
+    if (!job || !lock) return { status: "cancelled" };
+    if (job.actor !== actor || job.id !== lock.owner) throw Error("\u4E0D\u80FD\u53D6\u6D88\u5176\u4ED6\u4F1A\u8BDD\u7684\u90E8\u7F72");
+    this.store.database.sql.prepare("UPDATE deployment_requests SET used=2 WHERE id=?").run(job.id);
+    this.active.get(job.id)?.abort();
+    this.write(project, { ...job, status: "cancelling", phase: "\u6B63\u5728\u53D6\u6D88\uFF0C\u7B49\u5F85\u4E0A\u4F20\u6536\u5C3E" });
+    return this.status(project);
+  }
+  async start(project, actor) {
+    if (!/^[a-z0-9](?:[a-z0-9-]{0,61}[a-z0-9])?$/.test(project)) throw Error("\u9879\u76EEID\u4E0D\u80FD\u4F5C\u4E3A\u90E8\u7F72\u5B50\u57DF\u540D");
+    const id = randomUUID();
+    await this.store.exclusive(project, async () => {
+      if (this.store.database.status(project) !== "completed") throw Error("\u9879\u76EE\u5C1A\u672A\u5B8C\u6210\uFF0C\u6682\u4E0D\u80FD\u90E8\u7F72\uFF0C\u8BF7\u5148\u5B8C\u6210\u6216\u4FEE\u590D\u5F53\u524D\u4EFB\u52A1");
+      if (this.store.database.sql.prepare("SELECT path FROM image_tasks WHERE project_id=? AND status='generating' LIMIT 1").get(project) || this.store.database.sql.prepare("SELECT path FROM image_compressions WHERE project_id=? AND status='running' AND lease_until>? LIMIT 1").get(project, Date.now())) throw Error("\u56FE\u7247\u4ECD\u5728\u751F\u6210\u6216\u538B\u7F29\uFF0C\u6682\u4E0D\u80FD\u90E8\u7F72");
+      const changed = this.store.database.sql.prepare("INSERT INTO deployment_locks VALUES (?,?,?,'R2\u51C6\u5907\u90E8\u7F72') ON CONFLICT(project_id) DO UPDATE SET owner=excluded.owner,expires_at=excluded.expires_at,stage=excluded.stage WHERE deployment_locks.expires_at<=?").run(project, id, Date.now() + 12e4, Date.now());
+      if (!changed.changes) throw Error("\u9879\u76EE\u6B63\u5728\u90E8\u7F72\uFF0C\u8BF7\u7B49\u5F85\u5B8C\u6210\u6216\u53D6\u6D88");
+      this.store.database.sql.prepare("INSERT INTO deployment_requests(id,project_id,thread_id,data,expires_at,used) VALUES (?,?,?,?,?,1)").run(id, project, actor, JSON.stringify({ type: "r2" }), Date.now() + 864e5);
+      this.write(project, { id, actor, status: "running", phase: "\u68C0\u67E5\u9759\u6001\u8D44\u6E90", completed: 0, total: 0, uploaded_bytes: 0, total_bytes: 0, deleted: 0 });
+    });
+    void this.run(project, id).catch(() => {
+    });
+    return this.status(project);
+  }
+  async run(project, id) {
+    const controller = new AbortController();
+    this.active.set(id, controller);
+    let job = this.read(project), lastBeat = 0;
+    const checkpoint = () => this.checkpoint(project, id, controller.signal);
+    const update = (values) => {
+      checkpoint();
+      job = { ...job, ...values };
+      this.write(project, job);
+      this.store.database.sql.prepare("UPDATE deployment_locks SET stage=? WHERE owner=?").run(String(job.phase), id);
+    };
+    const timer = setInterval(() => {
+      const row = this.store.database.sql.prepare("SELECT used FROM deployment_requests WHERE id=?").get(id);
+      if (row?.used === 2) controller.abort();
+      if (Date.now() - lastBeat > 1e4) {
+        lastBeat = Date.now();
+        this.store.database.sql.prepare("UPDATE deployment_locks SET expires_at=? WHERE owner=?").run(Date.now() + 12e4, id);
+      }
+    }, 250);
+    let config;
+    try {
+      config = await this.settings.get();
+      for (const name of ["R2_ACCOUNT_ID", "R2_BUCKET_NAME", "R2_ACCESS_KEY_ID", "R2_SECRET_ACCESS_KEY", "R2_DEPLOY_HOST"]) if (!config[name]) throw Error("R2 \u9884\u914D\u7F6E\u7F3A\u5C11 " + name + "\uFF0C\u8BF7\u8054\u7CFB\u7BA1\u7406\u5458");
+      if (!/^[a-f\d]{32}$/i.test(config.R2_ACCOUNT_ID) || !/^[a-z0-9][a-z0-9.-]{1,61}[a-z0-9]$/.test(config.R2_BUCKET_NAME) || !/^(?:[a-z0-9](?:[a-z0-9-]*[a-z0-9])?\.)+[a-z]{2,}$/i.test(config.R2_DEPLOY_HOST)) throw Error("R2 \u9884\u914D\u7F6E\u5730\u5740\u65E0\u6548");
+      const view = await this.store.get(void 0, project);
+      if (!view) throw Error("\u9879\u76EE\u4E0D\u5B58\u5728");
+      if (!view.project.pages.length || view.project.pages.some((page) => page.status !== "ready")) throw Error("\u9879\u76EE\u9875\u9762\u5C1A\u672A\u5168\u90E8\u751F\u6210\u5B8C\u6210");
+      const files = await sourceSnapshot(view.directory);
+      if (!files.some((file) => file.path === "index.html")) throw Error("src/index.html \u7F3A\u5931\uFF0C\u4E0D\u80FD\u90E8\u7F72");
+      const s3 = this.factory ? await this.factory(config) : (await import(new URL("../runtime/r2/s3.mjs", import.meta.url).href)).createS3Client(config);
+      const prefix = project + "/", wanted = new Set(files.map((file) => prefix + file.path)), signature = fingerprint(files);
+      update({ total: files.length, total_bytes: files.reduce((sum, file) => sum + file.size, 0), phase: "\u8BFB\u53D6\u4E91\u7AEF\u6587\u4EF6\u5217\u8868" });
+      const remote = await s3.list(prefix, controller.signal);
+      checkpoint();
+      if (remote.some((file) => !file.key.startsWith(prefix))) throw Error("\u4E91\u7AEF\u5BF9\u8C61\u8D8A\u51FA\u5F53\u524D\u9879\u76EE\u76EE\u5F55");
+      let bytes = 0;
+      for (const file of files) {
+        checkpoint();
+        update({ phase: "\u4E0A\u4F20 " + file.path, current_file: file.path });
+        let progressTime = 0;
+        await s3.put(prefix + file.path, { ...file, body: createReadStream(file.file) }, controller.signal, (sent) => {
+          if (Date.now() - progressTime > 400) {
+            progressTime = Date.now();
+            update({ uploaded_bytes: bytes + Math.min(sent, file.size) });
+          }
+        });
+        checkpoint();
+        const head = await s3.head(prefix + file.path, controller.signal);
+        if (head.size !== file.size || head.sha256 !== file.sha256) throw Error("\u4E91\u7AEF\u6587\u4EF6\u6821\u9A8C\u5931\u8D25\uFF1A" + file.path);
+        bytes += file.size;
+        update({ completed: job.completed + 1, uploaded_bytes: bytes });
+      }
+      if (fingerprint(await sourceSnapshot(view.directory)) !== signature) throw Error("\u90E8\u7F72\u671F\u95F4\u672C\u5730\u6E90\u7801\u53D1\u751F\u53D8\u5316\uFF0C\u672A\u786E\u8BA4\u90E8\u7F72\u5B8C\u6210");
+      for (const extra of remote.filter((file) => !wanted.has(file.key))) {
+        checkpoint();
+        update({ phase: "\u6E05\u7406\u5931\u6548\u6587\u4EF6 " + extra.key.slice(prefix.length) });
+        await s3.remove(extra.key, controller.signal);
+        update({ deleted: job.deleted + 1 });
+      }
+      update({ phase: "\u6838\u5BF9\u4E91\u7AEF\u4E0E\u672C\u5730\u4E00\u81F4\u6027" });
+      const final = await s3.list(prefix, controller.signal);
+      if (final.length !== files.length || new Set(final.map((file) => file.key)).size !== wanted.size || final.some((file) => !wanted.has(file.key))) throw Error("\u4E91\u7AEF\u6587\u4EF6\u5217\u8868\u4E0E\u672C\u5730\u4E0D\u4E00\u81F4");
+      for (const file of files) {
+        checkpoint();
+        const head = await s3.head(prefix + file.path, controller.signal);
+        if (head.size !== file.size || head.sha256 !== file.sha256) throw Error("\u4E91\u7AEF\u6700\u7EC8\u5185\u5BB9\u6821\u9A8C\u5931\u8D25\uFF1A" + file.path);
+      }
+      if (fingerprint(await sourceSnapshot(view.directory)) !== signature) throw Error("\u672C\u5730\u6E90\u7801\u5728\u6700\u7EC8\u6838\u9A8C\u671F\u95F4\u53D8\u5316");
+      update({ status: "completed", phase: "\u90E8\u7F72\u5B8C\u6210", current_file: "", url: `https://${project}.${config.R2_DEPLOY_HOST}`, message: "src \u4E0E\u4E91\u7AEF\u9879\u76EE\u76EE\u5F55\u5DF2\u540C\u6B65\u5E76\u6838\u5BF9\u4E00\u81F4" });
+    } catch (error) {
+      const cancelled = controller.signal.aborted || error.message === "R2_DEPLOY_CANCELLED";
+      controller.abort();
+      let message = error.message;
+      for (const value of [config?.R2_ACCESS_KEY_ID, config?.R2_SECRET_ACCESS_KEY]) if (value) message = message.replaceAll(value, "[REDACTED]");
+      this.write(project, { ...job, status: cancelled ? "cancelled" : "failed", phase: cancelled ? "\u90E8\u7F72\u5DF2\u53D6\u6D88" : "\u90E8\u7F72\u5931\u8D25", message: cancelled ? "\u5DF2\u505C\u6B62\u540E\u7EED\u64CD\u4F5C\uFF0C\u5DF2\u4E0A\u4F20\u5185\u5BB9\u4FDD\u7559\uFF1B\u91CD\u65B0\u90E8\u7F72\u4F1A\u518D\u6B21\u5B8C\u6574\u540C\u6B65" : message });
+    } finally {
+      clearInterval(timer);
+      this.active.delete(id);
+      this.store.database.sql.prepare("DELETE FROM deployment_locks WHERE project_id=? AND owner=?").run(project, id);
+      this.store.database.sql.prepare("UPDATE deployment_requests SET used=3 WHERE id=? AND used<>2").run(id);
+    }
+  }
+};
+
+// server/open-browser.ts
+import { execFile } from "node:child_process";
+import { promisify } from "node:util";
+import { win32 } from "node:path";
+var execute = promisify(execFile);
+async function openPreviewBrowser(value, platform = process.platform, run = execute) {
+  const url = new URL(value);
+  if (url.protocol !== "https:" || url.username || url.password || url.search || url.hash) throw Error("\u9884\u89C8\u5730\u5740\u65E0\u6548");
+  try {
+    if (platform === "win32") await run(win32.join(process.env.SystemRoot || "C:\\Windows", "System32/WindowsPowerShell/v1.0/powershell.exe"), ["-NoProfile", "-NonInteractive", "-Command", "$ErrorActionPreference='Stop'; Start-Process -FilePath $env:WEBSITE_BUILDER_PREVIEW_URL"], { windowsHide: true, timeout: 15e3, env: { ...process.env, WEBSITE_BUILDER_PREVIEW_URL: url.href } });
+    else await run(platform === "darwin" ? "/usr/bin/open" : "xdg-open", [url.href], { timeout: 15e3 });
+    return { opened: true, url: url.href };
+  } catch {
+    throw Error("\u65E0\u6CD5\u6253\u5F00\u5916\u90E8\u6D4F\u89C8\u5668\uFF0C\u8BF7\u590D\u5236\u9884\u89C8\u94FE\u63A5\u540E\u624B\u52A8\u6253\u5F00");
+  }
+}
+
+// server/index.ts
 var uri = "ui://codex-website-builder/canvas";
-var sidebarIcon = await readFile(new URL("../../assets/icon.png", import.meta.url));
-var html = await readFile(new URL("../ui/index.html", import.meta.url), "utf8");
+var sidebarIcon = await readFile2(new URL("../../assets/icon.png", import.meta.url));
+var html = await readFile2(new URL("../ui/index.html", import.meta.url), "utf8");
 var paths = dataPaths();
-await migrateLegacyData(paths.project);
 var projects = new ProjectStore(paths.project);
+var r2Settings = new R2Settings(paths.root);
+var r2 = new R2Deployment(projects, r2Settings);
+var control = async (input) => {
+  if (input.type !== "r2") throw Error("Website Builder GitLab \u914D\u7F6E/\u90E8\u7F72\u5165\u53E3\u6682\u65F6\u505C\u7528");
+  const panel = projects.database.panelById(input.panel_id);
+  if (!panel || panel.project_id !== input.project_id || input.thread_id && panel.thread_id !== input.thread_id) throw Error("\u90E8\u7F72\u8BF7\u6C42\u4E0D\u5C5E\u4E8E\u5F53\u524D\u9879\u76EE\u9762\u677F");
+  const actor = "ui:" + input.panel_id;
+  if (input.action === "status") return r2.status(input.project_id);
+  if (input.action === "start") return r2.start(input.project_id, actor);
+  if (input.action === "cancel") return r2.cancel(input.project_id, actor);
+  if (input.action === "preview") {
+    const state = r2.status(input.project_id);
+    if (state.status !== "completed" || !state.url) throw Error("\u9879\u76EE\u5C1A\u672A\u90E8\u7F72\u5B8C\u6210");
+    return openPreviewBrowser(state.url);
+  }
+  throw Error("\u672A\u77E5 R2 \u64CD\u4F5C");
+};
 var manager = projectManager(projects);
 var syncProject = projectService(projects);
-var preview = await createPreview(html, paths.reference, "www.noventrad.com", syncProject, manager.run);
+var preview = await createPreview(html, paths.reference, "www.noventrad.com", syncProject, manager.run, control);
 var skillRoot = (process.env.WEBSITE_BUILDER_SKILL_ROOT || resolve("skills/website-builder")).replaceAll("${PLUGIN_ROOT}", fileURLToPath(new URL("../../", import.meta.url)));
-var server = new McpServer({ name: "codex-website-builder", version: "0.8.6", icons: [{ src: `data:image/png;base64,${sidebarIcon.toString("base64")}`, mimeType: "image/png", sizes: ["200x200"] }] });
+var server = new McpServer({ name: "codex-website-builder", version: "0.8.9", icons: [{ src: `data:image/png;base64,${sidebarIcon.toString("base64")}`, mimeType: "image/png", sizes: ["200x200"] }] }, { capabilities: { experimental: { "openai/settings": r2SettingsCapability } } });
 var csp = { connectDomains: ["data:", "blob:"], resourceDomains: ["data:", "blob:"], frameDomains: ["blob:", "data:"], baseUriDomains: ["https://website-builder.invalid"] };
 var legacyCsp = { connect_domains: csp.connectDomains, resource_domains: csp.resourceDomains, frame_domains: csp.frameDomains, base_uri_domains: csp.baseUriDomains };
+registerR2Settings(server, r2Settings);
 N3(server, "canvas", uri, { _meta: { ui: { csp }, "openai/widgetCSP": legacyCsp } }, async () => ({
   contents: [{ uri, mimeType: p, text: preview.render(), _meta: {
     ui: { csp, permissions: { clipboardWrite: {} } },
@@ -17081,7 +17329,7 @@ N3(server, "canvas", uri, { _meta: { ui: { csp }, "openai/widgetCSP": legacyCsp 
 }));
 K3(server, "open_canvas", {
   title: "Website Builder",
-  description: "\u6253\u5F00\u7F51\u7AD9\u751F\u6210\u4E0E\u5B9E\u65F6\u9884\u89C8\u753B\u5E03\u3002\u9762\u677F\u9996\u9875submission\u521D\u6B21\u521B\u5EFA\u9ED8\u8BA4\u590D\u7528\u539F\u9762\u677F\uFF1B\u4F1A\u8BDD\u9014\u4E2D\u5141\u8BB8\u4F20\u771F\u5B9Ethread_id\u91CD\u65B0\u6253\u5F00UI\u5E76\u8FDB\u5165\u8BE5\u4F1A\u8BDD\u5DF2\u7ED1\u5B9A\u9879\u76EE\u8BE6\u60C5\uFF0C\u4E0D\u91CD\u5EFA\u9879\u76EE\u3002Codex\u5BF9\u8BDD\u9700\u6C42\u5148\u521B\u5EFA\u7A7A\u9879\u76EE\uFF08\u4E0D\u4F20pages\uFF09\uFF0C\u518D\u4F20\u771F\u5B9Ethread_id\u6253\u5F00\u4E00\u6B21\u753B\u5E03\u8FDB\u5165\u8BE6\u60C5\uFF0C\u7136\u540E\u624Dplan\u548C\u751F\u6210\u5185\u5BB9\uFF1B\u6CA1\u6709\u4F1A\u8BDD\u7ED1\u5B9A\u9879\u76EE\u65F6\u8FDB\u5165\u9996\u9875\uFF0C\u4E0D\u4F7F\u7528\u5168\u5C40\u6700\u8FD1\u9879\u76EE\u3002\u5EFA\u7AD9\u3001\u6539\u9875\u6216\u91CD\u751F\u6210\u65F6\u5148\u4F7F\u7528\u5185\u7F6Ewebsite-builder SKILL\uFF1B\u4EC5\u7528\u6237\u660E\u786E\u9009\u62E9\u7F51\u7AD9\u76EE\u5F55\u65F6\u5C55\u793A\u53C2\u8003\u7AD9\u70B9\u3002",
+  description: "\u6253\u5F00\u7F51\u7AD9\u751F\u6210\u4E0E\u5B9E\u65F6\u9884\u89C8\u753B\u5E03\u3002\u9762\u677F\u9996\u9875submission\u521B\u5EFA\u9879\u76EE\u540E\u5FC5\u987B\u5728\u65B0\u5BF9\u8BDD\u8C03\u7528open_thread_canvas(thread_id)\u4E00\u6B21\u6253\u5F00\u4FA7\u8FB9UI\u8FDB\u5165\u8BE6\u60C5\uFF1B\u4F1A\u8BDD\u9014\u4E2D\u5141\u8BB8\u4F20\u771F\u5B9Ethread_id\u91CD\u65B0\u6253\u5F00UI\u5E76\u8FDB\u5165\u8BE5\u4F1A\u8BDD\u5DF2\u7ED1\u5B9A\u9879\u76EE\u8BE6\u60C5\uFF0C\u4E0D\u91CD\u5EFA\u9879\u76EE\u3002Codex\u5BF9\u8BDD\u9700\u6C42\u5148\u521B\u5EFA\u7A7A\u9879\u76EE\uFF08\u4E0D\u4F20pages\uFF09\uFF0C\u518D\u4F20\u771F\u5B9Ethread_id\u6253\u5F00\u4E00\u6B21\u753B\u5E03\u8FDB\u5165\u8BE6\u60C5\uFF0C\u7136\u540E\u624Dplan\u548C\u751F\u6210\u5185\u5BB9\uFF1B\u6CA1\u6709\u4F1A\u8BDD\u7ED1\u5B9A\u9879\u76EE\u65F6\u8FDB\u5165\u9996\u9875\uFF0C\u4E0D\u4F7F\u7528\u5168\u5C40\u6700\u8FD1\u9879\u76EE\u3002\u5EFA\u7AD9\u3001\u6539\u9875\u6216\u91CD\u751F\u6210\u65F6\u5148\u4F7F\u7528\u5185\u7F6Ewebsite-builder SKILL\uFF1B\u4EC5\u7528\u6237\u660E\u786E\u9009\u62E9\u7F51\u7AD9\u76EE\u5F55\u65F6\u5C55\u793A\u53C2\u8003\u7AD9\u70B9\u3002",
   inputSchema: { thread_id: external_exports.string().optional() },
   annotations: { readOnlyHint: true, destructiveHint: false, openWorldHint: false },
   _meta: { ui: { resourceUri: uri }, "openai/ui": { entrypoints: [{ type: "global" }] } }
@@ -17106,9 +17354,9 @@ server.registerTool("website_panel_context", {
   }
 });
 server.registerTool("website_projects", {
-  description: "\u7BA1\u7406\u5168\u5C40 SQLite \u9879\u76EE\uFF1Alist \u5217\u51FA\u9879\u76EE\uFF0Copen/create \u7ED1\u5B9A\u5F53\u524D\u4F1A\u8BDD\u548C\u9762\u677F\uFF0Chome \u8FD4\u56DE\u4E3B\u754C\u9762\uFF0Cdelete \u8F6F\u5220\u9664\uFF08\u4FDD\u7559\u6587\u4EF6\uFF09\uFF0Cresources \u5217\u51FA\u8D44\u6E90\uFF0Cattach \u590D\u5236\u7528\u6237\u660E\u786E\u63D0\u4F9B\u7684\u56FE\u7247/\u6587\u4EF6\u5230\u9879\u76EE\u8D44\u6E90\u76EE\u5F55\u3002panel_id \u6765\u81EA\u9762\u677F\u4E0A\u4E0B\u6587\uFF1Bthread_id \u5FC5\u987B\u662F\u771F\u5B9E\u5F53\u524D\u4F1A\u8BDD ID\u3002\u9996\u9875submission\u7528create\u4E0Erequest_id\u521B\u5EFA\u7A7A\u9879\u76EE\uFF0C\u539F\u9762\u677F\u81EA\u52A8\u8FDB\u5165\u8BE6\u60C5\uFF1B\u67E5\u8BE2submission\u5230detail_ready=true\u540E\u518D\u89C4\u5212\u9875\u9762\u548C\u751F\u6210\uFF1B\u4F1A\u8BDD\u9014\u4E2D\u53EF\u6309\u9700open_canvas(thread_id)\u6062\u590D\u540C\u4E00\u9879\u76EE\u8BE6\u60C5\u3002",
-  inputSchema: { action: external_exports.enum(["list", "resume", "open", "create", "bind", "home", "delete", "restore", "resources", "attach", "folder", "images", "capture", "submission"]).default("list"), requirement: external_exports.string().max(1e5).optional(), request_id: external_exports.string().max(128).optional(), submission_start: external_exports.boolean().optional(), detail_ready: external_exports.boolean().optional(), cancel: external_exports.boolean().optional(), panel_id: external_exports.string().optional(), thread_id: external_exports.string().optional(), project_id: external_exports.string().optional(), name: external_exports.string().max(200).optional(), country: external_exports.string().trim().max(100).optional(), language: external_exports.string().trim().max(100).optional(), categories: external_exports.array(external_exports.string().trim().min(1).max(100)).max(2).optional(), brand: external_exports.string().trim().max(200).optional(), source_path: external_exports.string().optional(), path: external_exports.string().optional(), width: external_exports.number().int().min(320).max(2560).optional(), capture_id: external_exports.string().optional(), chunk: external_exports.string().max(512e3).optional(), offset: external_exports.number().int().nonnegative().optional(), final: external_exports.boolean().optional() },
-  annotations: { readOnlyHint: false, destructiveHint: false, openWorldHint: false }
+  description: "\u7BA1\u7406\u5168\u5C40 SQLite \u9879\u76EE\uFF1Alist \u5217\u51FA\u9879\u76EE\uFF0Copen/create \u7ED1\u5B9A\u5F53\u524D\u4F1A\u8BDD\u548C\u9762\u677F\uFF0Chome \u8FD4\u56DE\u4E3B\u754C\u9762\uFF0Cdelete \u8F6F\u5220\u9664\uFF08\u4FDD\u7559\u6587\u4EF6\uFF09\uFF0Cresources \u5217\u51FA\u8D44\u6E90\uFF0Cattach \u590D\u5236\u7528\u6237\u660E\u786E\u63D0\u4F9B\u7684\u56FE\u7247/\u6587\u4EF6\u5230\u9879\u76EE\u8D44\u6E90\u76EE\u5F55\u3002panel_id \u6765\u81EA\u9762\u677F\u4E0A\u4E0B\u6587\uFF1Bthread_id \u5FC5\u987B\u662F\u771F\u5B9E\u5F53\u524D\u4F1A\u8BDD ID\u3002\u9996\u9875submission\u7528create\u4E0Erequest_id\u521B\u5EFA\u7A7A\u9879\u76EE\uFF0C\u968F\u540E\u5FC5\u987B\u8C03\u7528open_thread_canvas(thread_id=\u65B0\u5BF9\u8BDDID)\u4E00\u6B21\u6253\u5F00\u4FA7\u8FB9UI\u8FDB\u5165\u8BE6\u60C5\uFF0C\u67E5\u8BE2submission\u5230chat_detail_ready=true\u540E\u518D\u89C4\u5212\u9875\u9762\u548C\u751F\u6210\uFF1B\u4F1A\u8BDD\u9014\u4E2D\u53EF\u6309\u9700open_canvas(thread_id)\u6062\u590D\u540C\u4E00\u9879\u76EE\u8BE6\u60C5\u3002",
+  inputSchema: { action: external_exports.enum(["list", "resume", "open", "create", "bind", "home", "delete", "restore", "resources", "attach", "folder", "images", "capture", "submission"]).default("list"), visible_panel_id: external_exports.string().optional(), requirement: external_exports.string().max(1e5).optional(), request_id: external_exports.string().max(128).optional(), submission_start: external_exports.boolean().optional(), detail_ready: external_exports.boolean().optional(), cancel: external_exports.boolean().optional(), panel_id: external_exports.string().optional(), thread_id: external_exports.string().optional(), project_id: external_exports.string().optional(), name: external_exports.string().max(200).optional(), country: external_exports.string().trim().max(100).optional(), language: external_exports.string().trim().max(100).optional(), categories: external_exports.array(external_exports.string().trim().min(1).max(100)).max(2).optional(), brand: external_exports.string().trim().max(200).optional(), source_path: external_exports.string().optional(), path: external_exports.string().optional(), width: external_exports.number().int().min(320).max(2560).optional(), capture_id: external_exports.string().optional(), chunk: external_exports.string().max(512e3).optional(), offset: external_exports.number().int().nonnegative().optional(), final: external_exports.boolean().optional() },
+  annotations: { readOnlyHint: false, destructiveHint: false, openWorldHint: true }
 }, async (input) => {
   try {
     const value = await manager.run(input);
@@ -17118,9 +17366,9 @@ server.registerTool("website_projects", {
   }
 });
 server.registerTool("website_images", {
-  description: "Track generated website images. Before calling imagegen register each intended project-relative output with begin and actual dimensions; after copying the final image call finish. Call fail with an honest reason if generation fails. Persistent UI placeholders update automatically when files arrive. Only the current thread project is allowed; never write fake placeholder image files.",
+  description: "Track generated website images. Before imagegen register a filename relative to material_directory, e.g. logo.png/favicon.png/banner1.png/about.png, with begin and actual dimensions; after copying the final image to material_directory call finish; it compresses through the bundled image-generator JS script (TinyPNG), at most three total attempts per begin, then atomically publishes to source_directory/images; material originals remain unchanged. Compression failures preserve any previous website image and require a new begin after exhausting the budget. Existing filenames may be regenerated; archive originals under material/history first. Call fail with an honest reason if generation fails. Persistent UI placeholders update automatically when files arrive. Only the current thread project is allowed; never write fake placeholder image files.",
   inputSchema: { thread_id: external_exports.string(), project_id: external_exports.string(), action: external_exports.enum(["begin", "finish", "fail"]), path: external_exports.string(), name: external_exports.string().max(200).optional(), width: external_exports.number().int().min(1).max(32768).optional(), height: external_exports.number().int().min(1).max(32768).optional(), error: external_exports.string().max(1e3).optional() },
-  annotations: { readOnlyHint: false, destructiveHint: false, openWorldHint: false }
+  annotations: { readOnlyHint: false, destructiveHint: false, openWorldHint: true }
 }, async (input) => {
   try {
     return { content: [{ type: "text", text: JSON.stringify(await manager.imageTask(input)) }] };
@@ -17167,7 +17415,7 @@ server.registerTool("read_page", {
 var pageSchema = external_exports.object({ path: external_exports.string(), title: external_exports.string() });
 server.registerTool("website_project", {
   title: "Website Builder",
-  description: "Use the bundled skill and reuse the exact thread project. Create/open an empty project BEFORE planning pages or generating content. For a panel submission use website_projects(create,panel_id,request_id), wait for initial submission detail_ready=true; later the user may reopen open_canvas with the same real thread_id to resume the bound project, never create a replacement project. For chat requests create/open without pages, open_canvas once to enter details, THEN plan and generate. For a complete ecommerce site, explicitly plan home/shop/product/wishlist/checkout/login/register/about/contact/terms/privacy/return, Default to a shared drawer cart (no cart.html); include cart.html only for an explicit page-cart request or preserved existing page mode. Default to the chosen Home chain; excluding Header/Footer, generation permits at most 0\u20132 justified composition changes and N\xB11 main sections. Preserve independent component source structures; this is not an acceptance or readiness gate. Logo must be a transparent, tightly cropped brand wordmark image, favicon square. Fonts and third-party dependencies must use online CDN URLs. Implement project WebComponent Toast from the toast-01 template document before writing pages; the assembler only reuses that supplied component; overlay closing is a per-component documentation requirement, without a unified Overlay API. Product JSON must go through website_products/SDK. Avoid jsDelivr CDN; page-specific logic stays in inline script. never use browser alert. Avoid home categories when Header already provides category navigation. mobile html root font-size is 12px. Do not silently reduce a complete site to transaction pages. Existing custom names or partial user requests may differ. Header must include working Home, Shop, About Us and Contact Us links on desktop and mobile. The returned directory is production-only; keep drafts, reports and raw sources in metadata_directory. Plan missing pages, begin before edits, finish after complete files; finish without paths validates all unfinished planned pages and settles their status before ending the task. New projects require new_project=true.",
+  description: "Use the bundled skill and reuse the exact thread project. Create/open an empty project BEFORE planning pages or generating content. For a panel submission use website_projects(create,panel_id,request_id), then call open_thread_canvas with the NEW real thread_id once to open its sidebar and wait for submission chat_detail_ready=true before generating. The originating panel does not replace the new chat sidebar. Never create a replacement project. For chat requests create/open without pages, open_canvas once to enter details, THEN plan and generate. For a complete ecommerce site, explicitly plan home/shop/product/wishlist/checkout/login/register/about/contact/terms/privacy/return, Default to a shared drawer cart (no cart.html); include cart.html only for an explicit page-cart request or preserved existing page mode. Default to the chosen Home chain; excluding Header/Footer, generation permits at most 0\u20132 justified composition changes and N\xB11 main sections. Preserve independent component source structures; this is not an acceptance or readiness gate. Logo must be a transparent, tightly cropped brand wordmark image, favicon square. Fonts and third-party dependencies must use online CDN URLs. Implement project WebComponent Toast from the toast-01 template document before writing pages; the assembler only reuses that supplied component; overlay closing is a per-component documentation requirement, without a unified Overlay API. Product JSON must go through website_products/SDK. Avoid jsDelivr CDN; page-specific logic stays in inline script. never use browser alert. Avoid home categories when Header already provides category navigation. mobile html root font-size is 12px. Do not silently reduce a complete site to transaction pages. Existing custom names or partial user requests may differ. Header must include working Home, Shop, About Us and Contact Us links on desktop and mobile. Projects have project_directory containing README.md, src/, material/ and a local Git repository initialized and first committed on main without a remote. End every creation/modification round (including images/README-only changes) with finish to commit locally to main; no changes means no empty commit, never push. GIT_CONFIRMATION_REQUIRED means ask the user first, then use system Git for approved merge/branch/conflict handling; never auto-repair or bypass confirmation. directory/source_directory is src; source paths are relative to src, no src prefix. Generated originals go in material_directory, final website assets in src/images with fixed semantic filenames. Never migrate legacy formats automatically. The returned directory is production-only; keep drafts, reports and raw sources in metadata_directory. Plan missing pages, begin before edits, finish after complete files; finish without paths validates all unfinished planned pages and settles their status before ending the task. New projects require new_project=true.",
   inputSchema: { action: external_exports.enum(["open", "plan", "begin", "finish", "status"]).default("open"), thread_id: external_exports.string().min(1), project_id: external_exports.string().optional(), new_project: external_exports.boolean().optional(), name: external_exports.string().optional(), country: external_exports.string().trim().max(100).optional(), categories: external_exports.array(external_exports.string().trim().min(1).max(100)).max(2).optional(), brand: external_exports.string().trim().max(200).optional(), brief: external_exports.string().optional(), language: external_exports.string().optional(), pages: external_exports.array(pageSchema).min(1).optional(), paths: external_exports.array(external_exports.string()).optional() },
   annotations: { readOnlyHint: false, destructiveHint: false, openWorldHint: false }
 }, async (input) => {
@@ -17189,7 +17437,7 @@ server.registerTool("website_project", {
   }
 });
 server.registerTool("website_write", {
-  description: "Write a completed page to disk immediately before generating the next page. Multiple HTML files and shared dependencies are accepted in one request, including batch imports. Save newly generated pages as soon as each is finished. Local vendored Prettier standalone formats HTML/inline scripts/styles/JS/CSS/JSON before atomic save; no npm dependency. Do not defer all pages into one batch. Never add temporary files, raw sources or reports to directory. website-builder.*.json records are routed to metadata_directory outside production; screenshots also live there. HTML fragment=true adds shared boilerplate and detects prepared commerce SDKs. JS/JSON syntax errors do not overwrite existing files. Submitted HTML and affected pages validate automatically even with finalize_pages: []; passing pages immediately become ready for UI sync. finalize_pages adds extra pages to validate. Never use for reference website files.",
+  description: "Write a completed page to disk immediately before generating the next page. Multiple HTML files and shared dependencies are accepted in one request, including batch imports. Save newly generated pages as soon as each is finished. Local vendored Prettier standalone formats HTML/inline scripts/styles/JS/CSS/JSON before atomic save; no npm dependency. Do not defer all pages into one batch. Source paths are relative to src (directory); README.md is the sole root-document exception and writes project_directory/README.md. Never add temporary files, raw sources or reports to directory. website-builder.*.json records are routed to metadata_directory outside production; screenshots also live there. HTML fragment=true adds shared boilerplate and detects prepared commerce SDKs. JS/JSON syntax errors do not overwrite existing files. Submitted HTML and affected pages validate automatically even with finalize_pages: []; passing pages immediately become ready for UI sync. finalize_pages adds extra pages to validate. Never use for reference website files.",
   inputSchema: { thread_id: external_exports.string(), project_id: external_exports.string(), files: external_exports.array(external_exports.object({ path: external_exports.string(), content: external_exports.string(), fragment: external_exports.boolean().optional(), title: external_exports.string().optional() })).min(1), finalize_pages: external_exports.array(external_exports.string()).optional() },
   annotations: { readOnlyHint: false, destructiveHint: false, openWorldHint: false }
 }, async (input) => {
@@ -17288,6 +17536,22 @@ server.registerTool("project_sync", {
 }, async (input) => {
   try {
     return { content: [], _meta: { sync: await syncProject({ metadataOnly: input.metadata_only, pageLimit: input.page_limit, priorityPath: input.priority_path, since: input.since, known: input.known, threadId: input.thread_id, projectId: input.project_id, waitMs: input.wait_ms }) } };
+  } catch (error) {
+    return { isError: true, content: [{ type: "text", text: error.message }] };
+  }
+});
+server.registerTool("website_control", { description: "App-only R2 deployment controls", inputSchema: { type: external_exports.literal("r2"), action: external_exports.enum(["start", "status", "cancel", "preview"]), project_id: external_exports.string(), panel_id: external_exports.string(), thread_id: external_exports.string().optional() }, annotations: { readOnlyHint: false, destructiveHint: true, openWorldHint: true }, _meta: { ui: { visibility: ["app"] } } }, async (input) => {
+  try {
+    return { content: [], _meta: { control: await control(input) } };
+  } catch (error) {
+    return { isError: true, content: [{ type: "text", text: error.message }] };
+  }
+});
+server.registerTool("website_r2_deploy", { description: "\u5C06\u5F53\u524D\u4F1A\u8BDD\u9879\u76EEsrc\u7CBE\u786E\u540C\u6B65\u5230R2\u9879\u76EEID\u76EE\u5F55\uFF1Bstart\u8986\u76D6\u540C\u540D\u6587\u4EF6\u5E76\u5220\u9664\u8BE5\u524D\u7F00\u5185\u672C\u5730\u4E0D\u5B58\u5728\u7684\u6587\u4EF6\uFF0C\u4EC5\u7528\u6237\u660E\u786E\u8981\u6C42\u90E8\u7F72\u65F6\u8C03\u7528\u3002status\u67E5\u8BE2\u8FDB\u5EA6\uFF0Ccancel\u53D6\u6D88\u3002\u6210\u529F\u8FD4\u56DE\u94FE\u63A5\uFF0C\u4E0D\u81EA\u52A8\u914D\u7F6EDNS/Worker\u3002", inputSchema: { action: external_exports.enum(["start", "status", "cancel"]), thread_id: external_exports.string(), project_id: external_exports.string() }, annotations: { readOnlyHint: false, destructiveHint: true, openWorldHint: true } }, async (input) => {
+  try {
+    if (projects.database.binding(input.thread_id)?.projectId !== input.project_id) throw Error("\u53EA\u80FD\u90E8\u7F72\u5F53\u524D\u771F\u5B9E\u4F1A\u8BDD\u7ED1\u5B9A\u9879\u76EE");
+    const value = input.action === "status" ? r2.status(input.project_id) : input.action === "cancel" ? r2.cancel(input.project_id, input.thread_id) : await r2.start(input.project_id, input.thread_id);
+    return { content: [{ type: "text", text: JSON.stringify(value) }] };
   } catch (error) {
     return { isError: true, content: [{ type: "text", text: error.message }] };
   }

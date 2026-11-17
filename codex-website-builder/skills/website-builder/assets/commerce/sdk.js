@@ -15,17 +15,13 @@
     var K_COUPONS = 'coupons';
     var K_APPLIED = 'applied_coupon';
 
-    function storageKey(key) {
-      var config = global.commerceConfig || {};
-      var scope = config.storageKey || 'website-builder-demo';
+    function accountStorageKey(key) {
       if (key === K_CART || key === K_WISH || key === K_APPLIED) {
         var user = null;
-        try {
-          user = JSON.parse(global.localStorage.getItem(scope + ':' + K_USER));
-        } catch (error) {}
-        key += ':' + (user ? user.id : 'guest');
+        try { user = JSON.parse(global.localStorage.getItem(K_USER)); } catch (error) {}
+        return key + ':' + (user ? user.id : 'guest');
       }
-      return scope + ':' + key;
+      return key;
     }
 
     function publicUser(user) {
@@ -70,7 +66,7 @@
     /* ====== Internal Storage Helpers ====== */
     function _get(key, def) {
       try {
-        var raw = global.localStorage.getItem(storageKey(key));
+        var raw = global.localStorage.getItem(accountStorageKey(key));
         return raw ? JSON.parse(raw) : def === undefined ? null : def;
       } catch (e) {
         return def === undefined ? null : def;
@@ -78,12 +74,12 @@
     }
     function _set(key, val) {
       try {
-        global.localStorage.setItem(storageKey(key), JSON.stringify(val));
+        global.localStorage.setItem(accountStorageKey(key), JSON.stringify(val));
       } catch (e) {}
     }
     function _del(key) {
       try {
-        global.localStorage.removeItem(storageKey(key));
+        global.localStorage.removeItem(accountStorageKey(key));
       } catch (e) {}
     }
 

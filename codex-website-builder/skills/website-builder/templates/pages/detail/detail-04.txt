@@ -5,18 +5,25 @@ Product Detail Page (PDP), integrating multi-view gallery preview, purchase deci
 ### Expand / Collapse (Read More) Pattern & Specifications
 1. **Dynamic Overflow Detection**:
    - Collapsible sections (Description `max-h-56`, Specifications `max-h-56`, Reviews `max-h-72`) have defined max-height constraints.
-   - On initialization, the script dynamically compares the inner scroll height against the clamped threshold. If content is short and does NOT exceed the height limit, the bottom gradient fade mask (`.collapsible-fade`) and toggle button (`.collapsible-toggle`) **MUST REMAIN HIDDEN** (`hidden`).
+   - On initialization, font/image load, window resize, and tab switching, the script dynamically compares `scrollHeight > clientHeight + 4`. If content is short and does NOT exceed the height limit, the bottom gradient fade mask (`.collapsible-fade`) and toggle button (`.collapsible-toggle`) **MUST REMAIN HIDDEN** (`hidden`).
    - The toggle button and fade mask appear only when actual content overflows the container height.
 2. **Bidirectional Toggle Support**:
-   - Clicking the toggle expands the container to full height (`max-h-none`), hides the gradient fade mask, and rotates the chevron arrow 180°.
-   - Clicking again toggles it back to the collapsed state, restoring the max-height clamp and fade overlay.
+   - Clicking the toggle expands the container to full height (`max-h-none overflow-visible`), hides the gradient fade mask (`opacity-0 pointer-events-none hidden`), and rotates the chevron arrow 180° (`-rotate-135`).
+   - Clicking again toggles it back to the collapsed state, restoring the max-height clamp, fade overlay, and chevron angle (`rotate-45`).
+   - Expanded and collapsed height classes are mutually exclusive; never retain conflicting classes.
+3. **Strict Fidelity Constraints**:
+   - MUST preserve `.collapsible-content`, `.collapsible-fade`, and `.collapsible-toggle`.
+   - DO NOT delete the bottom gradient mask.
+   - DO NOT replace with native `<details><summary>` or plain inline text buttons ("Read more" / "Ver mais").
+   - DO NOT move the toggle button outside the `.relative` container.
+   - Re-measure overflow whenever a hidden tab (`.tab-panel`) becomes visible; never measure dimensions while hidden.
 
 ### Regions
 Functional regions are annotated directly in the component code implementation via English comments.
 
 
 ### Dimensions & Responsiveness
-- Follows Tailwind centered container（`w-full max-w-content mx-auto px-4 lg:px-6`） with PC max content width 1200px centered.
+- Follows Tailwind centered container (`w-full max-w-content mx-auto px-4 lg:px-6`) with PC max content width 1200px centered.
 - Desktop (1024px+): 1:1 two-column layout (gallery ~550px, summary ~550px).
 - Mobile (under 1024px): Adapts to single vertical column with swipeable gallery.
 
@@ -238,14 +245,35 @@ Functional regions are annotated directly in the component code implementation v
       </div>
 
       <div class="tab-content">
-        <!-- Region: Product Description - Conditional collapsible description section.
-             CRITICAL BEHAVIOR & INTERACTION SPECIFICATION:
-             1. Dynamic Overflow Detection: The bottom gradient fade mask (collapsible-fade) and expand/collapse toggle button (collapsible-toggle)
-                MUST ONLY BE RENDERED/DISPLAYED if the description content height exceeds the specified maximum threshold (e.g. scrollHeight > clientHeight / max-h-56 or >6 lines).
-                If description content is short and does NOT exceed this height limit, the toggle button and gradient mask MUST REMAIN HIDDEN (hidden).
-             2. Bidirectional Toggle Support: Clicking the toggle button expands the description section to full height
-                (removes max-height constraint, hides gradient fade, rotates chevron arrow 180deg); clicking again toggles it back to the collapsed state
-                (re-applies max-h-56, restores bottom gradient mask, reverts chevron rotation), preserving complete text formatting and layout. -->
+        <!-- TEMPLATE IMPLEMENTATION CONTRACT: GRADIENT FADE COLLAPSIBLE PANEL
+             This region MUST preserve existing HTML hierarchy, CSS classes, and interaction logic.
+             When injecting real content, replace only content/branding; NEVER alter the collapsible structure.
+
+             MANDATORY DOM ELEMENTS:
+             1. .collapsible-content: Clamps container to maximum collapsed height (max-h-56).
+             2. .collapsible-fade: Gradient mask overlay at container bottom (h-14 bg-gradient-to-t from-surface to-transparent pointer-events-none).
+             3. .collapsible-toggle: Floating overlay expand/collapse button anchored to container bottom (py-1.5 bg-surface/90 backdrop-blur-xs border-t border-outline/20).
+             4. Chevron arrow: Inline span inside toggle button with dynamic 180-degree rotation animation.
+
+             STATE & FIDELITY REQUIREMENTS:
+             - Short content (no overflow): Hide both gradient fade mask and toggle button (.hidden).
+             - Overflowing content (collapsed): Display gradient fade mask and toggle button (.flex).
+             - Expanded state: Remove height clamp (apply .max-h-none .overflow-visible), hide fade mask (.opacity-0 .pointer-events-none .hidden), rotate chevron (-rotate-135).
+             - Collapsed state: Re-apply height clamp, restore fade mask, restore chevron (rotate-45).
+             - Height classes MUST be mutually exclusive; NEVER combine max-h-* with max-h-none simultaneously.
+
+             RE-MEASUREMENT TIMING:
+             Re-evaluate actual overflow on initial render, font/image load, window resize, and when hidden tab becomes visible.
+             NEVER determine button visibility while parent tab is hidden (where clientHeight === 0).
+
+             STRICT PROHIBITIONS:
+             DO NOT delete gradient mask. DO NOT replace with plain "Read more" / "Ver mais" inline text links.
+             DO NOT replace with native <details><summary> tags. DO NOT move toggle button outside relative container.
+             DO NOT perform naive height toggling without overflow detection.
+
+             VERIFICATION CHECKLIST:
+             Verify long content, short content, repeated toggling, tab switching, and mobile/desktop responsive viewports.
+             Verify mask visibility, button position, chevron rotation, and actual content height. -->
         <div id="description-panel" class="tab-panel">
           <div class="relative bg-surface rounded-xl border border-outline/50 overflow-hidden shadow-xs">
             <div class="collapsible-content max-h-56 overflow-hidden p-6 space-y-4 transition-all duration-300">
@@ -274,14 +302,35 @@ Functional regions are annotated directly in the component code implementation v
           </div>
         </div>
 
-        <!-- Region: Product Specifications - Conditional collapsible specifications table.
-             CRITICAL BEHAVIOR & INTERACTION SPECIFICATION:
-             1. Dynamic Overflow Detection: The bottom gradient fade mask (collapsible-fade) and expand/collapse toggle button (collapsible-toggle)
-                MUST ONLY BE RENDERED/DISPLAYED if the specifications table height exceeds the specified maximum threshold (e.g. scrollHeight > clientHeight / max-h-56 or >4-6 rows).
-                If specifications content is short and does NOT exceed this height limit, the toggle button and gradient mask MUST REMAIN HIDDEN (hidden).
-             2. Bidirectional Toggle Support: Clicking the toggle button expands the specifications table to full height
-                (removes max-height constraint, hides gradient fade, rotates chevron arrow 180deg); clicking again toggles it back to the collapsed state
-                (re-applies max-h-56, restores bottom gradient mask, reverts chevron rotation), preserving complete table styling and layout. -->
+        <!-- TEMPLATE IMPLEMENTATION CONTRACT: GRADIENT FADE COLLAPSIBLE PANEL
+             This region MUST preserve existing HTML hierarchy, CSS classes, and interaction logic.
+             When injecting real content, replace only content/branding; NEVER alter the collapsible structure.
+
+             MANDATORY DOM ELEMENTS:
+             1. .collapsible-content: Clamps container to maximum collapsed height (max-h-56).
+             2. .collapsible-fade: Gradient mask overlay at container bottom (h-14 bg-gradient-to-t from-surface to-transparent pointer-events-none).
+             3. .collapsible-toggle: Floating overlay expand/collapse button anchored to container bottom (py-1.5 bg-surface/90 backdrop-blur-xs border-t border-outline/20).
+             4. Chevron arrow: Inline span inside toggle button with dynamic 180-degree rotation animation.
+
+             STATE & FIDELITY REQUIREMENTS:
+             - Short content (no overflow): Hide both gradient fade mask and toggle button (.hidden).
+             - Overflowing content (collapsed): Display gradient fade mask and toggle button (.flex).
+             - Expanded state: Remove height clamp (apply .max-h-none .overflow-visible), hide fade mask (.opacity-0 .pointer-events-none .hidden), rotate chevron (-rotate-135).
+             - Collapsed state: Re-apply height clamp, restore fade mask, restore chevron (rotate-45).
+             - Height classes MUST be mutually exclusive; NEVER combine max-h-* with max-h-none simultaneously.
+
+             RE-MEASUREMENT TIMING:
+             Re-evaluate actual overflow on initial render, font/image load, window resize, and when hidden tab becomes visible.
+             NEVER determine button visibility while parent tab is hidden (where clientHeight === 0).
+
+             STRICT PROHIBITIONS:
+             DO NOT delete gradient mask. DO NOT replace with plain "Read more" / "Ver mais" inline text links.
+             DO NOT replace with native <details><summary> tags. DO NOT move toggle button outside relative container.
+             DO NOT perform naive height toggling without overflow detection.
+
+             VERIFICATION CHECKLIST:
+             Verify long content, short content, repeated toggling, tab switching, and mobile/desktop responsive viewports.
+             Verify mask visibility, button position, chevron rotation, and actual content height. -->
         <div id="specifications-panel" class="tab-panel hidden">
           <div class="relative bg-surface rounded-xl border border-outline/50 overflow-hidden shadow-xs">
             <div class="collapsible-content max-h-56 overflow-hidden transition-all duration-300">
@@ -315,14 +364,35 @@ Functional regions are annotated directly in the component code implementation v
           </div>
         </div>
 
-        <!-- Region: Customer Reviews - Conditional collapsible reviews list.
-             CRITICAL BEHAVIOR & INTERACTION SPECIFICATION:
-             1. Dynamic Overflow Detection: The bottom gradient fade mask (collapsible-fade) and expand/collapse toggle button (collapsible-toggle)
-                MUST ONLY BE RENDERED/DISPLAYED if the customer reviews list exceeds the specified maximum threshold (e.g. scrollHeight > clientHeight / max-h-72 or >2 reviews).
-                If reviews content is short and does NOT exceed this height limit, the toggle button and gradient mask MUST REMAIN HIDDEN (hidden).
-             2. Bidirectional Toggle Support: Clicking the toggle button expands the reviews list to show all customer reviews in full
-                (removes max-height constraint, hides gradient fade, rotates chevron arrow 180deg); clicking again toggles it back to the collapsed state
-                (re-applies max-h-72, restores bottom gradient mask, reverts chevron rotation), preserving all review card styling. -->
+        <!-- TEMPLATE IMPLEMENTATION CONTRACT: GRADIENT FADE COLLAPSIBLE PANEL
+             This region MUST preserve existing HTML hierarchy, CSS classes, and interaction logic.
+             When injecting real content, replace only content/branding; NEVER alter the collapsible structure.
+
+             MANDATORY DOM ELEMENTS:
+             1. .collapsible-content: Clamps container to maximum collapsed height (max-h-72).
+             2. .collapsible-fade: Gradient mask overlay at container bottom (h-14 bg-gradient-to-t from-surface to-transparent pointer-events-none).
+             3. .collapsible-toggle: Floating overlay expand/collapse button anchored to container bottom (py-1.5 bg-surface/90 backdrop-blur-xs border-t border-outline/20).
+             4. Chevron arrow: Inline span inside toggle button with dynamic 180-degree rotation animation.
+
+             STATE & FIDELITY REQUIREMENTS:
+             - Short content (no overflow): Hide both gradient fade mask and toggle button (.hidden).
+             - Overflowing content (collapsed): Display gradient fade mask and toggle button (.flex).
+             - Expanded state: Remove height clamp (apply .max-h-none .overflow-visible), hide fade mask (.opacity-0 .pointer-events-none .hidden), rotate chevron (-rotate-135).
+             - Collapsed state: Re-apply height clamp, restore fade mask, restore chevron (rotate-45).
+             - Height classes MUST be mutually exclusive; NEVER combine max-h-* with max-h-none simultaneously.
+
+             RE-MEASUREMENT TIMING:
+             Re-evaluate actual overflow on initial render, font/image load, window resize, and when hidden tab becomes visible.
+             NEVER determine button visibility while parent tab is hidden (where clientHeight === 0).
+
+             STRICT PROHIBITIONS:
+             DO NOT delete gradient mask. DO NOT replace with plain "Read more" / "Ver mais" inline text links.
+             DO NOT replace with native <details><summary> tags. DO NOT move toggle button outside relative container.
+             DO NOT perform naive height toggling without overflow detection.
+
+             VERIFICATION CHECKLIST:
+             Verify long content, short content, repeated toggling, tab switching, and mobile/desktop responsive viewports.
+             Verify mask visibility, button position, chevron rotation, and actual content height. -->
         <div id="reviews-panel" class="tab-panel hidden">
           <div class="relative overflow-hidden">
             <div class="collapsible-content max-h-72 overflow-hidden space-y-4 transition-all duration-300">
@@ -492,6 +562,10 @@ $(function() {
   });
 
   // Dynamic collapsible panels (Description, Specifications, Reviews)
+  // IMPLEMENTATION CONTRACT:
+  // Before modifying this logic, verify against the "GRADIENT FADE COLLAPSIBLE PANEL" contract in the HTML above.
+  // All modifications MUST preserve .collapsible-fade mask, floating .collapsible-toggle button,
+  // chevron rotation, and deferred re-measurement on tab switch. NEVER simplify with native <details> or plain text links.
   function updateCollapsibles() {
     $('.collapsible-content').each(function() {
       const $content = $(this);
@@ -512,6 +586,8 @@ $(function() {
   }
 
   setTimeout(updateCollapsibles, 50);
+  $(window).on('resize', function() { setTimeout(updateCollapsibles, 50); });
+  window.addEventListener('load', function() { setTimeout(updateCollapsibles, 50); });
 
   // Bidirectional toggle support (Expand / Collapse)
   $('.collapsible-toggle').on('click', function() {

@@ -1,4 +1,4 @@
-# Website Builder Beta — 0.8.6
+# Website Builder Beta — 0.8.9
 
 Prebuilt Codex desktop plugin; no npm install or system Node required. Runtime is provided by Codex.
 
@@ -8,6 +8,6 @@ Marketplaces: `.agents/plugins/marketplace.json` and `.codex-plugin/marketplace.
 
 Projects and SQLite metadata persist outside versioned plugin installs. Windows defaults to `%LOCALAPPDATA%/codex-website-builder`; macOS/Linux use `${XDG_DATA_HOME:-~/.local/share}/codex-website-builder`. Set WEBSITE_BUILDER_DATA_DIR to override the data directory or WEBSITE_BUILDER_PROJECT_ROOT for project output. Legacy projects are copied into the persistent directory without deleting originals or overwriting existing projects.
 
-Version 0.8.6 adds new-chat task submission, reopening the same project mid-conversation, updated form/IP and Swiper generation guidance, and refreshed templates. All release notes are consolidated in CHANGELOG.md. A single sdk.js now supplies catalog and account/cart/order APIs; app.js is generated with the chosen templates and initializes the SDK after data.js. Includes prior project/canvas/image task and clipboard features. See `codex-website-builder/CHANGELOG.md`.
+Version 0.8.9 adds preview deployment to R2, persistent image compression with original materials retained, completed-project deployment guards, and updated Contact guidance. This bundle includes the intervening Git/project/canvas improvements; all release history is consolidated in `codex-website-builder/CHANGELOG.md`. GitLab entry points are temporarily disabled with their implementation retained.
 
 Windows Codex managed Node tested; macOS launcher provided but no macOS host available for execution testing.

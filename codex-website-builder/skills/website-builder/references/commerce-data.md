@@ -58,7 +58,7 @@ const amount = SDK.price(product.final_price); // 仅供展示
 
 ## `window.APP`：电商状态、事件和操作
 
-业务接口已包含于同一assets/commerce/sdk.js，APP只是兼容入口。SDK文件不依赖先设置commerceConfig；app.js在加载后配置并初始化，存储命名空间在业务调用时读取。已有自定义SDK不自动覆盖，迁移时显式合并其逻辑，不能宣称仅装配新HTML就已完成旧站迁移。
+业务接口已包含于同一assets/commerce/sdk.js，APP只是兼容入口。SDK文件不依赖先设置commerceConfig；app.js在加载后配置并初始化，LocalStorage使用固定业务键（账户相关购物车/收藏仍按账户隔离），不设置storageKey或站点前缀。已有自定义SDK不自动覆盖，迁移时显式合并其逻辑，不能宣称仅装配新HTML就已完成旧站迁移。
 
 | 模块 | 主要方法与返回 |
 |---|---|

@@ -18,7 +18,7 @@
 |---|---|---|
 | `js/data.js` | 唯一 `window.productData`，商品数组与薄 SDK 门面 | 每页另造商品、随机改 ID、夹入购物车状态 |
 | `js/sdk.js` | 唯一SDK文件：商品查询/价格及账户、购物车、收藏、订单、持久化和事件；同时提供SDK与兼容APP | 再拆业务SDK、组件自行localStorage CRUD |
-| `js/app.js` | 顶部 Tailwind/品牌配置、currency/locale/storageKey、幂等初始化、移动适配、共享 UI 事件 | 定义/覆盖 `window.APP`、复制 SDK、在SDK/data加载前执行初始化 |
+| `js/app.js` | 顶部 Tailwind/品牌配置、currency/locale、幂等初始化、移动适配、共享 UI 事件 | 定义/覆盖 `window.APP`、复制 SDK、在SDK/data加载前执行初始化 |
 | `components/*.js` | 独立 Web Component 的模板、生命周期、数据绑定、局部刷新 | 页面整块 DOM 的拷贝、挂载两套相同组件 |
 | 对应HTML中的`script`标签 | 页面查询、筛选/排序/分页状态、页面表单和空/错状态 | 重新实现共享业务逻辑、跨页全局变量污染 |
 
@@ -73,7 +73,7 @@ Cart-01是来源参考，可将其inline结构用于独立页面，或适配为v
 
 异步页面必须在 js/app.js 中暴露 window.websiteReady Promise，涵盖 API 数据、SDK.init、组件注册与首轮渲染；失败 reject 并显示错误，不在 await 之前标记就绪。完整截图会等待该Promise、字体/图片解码与布局稳定，不能用定时延迟冒充就绪。加购、收藏及结算使用APP.auth.requireLogin()或等效登录守卫，提示后跳转登录页；登录成功用APP.auth.safeReturnTo解析returnTo，拒绝外部跳转。
 
-生产目录directory只保留网站运行产物；设计/来源/模板绑定/文案/图片记录、原始数据、临时文件和截图报告统一保存在工具返回的metadata_directory，直接写文件时必须使用该绝对目录，不写进网站。website_write会将根级website-builder.*.json管理记录路由到metadata_directory。此前记录文件的相对名称均按此规则解释。Header桌面与移动菜单必须有Home、Shop、About Us、Contact Us四个可用链接。
+project_directory是项目根，含本地.git（无远程）、README.md、src与material；directory/source_directory是src部署根，页面相对路径不加src/。material_directory存生成原图，src/images存固定命名的正式图片；README.md说明网站身份与运行方式。生产目录directory只保留网站运行产物；设计/来源/模板绑定/文案/图片记录、原始数据、临时文件和截图报告统一保存在工具返回的metadata_directory，直接写文件时必须使用该绝对目录，不写进网站。website_write会将根级website-builder.*.json管理记录路由到metadata_directory。此前记录文件的相对名称均按此规则解释。Header桌面与移动菜单必须有Home、Shop、About Us、Contact Us四个可用链接。
 
 
 ## Toast文档与装配

@@ -24,11 +24,11 @@ description: 生成Logo、Banner、About配图与图标，在画布展示进度�
 新增、修改、重生成素材一律使用未占用的新路径（如banner-home-v2.webp、category-kitchen-v2.png），保留原文件及原任务记录。编辑旧图时将旧图作为参考输入，输出新文件；仅更新用户要求修改的页面/组件引用，不覆盖旧路径或顺带替换其他页面图片。即使原文件当前未被引用也不自动删除。
 
 1. 逐张明确用途、实际导出宽高、PC/移动可见比例、透明需求、主体与文字安全区、最终项目相对路径。模板槽位与页面版心来自主技能，不凭空改变页面结构。
-2. 生图前调用website_images(action="begin",thread_id=真实会话ID,project_id,path,width,height)。path为最终文件路径，name可用图片文件名。先登记再生图，不写空白占位文件；状态保存在SQLite。沿用主技能已打开的项目详情；面板首页submission初次创建时复用原面板；会话途中可按需open_canvas(thread_id=真实会话ID)重新进入已绑定详情，不因此新建项目。已有对应详情且无需恢复时避免自动重复打开。
-3. 按官方流程实际调用image_gen。默认输出位于CODEX_HOME/generated_images等宿主目录，不假定临时目录或工具支持destination参数。取得工具真实返回的成品，再复制最终选中图片到生产assets/brand、assets/banners、assets/about或assets/icons。源图、候选、提示词和记录放metadata_directory或宿主生图目录；CLI工作目录也放metadata_directory/work，不在生产目录创建tmp/output。
-4. 复用工具已返回的视觉结果与UI实际加载状态，核对主体/裁切、清晰度、透明边缘和真实尺寸；不要对每张新图重复调用view_image、截图或图片读取API来播报过程。只有编辑要求或无法判断的视觉问题确实需要时才查看，不能为减少输出谎报视觉检查。编辑输出新版本文件名并保留旧文件。只把页面实际引用的正式图片交付到网站。
-5. 文件写入后website_images(action="finish",同一thread_id/project_id/path)。UI也会自动发现新文件并展示。禁止以已有成品路径begin；失败重试时尚无文件的路径可以重新begin，已有文件必须换新路径。失败或取消时action="fail",error=真实简短原因。
-6. 向主技能返回正式相对路径、实际尺寸、用途与使用页面，由其完成响应式引用和HTML排版。图片以UI画布为交付视图，不在对话重复嵌入生成图片、Base64或完整提示词；最终仅文字报告完成项、缺失项及必要路径。工具自身的原生结果不作为页面完成证明。UI无法显示时明确说明，不以无图的聊天文本冒充成功。
+2. 生图前调用website_images(action="begin",thread_id=真实会话ID,project_id,path,width,height)。path为material_directory内的平铺文件名（如banner1.png），name可用图片文件名。先登记再生图，不写空白占位文件；状态保存在SQLite。沿用主技能已打开的项目详情；面板首页submission由主技能在新对话打开一次侧边UI并进入对应项目详情后再生图；会话途中可按需open_canvas(thread_id=真实会话ID)重新进入已绑定详情，不因此新建项目。已有对应详情且无需恢复时避免自动重复打开。
+3. 按官方流程实际调用image_gen。默认输出位于CODEX_HOME/generated_images等宿主目录，不假定临时目录或工具支持destination参数。取得工具真实返回的成品，再复制最终选中图片到material_directory，使用logo.png、favicon.png、banner1.png、banner2.png、about.png、icon1.png等固定语义文件名；所有生成原图/候选图均保留在material（历史版本可用history子目录）。正式图片由website_images调用技能内纯JS压缩脚本后，发布到directory/images同名文件。提示词和记录放metadata_directory；CLI工作目录也放metadata_directory/work，不在生产目录创建tmp/output。
+4. 复用工具已返回的视觉结果与UI实际加载状态，核对主体/裁切、清晰度、透明边缘和真实尺寸；不要对每张新图重复调用view_image、截图或图片读取API来播报过程。只有编辑要求或无法判断的视觉问题确实需要时才查看，不能为减少输出谎报视觉检查。编辑前将已有原图留在material/history；网站正式引用保持固定语义文件名。只把页面实际引用的正式图片发布到src/images。
+5. 文件写入后website_images(action="finish",同一thread_id/project_id/path)。UI也会自动发现新文件并展示。path仅填material内的文件名（如banner1.png），不包含material/、images/或src/前缀；begin记录现有文件指纹，finish须有本轮新文件，自动按[图片压缩与发布](references/image-compression.md)压缩后原子写入src/images同名文件。修改沿用固定名，先自行归档原图；不要虚报完成。失败或取消时action="fail",error=真实简短原因。
+6. 向主技能返回images/<固定文件名>的正式相对路径、实际尺寸、用途与使用页面，由其完成响应式引用和HTML排版。图片以UI画布为交付视图，不在对话重复嵌入生成图片、Base64或完整提示词；最终仅文字报告完成项、缺失项及必要路径。工具自身的原生结果不作为页面完成证明。UI无法显示时明确说明，不以无图的聊天文本冒充成功。
 
 网站路径和UI交付规则优先于迁入官方文档中的通用preview-inline及output/imagegen示例；保留真实生图、编辑与透明背景规则。不自动执行整站验收。
 
@@ -37,3 +37,11 @@ description: 生成Logo、Banner、About配图与图标，在画布展示进度�
 优先在UI使用website_images的生成中/完成/失败状态，对话不重复嵌图、完整提示词或工具返回值。跳过额外view_image仅减少重复预览，不能隐藏宿主自动呈现的image_gen调用或原生结果；当前工具没有silent、hidden或后台显示开关，不传不存在的参数，也不承诺仅改SKILL即可完全隐藏。工具要求返回原生图片时遵守其要求。
 
 完全不向对话输出原生生图过程，需要独立API/生成服务由插件后台执行，并只将文件与状态送入画布；这不是省略view_image实现的能力。当前不自动切换到该路线；用户明确选择API/CLI时再按已有后备流程配置和运行。
+
+素材关系：material是完整原图素材库，src/images保存其中网站实际引用素材的压缩发布版本，文件名一一对应，material原图字节保持不变；未采用的候选素材、原图和历史版本只保留material，不批量复制到images。详情页图库只展示material中的现存素材，不扫描src/images或附件目录，也不从过期资源索引补图。
+
+独立执行本技能并完成网站项目文件修改后，调用website_project(action="finish")将本轮修改本地提交到main；若由主建站技能协调，交还主技能统一收尾。不得push。异常分支/merge等先确认，获准后使用系统git，详见[项目Git提交](../website-builder/references/project-git.md)。
+
+## 压缩发布
+
+网站图片必须经过[纯JS压缩脚本与重试规则](references/image-compression.md)再进入src/images。单张任务总共最多3次尝试，计数持久化，UI轮询及重复finish不重置；失败保留原图和旧网站图片，不能直接复制原图绕过失败，也不能反复begin规避上限。用户确认新一轮任务或重新生成新文件后才begin重置。

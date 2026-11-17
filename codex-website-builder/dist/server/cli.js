@@ -5,12 +5,11 @@ import {
   dataPaths,
   formatSource,
   importProducts,
-  migrateLegacyData,
   prepareCommerce,
   projectManager,
   readTemplates,
   screenshotPage
-} from "./chunk-2XYVFXNQ.js";
+} from "./chunk-MZQSQIFN.js";
 import "./chunk-WPQ5MXLX.js";
 
 // server/cli.ts
@@ -21,7 +20,6 @@ try {
   for await (const chunk of process.stdin) text += chunk;
   const input = JSON.parse(text);
   const config = JSON.parse(await readFile(new URL("../../mcp.json", import.meta.url), "utf8")).mcpServers["website-builder"].env || {};
-  await migrateLegacyData(dataPaths().project);
   const store = new ProjectStore(dataPaths().project);
   if (input.action === "projects" || input.action === "panel_context") {
     console.log(JSON.stringify(await projectManager(store).run({ ...input, action: input.action === "panel_context" ? "context" : input.mode || "list" })));

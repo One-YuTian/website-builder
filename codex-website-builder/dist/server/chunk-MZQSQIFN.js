@@ -5820,9 +5820,9 @@ async function readTemplates(skillRoot, input) {
 }
 
 // server/projects.ts
-import { mkdir, readFile as readFile3, rename, writeFile, open, unlink, realpath, stat } from "node:fs/promises";
+import { mkdir as mkdir2, readFile as readFile4, rename, writeFile as writeFile2, open, unlink, realpath, stat } from "node:fs/promises";
 import { randomBytes, randomUUID, createHash } from "node:crypto";
-import { dirname, isAbsolute, join as join4, relative, resolve, sep } from "node:path";
+import { dirname, isAbsolute, join as join5, relative, resolve, sep } from "node:path";
 
 // server/assemble.ts
 import { posix } from "node:path";
@@ -5861,7 +5861,7 @@ ${links.join("\n")}
 }
 
 // server/projects.ts
-import { fileURLToPath } from "node:url";
+import { fileURLToPath as fileURLToPath2 } from "node:url";
 
 // server/template-source.ts
 function regionMarkers(binding) {
@@ -5924,7 +5924,7 @@ function threadRuntime(threadId) {
 }
 
 // server/database.ts
-import { mkdirSync, readFileSync, readdirSync, existsSync } from "node:fs";
+import { mkdirSync } from "node:fs";
 import { join as join3 } from "node:path";
 var ProjectDatabase = class {
   sql;
@@ -5948,46 +5948,39 @@ var ProjectDatabase = class {
         UNIQUE(project_id,path)
       );
       CREATE TABLE IF NOT EXISTS settings (key TEXT PRIMARY KEY, value TEXT NOT NULL);
+      CREATE TABLE IF NOT EXISTS deployment_locks (project_id TEXT PRIMARY KEY,owner TEXT NOT NULL,expires_at INTEGER NOT NULL,stage TEXT NOT NULL);
+      CREATE TABLE IF NOT EXISTS deployment_requests (id TEXT PRIMARY KEY,project_id TEXT NOT NULL,thread_id TEXT NOT NULL,data TEXT NOT NULL,expires_at INTEGER NOT NULL,used INTEGER NOT NULL DEFAULT 0);
       CREATE TABLE IF NOT EXISTS image_tasks (
         project_id TEXT NOT NULL REFERENCES projects(id), path TEXT NOT NULL,
         name TEXT NOT NULL, width INTEGER NOT NULL, height INTEGER NOT NULL,
         status TEXT NOT NULL, error TEXT NOT NULL DEFAULT '', baseline TEXT NOT NULL DEFAULT '',
         PRIMARY KEY(project_id,path)
       );
+      CREATE TABLE IF NOT EXISTS image_compressions (
+        project_id TEXT NOT NULL REFERENCES projects(id),path TEXT NOT NULL,
+        source_hash TEXT NOT NULL,status TEXT NOT NULL,attempts INTEGER NOT NULL DEFAULT 0,
+        owner TEXT NOT NULL,lease_until INTEGER NOT NULL DEFAULT 0,
+        output_hash TEXT NOT NULL DEFAULT '',report TEXT NOT NULL DEFAULT '',error TEXT NOT NULL DEFAULT '',
+        PRIMARY KEY(project_id,path)
+      );
       CREATE TABLE IF NOT EXISTS project_activity (project_id TEXT NOT NULL REFERENCES projects(id), task_key TEXT NOT NULL, expires_at INTEGER NOT NULL, PRIMARY KEY(project_id,task_key));
       PRAGMA user_version=1;`);
-    const read = (file) => {
-      try {
-        return JSON.parse(readFileSync(file, "utf8"));
-      } catch (error) {
-        if (error.code === "ENOENT") return null;
-        throw error;
-      }
-    };
-    const entries = (path) => existsSync(path) ? readdirSync(path, { withFileTypes: true }) : [];
-    for (const entry of entries(projectRoot)) {
-      if (!entry.isDirectory() || !/^[a-f0-9]{4}(?:-[a-f0-9]{4}){3}$/.test(entry.name)) continue;
-      if (this.row(entry.name)) continue;
-      const project = read(join3(stateRoot, "projects", entry.name, "project.json")) || read(join3(projectRoot, entry.name, ".website-builder.json"));
-      if (project?.id === entry.name) this.save(project);
-    }
-    for (const entry of entries(join3(stateRoot, "threads"))) {
-      if (!entry.isFile() || !entry.name.endsWith(".json")) continue;
-      const binding = read(join3(stateRoot, "threads", entry.name));
-      if (binding?.threadId && this.project(binding.projectId)) this.sql.prepare("INSERT OR IGNORE INTO threads VALUES (?,?)").run(binding.threadId, binding.projectId);
-    }
     this.sql.exec("INSERT OR IGNORE INTO project_sessions SELECT project_id,thread_id FROM threads");
-    if (!this.sql.prepare("SELECT value FROM settings WHERE key='active'").get()) {
-      const active = read(join3(stateRoot, "active.json"));
-      if (active?.threadId && this.project(active.projectId)) this.setActive(active);
-    }
   }
   row(id) {
     return this.sql.prepare("SELECT * FROM projects WHERE id=?").get(id);
   }
   project(id) {
     const row = this.row(id);
-    return row && !row.deleted_at ? JSON.parse(row.data) : null;
+    if (!row || row.deleted_at) return null;
+    try {
+      const project = JSON.parse(row.data);
+      if (project?.id !== id || typeof project.name !== "string" || typeof project.brief !== "string" || typeof project.language !== "string" || !Array.isArray(project.pages)) return null;
+      if (project.pages.some((page) => !page || typeof page.path !== "string" || typeof page.title !== "string" || !["queued", "generating", "ready", "error"].includes(page.status) || !Number.isSafeInteger(page.version))) return null;
+      return project;
+    } catch {
+      return null;
+    }
   }
   save(project) {
     if (this.row(project.id)?.deleted_at) throw Error("\u9879\u76EE\u5DF2\u5220\u9664\uFF0C\u4E0D\u80FD\u7EE7\u7EED\u5199\u5165");
@@ -6066,23 +6059,155 @@ var ProjectDatabase = class {
   }
 };
 
+// server/project-operations.ts
+function operationLock(db, id) {
+  return db.sql.prepare("SELECT * FROM deployment_locks WHERE project_id=? AND expires_at>?").get(id, Date.now());
+}
+function assertEditable(db, id, owner) {
+  const lock = operationLock(db, id);
+  if (lock && lock.owner !== owner) throw Error("\u9879\u76EE\u6B63\u5728\u90E8\u7F72\u6216\u7B49\u5F85\u53D1\u5E03\u786E\u8BA4\uFF0C\u7981\u6B62\u4FEE\u6539\u9875\u9762\u4E0E\u7D20\u6750");
+  if (owner && lock?.owner !== owner) throw Error("\u90E8\u7F72\u9501\u5DF2\u5931\u6548\uFF0C\u8BF7\u91CD\u65B0\u68C0\u67E5\u4E0E\u786E\u8BA4");
+}
+
+// server/project-layout.ts
+import fs from "node:fs";
+import { lstat, mkdir, writeFile, readFile as readFile3, readdir } from "node:fs/promises";
+import { join as join4 } from "node:path";
+import { createRequire as createGitRequire } from "node:module";
+import { fileURLToPath } from "node:url";
+var PROJECT_FORMAT = 2;
+var gitRequire = createGitRequire(import.meta.url);
+var repository = (directory) => ({ fs, dir: directory.replaceAll("\\", "/") });
+var gitClient = () => gitRequire(fileURLToPath(new URL("../runtime/isomorphic-git/load.cjs", import.meta.url)));
+function confirmation(reason) {
+  throw new Error(`GIT_CONFIRMATION_REQUIRED\uFF1A${reason}\u3002\u5148\u5411\u7528\u6237\u8BF4\u660E\u5E76\u53D6\u5F97\u786E\u8BA4\uFF0C\u518D\u4F7F\u7528\u7CFB\u7EDF\u73AF\u5883\u7684 git \u5728\u8BE5\u9879\u76EE\u76EE\u5F55\u5904\u7406\uFF1B\u4E0D\u5F97\u81EA\u52A8\u5207\u6362\u5206\u652F\u3001merge\u3001rebase\u3001reset\u3001stash\u3001\u63A8\u9001\u6216\u7528\u5176\u4ED6\u65B9\u5F0F\u7ED5\u8FC7\u3002`);
+}
+async function assertMainRepository(directory) {
+  const git = gitClient(), options = repository(directory);
+  for (const name of ["MERGE_HEAD", "CHERRY_PICK_HEAD", "REVERT_HEAD", "REBASE_HEAD", "rebase-apply", "rebase-merge", "sequencer", "BISECT_LOG", "index.lock", "HEAD.lock", "config.lock", "packed-refs.lock", "shallow.lock", "refs/heads/main.lock"]) {
+    if (await lstat(join4(directory, ".git", name)).catch((error) => {
+      if (error.code === "ENOENT") return null;
+      throw error;
+    })) confirmation(`\u4ED3\u5E93\u5B58\u5728 ${name}`);
+  }
+  const branch = await git.currentBranch(options);
+  if (branch !== "main") confirmation(branch ? `\u5F53\u524D\u5206\u652F\u4E3A ${branch}\uFF0C\u76EE\u6807\u4E3A main` : "\u5F53\u524D\u5904\u4E8E\u5206\u79BB HEAD \u72B6\u6001");
+  const index = await readFile3(join4(directory, ".git/index")).catch((error) => {
+    if (error.code === "ENOENT") return null;
+    throw error;
+  });
+  if (index) {
+    if (index.length < 32 || index.toString("ascii", 0, 4) !== "DIRC" || ![2, 3].includes(index.readUInt32BE(4))) confirmation("Git \u7D22\u5F15\u683C\u5F0F\u9700\u8981\u4EBA\u5DE5\u68C0\u67E5");
+    let offset2 = 12;
+    for (let entry = 0; entry < index.readUInt32BE(8); entry++) {
+      const start = offset2;
+      if (offset2 + 62 > index.length - 20) confirmation("Git \u7D22\u5F15\u4E0D\u5B8C\u6574");
+      const flags = index.readUInt16BE(offset2 + 60);
+      if (flags & 12288) confirmation("Git \u7D22\u5F15\u5B58\u5728\u672A\u89E3\u51B3\u51B2\u7A81");
+      offset2 += 62 + (flags & 16384 ? 2 : 0);
+      const end = index.indexOf(0, offset2);
+      if (end < 0 || end >= index.length - 20) confirmation("Git \u7D22\u5F15\u8DEF\u5F84\u65E0\u6548");
+      offset2 = start + Math.ceil((end + 1 - start) / 8) * 8;
+    }
+  }
+  const inspect = async (folder) => {
+    for (const entry of await readdir(folder, { withFileTypes: true })) {
+      if (entry.name === ".git" && folder === directory) continue;
+      if (entry.isSymbolicLink()) confirmation(`\u9879\u76EE\u5305\u542B\u7B26\u53F7\u94FE\u63A5 ${entry.name}`);
+      if (entry.isDirectory()) await inspect(join4(folder, entry.name));
+    }
+  };
+  await inspect(directory);
+}
+async function commitProject(directory, message) {
+  await assertMainRepository(directory);
+  const git = gitClient(), options = repository(directory);
+  try {
+    const matrix = await git.statusMatrix(options);
+    if (matrix.some(([, head, worktree, stage]) => stage !== head && stage !== worktree)) confirmation("\u6682\u5B58\u533A\u4E0E\u5DE5\u4F5C\u533A\u5305\u542B\u4E0D\u540C\u7248\u672C\uFF0C\u9700\u8981\u4FDD\u7559\u5E76\u786E\u8BA4\u5904\u7406");
+    const changed = matrix.filter(([, head, worktree, stage]) => head !== worktree || head !== stage);
+    if (!changed.length) return { branch: "main", committed: false, oid: await git.resolveRef({ ...options, ref: "HEAD" }).catch(() => void 0), reason: "\u6CA1\u6709\u6587\u4EF6\u53D8\u5316" };
+    for (const [filepath, , worktree] of changed) {
+      if (filepath.split("/").some((part) => part === ".." || part === ".git") || filepath.startsWith("/")) confirmation("\u7D22\u5F15\u542B\u5F02\u5E38\u6587\u4EF6\u8DEF\u5F84");
+      if (worktree === 0) await git.remove({ ...options, filepath });
+      else await git.add({ ...options, filepath });
+    }
+    const staged = await git.statusMatrix(options);
+    if (staged.every(([, head, , stage]) => head === stage)) return { branch: "main", committed: false, oid: await git.resolveRef({ ...options, ref: "HEAD" }).catch(() => void 0), reason: "\u6CA1\u6709\u6587\u4EF6\u53D8\u5316" };
+    const author = { name: await git.getConfig({ ...options, path: "user.name" }) || "Website Builder", email: await git.getConfig({ ...options, path: "user.email" }) || "website-builder@localhost" };
+    const oid = await git.commit({ ...options, message, author });
+    return { branch: "main", committed: true, oid };
+  } catch (error) {
+    if (error.message.startsWith("GIT_CONFIRMATION_REQUIRED")) throw error;
+    confirmation(`\u672C\u5730\u63D0\u4EA4\u672A\u5B8C\u6210\uFF1A${error.message}`);
+  }
+}
+async function initializeRepository(directory) {
+  const git = gitClient();
+  await git.init({ fs, dir: directory.replaceAll("\\", "/"), defaultBranch: "main" });
+}
+async function recognizedProject(directory, format) {
+  if (format !== PROJECT_FORMAT) return false;
+  try {
+    const root = await lstat(directory);
+    if (!root.isDirectory() || root.isSymbolicLink()) return false;
+    for (const name of ["src", "src/images", "material", ".git"]) {
+      const info = await lstat(join4(directory, name));
+      if (!info.isDirectory() || info.isSymbolicLink()) return false;
+    }
+    for (const name of ["README.md", ".git/HEAD", ".git/config"]) {
+      const info = await lstat(join4(directory, name));
+      if (!info.isFile() || info.isSymbolicLink()) return false;
+    }
+    return true;
+  } catch {
+    return false;
+  }
+}
+function projectReadme(project) {
+  return `# ${project.name.replace(/[\r\n]/g, " ")}
+
+${project.brief || "Website project generated with Website Builder."}
+
+- Brand: ${project.brand || project.name}
+- Country: ${project.country || "To be specified"}
+- Language: ${project.language}
+
+## Project structure
+
+- \`src/\`: deployable website source; serve this directory as the website root.
+- \`src/images/\`: website assets, including logo.png, favicon.png, banner1.png, banner2.png and about.png as needed.
+- \`material/\`: generated original image assets; these are not part of the deployed website.
+- \`.git/\`: local repository, initialized on main without a remote.
+
+Open src/index.html through a static HTTP server. Website details and running instructions can be expanded here as the website is generated.
+`;
+}
+async function scaffoldProject(directory, project) {
+  await mkdir(join4(directory, "src", "images"), { recursive: true });
+  await mkdir(join4(directory, "material"), { recursive: true });
+  await initializeRepository(directory);
+  await writeFile(join4(directory, "README.md"), projectReadme(project));
+  return commitProject(directory, "Initialize website project");
+}
+
 // server/projects.ts
 var DEFAULT_PAGES = ["index", "shop", "product", "wishlist", "checkout", "login", "register", "about", "contact", "terms", "privacy", "return"].map((name) => ({ path: `${name}.html`, title: name }));
 var idPattern = /^[a-f0-9]{4}(?:-[a-f0-9]{4}){3}$/;
 var pause = (ms) => new Promise((resolve6) => setTimeout(resolve6, ms));
 async function json(file) {
   try {
-    return JSON.parse(await readFile3(file, "utf8"));
+    return JSON.parse(await readFile4(file, "utf8"));
   } catch (error) {
     if (error.code === "ENOENT") return null;
     throw error;
   }
 }
 async function atomic(file, value) {
-  await mkdir(dirname(file), { recursive: true });
+  await mkdir2(dirname(file), { recursive: true });
   const temp = `${file}.${randomUUID()}.tmp`;
   try {
-    await writeFile(temp, value, "utf8");
+    await writeFile2(temp, value, "utf8");
     for (let attempt = 0; ; attempt++) {
       try {
         await rename(temp, file);
@@ -6101,34 +6226,38 @@ var ProjectStore = class {
   constructor(root) {
     this.root = root;
     this.root = resolve(root);
-    this.stateRoot = join4(dirname(this.root), ".builder-state");
+    this.stateRoot = join5(dirname(this.root), ".builder-state");
     this.database = new ProjectDatabase(dirname(this.root), this.root, this.stateRoot);
   }
   root;
-  skillRoot = (process.env.WEBSITE_BUILDER_SKILL_ROOT || fileURLToPath(new URL("../../skills/website-builder/", import.meta.url))).replaceAll("${PLUGIN_ROOT}", fileURLToPath(new URL("../../", import.meta.url)));
+  skillRoot = (process.env.WEBSITE_BUILDER_SKILL_ROOT || fileURLToPath2(new URL("../../skills/website-builder/", import.meta.url))).replaceAll("${PLUGIN_ROOT}", fileURLToPath2(new URL("../../", import.meta.url)));
   stateRoot;
   database;
   binding(thread) {
     if (!thread.trim()) throw new Error("\u9700\u8981\u5F53\u524D\u771F\u5B9E thread_id\uFF0C\u4E0D\u80FD\u4F7F\u7528\u5171\u4EAB\u533F\u540D\u4F1A\u8BDD");
-    return join4(this.stateRoot, "threads", createHash("sha256").update(thread).digest("hex") + ".json");
+    return join5(this.stateRoot, "threads", createHash("sha256").update(thread).digest("hex") + ".json");
   }
   folder(id) {
     if (!idPattern.test(id)) throw new Error("\u9879\u76EE ID \u65E0\u6548");
-    return join4(this.root, id);
+    return join5(this.root, id);
   }
   metadataDirectory(id) {
     this.folder(id);
-    return join4(this.stateRoot, "projects", id);
+    return join5(this.stateRoot, "projects", id);
+  }
+  async exclusive(id, run) {
+    this.folder(id);
+    return this.lock(id, run);
   }
   manifest(id) {
-    return join4(this.metadataDirectory(id), "project.json");
+    return join5(this.metadataDirectory(id), "project.json");
   }
   async loadProject(id) {
     return this.database.project(id);
   }
   async lock(key, run) {
-    await mkdir(join4(this.stateRoot, "locks"), { recursive: true });
-    const file = join4(this.stateRoot, "locks", createHash("sha256").update(key).digest("hex") + ".lock");
+    await mkdir2(join5(this.stateRoot, "locks"), { recursive: true });
+    const file = join5(this.stateRoot, "locks", createHash("sha256").update(key).digest("hex") + ".lock");
     let handle;
     for (let attempt = 0; attempt < 100; attempt++) {
       try {
@@ -6166,21 +6295,27 @@ var ProjectStore = class {
       if (!projectId) return null;
       throw new Error("\u9879\u76EE\u4E0D\u5B58\u5728\u6216\u5DF2\u5220\u9664");
     }
+    if (!await recognizedProject(this.folder(id), project.formatVersion)) {
+      if (projectId) throw new Error("\u9879\u76EE\u683C\u5F0F\u65E0\u6CD5\u8BC6\u522B\uFF0C\u8BF7\u4F7F\u7528\u5F53\u524D\u683C\u5F0F\u9879\u76EE");
+      return null;
+    }
     const base = await realpath(this.root), folder = await realpath(this.folder(id)), rel = relative(base, folder);
     if (rel === ".." || rel.startsWith(`..${sep}`) || isAbsolute(rel)) throw new Error("\u9879\u76EE\u76EE\u5F55\u4E0D\u80FD\u6307\u5411\u5916\u90E8");
     const currentThread = threadId || (binding?.projectId === id ? binding.threadId : "") || "";
-    return { project, threadId: currentThread, directory: this.folder(id), metadataDirectory: this.metadataDirectory(id), revision: `${id}:${currentThread}:${project.revision}` };
+    return { project, threadId: currentThread, directory: join5(this.folder(id), "src"), projectDirectory: this.folder(id), materialDirectory: join5(this.folder(id), "material"), metadataDirectory: this.metadataDirectory(id), revision: `${id}:${currentThread}:${project.revision}` };
   }
   async list() {
-    await mkdir(this.root, { recursive: true });
-    return this.database.list();
+    await mkdir2(this.root, { recursive: true });
+    const rows = this.database.list();
+    const checks = await Promise.all(rows.map((row) => this.database.project(row.id)?.formatVersion === PROJECT_FORMAT && operationLock(this.database, row.id) ? Promise.resolve(true) : recognizedProject(this.folder(row.id), this.database.project(row.id)?.formatVersion)));
+    return rows.filter((_, index) => checks[index]);
   }
   async templateUsage() {
     const usage = {};
     for (const project of await this.list()) {
       let data2;
       try {
-        data2 = await json(join4(this.metadataDirectory(project.id), "website-builder.templates.json")) || await json(join4(this.folder(project.id), "website-builder.templates.json"));
+        data2 = await json(join5(this.metadataDirectory(project.id), "website-builder.templates.json"));
       } catch {
         continue;
       }
@@ -6197,11 +6332,11 @@ var ProjectStore = class {
     const id = randomBytes(8).toString("hex").match(/.{4}/g).join("-");
     const pages = (input.pages || DEFAULT_PAGES).map((page) => ({ ...page, path: this.path(page.path, true), status: "queued", version: 0 }));
     if (new Set(pages.map((page) => page.path)).size !== pages.length) throw new Error("\u9875\u9762\u8DEF\u5F84\u91CD\u590D");
-    const project = { id, name: input.name || "Ecommerce website", brief: input.brief || "", language: input.language || "en", hasPublished: false, country: input.country, categories: input.categories, brand: input.brand, revision: "", pages, updatedAt: "" };
-    await mkdir(this.folder(id), { recursive: true });
+    const project = { formatVersion: PROJECT_FORMAT, id, name: input.name || "Ecommerce website", brief: input.brief || "", language: input.language || "en", hasPublished: false, country: input.country, categories: input.categories, brand: input.brand, revision: "", pages, updatedAt: "" };
+    const git = await scaffoldProject(this.folder(id), project);
     await this.save(project);
     if (!pages.length) this.database.activity(id, "project:start");
-    return { project, threadId: "", directory: this.folder(id), metadataDirectory: this.metadataDirectory(id), revision: `${id}::${project.revision}` };
+    return { project, threadId: "", directory: join5(this.folder(id), "src"), projectDirectory: this.folder(id), materialDirectory: join5(this.folder(id), "material"), metadataDirectory: this.metadataDirectory(id), revision: `${id}::${project.revision}`, git };
   }
   async open(input) {
     return this.lock(`thread:${input.threadId}`, async () => {
@@ -6212,6 +6347,7 @@ var ProjectStore = class {
         view = { ...created, threadId: input.threadId, revision: `${created.project.id}:${input.threadId}:${created.project.revision}` };
       }
       if (input.country !== void 0 || input.categories !== void 0 || input.brand !== void 0) {
+        assertEditable(this.database, view.project.id);
         if (input.country !== void 0) view.project.country = input.country;
         if (input.categories !== void 0) view.project.categories = input.categories;
         if (input.brand !== void 0) view.project.brand = input.brand;
@@ -6221,7 +6357,7 @@ var ProjectStore = class {
       const binding = { threadId: input.threadId, projectId: view.project.id };
       this.database.setActive(binding);
       await atomic(this.binding(input.threadId), JSON.stringify(binding));
-      await atomic(join4(this.stateRoot, "active.json"), JSON.stringify(binding));
+      await atomic(join5(this.stateRoot, "active.json"), JSON.stringify(binding));
       return view;
     });
   }
@@ -6232,21 +6368,21 @@ var ProjectStore = class {
   }
   async target(id, value) {
     const path = this.path(value), metadata = /^website-builder\.[a-z-]+\.json$/.test(path);
-    if (metadata) await mkdir(this.metadataDirectory(id), { recursive: true });
-    const root = await realpath(metadata ? this.metadataDirectory(id) : this.folder(id));
+    if (metadata) await mkdir2(this.metadataDirectory(id), { recursive: true });
+    const root = await realpath(metadata ? this.metadataDirectory(id) : path === "README.md" ? this.folder(id) : join5(this.folder(id), "src"));
     if (metadata) {
       const base = await realpath(this.stateRoot), rel = relative(base, root);
       if (rel === ".." || rel.startsWith(`..${sep}`) || isAbsolute(rel)) throw new Error("\u7BA1\u7406\u76EE\u5F55\u4E0D\u80FD\u6307\u5411\u5916\u90E8");
     }
     let folder = root;
     for (const part of path.split("/").slice(0, -1)) {
-      folder = join4(folder, part);
-      await mkdir(folder, { recursive: true });
+      folder = join5(folder, part);
+      await mkdir2(folder, { recursive: true });
       const actual = await realpath(folder);
       const rel = relative(root, actual);
       if (rel === ".." || rel.startsWith(`..${sep}`) || isAbsolute(rel)) throw new Error("\u9879\u76EE\u8DEF\u5F84\u4E0D\u80FD\u7ECF\u8FC7\u5916\u90E8\u7B26\u53F7\u94FE\u63A5");
     }
-    const file = join4(root, path);
+    const file = join5(root, path);
     try {
       const actual = await realpath(file);
       const rel = relative(root, actual);
@@ -6262,6 +6398,7 @@ var ProjectStore = class {
     return this.lock(existing.project.id, async () => {
       const view = await this.get(threadId);
       if (view.project.id !== existing.project.id) throw new Error("\u4F1A\u8BDD\u9879\u76EE\u5DF2\u5207\u6362\uFF0C\u8BF7\u91CD\u65B0\u8BFB\u53D6\u9879\u76EE");
+      assertEditable(this.database, view.project.id);
       const activity = "write:" + randomUUID();
       this.database.activity(view.project.id, activity);
       const heartbeat = setInterval(() => {
@@ -6291,7 +6428,9 @@ var ProjectStore = class {
     });
   }
   async begin(threadId, paths) {
-    return this.update(threadId, async ({ project }) => {
+    return this.update(threadId, async (view) => {
+      await assertMainRepository(view.projectDirectory);
+      const { project } = view;
       project.hasPublished ??= project.pages.length > 0 && project.pages.every((page) => page.status === "ready");
       for (const path of paths) {
         this.path(path, true);
@@ -6305,31 +6444,31 @@ var ProjectStore = class {
     });
   }
   async sourceHash(id, path) {
-    const source = await readFile3(await this.target(id, path)).catch((error) => {
+    const source = await readFile4(await this.target(id, path)).catch((error) => {
       if (error.code === "ENOENT") return null;
       throw error;
     });
     return source ? createHash("sha256").update(source).digest("hex") : "";
   }
   async resourceSignature(view, page) {
-    const hash = createHash("sha256"), visited = /* @__PURE__ */ new Set(), base = await realpath(view.directory);
+    const hash2 = createHash("sha256"), visited = /* @__PURE__ */ new Set(), base = await realpath(view.directory);
     const visit = async (path) => {
       if (visited.has(path)) return;
       visited.add(path);
-      hash.update(path);
+      hash2.update(path);
       let file;
       try {
         file = await realpath(resolve(view.directory, path));
         const rel = relative(base, file);
         if (rel === ".." || rel.startsWith(`..${sep}`) || isAbsolute(rel)) throw new Error("Resource outside project");
         const info = await stat(file);
-        hash.update(`${info.size}:${info.mtimeMs}`);
+        hash2.update(`${info.size}:${info.mtimeMs}`);
       } catch {
-        hash.update(":missing");
+        hash2.update(":missing");
         return;
       }
       if (!/\.(?:html?|js|mjs|css)$/i.test(path)) return;
-      const source = await readFile3(file, "utf8");
+      const source = await readFile4(file, "utf8");
       for (const match of source.matchAll(/(?:\b(?:src|href|srcset)\s*=\s*["']|url\(\s*["']?|["'`])([^"'`\s<>)]*\.(?:js|mjs|css|png|jpe?g|webp|avif|gif|svg|ico|woff2?|ttf|otf|mp4|mp3|json)(?:[?#][^"'`\s<>)]*)?)/gi)) {
         const url = match[1].replaceAll("&amp;", "&");
         if (/^(?:[a-z]+:|\/\/|#)/i.test(url)) continue;
@@ -6341,27 +6480,28 @@ var ProjectStore = class {
           this.path(rel);
           await visit(rel);
         } catch {
-          hash.update(":invalid-reference");
+          hash2.update(":invalid-reference");
         }
       }
     };
     await visit(page);
-    return hash.digest("hex");
+    return hash2.digest("hex");
   }
   // Direct-file generation may finish without a tool callback. Only a complete,
   // changed document can leave generating; begin must not redisplay the old file.
   async reconcile(threadId, projectId) {
     const view = await this.get(threadId, projectId);
     if (!view) return null;
+    if (operationLock(this.database, view.project.id)) return view;
     const candidates = async (current2) => {
       const paths = [];
       for (const page of current2.project.pages) {
-        if (page.status === "ready" || page.status === "error" && page.resourceSignature) {
+        if (page.status === "ready" || page.status === "error" && (page.resourceSignature || /ENOENT|no such file or directory/.test(page.error || ""))) {
           if (page.resourceSignature !== await this.resourceSignature(current2, page.path)) paths.push(page.path);
           continue;
         }
         if (page.status !== "queued" && (page.status !== "generating" || page.generationHash === void 0)) continue;
-        const source = await readFile3(await this.target(current2.project.id, page.path), "utf8").catch(() => null);
+        const source = await readFile4(await this.target(current2.project.id, page.path), "utf8").catch(() => null);
         if (source && /<html\b/i.test(source) && /<body\b/i.test(source) && /<\/body>/i.test(source) && /<\/html>\s*$/i.test(source) && createHash("sha256").update(source).digest("hex") !== page.generationHash) paths.push(page.path);
       }
       return paths;
@@ -6370,6 +6510,7 @@ var ProjectStore = class {
     return this.lock(view.project.id, async () => {
       const current2 = await this.get(threadId, view.project.id);
       if (!current2) return null;
+      if (operationLock(this.database, current2.project.id)) return current2;
       const changed = await candidates(current2);
       if (!changed.length) return current2;
       await this.complete(current2, changed);
@@ -6385,7 +6526,7 @@ var ProjectStore = class {
     }
     const view = await this.update(threadId, async (view2) => {
       const file = await this.target(view2.project.id, "website-builder.templates.json");
-      const previous = await json(file) || await json(join4(view2.directory, "website-builder.templates.json"));
+      const previous = await json(file);
       const merged = [...previous?.bindings || []];
       for (const binding of bindings) {
         const index = merged.findIndex((item) => item.file === binding.file && item.region === binding.region);
@@ -6399,7 +6540,7 @@ var ProjectStore = class {
   async auditTemplates(threadId) {
     const view = await this.get(threadId);
     if (!view) throw new Error("\u8BF7\u5148\u6253\u5F00\u5F53\u524D\u4F1A\u8BDD\u9879\u76EE");
-    const sources = await json(await this.target(view.project.id, "website-builder.templates.json")) || await json(join4(view.directory, "website-builder.templates.json"));
+    const sources = await json(await this.target(view.project.id, "website-builder.templates.json"));
     return { advisory: true, configured: !!sources, bindings: sources?.bindings || [], message: "Template fidelity is SKILL guidance only. No structure score or generation pass/fail is calculated. Page readiness uses complete HTML and local dependency validation." };
   }
   async complete(view, paths) {
@@ -6408,9 +6549,9 @@ var ProjectStore = class {
       if (!page) throw new Error(`\u9875\u9762\u672A\u5728\u8BA1\u5212\u5185\uFF1A${path}`);
       try {
         const file = await this.target(view.project.id, path);
-        let html = await readFile3(file, "utf8");
+        let html = await readFile4(file, "utf8");
         if (!/<html\b/i.test(html) || !/<\/html>\s*$/i.test(html) || !/<body\b/i.test(html) || !/<\/body>/i.test(html)) throw new Error("HTML \u5C1A\u672A\u5B8C\u6574\u8F93\u51FA");
-        const toastPath = join4(view.directory, "components/toast.js");
+        const toastPath = join5(view.directory, "components/toast.js");
         const enhanced = await formatSource(path, await stat(toastPath).catch(() => null) ? injectSharedUI(html, path) : html);
         if (enhanced !== html) {
           await atomic(file, enhanced);
@@ -6418,7 +6559,9 @@ var ProjectStore = class {
         }
         for (const match of html.matchAll(/\b(?:src|href)\s*=\s*["']([^"']+\.(?:js|css))(?:\?[^"']*)?["']/gi)) {
           if (/^(?:[a-z]+:|\/\/)/i.test(match[1])) continue;
-          const relativePath = relative(view.directory, resolve(dirname(resolve(view.directory, path)), match[1])).split(sep).join("/");
+          const reference = decodeURIComponent(match[1]);
+          const target = reference.startsWith("/") ? resolve(view.directory, reference.slice(1)) : resolve(dirname(resolve(view.directory, path)), reference);
+          const relativePath = relative(view.directory, target).split(sep).join("/");
           await stat(await this.target(view.project.id, relativePath));
         }
         page.status = "ready";
@@ -6433,13 +6576,19 @@ var ProjectStore = class {
       }
       page.resourceSignature = await this.resourceSignature(view, path);
     }
+    if (view.project.pages.some((page) => page.status === "ready")) view.project.hasPreview = true;
     if (view.project.pages.length > 0 && view.project.pages.every((page) => page.status === "ready")) view.project.hasPublished = true;
     if (view.project.pages.some((page) => page.status === "error") || view.project.pages.length > 0 && view.project.pages.every((page) => page.status === "ready")) this.database.activity(view.project.id, "project:start", false);
   }
   async finish(threadId, paths) {
-    return this.update(threadId, async (view) => {
-      await this.complete(view, paths.length ? paths : view.project.pages.filter((page) => page.status !== "ready").map((page) => page.path));
+    let git;
+    const view = await this.update(threadId, async (view2) => {
+      await assertMainRepository(view2.projectDirectory);
+      const targets = paths.length ? paths : view2.project.pages.filter((page) => page.status !== "ready").map((page) => page.path);
+      await this.complete(view2, targets);
+      git = targets.some((path) => view2.project.pages.find((page) => page.path === path)?.status !== "ready") ? { branch: "main", committed: false, reason: "\u9875\u9762\u6821\u9A8C\u672A\u901A\u8FC7\uFF0C\u4FEE\u590D\u540E\u518D\u6B21 finish \u63D0\u4EA4" } : await commitProject(view2.projectDirectory, "Update website");
     });
+    return { ...view, git };
   }
   async usesFiles(view, page, changed) {
     const document2 = resolve(view.directory, page), visited = /* @__PURE__ */ new Set();
@@ -6451,7 +6600,7 @@ var ProjectStore = class {
       if (!/\.(?:html?|js|css)$/i.test(file)) return false;
       let text2;
       try {
-        text2 = await readFile3(await this.target(view.project.id, path), "utf8");
+        text2 = await readFile4(await this.target(view.project.id, path), "utf8");
       } catch {
         return false;
       }
@@ -6473,13 +6622,14 @@ var ProjectStore = class {
       if (/(?:^|\/)(?:tmp|temp|artifacts|test-results|playwright-report)(?:\/|$)|\.(?:tmp|bak|log|psd)$/i.test(file.path)) throw new Error("\u7F51\u7AD9\u8F93\u51FA\u76EE\u5F55\u662F\u751F\u4EA7\u76EE\u5F55\uFF1B\u4E34\u65F6\u6587\u4EF6\u3001\u62A5\u544A\u4E0E\u6E90\u7D20\u6750\u8BF7\u4FDD\u5B58\u5230 metadata_directory");
     });
     return this.update(threadId, async (view) => {
+      await assertMainRepository(view.projectDirectory);
       for (const path of finalizePages || []) if (!view.project.pages.some((page) => page.path === path)) throw new Error(`\u9875\u9762\u672A\u5728\u8BA1\u5212\u5185\uFF1A${path}`);
       for (const file of files) if (/\.html?$/i.test(file.path) && !view.project.pages.some((page) => page.path === file.path)) throw new Error(`\u8BF7\u5148\u5C06\u9875\u9762\u52A0\u5165\u8BA1\u5212\uFF1A${file.path}`);
       for (const file of files) {
         const page = view.project.pages.find((page2) => page2.path === file.path);
         if (page && file.title) page.title = file.title;
       }
-      const hasFile = async (path) => files.some((file) => file.path === path) || !!await stat(join4(view.directory, path)).catch(() => null);
+      const hasFile = async (path) => files.some((file) => file.path === path) || !!await stat(join5(view.directory, path)).catch(() => null);
       const commerce = await hasFile("js/sdk.js");
       const cart = !await hasFile("components/cart.js") ? "none" : view.project.pages.some((page) => /(^|\/)cart\.html?$/i.test(page.path)) ? "page" : "drawer";
       const toast = await hasFile("components/toast.js");
@@ -6504,7 +6654,7 @@ var ProjectStore = class {
       const changed = /* @__PURE__ */ new Set();
       for (const file of output) {
         const target = await this.target(view.project.id, file.path);
-        if (await readFile3(target, "utf8").catch(() => null) !== file.content) changed.add(file.path);
+        if (await readFile4(target, "utf8").catch(() => null) !== file.content) changed.add(file.path);
       }
       const affected = [];
       for (const page of view.project.pages) if (changed.has(page.path) || await this.usesFiles(view, page.path, changed)) affected.push(page);
@@ -6549,7 +6699,7 @@ import { isIP } from "node:net";
 import { gunzipSync, inflateSync, brotliDecompressSync } from "node:zlib";
 
 // server/snapshot.ts
-import { readFile as readFile5 } from "node:fs/promises";
+import { readFile as readFile6 } from "node:fs/promises";
 import { basename as basename2, dirname as dirname2, extname as extname2, resolve as resolve3 } from "node:path";
 
 // server/preview-mock.ts
@@ -6569,17 +6719,17 @@ var previewMock = String.raw`<script>
       const result = initialize.call(this, products, config);
       const app = window.APP;
       if (!app?.account || !app?.cart || !app?.wishlist) return result;
-      const scope = window.commerceConfig?.storageKey || 'website-builder-demo';
-      if (localStorage.getItem(scope + ':user') === null) localStorage.setItem(scope + ':user', JSON.stringify({id:'preview-user',username:'Preview',email:'preview@example.invalid',ext:{preview:true}}));
+
+      if (localStorage.getItem('user') === null) localStorage.setItem('user', JSON.stringify({id:'preview-user',username:'Preview',email:'preview@example.invalid',ext:{preview:true}}));
       const user = app.account.current();
       const items = products.filter(p => p && p.id).slice(0, 2);
-      if (user && localStorage.getItem(scope + ':cart:' + user.id) === null) for (const p of items) app.cart.add({id:p.id,name:p.name,image:p.main_image||p.image||'',price:Number(p.final_price??p.price)||0},1);
-      if (user && localStorage.getItem(scope + ':wishlist:' + user.id) === null) for (const p of items) app.wishlist.add(p.id);
+      if (user && localStorage.getItem('cart:' + user.id) === null) for (const p of items) app.cart.add({id:p.id,name:p.name,image:p.main_image||p.image||'',price:Number(p.final_price??p.price)||0},1);
+      if (user && localStorage.getItem('wishlist:' + user.id) === null) for (const p of items) app.wishlist.add(p.id);
       const path = window.__websiteBuilderLocation.pathname.split('/').pop().split('.')[0];
-      if (user && ['orders','order','order-confirmation'].includes(path) && localStorage.getItem(scope + ':orders') === null && app.order?.create && app.cart.list().length) {
-        const savedCart = localStorage.getItem(scope + ':cart:' + user.id);
+      if (user && ['orders','order','order-confirmation'].includes(path) && localStorage.getItem('orders') === null && app.order?.create && app.cart.list().length) {
+        const savedCart = localStorage.getItem('cart:' + user.id);
         app.order.create({notes:'Preview Mock order',ext:{preview:true}});
-        if(savedCart!==null)localStorage.setItem(scope + ':cart:' + user.id,savedCart);
+        if(savedCart!==null)localStorage.setItem('cart:' + user.id,savedCart);
       }
       window.__websiteBuilderMockReady = true;
       return result;
@@ -6593,10 +6743,10 @@ var previewMock = String.raw`<script>
 
 // server/preview.ts
 import { createServer } from "node:http";
-import { readFile as readFile4, readdir as readdir2, realpath as realpath2, stat as stat2 } from "node:fs/promises";
-import { basename, extname, isAbsolute as isAbsolute2, join as join5, relative as relative2, resolve as resolve2, sep as sep2 } from "node:path";
+import { readFile as readFile5, readdir as readdir3, realpath as realpath2, stat as stat2 } from "node:fs/promises";
+import { basename, extname, isAbsolute as isAbsolute2, join as join6, relative as relative2, resolve as resolve2, sep as sep2 } from "node:path";
 import { randomBytes as randomBytes2 } from "node:crypto";
-import { fileURLToPath as fileURLToPath2 } from "node:url";
+import { fileURLToPath as fileURLToPath3 } from "node:url";
 
 // server/proxy-runtime.ts
 var proxyRuntime = String.raw`<script>
@@ -6723,11 +6873,11 @@ async function scanSite(root, directory, prefix) {
   if (!(await stat2(site)).isDirectory()) throw new Error("\u8BF7\u9009\u62E9\u7F51\u7AD9\u76EE\u5F55");
   const documents = /* @__PURE__ */ new Map();
   async function walk(folder) {
-    for (const entry of (await readdir2(folder, { withFileTypes: true })).sort((a, b) => natural(a.name, b.name))) {
+    for (const entry of (await readdir3(folder, { withFileTypes: true })).sort((a, b) => natural(a.name, b.name))) {
       if (entry.name.startsWith(".") || ["node_modules", "vendor"].includes(entry.name) || entry.isSymbolicLink()) continue;
-      const path = join5(folder, entry.name);
+      const path = join6(folder, entry.name);
       if (entry.isDirectory()) await walk(path);
-      else if (/\.html?$/i.test(entry.name)) documents.set(relative2(site, path).split(sep2).join("/"), await readFile4(path, "utf8"));
+      else if (/\.html?$/i.test(entry.name)) documents.set(relative2(site, path).split(sep2).join("/"), await readFile5(path, "utf8"));
     }
   }
   await walk(site);
@@ -6738,10 +6888,10 @@ async function scanSite(root, directory, prefix) {
   };
   const warnings = [];
   try {
-    const data2 = await readFile4(await contained(root, join5(site, "js/data.js")), "utf8");
+    const data2 = await readFile5(await contained(root, join6(site, "js/data.js")), "utf8");
     if (data2.includes('"/img/')) {
       try {
-        await stat2(join5(site, "img"));
+        await stat2(join6(site, "img"));
       } catch {
         warnings.push("\u5546\u54C1\u56FE\u7247\u6CBF\u7528\u539F\u7AD9 CDN \u52A0\u8F7D\u3002");
       }
@@ -6750,8 +6900,8 @@ async function scanSite(root, directory, prefix) {
   }
   let order = "\u9996\u9875\u3001\u4E3B\u5BFC\u822A\u3001\u9875\u811A\u5BFC\u822A\u3001\u5176\u4F59\u9875\u9762\u81EA\u7136\u6392\u5E8F";
   try {
-    const file = await contained(root, join5(site, "website-builder.order.json"));
-    const custom = JSON.parse(await readFile4(file, "utf8"));
+    const file = await contained(root, join6(site, "website-builder.order.json"));
+    const custom = JSON.parse(await readFile5(file, "utf8"));
     if (!Array.isArray(custom) || custom.some((path) => typeof path !== "string" || !documents.has(path))) throw new Error("\u6392\u5E8F\u6587\u4EF6\u5FC5\u987B\u4E3A\u73B0\u6709 HTML \u76F8\u5BF9\u8DEF\u5F84\u7684\u6570\u7EC4");
     custom.forEach(add);
     order = "website-builder.order.json\uFF0C\u7136\u540E\u8865\u5145\u672A\u5217\u51FA\u7684\u9875\u9762";
@@ -6762,8 +6912,8 @@ async function scanSite(root, directory, prefix) {
   add("index.htm");
   for (const navigation of ["components/header.js", "components/footer.js", "index.html"]) {
     try {
-      const file = await contained(root, join5(site, navigation));
-      const html = await readFile4(file, "utf8");
+      const file = await contained(root, join6(site, navigation));
+      const html = await readFile5(file, "utf8");
       for (const match of html.matchAll(/<a\b[^>]*\bhref\s*=\s*["']([^"'#?]+\.html?)(?:[?#][^"']*)?["']/gi)) {
         const url = new URL(match[1], "https://site.local/");
         if (url.origin === "https://site.local") add(decodeURIComponent(url.pathname.slice(1)));
@@ -6782,7 +6932,7 @@ async function scanSite(root, directory, prefix) {
   };
 }
 function instrument(html, embedded = false) {
-  const script = `<style>html,body,body *{-webkit-user-select:none!important;user-select:none!important}html{height:auto!important;min-height:0!important;scrollbar-width:thin;scrollbar-color:transparent transparent!important}html[data-wb-scrolling]{scrollbar-color:rgba(75,100,87,.48) transparent!important}html::-webkit-scrollbar{width:7px;height:7px}html::-webkit-scrollbar-track{background:transparent}html::-webkit-scrollbar-thumb{background:transparent;border-radius:8px}html[data-wb-scrolling]::-webkit-scrollbar-thumb{background:rgba(75,100,87,.48)}html::-webkit-scrollbar-button{display:none}body{min-height:0!important}</style><script>
+  const script = `<style>html,body,body *{-webkit-user-select:none!important;user-select:none!important}html{height:auto!important;min-height:0!important;scrollbar-width:thin;scrollbar-gutter:stable;overflow-y:scroll!important;overflow-anchor:none!important;scrollbar-color:transparent transparent!important}html[data-wb-scrolling]{scrollbar-color:rgba(75,100,87,.48) transparent!important}html::-webkit-scrollbar{width:7px;height:7px}html::-webkit-scrollbar-track{background:transparent}html::-webkit-scrollbar-thumb{background:transparent;border-radius:8px}html[data-wb-scrolling]::-webkit-scrollbar-thumb{background:rgba(75,100,87,.48)}html::-webkit-scrollbar-button{display:none}body{min-height:0!important}</style><script>
 (() => {
   const virtualUrl = ${embedded ? '"__WEBSITE_BUILDER_VIRTUAL_URL__"' : "location.href"};
   window.__websiteBuilderLocation = new URL(virtualUrl);
@@ -6807,7 +6957,7 @@ function instrument(html, embedded = false) {
     // body.scrollHeight can equal the current iframe viewport even after content shrinks.
     // Measure normal-flow bounds separately so a formerly tall frame can become shorter.
     const bottom = Array.from(body.children).reduce((height,child) => getComputedStyle(child).position === 'fixed' ? height : Math.max(height,child.getBoundingClientRect().bottom + scrollY),0);
-    const height = Math.ceil(Math.max(body.offsetHeight, body.getBoundingClientRect().height, bottom, body.scrollHeight > innerHeight + 1 ? body.scrollHeight : 0) + parseFloat(styles.marginTop || 0) + parseFloat(styles.marginBottom || 0));
+    const height = Math.ceil(Math.max(body.offsetHeight + parseFloat(styles.marginTop || 0), bottom, body.scrollHeight > innerHeight + 1 ? body.scrollHeight : 0) + parseFloat(styles.marginBottom || 0));
     if (height !== previous) { previous = height; parent.postMessage({type:'website-builder:height',height}, '*'); }
   };
   const measure = () => { if (!pending) { pending = true; setTimeout(send, 80); } };
@@ -6818,7 +6968,16 @@ function instrument(html, embedded = false) {
     parent.postMessage({type:'website-builder:location',path:new URL(virtualUrl).pathname},'*');
   });
   addEventListener('load',measure,true); addEventListener('resize',measure);
-  addEventListener('message',event => { if(event.source === parent && event.data?.type === 'website-builder:measure') { document.documentElement.style.setProperty('overflow-y','auto','important');previous = 0; measure(); } });
+  addEventListener('load',async()=>{
+    try {
+      await window.websiteReady;
+      await document.fonts.ready;
+      await Promise.allSettled(Array.from(document.images).filter(image=>image.loading!=='lazy').map(image=>image.decode()));
+      await new Promise(resolve=>requestAnimationFrame(()=>requestAnimationFrame(resolve)));
+      send();parent.postMessage({type:'website-builder:ready'},'*');
+    }catch(error){parent.postMessage({type:'website-builder:render-error',error:String(error?.message||error)},'*');}
+  },{once:true});
+  addEventListener('message',event => { if(event.source === parent && event.data?.type === 'website-builder:measure') { measure(); } });
   const local = value => { try { const url = new URL(value,virtualUrl), current = new URL(virtualUrl); return url.origin === current.origin && url.pathname.startsWith(current.pathname.split('/files/')[0] + '/files/'); } catch { return false; } };
   const blocked = url => parent.postMessage({type:'website-builder:blocked',url:String(url)},'*');
   const navigate = url => blocked(new URL(url,virtualUrl).href);
@@ -6846,7 +7005,7 @@ function instrument(html, embedded = false) {
       event.preventDefault();event.stopImmediatePropagation();
       if(url.pathname === new URL(virtualUrl).pathname && url.hash) {
         const target=document.getElementById(decodeURIComponent(url.hash.slice(1)));
-        if(target)parent.postMessage({type:'website-builder:scroll-to',y:target.getBoundingClientRect().top},'*');
+        if(target){if(document.scrollingElement.scrollHeight>innerHeight+1)target.scrollIntoView({block:'start'});else parent.postMessage({type:'website-builder:scroll-to',y:target.getBoundingClientRect().top},'*');}
       } else navigate(url.href);
     }
     else if(anchor.target && anchor.target !== '_self') anchor.target = '_self';
@@ -6858,7 +7017,9 @@ function instrument(html, embedded = false) {
       let target = event.target;
       while(target && target !== document.body) { const css = getComputedStyle(target); if (/(auto|scroll)/.test(css.overflowY) && target.scrollHeight > target.clientHeight && ((event.deltaY > 0 && target.scrollTop + target.clientHeight < target.scrollHeight) || (event.deltaY < 0 && target.scrollTop > 0))) return; target = target.parentElement; }
       const root=document.scrollingElement;
-      if(root && root.scrollHeight>innerHeight+1 && ((event.deltaY>0 && root.scrollTop+innerHeight<root.scrollHeight-1)||(event.deltaY<0 && root.scrollTop>0)))return;
+      // A capped page owns its vertical wheel even at either boundary. Switching to
+      // world panning there makes long pages jump back and forth while scrolling.
+      if(root && root.scrollHeight>innerHeight+1 && !event.shiftKey && !event.deltaX)return;
     }
     event.preventDefault(); parent.postMessage({type:'website-builder:wheel',dx:event.shiftKey?event.deltaY:event.deltaX,dy:event.shiftKey?0:event.deltaY,zoom:event.ctrlKey||event.metaKey,x:event.clientX,y:event.clientY},'*');
   },{passive:false});
@@ -6866,16 +7027,16 @@ function instrument(html, embedded = false) {
   const base = embedded ? '<base href="__WEBSITE_BUILDER_BASE_URL__">' : "";
   return /<head\b[^>]*>/i.test(html) ? html.replace(/<head\b[^>]*>/i, (match) => match + base + script + (embedded ? previewMock : "") + proxyRuntime) : base + script + (embedded ? previewMock : "") + proxyRuntime + html;
 }
-async function compileProjectPage(root, directory, path) {
-  const vendor = fileURLToPath2(new URL("../vendor/", import.meta.url));
-  const assets = JSON.parse(await readFile4(join5(vendor, "manifest.json"), "utf8"));
-  const base = await realpath2(root), site = await contained(base, directory);
-  return instrument(await snapshotCompiler(base, site, vendor, assets)(path), true);
+async function compileProjectPage(sourceDirectory, path) {
+  const vendor = fileURLToPath3(new URL("../vendor/", import.meta.url));
+  const assets = JSON.parse(await readFile5(join6(vendor, "manifest.json"), "utf8"));
+  const source = await realpath2(sourceDirectory);
+  return instrument(await snapshotCompiler(source, source, vendor, assets)(path), true);
 }
-async function createPreview(ui, configuredRoot, defaultDirectory = "www.noventrad.com", projectSync, manageProjects) {
+async function createPreview(ui, configuredRoot, defaultDirectory = "www.noventrad.com", projectSync, manageProjects, control) {
   const referenceRoot = () => realpath2(configuredRoot);
-  const vendor = fileURLToPath2(new URL("../vendor/", import.meta.url));
-  const assets = JSON.parse(await readFile4(join5(vendor, "manifest.json"), "utf8"));
+  const vendor = fileURLToPath3(new URL("../vendor/", import.meta.url));
+  const assets = JSON.parse(await readFile5(join6(vendor, "manifest.json"), "utf8"));
   const siteKeys = /* @__PURE__ */ new Set();
   async function readWebsite(directory, includeHtml = true) {
     const root = await referenceRoot();
@@ -6911,6 +7072,20 @@ async function createPreview(ui, configuredRoot, defaultDirectory = "www.noventr
       res.setHeader("Access-Control-Allow-Origin", "*");
       res.setHeader("X-Content-Type-Options", "nosniff");
       const route = url.pathname.slice(prefix.length);
+      if (route === "/api/control" && control) {
+        if (req.method !== "POST") {
+          res.writeHead(405).end();
+          return;
+        }
+        let body = "";
+        for await (const chunk of req) {
+          body += chunk;
+          if (body.length > 32e3) throw Error("\u8BF7\u6C42\u8FC7\u5927");
+        }
+        res.setHeader("Content-Type", "application/json");
+        res.end(JSON.stringify(await control(JSON.parse(body))));
+        return;
+      }
       if (route === "/api/projects" && manageProjects) {
         if (req.method !== "POST") {
           res.writeHead(405).end();
@@ -6966,7 +7141,7 @@ async function createPreview(ui, configuredRoot, defaultDirectory = "www.noventr
           return;
         }
         res.setHeader("Content-Type", type);
-        res.end(await readFile4(path));
+        res.end(await readFile5(path));
         return;
       }
       if (route.startsWith("/files/")) {
@@ -6979,7 +7154,7 @@ async function createPreview(ui, configuredRoot, defaultDirectory = "www.noventr
           res.writeHead(403).end();
           return;
         }
-        const data2 = await readFile4(path);
+        const data2 = await readFile5(path);
         res.setHeader("Content-Type", type);
         if (/\.(html?|js|css|json)$/i.test(path)) {
           let text2 = data2.toString("utf8");
@@ -7064,7 +7239,7 @@ async function replaceAsync(value, regex, replace) {
   return value.replace(regex, () => values[index++]);
 }
 function snapshotCompiler(root, site, vendor, vendors) {
-  const cache3 = /* @__PURE__ */ new Map();
+  const cache4 = /* @__PURE__ */ new Map();
   let documentFile = "";
   const missing = "data:image/svg+xml;base64," + Buffer.from('<svg xmlns="http://www.w3.org/2000/svg" width="300" height="200"><rect width="100%" height="100%" fill="#f4f5f4"/><path d="M122 120l20-24 16 16 18-28 20 36z" fill="#d1d8d3"/></svg>').toString("base64");
   async function asset(url, from, external = false, preserveMissing = false) {
@@ -7086,11 +7261,11 @@ function snapshotCompiler(root, site, vendor, vendors) {
     const type = types2[extname2(file).toLowerCase()];
     if (!type) return url;
     const cacheKey = `${external ? "embedded" : "lazy"}:${preserveMissing ? "literal" : "resource"}:${file}`;
-    if (!cache3.has(cacheKey)) cache3.set(cacheKey, (async () => {
+    if (!cache4.has(cacheKey)) cache4.set(cacheKey, (async () => {
       try {
         const safe = await contained(file.startsWith(vendor) ? vendor : root, file);
         if (!external && /^(?:image\/(?!svg)|video\/|audio\/)/.test(type)) return registerPreviewFile(safe, type);
-        let bytes = await readFile5(safe);
+        let bytes = await readFile6(safe);
         if (/\.css$/i.test(file)) bytes = Buffer.from(await transform(bytes.toString("utf8"), safe, true));
         else if (/\.js$/i.test(file) && !file.startsWith(vendor)) {
           bytes = Buffer.from(await transform(previewScript(bytes.toString("utf8")), documentFile || safe, false, true));
@@ -7102,7 +7277,7 @@ function snapshotCompiler(root, site, vendor, vendors) {
         return type.startsWith("image/") ? missing : `data:${type};base64,`;
       }
     })());
-    return cache3.get(cacheKey);
+    return cache4.get(cacheKey);
   }
   async function transform(text2, from, css = false, script = false) {
     if (css) {
@@ -7115,7 +7290,7 @@ function snapshotCompiler(root, site, vendor, vendors) {
   return async (path) => {
     const file = await contained(root, resolve3(site, path));
     documentFile = file;
-    let html = await readFile5(file, "utf8");
+    let html = await readFile6(file, "utf8");
     html = await replaceAsync(html, /<(?:script|link)\b[^>]*>/gi, async (match) => {
       if (/^<link/i.test(match[0]) && /\brel\s*=\s*["'](?:preconnect|dns-prefetch)["']/i.test(match[0])) return "";
       if (/^<link/i.test(match[0]) && !/\brel\s*=\s*["']stylesheet["']/i.test(match[0])) return match[0];
@@ -7150,7 +7325,7 @@ function snapshotCompiler(root, site, vendor, vendors) {
 }
 
 // server/resource-proxy.ts
-import { readFile as readFile6, stat as stat3 } from "node:fs/promises";
+import { readFile as readFile7, stat as stat3 } from "node:fs/promises";
 import { createHash as createHash2 } from "node:crypto";
 var maximum = 64 * 1024 * 1024;
 var privateAddress = (ip) => /^(?:0\.|10\.|127\.|169\.254\.|192\.168\.|172\.(?:1[6-9]|2\d|3[01])\.|22[4-9]\.|2[3-5]\d\.)/.test(ip) || ip.includes(":") && (/^(?:::|f[cd]|fe[89ab])/i.test(ip) || ip.toLowerCase().includes("ffff:"));
@@ -7247,7 +7422,7 @@ async function proxyResource(url, raw = false, chain = []) {
     const info = await stat3(entry2.file);
     if (`${info.size}:${info.mtimeMs}` !== entry2.version) throw new Error("\u9884\u89C8\u8D44\u6E90\u5DF2\u66F4\u65B0\uFF0C\u8BF7\u91CD\u65B0\u8F7D\u5165\u5BF9\u5E94\u9875\u9762");
     if (info.size > maximum) throw new Error("\u5355\u4E2A\u9884\u89C8\u8D44\u6E90\u8D85\u8FC764MB\u9650\u5236");
-    return { bytes: await readFile6(entry2.file), mime: entry2.mime, url, status: 200 };
+    return { bytes: await readFile7(entry2.file), mime: entry2.mime, url, status: 200 };
   }
   if (chain.includes(url)) throw new Error(`\u8D44\u6E90\u5FAA\u73AF\u4F9D\u8D56\uFF1A${url}`);
   const existing = cache2.get(key);
@@ -7311,10 +7486,10 @@ function previewPayload(gzip) {
   return gzip.length <= 1e6 ? gzip : { resource: registerPreviewBuffer(Buffer.from(gzip, "base64"), "application/gzip") };
 }
 function compactProject(view) {
-  return { project_id: view.project.id, thread_id: view.threadId, directory: view.directory, metadata_directory: view.metadataDirectory, name: view.project.name, country: view.project.country, categories: view.project.categories, brand: view.project.brand, language: view.project.language, brief: view.project.brief, pages: view.project.pages.map(({ path, status, error }) => ({ path, status, ...error ? { error } : {} })) };
+  return { ...view.git ? { git: view.git } : {}, project_id: view.project.id, thread_id: view.threadId, directory: view.directory, metadata_directory: view.metadataDirectory, project_directory: view.projectDirectory, source_directory: view.directory, material_directory: view.materialDirectory, format_version: view.project.formatVersion, name: view.project.name, country: view.project.country, categories: view.project.categories, brand: view.project.brand, language: view.project.language, brief: view.project.brief, pages: view.project.pages.map(({ path, status, error }) => ({ path, status, ...error ? { error } : {} })) };
 }
 function projectService(store) {
-  const cache3 = /* @__PURE__ */ new Map();
+  const cache4 = /* @__PURE__ */ new Map();
   return async function sync(input) {
     const load2 = async () => {
       if (!input.projectId) return store.reconcile(input.threadId);
@@ -7335,7 +7510,7 @@ function projectService(store) {
     }
     if (!view) return { revision: "none", unchanged: true };
     if (!input.metadataOnly && !missing && view.revision === input.since) return { revision: view.revision, unchanged: true };
-    const manifest = { directory: view.project.id, name: view.project.name, projectId: view.project.id, threadId: view.threadId, revision: view.revision, order: "\u9879\u76EE\u9875\u9762\u8BA1\u5212", warnings: [], pages: view.project.pages.map((page) => ({ ...page, url: `https://website-builder.invalid/files/${view.project.id}/${page.path.split("/").map(encodeURIComponent).join("/")}` })) };
+    const manifest = { directory: view.project.id, name: view.project.name, projectId: view.project.id, threadId: view.threadId, revision: view.revision, initializing: !view.project.hasPreview && !view.project.hasPublished && !view.project.pages.some((page) => page.status === "ready"), order: "\u9879\u76EE\u9875\u9762\u8BA1\u5212", warnings: [], pages: view.project.pages.map((page) => ({ ...page, url: `https://website-builder.invalid/files/${view.project.id}/src/${page.path.split("/").map(encodeURIComponent).join("/")}` })) };
     const pages = {}, errors = {};
     let size = 0;
     const ordered = [...view.project.pages].sort((a, b) => Number(b.path === (input.priorityPath || "index.html")) - Number(a.path === (input.priorityPath || "index.html")));
@@ -7344,10 +7519,10 @@ function projectService(store) {
       if (page.status !== "ready" || known[page.path] === page.version) continue;
       const key = `${view.project.id}:${page.path}`;
       try {
-        let saved = cache3.get(key);
+        let saved = cache4.get(key);
         if (!saved || saved.version !== page.version) {
-          saved = { version: page.version, gzip: gzipSync(await compileProjectPage(store.root, view.project.id, page.path)).toString("base64") };
-          cache3.set(key, saved);
+          saved = { version: page.version, gzip: gzipSync(await compileProjectPage(view.directory, page.path)).toString("base64") };
+          cache4.set(key, saved);
         }
         const payload = previewPayload(saved.gzip), length = typeof payload === "string" ? payload.length : payload.resource.length;
         if (size > 0 && size + length > 28e5) break;
@@ -7357,10 +7532,10 @@ function projectService(store) {
         errors[page.path] = error.message;
       }
     }
-    let cacheBytes = [...cache3.values()].reduce((sum, item) => sum + item.gzip.length, 0);
-    for (const [key, value] of cache3) {
+    let cacheBytes = [...cache4.values()].reduce((sum, item) => sum + item.gzip.length, 0);
+    for (const [key, value] of cache4) {
       if (cacheBytes <= 24e6) break;
-      cache3.delete(key);
+      cache4.delete(key);
       cacheBytes -= value.gzip.length;
     }
     return { revision: view.revision, manifest, pages, errors, projects: await store.list() };
@@ -7368,26 +7543,26 @@ function projectService(store) {
 }
 
 // server/commerce.ts
-import { readFile as readFile8, realpath as realpath4 } from "node:fs/promises";
-import { join as join7, relative as relative4, sep as sep4, isAbsolute as isAbsolute4 } from "node:path";
+import { readFile as readFile9, realpath as realpath4 } from "node:fs/promises";
+import { join as join8, relative as relative4, sep as sep4, isAbsolute as isAbsolute4 } from "node:path";
 import { createHash as createHash3 } from "node:crypto";
 
 // server/commerce-assets.ts
-import { readFile as readFile7, realpath as realpath3 } from "node:fs/promises";
-import { join as join6, relative as relative3, sep as sep3, isAbsolute as isAbsolute3 } from "node:path";
+import { readFile as readFile8, realpath as realpath3 } from "node:fs/promises";
+import { join as join7, relative as relative3, sep as sep3, isAbsolute as isAbsolute3 } from "node:path";
 async function commerceAssets(directory, skillRoot) {
   const files = [], kept = [];
   for (const name of ["sdk.js", "app.js"]) {
     const path = `js/${name}`;
     try {
-      const file = await realpath3(join6(directory, path)), base = await realpath3(directory), rel = relative3(base, file);
+      const file = await realpath3(join7(directory, path)), base = await realpath3(directory), rel = relative3(base, file);
       if (rel === ".." || rel.startsWith(`..${sep3}`) || isAbsolute3(rel)) throw Error("\u8FD0\u884C\u6587\u4EF6\u4E0D\u80FD\u6307\u5411\u9879\u76EE\u5916\u90E8");
-      await readFile7(file, "utf8");
+      await readFile8(file, "utf8");
       kept.push(path);
     } catch (error) {
       if (error.code !== "ENOENT") throw error;
       if (name === "app.js") continue;
-      const source = await readFile7(join6(skillRoot, "assets/commerce", name), "utf8");
+      const source = await readFile8(join7(skillRoot, "assets/commerce", name), "utf8");
       files.push({ path, content: source });
     }
   }
@@ -7397,10 +7572,10 @@ async function commerceAssets(directory, skillRoot) {
 // server/commerce.ts
 async function existingFile(directory, path) {
   try {
-    const file = await realpath4(join7(directory, path));
+    const file = await realpath4(join8(directory, path));
     const rel = relative4(await realpath4(directory), file);
     if (rel === ".." || rel.startsWith(`..${sep4}`) || isAbsolute4(rel)) throw new Error("\u5546\u54C1\u6587\u4EF6\u4E0D\u80FD\u6307\u5411\u9879\u76EE\u5916\u90E8");
-    return await readFile8(file, "utf8");
+    return await readFile9(file, "utf8");
   } catch (error) {
     if (error.code === "ENOENT") return void 0;
     throw error;
@@ -7522,7 +7697,7 @@ async function prepareCommerce(store, skillRoot, input) {
   const existing = await existingFile(view.directory, "js/data.js");
   let imported = false;
   try {
-    const record = JSON.parse(await readFile8(join7(view.metadataDirectory, "website-builder.import.json"), "utf8"));
+    const record = JSON.parse(await readFile9(join8(view.metadataDirectory, "website-builder.import.json"), "utf8"));
     imported = ["sdk-import-v1", "sdk-import-v2"].includes(record.schema) && !!existing && record.runtime_data_sha256 === createHash3("sha256").update(existing).digest("hex");
   } catch (error) {
     if (error.code !== "ENOENT" && !(error instanceof SyntaxError)) throw error;
@@ -7575,7 +7750,7 @@ window.storeData = {
 };
 ` });
   }
-  const configDefaults = { currency: input.currency || "USD", locale: input.locale || "en-US", storageKey: `website-builder:${view.project.id}` };
+  const configDefaults = { currency: input.currency || "USD", locale: input.locale || "en-US" };
   const runtime2 = await commerceAssets(view.directory, skillRoot);
   files.push(...runtime2.files);
   const kept = runtime2.kept;
@@ -7596,9 +7771,9 @@ window.storeData = {
 
 // server/screenshot.ts
 import { createServer as createServer2 } from "node:http";
-import { readFile as readFile9, mkdir as mkdir2, writeFile as writeFile2 } from "node:fs/promises";
-import { dirname as dirname3, extname as extname3, join as join8 } from "node:path";
-import { fileURLToPath as fileURLToPath3 } from "node:url";
+import { readFile as readFile10, mkdir as mkdir3, writeFile as writeFile3 } from "node:fs/promises";
+import { dirname as dirname3, extname as extname3, join as join9 } from "node:path";
+import { fileURLToPath as fileURLToPath4 } from "node:url";
 import { randomBytes as randomBytes3 } from "node:crypto";
 var mime2 = { ".html": "text/html", ".js": "text/javascript", ".mjs": "text/javascript", ".css": "text/css", ".json": "application/json", ".png": "image/png", ".jpg": "image/jpeg", ".jpeg": "image/jpeg", ".webp": "image/webp", ".avif": "image/avif", ".gif": "image/gif", ".svg": "image/svg+xml", ".ico": "image/x-icon", ".woff": "font/woff", ".woff2": "font/woff2", ".ttf": "font/ttf" };
 async function screenshotPage(store, input) {
@@ -7614,8 +7789,8 @@ async function screenshotPage(store, input) {
     /* @vite-ignore */
     runtime2
   );
-  const vendor = fileURLToPath3(new URL("../vendor/", import.meta.url));
-  const vendors = JSON.parse(await readFile9(join8(vendor, "manifest.json"), "utf8"));
+  const vendor = fileURLToPath4(new URL("../vendor/", import.meta.url));
+  const vendors = JSON.parse(await readFile10(join9(vendor, "manifest.json"), "utf8"));
   const token = randomBytes3(24).toString("hex");
   const prefix = `/${token}/`;
   const service = createServer2(async (req, res) => {
@@ -7635,7 +7810,7 @@ async function screenshotPage(store, input) {
       if (name.split("/").some((part) => part.startsWith(".")) || name.includes("\\")) throw Error("\u4E0D\u53EF\u8BFB\u53D6\u6B64\u8DEF\u5F84");
       const file = await contained(view.directory, name);
       res.setHeader("Content-Type", mime2[extname3(file)] || "application/octet-stream");
-      res.end(await readFile9(file));
+      res.end(await readFile10(file));
     } catch {
       res.writeHead(404).end();
     }
@@ -7668,7 +7843,7 @@ async function screenshotPage(store, input) {
           return;
         }
         try {
-          if (vendors[url] && process.env.WEBSITE_BUILDER_PREVIEW_VENDOR_FIXTURES === "1") await route.fulfill({ body: await readFile9(await contained(vendor, vendors[url])), contentType: mime2[extname3(vendors[url])] });
+          if (vendors[url] && process.env.WEBSITE_BUILDER_PREVIEW_VENDOR_FIXTURES === "1") await route.fulfill({ body: await readFile10(await contained(vendor, vendors[url])), contentType: mime2[extname3(vendors[url])] });
           else {
             const resource = await proxyResource(url);
             await route.fulfill({ body: resource.bytes, contentType: resource.mime });
@@ -7744,9 +7919,9 @@ async function screenshotPage(store, input) {
         }, Array.from(bytes));
         bytes = Buffer.from(data2, "base64");
       }
-      const path = join8(view.metadataDirectory, "artifacts/screenshots", `${input.path.split(/[?#]/)[0].replace(/[^a-zA-Z0-9_-]/g, "-")}-${width}-${Date.now()}-${randomBytes3(3).toString("hex")}.png`);
-      await mkdir2(dirname3(path), { recursive: true });
-      await writeFile2(path, bytes);
+      const path = join9(view.metadataDirectory, "artifacts/screenshots", `${input.path.split(/[?#]/)[0].replace(/[^a-zA-Z0-9_-]/g, "-")}-${width}-${Date.now()}-${randomBytes3(3).toString("hex")}.png`);
+      await mkdir3(dirname3(path), { recursive: true });
+      await writeFile3(path, bytes);
       return { path, width, page: input.path, bytes };
     };
     return await Promise.race([work(), new Promise((_, reject) => {
@@ -7765,8 +7940,8 @@ async function screenshotPage(store, input) {
 }
 
 // server/product-import.ts
-import { readFile as readFile10, stat as stat4 } from "node:fs/promises";
-import { isAbsolute as isAbsolute5, join as join9 } from "node:path";
+import { readFile as readFile11, stat as stat4 } from "node:fs/promises";
+import { isAbsolute as isAbsolute5, join as join10 } from "node:path";
 import { createHash as createHash4 } from "node:crypto";
 import { runInNewContext } from "node:vm";
 var valueAt = (item, path) => path.split(".").reduce((value, key) => value && Object.hasOwn(value, key) ? value[key] : void 0, item);
@@ -7898,7 +8073,7 @@ async function importProducts(store, skillRoot, input) {
     if (!isAbsolute5(input.file_path) || !/\.json$/i.test(input.file_path)) throw Error("\u9700\u8981\u7528\u6237\u63D0\u4F9B\u7684JSON\u6587\u4EF6\u7EDD\u5BF9\u8DEF\u5F84");
     const info = await stat4(input.file_path);
     if (info.size > 64 * 1024 * 1024) throw Error("JSON\u6587\u4EF6\u8D85\u8FC764MB\u8BFB\u53D6\u4E0A\u9650");
-    source = await readFile10(input.file_path, "utf8");
+    source = await readFile11(input.file_path, "utf8");
   } else {
     source = input.source_json;
     if (Buffer.byteLength(source) > 64 * 1024 * 1024) throw Error("JSON\u8D85\u8FC764MB\u8BFB\u53D6\u4E0A\u9650");
@@ -7912,8 +8087,8 @@ async function importProducts(store, skillRoot, input) {
     return { mode: "mock", fallback: true, next_skill: "website-mock-data", reason: error.message, written: [], source_sha256: fingerprint, note: "\u539F\u59CBJSON\u548C\u73B0\u6709\u5546\u54C1\u6570\u636E\u672A\u6539\u5199\uFF1B\u4E3B\u6280\u80FD\u63A5\u7EEDMock Data\u5DE5\u4F5C\u6D41\uFF0C\u4E0D\u628A\u5931\u8D25\u5BFC\u5165\u5192\u5145\u6210\u529F\u3002" };
   }
   const window2 = { productData: normalized.products };
-  runInNewContext(await readFile10(join9(skillRoot, "assets/commerce/sdk.js"), "utf8"), { window: window2, Intl }, { timeout: 2e3 });
-  const config = { currency: input.currency || "USD", locale: input.locale || "en-US", storageKey: `website-builder:${view.project.id}` };
+  runInNewContext(await readFile11(join10(skillRoot, "assets/commerce/sdk.js"), "utf8"), { window: window2, Intl }, { timeout: 2e3 });
+  const config = { currency: input.currency || "USD", locale: input.locale || "en-US" };
   window2.SDK.init(normalized.products, config);
   const sourceCategories = window2.SDK.categories();
   const offset2 = input.category_offset ?? 0, limit = input.category_limit ?? 200;
@@ -7986,105 +8161,18 @@ window.storeData = { getAll:()=>window.SDK.list().result(), getById:id=>window.S
 
 // server/data-paths.ts
 import { homedir as homedir2 } from "node:os";
-import { isAbsolute as isAbsolute6, join as join10, resolve as resolve4 } from "node:path";
-import { fileURLToPath as fileURLToPath4 } from "node:url";
+import { isAbsolute as isAbsolute6, join as join11, resolve as resolve4 } from "node:path";
+import { fileURLToPath as fileURLToPath5 } from "node:url";
 function dataPaths(env = process.env) {
   const home = homedir2();
-  const base = process.platform === "win32" ? env.LOCALAPPDATA || join10(home, "AppData", "Local") : env.XDG_DATA_HOME && isAbsolute6(env.XDG_DATA_HOME) ? env.XDG_DATA_HOME : join10(home, ".local", "share");
-  const root = resolve4(env.WEBSITE_BUILDER_DATA_DIR || join10(base, "codex-website-builder"));
-  const expand = (value) => resolve4(value.replaceAll("${PLUGIN_ROOT}", fileURLToPath4(new URL("../../", import.meta.url))));
+  const base = process.platform === "win32" ? env.LOCALAPPDATA || join11(home, "AppData", "Local") : env.XDG_DATA_HOME && isAbsolute6(env.XDG_DATA_HOME) ? env.XDG_DATA_HOME : join11(home, ".local", "share");
+  const root = resolve4(env.WEBSITE_BUILDER_DATA_DIR || join11(base, "codex-website-builder"));
+  const expand = (value) => resolve4(value.replaceAll("${PLUGIN_ROOT}", fileURLToPath5(new URL("../../", import.meta.url))));
   return {
     root,
-    project: env.WEBSITE_BUILDER_PROJECT_ROOT ? expand(env.WEBSITE_BUILDER_PROJECT_ROOT) : join10(root, "project"),
-    reference: env.WEBSITE_BUILDER_ROOT ? expand(env.WEBSITE_BUILDER_ROOT) : join10(root, "reference")
+    project: env.WEBSITE_BUILDER_PROJECT_ROOT ? expand(env.WEBSITE_BUILDER_PROJECT_ROOT) : join11(root, "project"),
+    reference: env.WEBSITE_BUILDER_ROOT ? expand(env.WEBSITE_BUILDER_ROOT) : join11(root, "reference")
   };
-}
-
-// server/migrate-data.ts
-import { cp, mkdir as mkdir3, open as open2, readdir as readdir3, readFile as readFile11, rename as rename2, rm, stat as stat5, lstat } from "node:fs/promises";
-import { dirname as dirname4, join as join11, resolve as resolve5 } from "node:path";
-import { fileURLToPath as fileURLToPath5 } from "node:url";
-import { randomUUID as randomUUID2 } from "node:crypto";
-async function migrateLegacyData(projectRoot, sources) {
-  if (!sources && (process.env.WEBSITE_BUILDER_PROJECT_ROOT || process.env.WEBSITE_BUILDER_DATA_DIR)) return;
-  const pluginRoot = fileURLToPath5(new URL("../../", import.meta.url));
-  if (!sources) {
-    sources = [join11(pluginRoot, "project")];
-    if (dirname4(pluginRoot).split(/[\\/]/).pop() === "codex-website-builder") {
-      for (const entry of await readdir3(dirname4(pluginRoot), { withFileTypes: true })) {
-        if (!entry.isDirectory()) continue;
-        const root = join11(dirname4(pluginRoot), entry.name);
-        const manifest = await readFile11(join11(root, "package.json"), "utf8").then(JSON.parse).catch(() => null);
-        if (manifest?.name === "codex-website-builder") sources.push(join11(root, "project"));
-      }
-    }
-  }
-  const existing = [];
-  for (const source of new Set(sources)) if (resolve5(source) !== resolve5(projectRoot) && (await stat5(source).catch(() => null))?.isDirectory()) existing.push(source);
-  if (!existing.length) return;
-  const base = dirname4(projectRoot);
-  await mkdir3(join11(base, "db"), { recursive: true });
-  const lockPath = join11(base, "db", "migration.lock");
-  let lock;
-  for (let attempt = 0; attempt < 100; attempt++) {
-    try {
-      lock = await open2(lockPath, "wx");
-      await lock.writeFile(String(process.pid));
-      break;
-    } catch (error) {
-      if (error.code !== "EEXIST") throw error;
-      const pid = Number(await readFile11(lockPath, "utf8").catch(() => ""));
-      if (pid > 0) {
-        try {
-          process.kill(pid, 0);
-        } catch (check) {
-          if (check.code === "ESRCH") {
-            await rm(lockPath, { force: true });
-            continue;
-          }
-        }
-      } else {
-        const info = await stat5(lockPath).catch(() => null);
-        if (info && Date.now() - info.mtimeMs > 12e4) {
-          await rm(lockPath, { force: true });
-          continue;
-        }
-      }
-      await new Promise((resolve6) => setTimeout(resolve6, 100));
-    }
-  }
-  if (!lock) throw Error("\u5168\u5C40\u9879\u76EE\u8FC1\u79FB\u6B63\u5728\u8FDB\u884C\uFF0C\u8BF7\u7A0D\u540E\u91CD\u65B0\u6253\u5F00\u63D2\u4EF6");
-  try {
-    await mkdir3(projectRoot, { recursive: true });
-    const state = join11(base, ".builder-state");
-    for (const source of existing) {
-      const oldState = join11(dirname4(source), ".builder-state");
-      for (const entry of await readdir3(source, { withFileTypes: true })) {
-        if (!entry.isDirectory() || !/^[a-f0-9]{4}(?:-[a-f0-9]{4}){3}$/.test(entry.name)) continue;
-        const target = join11(projectRoot, entry.name), metadata = join11(state, "projects", entry.name);
-        if (await stat5(target).catch(() => null) || await stat5(metadata).catch(() => null)) continue;
-        const stage = join11(base, `.migration-${randomUUID2()}`);
-        try {
-          await cp(join11(source, entry.name), stage, { recursive: true, errorOnExist: true, force: false, filter: async (path) => !(await lstat(path)).isSymbolicLink() });
-          const oldMeta = join11(oldState, "projects", entry.name);
-          if (await stat5(oldMeta).catch(() => null)) {
-            await mkdir3(dirname4(metadata), { recursive: true });
-            await cp(oldMeta, metadata, { recursive: true, errorOnExist: true, force: false, filter: async (path) => !(await lstat(path)).isSymbolicLink() });
-          }
-          await rename2(stage, target);
-        } finally {
-          await rm(stage, { recursive: true, force: true });
-        }
-      }
-      const threads = await readdir3(join11(oldState, "threads"), { withFileTypes: true }).catch(() => []);
-      await mkdir3(join11(state, "threads"), { recursive: true });
-      for (const entry of threads) if (entry.isFile() && entry.name.endsWith(".json")) await cp(join11(oldState, "threads", entry.name), join11(state, "threads", entry.name), { force: false });
-      if (await stat5(join11(oldState, "active.json")).catch(() => null)) await cp(join11(oldState, "active.json"), join11(state, "active.json"), { force: false });
-    }
-  } finally {
-    await lock.close();
-    await rm(lockPath, { force: true });
-  }
 }
 
 // server/project-presentation.ts
@@ -8105,13 +8193,13 @@ function projectTitle(project) {
 }
 
 // server/project-manager.ts
-import { readFile as readFile12, mkdir as mkdir4, copyFile, realpath as realpath6, stat as stat7, readdir as readdir4 } from "node:fs/promises";
-import { createHash as createHash5 } from "node:crypto";
-import { extname as extname4, join as join12, relative as relative5, sep as sep5, isAbsolute as isAbsolute7 } from "node:path";
+import { readFile as readFile13, mkdir as mkdir5, copyFile, realpath as realpath6, stat as stat7, readdir as readdir4 } from "node:fs/promises";
+import { createHash as createHash6 } from "node:crypto";
+import { extname as extname4, join as join13, relative as relative5, sep as sep5, isAbsolute as isAbsolute7 } from "node:path";
 
 // server/open-directory.ts
 import { spawn } from "node:child_process";
-import { stat as stat6, realpath as realpath5 } from "node:fs/promises";
+import { stat as stat5, realpath as realpath5 } from "node:fs/promises";
 import { win32 } from "node:path";
 function windowsShellPath(path) {
   if (path.startsWith("\\\\?\\UNC\\")) path = "\\\\" + path.slice(8);
@@ -8166,7 +8254,7 @@ if(@(Find-DirectoryWindows | Where-Object {$_.HWND -eq $active}).Count){exit 0}
 exit 3
 `;
 async function openDirectory(directory, platform = process.platform, start = spawn) {
-  if (!(await stat6(directory)).isDirectory()) throw Error("\u9879\u76EE\u76EE\u5F55\u4E0D\u5B58\u5728");
+  if (!(await stat5(directory)).isDirectory()) throw Error("\u9879\u76EE\u76EE\u5F55\u4E0D\u5B58\u5728");
   const windows = platform === "win32";
   const command = windows ? win32.join(process.env.SystemRoot || "C:\\Windows", "System32", "WindowsPowerShell", "v1.0", "powershell.exe") : platform === "darwin" ? "open" : "xdg-open";
   const args = windows ? ["-NoProfile", "-NonInteractive", "-STA", "-WindowStyle", "Hidden", "-Command", activateDirectoryScript] : [directory];
@@ -8180,8 +8268,181 @@ async function openDirectory(directory, platform = process.platform, start = spa
 
 // server/project-manager.ts
 import { gunzipSync as gunzipSync2 } from "node:zlib";
+
+// server/image-dimensions.ts
+import { open as open2, stat as stat6 } from "node:fs/promises";
+var cache3 = /* @__PURE__ */ new Map();
+async function imageDimensions(path) {
+  const info = await stat6(path), key = `${info.size}:${info.mtimeMs}`;
+  if (cache3.get(path)?.key === key) return cache3.get(path).dimensions;
+  const file = await open2(path, "r");
+  try {
+    const buffer = Buffer.alloc(Math.min(65536, info.size));
+    await file.read(buffer, 0, buffer.length, 0);
+    let width = 0, height = 0;
+    if (buffer.length >= 24 && buffer.subarray(0, 8).equals(Buffer.from([137, 80, 78, 71, 13, 10, 26, 10]))) {
+      width = buffer.readUInt32BE(16);
+      height = buffer.readUInt32BE(20);
+    } else if (buffer.length >= 10 && buffer.toString("ascii", 0, 3) === "GIF") {
+      width = buffer.readUInt16LE(6);
+      height = buffer.readUInt16LE(8);
+    } else if (/\.svg$/i.test(path)) {
+      const source = buffer.toString("utf8").match(/<svg\b[^>]*>/i)?.[0] || "";
+      const viewBox = source.match(/viewBox\s*=\s*["']\s*[-\d.e]+[ ,]+[-\d.e]+[ ,]+([\d.e]+)[ ,]+([\d.e]+)/i);
+      width = Number(source.match(/\bwidth\s*=\s*["']([\d.]+)(?:px)?["']/i)?.[1] || viewBox?.[1]);
+      height = Number(source.match(/\bheight\s*=\s*["']([\d.]+)(?:px)?["']/i)?.[1] || viewBox?.[2]);
+    } else if (buffer.length > 4 && buffer[0] === 255 && buffer[1] === 216) {
+      for (let offset2 = 2; offset2 + 9 < buffer.length; ) {
+        if (buffer[offset2++] !== 255) break;
+        const marker = buffer[offset2++];
+        if (marker === 255) {
+          offset2--;
+          continue;
+        }
+        const length = buffer.readUInt16BE(offset2);
+        if (length < 2) break;
+        if ([192, 193, 194, 195, 197, 198, 199, 201, 202, 203, 205, 206, 207].includes(marker)) {
+          height = buffer.readUInt16BE(offset2 + 3);
+          width = buffer.readUInt16BE(offset2 + 5);
+          break;
+        }
+        offset2 += length;
+      }
+    }
+    const dimensions = Number.isFinite(width) && Number.isFinite(height) && width > 0 && height > 0 ? { width, height } : void 0;
+    if (cache3.size >= 256) cache3.delete(cache3.keys().next().value);
+    cache3.set(path, { key, dimensions });
+    return dimensions;
+  } finally {
+    await file.close();
+  }
+}
+
+// server/image-compression.ts
+import { readFile as readFile12, lstat as lstat2, mkdir as mkdir4, open as open3, rename as rename2, unlink as unlink2 } from "node:fs/promises";
+import { createHash as createHash5, randomUUID as randomUUID2 } from "node:crypto";
+import { join as join12, resolve as resolve5 } from "node:path";
+import { fileURLToPath as fileURLToPath6, pathToFileURL } from "node:url";
+var hash = (bytes) => createHash5("sha256").update(bytes).digest("hex");
+function imagePublisher(store, compressor) {
+  const active = /* @__PURE__ */ new Map();
+  const row = (id, path) => store.database.sql.prepare("SELECT * FROM image_compressions WHERE project_id=? AND path=?").get(id, path);
+  const stop = (id, path, error) => {
+    store.database.sql.prepare("UPDATE image_tasks SET status='error',error=? WHERE project_id=? AND path=?").run(error, id, path);
+    store.database.activity(id, "image:" + path, false);
+  };
+  async function work(view, path) {
+    const id = view.project.id, owner = randomUUID2();
+    let claimed = false, timer;
+    try {
+      const initial = await store.exclusive(id, async () => {
+        assertEditable(store.database, id);
+        await assertMainRepository(view.projectDirectory);
+        const source = await contained(view.materialDirectory, path), info = await lstat2(source);
+        if (!info.isFile()) throw Error("\u539F\u56FE\u4E0D\u662F\u666E\u901A\u6587\u4EF6");
+        const input = await readFile12(source), sourceHash = hash(input), previous = row(id, path);
+        await mkdir4(join12(view.directory, "images"), { recursive: true });
+        const images = await contained(view.directory, "images"), target = join12(images, path);
+        const targetHash = await contained(images, path).then((file) => readFile12(file)).then(hash).catch((error) => {
+          if (error.code === "ENOENT") return "";
+          throw error;
+        });
+        if (previous?.status === "done" && previous.source_hash === sourceHash && previous.output_hash === targetHash) {
+          store.database.sql.prepare("UPDATE image_tasks SET status='ready',error='' WHERE project_id=? AND path=?").run(id, path);
+          store.database.activity(id, "image:" + path, false);
+          return { cached: JSON.parse(previous.report) };
+        }
+        if (previous?.status === "running" && previous.lease_until > Date.now()) return { pending: true };
+        if (previous?.status === "failed" || previous?.attempts >= 3) throw Error(previous.error || "\u56FE\u7247\u538B\u7F29\u5DF2\u8FBE\u52303\u6B21\u4E0A\u9650\uFF0C\u8BF7\u767B\u8BB0\u65B0\u7684begin\u4EFB\u52A1\u540E\u91CD\u8BD5");
+        if (previous && previous.source_hash !== sourceHash) throw Error("\u539F\u56FE\u5DF2\u53D8\u5316\uFF0C\u8BF7\u91CD\u65B0begin\u56FE\u7247\u4EFB\u52A1");
+        store.database.sql.prepare("INSERT INTO image_compressions(project_id,path,source_hash,status,attempts,owner,lease_until) VALUES (?,?,?,'running',?,?,?) ON CONFLICT(project_id,path) DO UPDATE SET status='running',owner=excluded.owner,lease_until=excluded.lease_until").run(id, path, sourceHash, previous?.attempts || 0, owner, Date.now() + 18e4);
+        claimed = true;
+        store.database.sql.prepare("UPDATE image_tasks SET status='generating',error='' WHERE project_id=? AND path=?").run(id, path);
+        store.database.activity(id, "image:" + path);
+        return { source, input, sourceHash, target, targetHash, attempts: previous?.attempts || 0 };
+      });
+      if ("cached" in initial) return initial.cached;
+      if ("pending" in initial) return { pending: true };
+      timer = setInterval(() => {
+        store.database.sql.prepare("UPDATE image_compressions SET lease_until=? WHERE project_id=? AND path=? AND owner=?").run(Date.now() + 18e4, id, path, owner);
+      }, 1e4);
+      const pluginRoot = fileURLToPath6(new URL("../../", import.meta.url));
+      const skill = (process.env.WEBSITE_BUILDER_SKILL_ROOT || join12(pluginRoot, "skills/website-builder")).replaceAll("${PLUGIN_ROOT}", pluginRoot);
+      const compress = compressor || (await import(pathToFileURL(resolve5(skill, "../website-image-generator/scripts/compress-image.mjs")).href)).compressImageWithRetry;
+      const result = await compress(initial.input, path, { attemptsUsed: initial.attempts, onAttempt: (attempt) => {
+        const current2 = row(id, path);
+        if (current2?.owner !== owner || current2.status !== "running" || store.database.sql.prepare("SELECT status FROM image_tasks WHERE project_id=? AND path=?").get(id, path)?.status !== "generating") throw Error("\u56FE\u7247\u538B\u7F29\u4EFB\u52A1\u5DF2\u53D8\u5316\u6216\u505C\u6B62");
+        store.database.sql.prepare("UPDATE image_compressions SET attempts=? WHERE project_id=? AND path=? AND owner=?").run(attempt, id, path, owner);
+      } });
+      const report = { attempts: result.attempts, original_size: result.originalSize, compressed_size: result.size, saved_bytes: result.originalSize - result.size, unchanged: result.unchanged };
+      await store.exclusive(id, async () => {
+        assertEditable(store.database, id);
+        await assertMainRepository(view.projectDirectory);
+        if (row(id, path)?.owner !== owner || store.database.sql.prepare("SELECT status FROM image_tasks WHERE project_id=? AND path=?").get(id, path)?.status !== "generating") throw Error("\u56FE\u7247\u4EFB\u52A1\u5DF2\u53D8\u5316\u6216\u505C\u6B62");
+        if (hash(await readFile12(await contained(view.materialDirectory, path))) !== initial.sourceHash) throw Error("\u539F\u56FE\u5728\u538B\u7F29\u671F\u95F4\u88AB\u4FEE\u6539\uFF0C\u672A\u53D1\u5E03");
+        const images = await contained(view.directory, "images");
+        const currentHash = await contained(images, path).then((file) => readFile12(file)).then(hash).catch((error) => {
+          if (error.code === "ENOENT") return "";
+          throw error;
+        });
+        if (currentHash !== initial.targetHash) throw Error("\u7F51\u7AD9\u56FE\u7247\u5728\u538B\u7F29\u671F\u95F4\u88AB\u4FEE\u6539\uFF0C\u672A\u8986\u76D6");
+        const temporary = join12(images, "." + path + "." + owner + ".tmp");
+        try {
+          const handle = await open3(temporary, "wx");
+          try {
+            await handle.writeFile(result.binary);
+            await handle.sync();
+          } finally {
+            await handle.close();
+          }
+          if (hash(await readFile12(await contained(view.materialDirectory, path))) !== initial.sourceHash) throw Error("\u539F\u56FE\u5728\u5199\u5165\u671F\u95F4\u53D8\u5316\uFF0C\u672A\u53D1\u5E03");
+          const finalTargetHash = await contained(images, path).then((file) => readFile12(file)).then(hash).catch((error) => {
+            if (error.code === "ENOENT") return "";
+            throw error;
+          });
+          if (finalTargetHash !== initial.targetHash) throw Error("\u7F51\u7AD9\u56FE\u7247\u5728\u5199\u5165\u671F\u95F4\u53D8\u5316\uFF0C\u672A\u8986\u76D6");
+          await rename2(temporary, initial.target);
+        } finally {
+          await unlink2(temporary).catch((error) => {
+            if (error.code !== "ENOENT") throw error;
+          });
+        }
+        store.database.sql.prepare("UPDATE image_compressions SET status='done',lease_until=0,output_hash=?,report=?,error='' WHERE project_id=? AND path=? AND owner=?").run(hash(result.binary), JSON.stringify(report), id, path, owner);
+        store.database.sql.prepare("UPDATE image_tasks SET status='ready',error='' WHERE project_id=? AND path=?").run(id, path);
+        store.database.activity(id, "image:" + path, false);
+      });
+      return report;
+    } catch (error) {
+      const message = error.message;
+      if (claimed) store.database.sql.prepare("UPDATE image_compressions SET status='failed',lease_until=0,error=? WHERE project_id=? AND path=? AND owner=?").run(message, id, path, owner);
+      stop(id, path, message);
+      throw error;
+    } finally {
+      if (timer) clearInterval(timer);
+    }
+  }
+  return {
+    publish(view, path) {
+      const key = view.project.id + ":" + path;
+      if (active.has(key)) return active.get(key);
+      const promise = work(view, path);
+      active.set(key, promise);
+      void promise.finally(() => active.delete(key)).catch(() => {
+      });
+      return promise;
+    },
+    reset(id, path) {
+      const current2 = row(id, path);
+      if (current2?.status === "running" && current2.lease_until > Date.now()) throw Error("\u56FE\u7247\u6B63\u5728\u538B\u7F29\uFF0C\u8BF7\u7B49\u5F85\u5F53\u524D\u4EFB\u52A1\u7ED3\u675F");
+      store.database.sql.prepare("DELETE FROM image_compressions WHERE project_id=? AND path=?").run(id, path);
+    }
+  };
+}
+
+// server/project-manager.ts
 var mime3 = (path) => ({ ".png": "image/png", ".jpg": "image/jpeg", ".jpeg": "image/jpeg", ".webp": "image/webp", ".avif": "image/avif", ".ico": "image/x-icon", ".svg": "image/svg+xml", ".gif": "image/gif", ".pdf": "application/pdf", ".json": "application/json" })[extname4(path).toLowerCase()] || "application/octet-stream";
 function projectManager(store) {
+  const publisher = imagePublisher(store);
   const captures = /* @__PURE__ */ new Map();
   const thumbnails = /* @__PURE__ */ new Map();
   const thumbnailRetry = /* @__PURE__ */ new Map();
@@ -8217,35 +8478,65 @@ function projectManager(store) {
         const directory = await realpath6(store.metadataDirectory(project.id));
         const path = await realpath6(project.thumbnailPath).catch(() => "");
         const rel = relative5(directory, path);
-        if (path && rel !== ".." && !rel.startsWith(`..${sep5}`) && !isAbsolute7(rel)) image = `data:image/png;base64,${(await readFile12(path)).toString("base64")}`;
+        if (path && rel !== ".." && !rel.startsWith(`..${sep5}`) && !isAbsolute7(rel)) image = `data:image/png;base64,${(await readFile13(path)).toString("base64")}`;
       }
       const details = store.database.project(project.id);
       const status = store.database.status(project.id);
-      return { id: project.id, name: project.name, brand: details?.brand || project.name, country: details?.country, language: details?.language, categories: details?.categories || [], displayName: projectTitle(details || {}), status, statusLabel: statusLabels[status], deletable: !["generating", "modifying"].includes(status), updatedAt: project.updatedAt, thumbnail: image };
+      return { id: project.id, name: project.name, brand: details?.brand || project.name, country: details?.country, language: details?.language, categories: details?.categories || [], displayName: projectTitle(details || {}), status, statusLabel: statusLabels[status], deploying: !!operationLock(store.database, project.id), deletable: !operationLock(store.database, project.id) && !["generating", "modifying"].includes(status), updatedAt: project.updatedAt, thumbnail: image };
     }));
   }
   async function context(thread, panelId) {
     const panel = store.database.context(thread, panelId);
     const id = panel?.project_id;
-    if (id && store.database.project(id)) return { page: "project", panel_id: panel.panel_id, ...compactProject(await store.get(thread, id)), thread_id: thread || null };
+    const view = id ? await store.get(thread, id).catch(() => null) : null;
+    if (view) {
+      const rows = store.database.sql.prepare("SELECT key,value FROM settings WHERE key LIKE 'submission:%'").all();
+      const submission = rows.flatMap((row) => {
+        try {
+          const value = JSON.parse(row.value);
+          return value.state === "created" && value.project_id === view.project.id && value.thread_id === thread ? [{ panel_id: row.key.slice("submission:".length), request_id: value.request_id, state: "created" }] : [];
+        } catch {
+          return [];
+        }
+      })[0];
+      return { page: "project", panel_id: panel.panel_id, ...compactProject(view), thread_id: thread || null, ...submission ? { submission } : {} };
+    }
     return { page: "home", panel_id: panel?.panel_id || panelId || null, projects: await store.list() };
+  }
+  async function materialResources(view) {
+    const id = view.project.id, found = [];
+    const scan = async (directory) => {
+      for (const entry of await readdir4(directory, { withFileTypes: true }).catch((error) => {
+        if (error.code === "ENOENT") return [];
+        throw error;
+      })) {
+        if (entry.name.startsWith(".") || entry.name === "node_modules") continue;
+        const path = join13(directory, entry.name);
+        if (entry.isDirectory()) await scan(path);
+        else if (entry.isFile() && !/\.(?:html?|js|mjs|css)$/i.test(path)) {
+          const info = await stat7(path).catch((error) => {
+            if (error.code === "ENOENT") return null;
+            throw error;
+          });
+          if (!info) continue;
+          const resource = { id: createHash6("sha256").update(id + path).digest("hex"), name: entry.name, path, mime: mime3(path), size: info.size };
+          found.push(resource);
+          store.database.sql.prepare("INSERT INTO resources VALUES (?,?,?,?,?,?,?) ON CONFLICT(project_id,path) DO UPDATE SET size=excluded.size,mime=excluded.mime").run(resource.id, id, null, entry.name, path, resource.mime, info.size);
+        }
+      }
+    };
+    await scan(view.materialDirectory);
+    return found.sort((a, b) => a.name.localeCompare(b.name, "en", { numeric: true }));
   }
   async function resources(id) {
     const view = await store.get(void 0, id);
     if (!view) throw Error("\u9879\u76EE\u4E0D\u5B58\u5728");
-    const scan = async (directory) => {
-      for (const entry of await readdir4(directory, { withFileTypes: true })) {
-        if (entry.name.startsWith(".") || entry.name === "node_modules") continue;
-        const path = join12(directory, entry.name);
-        if (entry.isDirectory()) await scan(path);
-        else if (entry.isFile() && !/\.(?:html?|js|mjs|css)$/i.test(path)) {
-          const info = await stat7(path);
-          store.database.sql.prepare("INSERT INTO resources VALUES (?,?,?,?,?,?,?) ON CONFLICT(project_id,path) DO UPDATE SET size=excluded.size,mime=excluded.mime").run(createHash5("sha256").update(id + path).digest("hex"), id, null, entry.name, path, mime3(path), info.size);
-        }
-      }
-    };
-    await scan(view.directory);
-    return store.database.sql.prepare("SELECT id,name,path,mime,size,thread_id FROM resources WHERE project_id=? ORDER BY name").all(id);
+    const material = await materialResources(view);
+    const rows = store.database.sql.prepare("SELECT id,name,path,mime,size,thread_id FROM resources WHERE project_id=? ORDER BY name").all(id);
+    return [...material, ...rows.filter((row) => {
+      const rel = relative5(join13(view.metadataDirectory, "session-assets"), row.path);
+      return rel !== ".." && !rel.startsWith(`..${sep5}`) && !isAbsolute7(rel);
+    })];
   }
   async function run(input) {
     const action = input.action || "list";
@@ -8255,7 +8546,7 @@ function projectManager(store) {
     if (action === "context") {
       const value = await context(thread, input.panel_id);
       if (!input.requirement?.trim()) return value;
-      const fingerprint = createHash5("sha256").update(input.requirement.trim().replace(/\s+/g, " ")).digest("hex");
+      const fingerprint = createHash6("sha256").update(input.requirement.trim().replace(/\s+/g, " ")).digest("hex");
       const rows = store.database.sql.prepare("SELECT key,value FROM settings WHERE key LIKE 'submission:%'").all();
       const matches = rows.flatMap((row) => {
         try {
@@ -8276,7 +8567,7 @@ function projectManager(store) {
     if (action === "resume") {
       if (!thread && panel) return context(thread, input.panel_id);
       const binding = thread ? store.database.binding(thread) : null;
-      const project = binding && store.database.project(binding.projectId);
+      const project = binding && await store.get(thread, binding.projectId).catch(() => null);
       store.database.panel(input.panel_id, thread || "", project ? binding.projectId : null);
       return context(thread, input.panel_id);
     }
@@ -8295,12 +8586,18 @@ function projectManager(store) {
       }
       if (input.submission_start) {
         if (record?.request_id === input.request_id) return record;
-        saveSubmission({ request_id: input.request_id, state: "pending", created_at: (/* @__PURE__ */ new Date()).toISOString(), ...input.requirement?.trim() ? { requirement_hash: createHash5("sha256").update(input.requirement.trim().replace(/\s+/g, " ")).digest("hex") } : {} });
+        saveSubmission({ request_id: input.request_id, state: "pending", created_at: (/* @__PURE__ */ new Date()).toISOString(), ...input.requirement?.trim() ? { requirement_hash: createHash6("sha256").update(input.requirement.trim().replace(/\s+/g, " ")).digest("hex") } : {} });
         return { state: "pending" };
       }
       if (record?.request_id !== input.request_id) throw Error("\u6B64\u63D0\u4EA4\u5DF2\u5931\u6548\uFF0C\u8BF7\u68C0\u67E5\u5F53\u524D\u5BF9\u8BDD");
       if (input.detail_ready) {
         if (record.state !== "created" || panel?.project_id !== record.project_id) throw Error("\u9879\u76EE\u8BE6\u60C5\u5C1A\u672A\u7ED1\u5B9A");
+        if (input.visible_panel_id && input.visible_panel_id !== input.panel_id) {
+          const visible = store.database.panelById(input.visible_panel_id);
+          if (visible?.project_id !== record.project_id || visible.thread_id !== record.thread_id) throw Error("\u65B0\u5BF9\u8BDD\u8BE6\u60C5\u9762\u677F\u5C1A\u672A\u7ED1\u5B9A\u5230\u672C\u6B21\u9879\u76EE");
+          record.chat_detail_ready = true;
+          record.chat_panel_id = input.visible_panel_id;
+        }
         record.detail_ready = true;
         saveSubmission(record);
       }
@@ -8335,7 +8632,7 @@ function projectManager(store) {
         if (!view2) throw Error("\u9879\u76EE\u4E0D\u5B58\u5728\u6216\u5DF2\u5220\u9664");
         store.database.panel(input.panel_id, thread || "", view2.project.id, action === "create" && submissionHandoff);
         if (input.request_id) saveSubmission({ request_id: input.request_id, state: "created", project_id: view2.project.id, thread_id: thread || null });
-        return { page: "project", panel_id: input.panel_id, ...compactProject(view2), thread_id: thread || null, ...input.request_id ? { ui_reused: true, request_id: input.request_id, next_action: "\u521D\u6B21\u521B\u5EFA\u590D\u7528\u539F\u9762\u677F\uFF0C\u67E5\u8BE2website_projects(action=submission,panel_id,request_id)\u7B49\u5F85detail_ready=true\u518D\u751F\u6210\uFF1B\u4F1A\u8BDD\u9014\u4E2D\u53EF\u7528open_canvas(thread_id)\u91CD\u65B0\u8FDB\u5165\u540C\u4E00\u9879\u76EE\u8BE6\u60C5\uFF0C\u4E0D\u65B0\u5EFA\u66FF\u4EE3\u9879\u76EE\u3002" } : {} };
+        return { page: "project", panel_id: input.panel_id, ...compactProject(view2), thread_id: thread || null, ...input.request_id ? { ui_reused: true, request_id: input.request_id, next_action: "\u5FC5\u987B\u8C03\u7528open_thread_canvas(thread_id=\u672C\u6B21\u65B0\u5BF9\u8BDD\u771F\u5B9EID)\u4E00\u6B21\uFF0C\u5728\u65B0\u5BF9\u8BDD\u6253\u5F00\u4FA7\u8FB9UI\u5E76\u8FDB\u5165\u672C\u9879\u76EE\uFF1B\u67E5\u8BE2website_projects(action=submission,panel_id,request_id)\u7B49\u5F85chat_detail_ready=true\u518D\u751F\u6210\u3002\u4E0D\u91CD\u5EFA\u9879\u76EE\uFF0C\u4E0D\u53CD\u590D\u6253\u5F00\u9762\u677F\u3002" } : {} };
       } catch (error) {
         if (input.request_id) saveSubmission({ request_id: input.request_id, state: "failed", error: error.message });
         throw error;
@@ -8351,29 +8648,28 @@ function projectManager(store) {
     if (!view) throw Error("\u9879\u76EE\u4E0D\u5B58\u5728");
     if (action === "images") {
       const images = [];
-      const tasks = store.database.sql.prepare("SELECT * FROM image_tasks WHERE project_id=? ORDER BY path").all(id);
+      const tasks = store.database.sql.prepare("SELECT * FROM image_tasks WHERE project_id=? ORDER BY path").all(id).filter((task) => typeof task.path === "string" && !/[\\/]/.test(task.path) && mime3(task.path).startsWith("image/"));
       const pending = /* @__PURE__ */ new Map();
       for (const task of tasks) {
-        const info = await contained(view.directory, task.path).then((file) => stat7(file)).catch(() => null);
+        const info = await contained(view.materialDirectory, task.path).then((file) => stat7(file)).catch(() => null);
         if (task.status === "generating" && info?.isFile() && info.size > 0 && `${info.size}:${info.mtimeMs}` !== task.baseline) {
-          task.status = "ready";
-          store.database.activity(id, "image:" + task.path, false);
-          store.database.sql.prepare("UPDATE image_tasks SET status='ready',error='' WHERE project_id=? AND path=?").run(id, task.path);
+          void publisher.publish(view, task.path).catch(() => {
+          });
         }
         if (task.status !== "ready") pending.set(task.path, task);
       }
-      for (const resource of await resources(id)) {
+      for (const resource of await materialResources(view)) {
         if (!resource.mime.startsWith("image/")) continue;
         try {
-          const base = await realpath6(view.directory), file = await realpath6(resource.path), path = relative5(base, file);
+          const base = await realpath6(view.materialDirectory), file = await realpath6(resource.path), path = relative5(base, file);
           if (path === ".." || path.startsWith(`..${sep5}`) || isAbsolute7(path)) continue;
           const relativePath = path.split(sep5).join("/");
           if (pending.has(relativePath)) continue;
-          images.push({ ...resource, path: relativePath, status: "ready", url: await registerPreviewFile(file, resource.mime) });
+          images.push({ ...resource, path: relativePath, status: "ready", ...await imageDimensions(file), url: await registerPreviewFile(file, resource.mime) });
         } catch {
         }
       }
-      for (const task of pending.values()) images.push({ id: createHash5("sha256").update(id + task.path).digest("hex"), path: task.path, name: task.name, mime: mime3(task.path), status: task.status, error: task.error, width: task.width, height: task.height });
+      for (const task of pending.values()) images.push({ id: createHash6("sha256").update(id + task.path).digest("hex"), path: task.path, name: task.name, mime: mime3(task.path), status: task.status, error: task.error, width: task.width, height: task.height });
       return { images };
     }
     if (action === "capture") {
@@ -8400,25 +8696,26 @@ function projectManager(store) {
       return { resource: registerPreviewBuffer(image.bytes, "image/png"), width: image.width, fullPage: true, page: image.page };
     }
     if (action === "delete") {
+      assertEditable(store.database, id);
       store.database.remove(id);
       return { page: "home", projects: await list() };
     }
     if (action === "folder") {
-      await openDirectory(view.directory);
-      return { directory: view.directory };
+      await openDirectory(view.projectDirectory);
+      return { directory: view.projectDirectory };
     }
     if (action === "resources") return { resources: await resources(id) };
     if (action === "attach") {
       if (!input.source_path || !isAbsolute7(input.source_path)) throw Error("\u9700\u8981\u7528\u6237\u63D0\u4F9B\u7684\u8D44\u6E90\u7EDD\u5BF9\u8DEF\u5F84");
       const source = await realpath6(input.source_path), info = await stat7(source);
       if (!info.isFile() || info.size > 64 * 1024 * 1024) throw Error("\u8D44\u6E90\u5FC5\u987B\u662F\u6587\u4EF6\u4E14\u4E0D\u8D85\u8FC7 64 MB");
-      const bytes = await readFile12(source), hash = createHash5("sha256").update(bytes).digest("hex");
-      const folder = join12(view.metadataDirectory, "session-assets");
-      await mkdir4(folder, { recursive: true });
-      const path = join12(folder, hash + extname4(source));
+      const bytes = await readFile13(source), hash2 = createHash6("sha256").update(bytes).digest("hex");
+      const folder = join13(view.metadataDirectory, "session-assets");
+      await mkdir5(folder, { recursive: true });
+      const path = join13(folder, hash2 + extname4(source));
       await copyFile(source, path);
       const name = source.split(/[\\/]/).pop();
-      store.database.sql.prepare("INSERT INTO resources VALUES (?,?,?,?,?,?,?) ON CONFLICT(project_id,path) DO UPDATE SET thread_id=excluded.thread_id,name=excluded.name").run(createHash5("sha256").update(id + path).digest("hex"), id, thread || null, name, path, mime3(path), info.size);
+      store.database.sql.prepare("INSERT INTO resources VALUES (?,?,?,?,?,?,?) ON CONFLICT(project_id,path) DO UPDATE SET thread_id=excluded.thread_id,name=excluded.name").run(createHash6("sha256").update(id + path).digest("hex"), id, thread || null, name, path, mime3(path), info.size);
       return { resources: await resources(id) };
     }
     throw Error("\u4E0D\u652F\u6301\u7684\u9879\u76EE\u7BA1\u7406\u64CD\u4F5C");
@@ -8428,19 +8725,29 @@ function projectManager(store) {
     if (binding?.projectId !== input.project_id) throw Error("\u56FE\u7247\u4EFB\u52A1\u4E0D\u5C5E\u4E8E\u5F53\u524D\u4F1A\u8BDD\u9879\u76EE");
     const view = await store.get(input.thread_id, input.project_id);
     if (!view) throw Error("\u9879\u76EE\u4E0D\u5B58\u5728");
+    if (input.action !== "fail") assertEditable(store.database, view.project.id);
+    if (input.action === "begin") await assertMainRepository(view.projectDirectory);
     const path = store.path(input.path);
-    if (!mime3(path).startsWith("image/")) throw Error("\u56FE\u7247\u4EFB\u52A1\u9700\u8981\u6709\u6548\u56FE\u7247\u6269\u5C55\u540D");
-    const info = await contained(view.directory, path).then((file) => stat7(file)).catch(() => null);
-    if (input.action === "begin" && info) throw Error("\u56FE\u7247\u5DF2\u5B58\u5728\uFF0C\u8BF7\u4F7F\u7528\u65B0\u7684\u7248\u672C\u6587\u4EF6\u540D\uFF0C\u4FDD\u7559\u539F\u56FE");
+    if (path.includes("/") || !mime3(path).startsWith("image/")) throw Error("\u56FE\u7247\u4EFB\u52A1\u4F7F\u7528 material \u5185\u7684\u56FE\u7247\u6587\u4EF6\u540D\uFF0C\u4F8B\u5982 logo.png\u3001banner1.png\u3001about.png");
+    let compression;
+    const info = await contained(view.materialDirectory, path).then((file) => stat7(file)).catch(() => null);
+    if (input.action === "begin") {
+      assertEditable(store.database, view.project.id);
+      publisher.reset(view.project.id, path);
+    }
     if (input.action === "begin") store.database.sql.prepare(`INSERT INTO image_tasks(project_id,path,name,width,height,status,error,baseline) VALUES (?,?,?,?,?,'generating','',?) ON CONFLICT(project_id,path) DO UPDATE SET name=excluded.name,width=excluded.width,height=excluded.height,status='generating',error='',baseline=excluded.baseline`).run(input.project_id, path, input.name || path.split("/").pop(), input.width || 960, input.height || 600, info ? `${info.size}:${info.mtimeMs}` : "");
     else {
       const task = store.database.sql.prepare("SELECT baseline FROM image_tasks WHERE project_id=? AND path=?").get(input.project_id, path);
       if (!task) throw Error("\u8BF7\u5148\u767B\u8BB0\u56FE\u7247\u751F\u6210\u4EFB\u52A1");
       if (input.action === "finish" && (!info?.isFile() || !info.size || `${info.size}:${info.mtimeMs}` === task.baseline)) throw Error("\u672C\u6B21\u56FE\u7247\u6210\u54C1\u5C1A\u672A\u5199\u5165\u9879\u76EE");
+      if (input.action === "finish") {
+        compression = await publisher.publish(view, path);
+        if (compression?.pending) return { project_id: input.project_id, path, material_path: join13(view.materialDirectory, path), website_path: `images/${path}`, status: "generating", phase: "compressing", compression };
+      }
       store.database.sql.prepare("UPDATE image_tasks SET status=?,error=? WHERE project_id=? AND path=?").run(input.action === "finish" ? "ready" : "error", input.action === "fail" ? input.error || "\u56FE\u7247\u751F\u6210\u5931\u8D25\uFF0C\u8BF7\u91CD\u8BD5" : "", input.project_id, path);
     }
     store.database.activity(input.project_id, "image:" + path, input.action === "begin");
-    return { project_id: input.project_id, path, status: input.action === "begin" ? "generating" : input.action === "finish" ? "ready" : "error" };
+    return { project_id: input.project_id, path, material_path: join13(view.materialDirectory, path), website_path: `images/${path}`, compression, status: input.action === "begin" ? "generating" : input.action === "finish" ? "ready" : "error" };
   }
   return { run, context, thumbnail, imageTask, close: async () => {
     shutdown.abort();
@@ -8451,6 +8758,8 @@ function projectManager(store) {
 export {
   formatSource,
   readTemplates,
+  operationLock,
+  assertEditable,
   ProjectStore,
   resourceChunk,
   createPreview,
@@ -8461,6 +8770,5 @@ export {
   screenshotPage,
   importProducts,
   dataPaths,
-  migrateLegacyData,
   projectManager
 };
