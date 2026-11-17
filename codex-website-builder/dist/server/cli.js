@@ -9,7 +9,7 @@ import {
   projectManager,
   readTemplates,
   screenshotPage
-} from "./chunk-MZQSQIFN.js";
+} from "./chunk-7EZN6SMH.js";
 import "./chunk-WPQ5MXLX.js";
 
 // server/cli.ts
@@ -40,7 +40,7 @@ try {
         if (input.mode === "bind") console.log(JSON.stringify(binding));
         else console.log(JSON.stringify({ templates: await readTemplates(root, { ...input, mode: "code", section: "all", ids: [...new Set(input.targets.map((target) => target.id))] }), binding }));
       }
-    } else console.log(JSON.stringify(await readTemplates(root, { ...input, usage: input.mode === "select" ? await store.templateUsage() : void 0 })));
+    } else console.log(JSON.stringify(await readTemplates(root, input)));
     process.exit(0);
   }
   if (input.action === "format") {

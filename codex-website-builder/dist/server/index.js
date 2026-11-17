@@ -14,7 +14,7 @@ import {
   readTemplates,
   resourceChunk,
   screenshotPage
-} from "./chunk-MZQSQIFN.js";
+} from "./chunk-7EZN6SMH.js";
 import {
   $ZodObject,
   $ZodType,
@@ -7278,7 +7278,7 @@ var require_dist = __commonJS({
 });
 
 // server/index.ts
-import { readFile as readFile2 } from "node:fs/promises";
+import { readFile } from "node:fs/promises";
 
 // node_modules/.pnpm/zod@4.6.7/node_modules/zod/v3/helpers/util.js
 var util;
@@ -16962,7 +16962,7 @@ var StdioServerTransport = class {
   }
 };
 
-// node_modules/.pnpm/@modelcontextprotocol+ext-apps@1.7.5_@modelcontextprotocol+sdk@1.32.2_zod@4.6.7__react-dom@19_bdnqo3wvk4r3rn3q7t4jcwi6ye/node_modules/@modelcontextprotocol/ext-apps/dist/src/server/index.js
+// node_modules/.pnpm/@modelcontextprotocol+ext-apps@1.7.5_@modelcontextprotocol+sdk@1.32.2_zod@4.6.7__react-_aa47506489abf8dc9ab0acdff469545b/node_modules/@modelcontextprotocol/ext-apps/dist/src/server/index.js
 var r = ((Z) => typeof __require < "u" ? __require : typeof Proxy < "u" ? new Proxy(Z, { get: ($, J) => (typeof __require < "u" ? __require : $)[J] }) : Z)(function(Z) {
   if (typeof __require < "u") return __require.apply(this, arguments);
   throw Error('Dynamic require of "' + Z + '" is not supported');
@@ -17061,36 +17061,25 @@ import { resolve } from "node:path";
 import { gzipSync } from "node:zlib";
 import { fileURLToPath } from "node:url";
 
-// server/r2-settings.ts
-import { readFile } from "node:fs/promises";
-import { join } from "node:path";
-import { createDecipheriv } from "node:crypto";
+// server/r2-config.ts
 var r2Fields = ["R2_ACCOUNT_ID", "R2_BUCKET_NAME", "R2_ACCESS_KEY_ID", "R2_SECRET_ACCESS_KEY", "R2_DEPLOY_HOST"];
+var r2Config = Object.freeze({
+  R2_ACCOUNT_ID: "de6bfc524cc643924904a24c787b7ef2",
+  R2_BUCKET_NAME: "website",
+  R2_ACCESS_KEY_ID: "b34b97680bad9bf98b2eef25658e52ad",
+  R2_SECRET_ACCESS_KEY: "70cdc57b2914a42af37b1d9c1105fdb29825dd76b16f920dab9a786a38f9d59c",
+  R2_DEPLOY_HOST: "1437257.xyz"
+});
+
+// server/r2-settings.ts
 var mask = "\u2022\u2022\u2022\u2022\u2022\u2022\u2022\u2022";
 var R2Settings = class {
-  constructor(root, env = process.env) {
+  constructor(root, _env = process.env) {
     this.root = root;
-    this.env = env;
   }
   root;
-  env;
   async get() {
-    let data = {};
-    try {
-      data = JSON.parse(await readFile(join(this.root, "config/r2-config.json"), "utf8"));
-    } catch (error) {
-      if (error.code !== "ENOENT") throw Error("R2 \u672C\u673A\u914D\u7F6E\u4E0D\u53EF\u8BFB\u53D6");
-    }
-    if (data.credentials) {
-      try {
-        const key = await readFile(join(this.root, "config/r2-key.bin")), cipher = createDecipheriv("aes-256-gcm", key, Buffer.from(data.credentials.iv, "hex"));
-        cipher.setAuthTag(Buffer.from(data.credentials.tag, "hex"));
-        Object.assign(data, JSON.parse(Buffer.concat([cipher.update(Buffer.from(data.credentials.value, "hex")), cipher.final()]).toString()));
-      } catch {
-        throw Error("R2 \u672C\u673A\u51ED\u636E\u4E0D\u53EF\u8BFB\u53D6\uFF0C\u8BF7\u8054\u7CFB\u914D\u7F6E\u7BA1\u7406\u5458");
-      }
-    }
-    return Object.fromEntries(r2Fields.map((name) => [name, String(data[name] ?? this.env[name] ?? "")]));
+    return { ...r2Config };
   }
   async public() {
     const data = await this.get();
@@ -17111,14 +17100,14 @@ function registerR2Settings(server2, settings) {
 import { readdir, lstat, realpath } from "node:fs/promises";
 import { createReadStream } from "node:fs";
 import { createHash, randomUUID } from "node:crypto";
-import { join as join2, relative, isAbsolute, sep, extname } from "node:path";
+import { join, relative, isAbsolute, sep, extname } from "node:path";
 var mime = { ".html": "text/html; charset=utf-8", ".htm": "text/html; charset=utf-8", ".js": "text/javascript; charset=utf-8", ".mjs": "text/javascript; charset=utf-8", ".css": "text/css; charset=utf-8", ".json": "application/json", ".svg": "image/svg+xml", ".png": "image/png", ".jpg": "image/jpeg", ".jpeg": "image/jpeg", ".webp": "image/webp", ".avif": "image/avif", ".gif": "image/gif", ".ico": "image/x-icon", ".woff": "font/woff", ".woff2": "font/woff2", ".ttf": "font/ttf", ".txt": "text/plain; charset=utf-8", ".xml": "application/xml", ".mp4": "video/mp4", ".pdf": "application/pdf", ".webmanifest": "application/manifest+json" };
 async function sourceSnapshot(root) {
   const canonical = await realpath(root), files = [];
   const walk = async (folder) => {
     for (const entry of (await readdir(folder, { withFileTypes: true })).sort((a, b) => a.name.localeCompare(b.name))) {
       if (entry.name === ".git" || /^\.env(?:\.|$)/.test(entry.name)) throw Error("src \u5305\u542B\u79C1\u6709\u914D\u7F6E\u76EE\u5F55\u6216\u6587\u4EF6\uFF0C\u4E0D\u80FD\u90E8\u7F72");
-      const file = join2(folder, entry.name), info = await lstat(file);
+      const file = join(folder, entry.name), info = await lstat(file);
       if (info.isSymbolicLink()) throw Error("src \u5305\u542B\u7B26\u53F7\u94FE\u63A5\uFF0C\u4E0D\u80FD\u90E8\u7F72");
       const actual = await realpath(file), rel = relative(canonical, actual);
       if (rel === ".." || rel.startsWith(".." + sep) || isAbsolute(rel)) throw Error("src \u8D44\u6E90\u8DEF\u5F84\u8D8A\u754C");
@@ -17291,8 +17280,8 @@ async function openPreviewBrowser(value, platform = process.platform, run = exec
 
 // server/index.ts
 var uri = "ui://codex-website-builder/canvas";
-var sidebarIcon = await readFile2(new URL("../../assets/icon.png", import.meta.url));
-var html = await readFile2(new URL("../ui/index.html", import.meta.url), "utf8");
+var sidebarIcon = await readFile(new URL("../../assets/icon.png", import.meta.url));
+var html = await readFile(new URL("../ui/index.html", import.meta.url), "utf8");
 var paths = dataPaths();
 var projects = new ProjectStore(paths.project);
 var r2Settings = new R2Settings(paths.root);
@@ -17316,7 +17305,7 @@ var manager = projectManager(projects);
 var syncProject = projectService(projects);
 var preview = await createPreview(html, paths.reference, "www.noventrad.com", syncProject, manager.run, control);
 var skillRoot = (process.env.WEBSITE_BUILDER_SKILL_ROOT || resolve("skills/website-builder")).replaceAll("${PLUGIN_ROOT}", fileURLToPath(new URL("../../", import.meta.url)));
-var server = new McpServer({ name: "codex-website-builder", version: "0.8.9", icons: [{ src: `data:image/png;base64,${sidebarIcon.toString("base64")}`, mimeType: "image/png", sizes: ["200x200"] }] }, { capabilities: { experimental: { "openai/settings": r2SettingsCapability } } });
+var server = new McpServer({ name: "codex-website-builder", version: "0.9.1", icons: [{ src: `data:image/png;base64,${sidebarIcon.toString("base64")}`, mimeType: "image/png", sizes: ["200x200"] }] }, { capabilities: { experimental: { "openai/settings": r2SettingsCapability } } });
 var csp = { connectDomains: ["data:", "blob:"], resourceDomains: ["data:", "blob:"], frameDomains: ["blob:", "data:"], baseUriDomains: ["https://website-builder.invalid"] };
 var legacyCsp = { connect_domains: csp.connectDomains, resource_domains: csp.resourceDomains, frame_domains: csp.frameDomains, base_uri_domains: csp.baseUriDomains };
 registerR2Settings(server, r2Settings);
@@ -17355,7 +17344,7 @@ server.registerTool("website_panel_context", {
 });
 server.registerTool("website_projects", {
   description: "\u7BA1\u7406\u5168\u5C40 SQLite \u9879\u76EE\uFF1Alist \u5217\u51FA\u9879\u76EE\uFF0Copen/create \u7ED1\u5B9A\u5F53\u524D\u4F1A\u8BDD\u548C\u9762\u677F\uFF0Chome \u8FD4\u56DE\u4E3B\u754C\u9762\uFF0Cdelete \u8F6F\u5220\u9664\uFF08\u4FDD\u7559\u6587\u4EF6\uFF09\uFF0Cresources \u5217\u51FA\u8D44\u6E90\uFF0Cattach \u590D\u5236\u7528\u6237\u660E\u786E\u63D0\u4F9B\u7684\u56FE\u7247/\u6587\u4EF6\u5230\u9879\u76EE\u8D44\u6E90\u76EE\u5F55\u3002panel_id \u6765\u81EA\u9762\u677F\u4E0A\u4E0B\u6587\uFF1Bthread_id \u5FC5\u987B\u662F\u771F\u5B9E\u5F53\u524D\u4F1A\u8BDD ID\u3002\u9996\u9875submission\u7528create\u4E0Erequest_id\u521B\u5EFA\u7A7A\u9879\u76EE\uFF0C\u968F\u540E\u5FC5\u987B\u8C03\u7528open_thread_canvas(thread_id=\u65B0\u5BF9\u8BDDID)\u4E00\u6B21\u6253\u5F00\u4FA7\u8FB9UI\u8FDB\u5165\u8BE6\u60C5\uFF0C\u67E5\u8BE2submission\u5230chat_detail_ready=true\u540E\u518D\u89C4\u5212\u9875\u9762\u548C\u751F\u6210\uFF1B\u4F1A\u8BDD\u9014\u4E2D\u53EF\u6309\u9700open_canvas(thread_id)\u6062\u590D\u540C\u4E00\u9879\u76EE\u8BE6\u60C5\u3002",
-  inputSchema: { action: external_exports.enum(["list", "resume", "open", "create", "bind", "home", "delete", "restore", "resources", "attach", "folder", "images", "capture", "submission"]).default("list"), visible_panel_id: external_exports.string().optional(), requirement: external_exports.string().max(1e5).optional(), request_id: external_exports.string().max(128).optional(), submission_start: external_exports.boolean().optional(), detail_ready: external_exports.boolean().optional(), cancel: external_exports.boolean().optional(), panel_id: external_exports.string().optional(), thread_id: external_exports.string().optional(), project_id: external_exports.string().optional(), name: external_exports.string().max(200).optional(), country: external_exports.string().trim().max(100).optional(), language: external_exports.string().trim().max(100).optional(), categories: external_exports.array(external_exports.string().trim().min(1).max(100)).max(2).optional(), brand: external_exports.string().trim().max(200).optional(), source_path: external_exports.string().optional(), path: external_exports.string().optional(), width: external_exports.number().int().min(320).max(2560).optional(), capture_id: external_exports.string().optional(), chunk: external_exports.string().max(512e3).optional(), offset: external_exports.number().int().nonnegative().optional(), final: external_exports.boolean().optional() },
+  inputSchema: { action: external_exports.enum(["list", "resume", "open", "create", "bind", "home", "delete", "restore", "resources", "attach", "folder", "images", "capture", "submission", "upload"]).default("list"), upload_id: external_exports.string().optional(), file_name: external_exports.string().max(255).optional(), mime_type: external_exports.string().max(200).optional(), total_size: external_exports.number().int().min(0).max(12 * 1024 * 1024).optional(), sha256: external_exports.string().regex(/^[a-f0-9]{64}$/).optional(), file_count: external_exports.number().int().min(0).max(10).optional(), visible_panel_id: external_exports.string().optional(), requirement: external_exports.string().max(1e5).optional(), request_id: external_exports.string().max(128).optional(), submission_start: external_exports.boolean().optional(), detail_ready: external_exports.boolean().optional(), cancel: external_exports.boolean().optional(), panel_id: external_exports.string().optional(), thread_id: external_exports.string().optional(), project_id: external_exports.string().optional(), name: external_exports.string().max(200).optional(), country: external_exports.string().trim().max(100).optional(), language: external_exports.string().trim().max(100).optional(), categories: external_exports.array(external_exports.string().trim().min(1).max(100)).max(2).optional(), brand: external_exports.string().trim().max(200).optional(), source_path: external_exports.string().optional(), path: external_exports.string().optional(), width: external_exports.number().int().min(320).max(2560).optional(), capture_id: external_exports.string().optional(), chunk: external_exports.string().max(512e3).optional(), offset: external_exports.number().int().nonnegative().optional(), final: external_exports.boolean().optional() },
   annotations: { readOnlyHint: false, destructiveHint: false, openWorldHint: true }
 }, async (input) => {
   try {
@@ -17415,7 +17404,7 @@ server.registerTool("read_page", {
 var pageSchema = external_exports.object({ path: external_exports.string(), title: external_exports.string() });
 server.registerTool("website_project", {
   title: "Website Builder",
-  description: "Use the bundled skill and reuse the exact thread project. Create/open an empty project BEFORE planning pages or generating content. For a panel submission use website_projects(create,panel_id,request_id), then call open_thread_canvas with the NEW real thread_id once to open its sidebar and wait for submission chat_detail_ready=true before generating. The originating panel does not replace the new chat sidebar. Never create a replacement project. For chat requests create/open without pages, open_canvas once to enter details, THEN plan and generate. For a complete ecommerce site, explicitly plan home/shop/product/wishlist/checkout/login/register/about/contact/terms/privacy/return, Default to a shared drawer cart (no cart.html); include cart.html only for an explicit page-cart request or preserved existing page mode. Default to the chosen Home chain; excluding Header/Footer, generation permits at most 0\u20132 justified composition changes and N\xB11 main sections. Preserve independent component source structures; this is not an acceptance or readiness gate. Logo must be a transparent, tightly cropped brand wordmark image, favicon square. Fonts and third-party dependencies must use online CDN URLs. Implement project WebComponent Toast from the toast-01 template document before writing pages; the assembler only reuses that supplied component; overlay closing is a per-component documentation requirement, without a unified Overlay API. Product JSON must go through website_products/SDK. Avoid jsDelivr CDN; page-specific logic stays in inline script. never use browser alert. Avoid home categories when Header already provides category navigation. mobile html root font-size is 12px. Do not silently reduce a complete site to transaction pages. Existing custom names or partial user requests may differ. Header must include working Home, Shop, About Us and Contact Us links on desktop and mobile. Projects have project_directory containing README.md, src/, material/ and a local Git repository initialized and first committed on main without a remote. End every creation/modification round (including images/README-only changes) with finish to commit locally to main; no changes means no empty commit, never push. GIT_CONFIRMATION_REQUIRED means ask the user first, then use system Git for approved merge/branch/conflict handling; never auto-repair or bypass confirmation. directory/source_directory is src; source paths are relative to src, no src prefix. Generated originals go in material_directory, final website assets in src/images with fixed semantic filenames. Never migrate legacy formats automatically. The returned directory is production-only; keep drafts, reports and raw sources in metadata_directory. Plan missing pages, begin before edits, finish after complete files; finish without paths validates all unfinished planned pages and settles their status before ending the task. New projects require new_project=true.",
+  description: "Use the bundled skill and reuse the exact thread project. Create/open an empty project BEFORE planning pages or generating content. For a panel submission use website_projects(create,panel_id,request_id), then call open_thread_canvas with the NEW real thread_id once to open its sidebar and wait for submission chat_detail_ready=true before generating. The originating panel does not replace the new chat sidebar. Never create a replacement project. For chat requests create/open without pages, open_canvas once to enter details, THEN plan and generate. For a complete ecommerce site, explicitly plan home/shop/product/wishlist/checkout/login/register/about/contact/terms/privacy/return, Default to a shared drawer cart (no cart.html); include cart.html only for an explicit page-cart request or preserved existing page mode. Default to the chosen Home chain; excluding Header/Footer, generation permits at most 0\u20132 justified composition changes and N\xB11 main sections. Preserve independent component source structures; this is not an acceptance or readiness gate. Logo must be a transparent, tightly cropped brand wordmark image, favicon square. Fonts and third-party dependencies must use online CDN URLs. Implement project WebComponent Toast from the toast-01 template document before writing pages; the assembler only reuses that supplied component; overlay closing is a per-component documentation requirement, without a unified Overlay API. Product JSON must go through website_products/SDK. Avoid jsDelivr CDN; page-specific logic stays in inline script. never use browser alert. Avoid home categories when Header already provides category navigation. mobile html root font-size is 12px. Do not silently reduce a complete site to transaction pages. Existing custom names or partial user requests may differ. Header must include working Home, Shop, About Us and Contact Us links on desktop and mobile. Projects have project_directory containing README.md, src/, material/, files/ and a local Git repository initialized and first committed on main without a remote. End every creation/modification round (including images/README-only changes) with finish to commit locally to main; no changes means no empty commit, never push. GIT_CONFIRMATION_REQUIRED means ask the user first, then use system Git for approved merge/branch/conflict handling; never auto-repair or bypass confirmation. directory/source_directory is src; source paths are relative to src, no src prefix. Generated originals go in material_directory, final website assets in src/images with fixed semantic filenames. Never migrate legacy formats automatically. The returned directory is production-only. Home-prompt attachments are saved byte-for-byte under files_directory (project root files/); use the returned files or website_projects(resources) local absolute paths with website_products, never attachment://. Keep other drafts, reports and raw sources in metadata_directory. Plan missing pages, begin before edits, finish after complete files; finish without paths validates all unfinished planned pages and settles their status before ending the task. New projects require new_project=true.",
   inputSchema: { action: external_exports.enum(["open", "plan", "begin", "finish", "status"]).default("open"), thread_id: external_exports.string().min(1), project_id: external_exports.string().optional(), new_project: external_exports.boolean().optional(), name: external_exports.string().optional(), country: external_exports.string().trim().max(100).optional(), categories: external_exports.array(external_exports.string().trim().min(1).max(100)).max(2).optional(), brand: external_exports.string().trim().max(200).optional(), brief: external_exports.string().optional(), language: external_exports.string().optional(), pages: external_exports.array(pageSchema).min(1).optional(), paths: external_exports.array(external_exports.string()).optional() },
   annotations: { readOnlyHint: false, destructiveHint: false, openWorldHint: false }
 }, async (input) => {
@@ -17451,7 +17440,7 @@ server.registerTool("website_write", {
   }
 });
 server.registerTool("website_templates", {
-  description: "Plan a coherent site visual system first. Shop/About selection must compare at least 3 candidates and actual region differences; candidate usage reports past projects so compatible less-used templates can be preferred for new sites. Select returns unranked candidates; Agent chooses templates, palette, light/dark strategy and content widths. Home templates return composition documentation only (their code is pseudocode), with replaceable Header/Footer and generation-only limits of 0\u20132 main-section changes and source N\xB11 sections; independent template code includes Overview/source; optional targets/bind record provenance only. Fidelity is SKILL guidance, never a readiness gate; legacy audit returns source info without scores. New components use unique xxx-component names. Prefer a shared drawer; use cart.html only for explicit page-cart requirements or preserved existing page mode, never both. Inspect actual site rendering and interactions.",
+  description: "For a NEW site call select with category=home ONCE. The program uniformly samples one Home from the entire current catalog using crypto.randomInt and returns selected.id; use that result, not a model-picked Home or repeated rerolls. No template-call history or past usage is read, recorded or used. Other categories return compatible component/page candidates; Shop/About must compare at least 3 actual layouts. Agent chooses the palette, light/dark strategy and content widths. Home templates return composition documentation only (their code is pseudocode), with replaceable Header/Footer and generation-only limits of 0\u20132 main-section changes and source N\xB11 sections; independent template code includes Overview/source; optional targets/bind record provenance only. Fidelity is SKILL guidance, never a readiness gate; legacy audit returns source info without scores. New components use unique xxx-component names. Prefer a shared drawer; use cart.html only for explicit page-cart requirements or preserved existing page mode, never both. Inspect actual site rendering and interactions.",
   inputSchema: {
     mode: external_exports.enum(["select", "summary", "doc", "code", "bind", "audit"]).default("select"),
     ids: external_exports.array(external_exports.string()).max(12).optional(),
@@ -17478,7 +17467,7 @@ server.registerTool("website_templates", {
       const result = await readTemplates(skillRoot, { ...input, mode: "code", ids: [...new Set(input.targets.map((target) => target.id))], section: "all" });
       return { content: [{ type: "text", text: JSON.stringify({ templates: result, binding }) }] };
     }
-    return { content: [{ type: "text", text: JSON.stringify(await readTemplates(skillRoot, { ...input, usage: input.mode === "select" ? await projects.templateUsage() : void 0 })) }] };
+    return { content: [{ type: "text", text: JSON.stringify(await readTemplates(skillRoot, input)) }] };
   } catch (error) {
     return { isError: true, content: [{ type: "text", text: error.message }] };
   }

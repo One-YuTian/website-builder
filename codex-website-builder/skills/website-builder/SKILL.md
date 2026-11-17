@@ -48,7 +48,7 @@ description: 规划电商页面并组合模板，协调文案、图片和商品�
 2. website_project(action="open",thread_id=当前真实会话ID,project_id=已创建项目ID,name,brief,language,country,categories,brand)补齐元数据；website_project(action="plan",thread_id,project_id,pages)规划页面。完整站点规划首页、Shop、商品详情、心愿单、结算、登录、注册、About Us、Contact Us及实际政策页，订单路由随功能补齐。默认共享drawer cart；仅明确要求或保留已有页面模式才生成cart.html，不重复两种方案。Header桌面与移动均包含Home/Shop/About Us/Contact Us实际链接。
 项目标题元数据在open时显式提供：country为国家名称或ISO两位国家代码，language为实际语言代码，categories为最多两个主要商品类目，brand为品牌名。列表标题自动组合“国家 · 语言｜主要类目”，品牌保存为独立元数据供搜索与标题回退；卡片保持标题和时间两行，不额外增加品牌副标题。未知字段不猜测也不显示占位字样，可后续以open补齐。例：country="BR", language="pt-BR", categories=["家居","生活用品"], brand="Casa Sol"，显示“巴西 · 葡萄牙语｜家居与生活用品”。生成/改页前必须begin，页面完成write/finish，图片任务用begin/finish/fail如实登记；这些记录用于首页运行状态和删除保护。超过30分钟无更新的生成记录视为中断，继续任务先begin续期，不让失败任务长期占用运行状态。
 
-3. 项目使用新版目录：project_directory为Git项目根（README.md、src/、material/、.git/）；directory/source_directory固定指向src，页面与组件相对路径从src起算，不再额外加src前缀。README.md介绍品牌、域名、国家/语言、页面范围与运行方法，由主技能随信息完善（website_write的README.md专门写入项目根）。生成原图与候选图片写material_directory；正式引用图片用src/images/logo.png、favicon.png、banner1.png、banner2.png、about.png等固定文件名。原始JSON、提示词、草稿、报告和记录只写metadata_directory；旧格式不兼容、不自动迁移。详情已在前述入口流程打开，此处不再调用open_canvas。
+3. 项目使用新版目录：project_directory为Git项目根（README.md、src/、material/、files/、.git/）；directory/source_directory固定指向src，页面与组件相对路径从src起算，不再额外加src前缀。README.md介绍品牌、域名、国家/语言、页面范围与运行方法，由主技能随信息完善（website_write的README.md专门写入项目根）。首页上传的所有附件原件自动归档到files_directory（项目根files/），创建结果files或website_projects(resources)返回本地绝对路径；商品JSON用此路径交给website-import-data技能，不依赖attachment://，不把有效用户数据回退为Mock。生成原图与候选图片写material_directory；正式引用图片用src/images/logo.png、favicon.png、banner1.png、banner2.png、about.png等固定文件名。其他原始JSON、提示词、草稿、报告和记录只写metadata_directory；旧格式不兼容、不自动迁移。详情已在前述入口流程打开，此处不再调用open_canvas。
 4. 先按下节选择Home与实际组件并读取完整源码、整理素材槽位，再按职责表准备内容；不得在模板确定前固定生图数量。集成时读[SDK契约](references/commerce-data.md)。账户异步接口await，保持既有APP/SDK、数据和账户隔离，不另造状态库。
 图片任务数按最终所选模板/组件的实际槽位确定，不固定为5张；Logo、Favicon必须提供，Banner、About、分类图与图标等按需列清单并交给图片技能。适合统一风格网格图集的图标/分类图可合并生成后切割为独立文件，记录各槽位与成品路径。生成原图保存在material_directory，修改时可将历史版本保留在material/history；网站只引用images下的固定语义文件名，按图片技能发布更新。
 5. 按下节选择Home参考和实际组件。首次实现读[创建规范](references/creation-contract.md)；Shop另读[Shop接入](references/shop-integration.md)，同时读取所选Shop与Card完整源码。app.js由主技能随所选模板及站点design生成，包含实际主题、依赖/组件就绪、移动适配与数据初始化，不由商品工具生成、不从assets复制固定版本。运行时仅输出一份sdk.js，按sdk.js→data.js→app.js→共享组件→页面内联脚本加载；主题配置与唯一SDK.init都在app.js，静态目录初始化先于组件注册，异步就绪按SDK契约执行。
@@ -57,9 +57,11 @@ description: 规划电商页面并组合模板，协调文案、图片和商品�
 
 ## 模板选择
 
-website_templates(mode="select")返回未排序候选及usage，不自动决定设计。完整新站先从Home候选阅读Overview、Component Chain和区域说明，并执行[Home套用与有限自由组合](references/home-composition.md)的生成硬约束：默认沿用选定组合；除Header/Footer外，单次最多自由调整1–2个主体板块，允许零调整；原主体数N对应输出N−1至N＋1，原有5块则输出4–6块。替换/新增/删除/移动均占额度，不是整页自由重组。Home代码是伪代码，不用作生产源码；独立组件必须逐个查阅完整HTML/JS/CSS并以实际结构为基线，概要与源码冲突时以源码为准。该规则仅约束生成与开发自查，不纳入验收，不设运行时门禁。
+完整新站调用 website_templates(mode="select",category="home") **一次**：程序使用 crypto.randomInt 从当前目录中所有实际可用Home等概率抽取一套，返回 selected.id。必须以该结果作为首页基准，不由模型另选、不因偏好反复重抽；用户明确指定模板时优先按用户要求，已有站点局部修改保留当前版面。选型不记录调用历史，不读取/统计历史使用次数，也不做跨项目去重；独立随机允许重复。
 
-独立Shop/About/组件仍以实际区域、网格、响应式和交互为准，不凭摘要重画。完整新站比较至少3个Shop与3个About候选（不足则全看），结合实际结构与内容需要，兼容时优先较少使用布局，不总选第一个或机械排除-01。已有站点局部修改沿用原布局。
+读取抽中Home的Overview、Component Chain和区域说明，并执行[Home套用与有限自由组合](references/home-composition.md)：默认沿用抽中的组合；Header/Footer可更换，不计入主体额度；其余建议按实际内容需要替换0～2个主体板块，允许完全不换。仍沿用主体数N对应输出N−1至N＋1的既有约束，原有5块则输出4–6块。替换/新增/删除/移动均占最多2项额度，不是整页自由重组。Home代码是伪代码，不用作生产源码；独立组件必须逐个查阅完整HTML/JS/CSS并以实际结构为基线，概要与源码冲突时以源码为准。该规则仅约束生成与开发自查，不纳入验收，不设运行时门禁。
+
+独立Shop/About/组件仍返回完整候选，以实际区域、网格、响应式和交互为准，不凭摘要重画。完整新站比较至少3个Shop与3个About候选（不足则全看），结合实际结构与内容需要选择，不参考历史使用次数，不总选第一个或机械排除-01。已有站点局部修改沿用原布局。
 
 每批code读取1–12个确定使用ID。来源ID不作为生产标签，实际注册/挂载统一唯一xxx-component，嵌套标签/选择器同步映射，每个构造函数只注册一次。targets可追溯来源，不把绑定或旧audit当成功条件。
 

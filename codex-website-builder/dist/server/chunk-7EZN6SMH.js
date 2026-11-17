@@ -5774,6 +5774,7 @@ async function formatSource(path, source) {
 // server/templates.ts
 import { readFile as readFile2 } from "node:fs/promises";
 import { join } from "node:path";
+import { randomInt } from "node:crypto";
 function overview(text2, layout) {
   const original = text2.match(/## Overview([\s\S]*?)(?=## Code|$)/)?.[1].trim() || "";
   if (!layout) return original;
@@ -5793,8 +5794,14 @@ async function readTemplates(skillRoot, input) {
   if (input.mode === "select") {
     const slots = [...new Set(catalog.map((item) => item.category))];
     return slots.filter((category) => !input.category || input.category === category).flatMap((category) => {
-      const candidates = catalog.filter((item) => item.category === category).map(({ id, summary }) => ({ id, summary, ...input.usage ? { usage: input.usage[id] || { projects: 0 } } : {} }));
-      return candidates.length ? [{ category, candidates, selection: "Unranked candidates. Agent chooses compatible templates after deciding the site palette, light/dark strategy, content widths and layout. Include only needed sections; -01 is valid. No theme or width is chosen by this tool. Compare at least 3 Shop/About candidates (or all if fewer). Use actual region/layout differences and project usage history to avoid always choosing the first or most-used layout; prefer a compatible less-used alternative for a new site. Existing-site edits retain the current layout unless redesign is requested." }] : [];
+      const pool = catalog.filter((item) => item.category === category);
+      if (!pool.length) return [];
+      if (category === "home") {
+        const chosen = pool[randomInt(pool.length)];
+        return [{ category, candidates: [{ id: chosen.id, summary: chosen.summary }], selected: { id: chosen.id, summary: chosen.summary, referenceOnly: true }, strategy: "uniform-random", poolSize: pool.length, selection: "The program has uniformly sampled one Home from the entire available Home catalog, independently of brief and prior calls. Use selected.id for this new site; do not choose another or reroll for preference. Read its Overview and Component Chain. Header/Footer may be replaced freely with compatible templates; excluding them, allow 0\u20132 justified main-section changes and retain source N\xB11 sections. Existing-site edits retain the current layout. No template-call history is read or written." }];
+      }
+      const candidates = pool.map(({ id, summary }) => ({ id, summary }));
+      return [{ category, candidates, selection: "Unranked component/page candidates. Agent chooses compatible templates after deciding the site palette, light/dark strategy, content widths and layout. Include only needed sections; -01 is valid. Compare at least 3 Shop/About candidates (or all if fewer), based on actual layout and content needs. No past-usage statistics or call history are used. Existing-site edits retain the current layout unless redesign is requested." }];
     });
   }
   const selected = input.ids?.length ? input.ids.map((id) => {
@@ -6028,8 +6035,7 @@ var ProjectDatabase = class {
   status(id) {
     const p = this.project(id);
     if (!p) return "failed";
-    const tasks = this.sql.prepare("SELECT expires_at FROM project_activity WHERE project_id=?").all(id);
-    const images = this.sql.prepare("SELECT status FROM image_tasks WHERE project_id=?").all(id);
+    const tasks = this.sql.prepare("SELECT expires_at FROM project_activity WHERE project_id=? AND task_key NOT LIKE 'image:%'").all(id);
     const pages = p.pages || [], recent = Date.now() - Date.parse(p.updatedAt) < 30 * 60 * 1e3;
     const active = tasks.some((t) => t.expires_at > Date.now()) || pages.some((p2) => p2.status === "generating") && recent;
     if (active) {
@@ -6038,7 +6044,7 @@ var ProjectDatabase = class {
       if (states.length && states.every((value) => value === "paused" || value === "complete")) return "paused";
     }
     if (active) return p.hasPublished ?? (pages.length > 0 && pages.every((p2) => p2.status === "ready")) ? "modifying" : "generating";
-    if (tasks.some((t) => t.expires_at <= Date.now()) || images.some((t) => t.status !== "ready") || pages.some((p2) => p2.status === "error" || p2.status === "generating")) return "failed";
+    if (tasks.some((t) => t.expires_at <= Date.now()) || pages.some((p2) => p2.status === "error" || p2.status === "generating")) return "failed";
     return pages.length > 0 && pages.every((p2) => p2.status === "ready") ? "completed" : "pending";
   }
   remove(id) {
@@ -6177,6 +6183,7 @@ ${project.brief || "Website project generated with Website Builder."}
 
 - \`src/\`: deployable website source; serve this directory as the website root.
 - \`src/images/\`: website assets, including logo.png, favicon.png, banner1.png, banner2.png and about.png as needed.
+- \`files/\`: original files uploaded through the project home prompt; not deployed.
 - \`material/\`: generated original image assets; these are not part of the deployed website.
 - \`.git/\`: local repository, initialized on main without a remote.
 
@@ -6186,6 +6193,7 @@ Open src/index.html through a static HTTP server. Website details and running in
 async function scaffoldProject(directory, project) {
   await mkdir(join4(directory, "src", "images"), { recursive: true });
   await mkdir(join4(directory, "material"), { recursive: true });
+  await mkdir(join4(directory, "files"), { recursive: true });
   await initializeRepository(directory);
   await writeFile(join4(directory, "README.md"), projectReadme(project));
   return commitProject(directory, "Initialize website project");
@@ -6310,24 +6318,6 @@ var ProjectStore = class {
     const checks = await Promise.all(rows.map((row) => this.database.project(row.id)?.formatVersion === PROJECT_FORMAT && operationLock(this.database, row.id) ? Promise.resolve(true) : recognizedProject(this.folder(row.id), this.database.project(row.id)?.formatVersion)));
     return rows.filter((_, index) => checks[index]);
   }
-  async templateUsage() {
-    const usage = {};
-    for (const project of await this.list()) {
-      let data2;
-      try {
-        data2 = await json(join5(this.metadataDirectory(project.id), "website-builder.templates.json"));
-      } catch {
-        continue;
-      }
-      const items = Array.isArray(data2) ? data2 : Array.isArray(data2?.bindings) ? data2.bindings : Object.values(data2 || {});
-      const ids = new Set(items.map((item) => typeof item === "string" ? item : item?.id).filter((id) => typeof id === "string" && /^[a-z]+-[0-9]+$/.test(id)));
-      for (const id of ids) {
-        const previous = usage[id];
-        usage[id] = { projects: (previous?.projects || 0) + 1, lastUsed: previous?.lastUsed && previous.lastUsed > project.updatedAt ? previous.lastUsed : project.updatedAt };
-      }
-    }
-    return usage;
-  }
   async createProject(input) {
     const id = randomBytes(8).toString("hex").match(/.{4}/g).join("-");
     const pages = (input.pages || DEFAULT_PAGES).map((page) => ({ ...page, path: this.path(page.path, true), status: "queued", version: 0 }));
@@ -6451,20 +6441,20 @@ var ProjectStore = class {
     return source ? createHash("sha256").update(source).digest("hex") : "";
   }
   async resourceSignature(view, page) {
-    const hash2 = createHash("sha256"), visited = /* @__PURE__ */ new Set(), base = await realpath(view.directory);
+    const hash3 = createHash("sha256"), visited = /* @__PURE__ */ new Set(), base = await realpath(view.directory);
     const visit = async (path) => {
       if (visited.has(path)) return;
       visited.add(path);
-      hash2.update(path);
+      hash3.update(path);
       let file;
       try {
         file = await realpath(resolve(view.directory, path));
         const rel = relative(base, file);
         if (rel === ".." || rel.startsWith(`..${sep}`) || isAbsolute(rel)) throw new Error("Resource outside project");
         const info = await stat(file);
-        hash2.update(`${info.size}:${info.mtimeMs}`);
+        hash3.update(`${info.size}:${info.mtimeMs}`);
       } catch {
-        hash2.update(":missing");
+        hash3.update(":missing");
         return;
       }
       if (!/\.(?:html?|js|mjs|css)$/i.test(path)) return;
@@ -6480,12 +6470,12 @@ var ProjectStore = class {
           this.path(rel);
           await visit(rel);
         } catch {
-          hash2.update(":invalid-reference");
+          hash3.update(":invalid-reference");
         }
       }
     };
     await visit(page);
-    return hash2.digest("hex");
+    return hash3.digest("hex");
   }
   // Direct-file generation may finish without a tool callback. Only a complete,
   // changed document can leave generating; begin must not redisplay the old file.
@@ -7481,12 +7471,13 @@ async function resourceChunk(url, offset2 = 0, raw = false) {
 }
 
 // server/project-service.ts
+import { join as join7 } from "node:path";
 import { gzipSync } from "node:zlib";
 function previewPayload(gzip) {
   return gzip.length <= 1e6 ? gzip : { resource: registerPreviewBuffer(Buffer.from(gzip, "base64"), "application/gzip") };
 }
 function compactProject(view) {
-  return { ...view.git ? { git: view.git } : {}, project_id: view.project.id, thread_id: view.threadId, directory: view.directory, metadata_directory: view.metadataDirectory, project_directory: view.projectDirectory, source_directory: view.directory, material_directory: view.materialDirectory, format_version: view.project.formatVersion, name: view.project.name, country: view.project.country, categories: view.project.categories, brand: view.project.brand, language: view.project.language, brief: view.project.brief, pages: view.project.pages.map(({ path, status, error }) => ({ path, status, ...error ? { error } : {} })) };
+  return { ...view.git ? { git: view.git } : {}, project_id: view.project.id, thread_id: view.threadId, directory: view.directory, metadata_directory: view.metadataDirectory, project_directory: view.projectDirectory, files_directory: join7(view.projectDirectory, "files"), source_directory: view.directory, material_directory: view.materialDirectory, format_version: view.project.formatVersion, name: view.project.name, country: view.project.country, categories: view.project.categories, brand: view.project.brand, language: view.project.language, brief: view.project.brief, pages: view.project.pages.map(({ path, status, error }) => ({ path, status, ...error ? { error } : {} })) };
 }
 function projectService(store) {
   const cache4 = /* @__PURE__ */ new Map();
@@ -7544,25 +7535,25 @@ function projectService(store) {
 
 // server/commerce.ts
 import { readFile as readFile9, realpath as realpath4 } from "node:fs/promises";
-import { join as join8, relative as relative4, sep as sep4, isAbsolute as isAbsolute4 } from "node:path";
+import { join as join9, relative as relative4, sep as sep4, isAbsolute as isAbsolute4 } from "node:path";
 import { createHash as createHash3 } from "node:crypto";
 
 // server/commerce-assets.ts
 import { readFile as readFile8, realpath as realpath3 } from "node:fs/promises";
-import { join as join7, relative as relative3, sep as sep3, isAbsolute as isAbsolute3 } from "node:path";
+import { join as join8, relative as relative3, sep as sep3, isAbsolute as isAbsolute3 } from "node:path";
 async function commerceAssets(directory, skillRoot) {
   const files = [], kept = [];
   for (const name of ["sdk.js", "app.js"]) {
     const path = `js/${name}`;
     try {
-      const file = await realpath3(join7(directory, path)), base = await realpath3(directory), rel = relative3(base, file);
+      const file = await realpath3(join8(directory, path)), base = await realpath3(directory), rel = relative3(base, file);
       if (rel === ".." || rel.startsWith(`..${sep3}`) || isAbsolute3(rel)) throw Error("\u8FD0\u884C\u6587\u4EF6\u4E0D\u80FD\u6307\u5411\u9879\u76EE\u5916\u90E8");
       await readFile8(file, "utf8");
       kept.push(path);
     } catch (error) {
       if (error.code !== "ENOENT") throw error;
       if (name === "app.js") continue;
-      const source = await readFile8(join7(skillRoot, "assets/commerce", name), "utf8");
+      const source = await readFile8(join8(skillRoot, "assets/commerce", name), "utf8");
       files.push({ path, content: source });
     }
   }
@@ -7572,7 +7563,7 @@ async function commerceAssets(directory, skillRoot) {
 // server/commerce.ts
 async function existingFile(directory, path) {
   try {
-    const file = await realpath4(join8(directory, path));
+    const file = await realpath4(join9(directory, path));
     const rel = relative4(await realpath4(directory), file);
     if (rel === ".." || rel.startsWith(`..${sep4}`) || isAbsolute4(rel)) throw new Error("\u5546\u54C1\u6587\u4EF6\u4E0D\u80FD\u6307\u5411\u9879\u76EE\u5916\u90E8");
     return await readFile9(file, "utf8");
@@ -7697,7 +7688,7 @@ async function prepareCommerce(store, skillRoot, input) {
   const existing = await existingFile(view.directory, "js/data.js");
   let imported = false;
   try {
-    const record = JSON.parse(await readFile9(join8(view.metadataDirectory, "website-builder.import.json"), "utf8"));
+    const record = JSON.parse(await readFile9(join9(view.metadataDirectory, "website-builder.import.json"), "utf8"));
     imported = ["sdk-import-v1", "sdk-import-v2"].includes(record.schema) && !!existing && record.runtime_data_sha256 === createHash3("sha256").update(existing).digest("hex");
   } catch (error) {
     if (error.code !== "ENOENT" && !(error instanceof SyntaxError)) throw error;
@@ -7772,7 +7763,7 @@ window.storeData = {
 // server/screenshot.ts
 import { createServer as createServer2 } from "node:http";
 import { readFile as readFile10, mkdir as mkdir3, writeFile as writeFile3 } from "node:fs/promises";
-import { dirname as dirname3, extname as extname3, join as join9 } from "node:path";
+import { dirname as dirname3, extname as extname3, join as join10 } from "node:path";
 import { fileURLToPath as fileURLToPath4 } from "node:url";
 import { randomBytes as randomBytes3 } from "node:crypto";
 var mime2 = { ".html": "text/html", ".js": "text/javascript", ".mjs": "text/javascript", ".css": "text/css", ".json": "application/json", ".png": "image/png", ".jpg": "image/jpeg", ".jpeg": "image/jpeg", ".webp": "image/webp", ".avif": "image/avif", ".gif": "image/gif", ".svg": "image/svg+xml", ".ico": "image/x-icon", ".woff": "font/woff", ".woff2": "font/woff2", ".ttf": "font/ttf" };
@@ -7790,7 +7781,7 @@ async function screenshotPage(store, input) {
     runtime2
   );
   const vendor = fileURLToPath4(new URL("../vendor/", import.meta.url));
-  const vendors = JSON.parse(await readFile10(join9(vendor, "manifest.json"), "utf8"));
+  const vendors = JSON.parse(await readFile10(join10(vendor, "manifest.json"), "utf8"));
   const token = randomBytes3(24).toString("hex");
   const prefix = `/${token}/`;
   const service = createServer2(async (req, res) => {
@@ -7919,7 +7910,7 @@ async function screenshotPage(store, input) {
         }, Array.from(bytes));
         bytes = Buffer.from(data2, "base64");
       }
-      const path = join9(view.metadataDirectory, "artifacts/screenshots", `${input.path.split(/[?#]/)[0].replace(/[^a-zA-Z0-9_-]/g, "-")}-${width}-${Date.now()}-${randomBytes3(3).toString("hex")}.png`);
+      const path = join10(view.metadataDirectory, "artifacts/screenshots", `${input.path.split(/[?#]/)[0].replace(/[^a-zA-Z0-9_-]/g, "-")}-${width}-${Date.now()}-${randomBytes3(3).toString("hex")}.png`);
       await mkdir3(dirname3(path), { recursive: true });
       await writeFile3(path, bytes);
       return { path, width, page: input.path, bytes };
@@ -7941,7 +7932,7 @@ async function screenshotPage(store, input) {
 
 // server/product-import.ts
 import { readFile as readFile11, stat as stat4 } from "node:fs/promises";
-import { isAbsolute as isAbsolute5, join as join10 } from "node:path";
+import { isAbsolute as isAbsolute5, join as join11 } from "node:path";
 import { createHash as createHash4 } from "node:crypto";
 import { runInNewContext } from "node:vm";
 var valueAt = (item, path) => path.split(".").reduce((value, key) => value && Object.hasOwn(value, key) ? value[key] : void 0, item);
@@ -8087,7 +8078,7 @@ async function importProducts(store, skillRoot, input) {
     return { mode: "mock", fallback: true, next_skill: "website-mock-data", reason: error.message, written: [], source_sha256: fingerprint, note: "\u539F\u59CBJSON\u548C\u73B0\u6709\u5546\u54C1\u6570\u636E\u672A\u6539\u5199\uFF1B\u4E3B\u6280\u80FD\u63A5\u7EEDMock Data\u5DE5\u4F5C\u6D41\uFF0C\u4E0D\u628A\u5931\u8D25\u5BFC\u5165\u5192\u5145\u6210\u529F\u3002" };
   }
   const window2 = { productData: normalized.products };
-  runInNewContext(await readFile11(join10(skillRoot, "assets/commerce/sdk.js"), "utf8"), { window: window2, Intl }, { timeout: 2e3 });
+  runInNewContext(await readFile11(join11(skillRoot, "assets/commerce/sdk.js"), "utf8"), { window: window2, Intl }, { timeout: 2e3 });
   const config = { currency: input.currency || "USD", locale: input.locale || "en-US" };
   window2.SDK.init(normalized.products, config);
   const sourceCategories = window2.SDK.categories();
@@ -8161,17 +8152,17 @@ window.storeData = { getAll:()=>window.SDK.list().result(), getById:id=>window.S
 
 // server/data-paths.ts
 import { homedir as homedir2 } from "node:os";
-import { isAbsolute as isAbsolute6, join as join11, resolve as resolve4 } from "node:path";
+import { isAbsolute as isAbsolute6, join as join12, resolve as resolve4 } from "node:path";
 import { fileURLToPath as fileURLToPath5 } from "node:url";
 function dataPaths(env = process.env) {
   const home = homedir2();
-  const base = process.platform === "win32" ? env.LOCALAPPDATA || join11(home, "AppData", "Local") : env.XDG_DATA_HOME && isAbsolute6(env.XDG_DATA_HOME) ? env.XDG_DATA_HOME : join11(home, ".local", "share");
-  const root = resolve4(env.WEBSITE_BUILDER_DATA_DIR || join11(base, "codex-website-builder"));
+  const base = process.platform === "win32" ? env.LOCALAPPDATA || join12(home, "AppData", "Local") : env.XDG_DATA_HOME && isAbsolute6(env.XDG_DATA_HOME) ? env.XDG_DATA_HOME : join12(home, ".local", "share");
+  const root = resolve4(env.WEBSITE_BUILDER_DATA_DIR || join12(base, "codex-website-builder"));
   const expand = (value) => resolve4(value.replaceAll("${PLUGIN_ROOT}", fileURLToPath5(new URL("../../", import.meta.url))));
   return {
     root,
-    project: env.WEBSITE_BUILDER_PROJECT_ROOT ? expand(env.WEBSITE_BUILDER_PROJECT_ROOT) : join11(root, "project"),
-    reference: env.WEBSITE_BUILDER_ROOT ? expand(env.WEBSITE_BUILDER_ROOT) : join11(root, "reference")
+    project: env.WEBSITE_BUILDER_PROJECT_ROOT ? expand(env.WEBSITE_BUILDER_PROJECT_ROOT) : join12(root, "project"),
+    reference: env.WEBSITE_BUILDER_ROOT ? expand(env.WEBSITE_BUILDER_ROOT) : join12(root, "reference")
   };
 }
 
@@ -8193,9 +8184,9 @@ function projectTitle(project) {
 }
 
 // server/project-manager.ts
-import { readFile as readFile13, mkdir as mkdir5, copyFile, realpath as realpath6, stat as stat7, readdir as readdir4 } from "node:fs/promises";
-import { createHash as createHash6 } from "node:crypto";
-import { extname as extname4, join as join13, relative as relative5, sep as sep5, isAbsolute as isAbsolute7 } from "node:path";
+import { readFile as readFile14, mkdir as mkdir6, copyFile as copyFile2, realpath as realpath7, stat as stat8, readdir as readdir4 } from "node:fs/promises";
+import { createHash as createHash7 } from "node:crypto";
+import { extname as extname5, join as join15, relative as relative6, sep as sep6, isAbsolute as isAbsolute8 } from "node:path";
 
 // server/open-directory.ts
 import { spawn } from "node:child_process";
@@ -8321,7 +8312,7 @@ async function imageDimensions(path) {
 // server/image-compression.ts
 import { readFile as readFile12, lstat as lstat2, mkdir as mkdir4, open as open3, rename as rename2, unlink as unlink2 } from "node:fs/promises";
 import { createHash as createHash5, randomUUID as randomUUID2 } from "node:crypto";
-import { join as join12, resolve as resolve5 } from "node:path";
+import { join as join13, resolve as resolve5 } from "node:path";
 import { fileURLToPath as fileURLToPath6, pathToFileURL } from "node:url";
 var hash = (bytes) => createHash5("sha256").update(bytes).digest("hex");
 function imagePublisher(store, compressor) {
@@ -8341,8 +8332,8 @@ function imagePublisher(store, compressor) {
         const source = await contained(view.materialDirectory, path), info = await lstat2(source);
         if (!info.isFile()) throw Error("\u539F\u56FE\u4E0D\u662F\u666E\u901A\u6587\u4EF6");
         const input = await readFile12(source), sourceHash = hash(input), previous = row(id, path);
-        await mkdir4(join12(view.directory, "images"), { recursive: true });
-        const images = await contained(view.directory, "images"), target = join12(images, path);
+        await mkdir4(join13(view.directory, "images"), { recursive: true });
+        const images = await contained(view.directory, "images"), target = join13(images, path);
         const targetHash = await contained(images, path).then((file) => readFile12(file)).then(hash).catch((error) => {
           if (error.code === "ENOENT") return "";
           throw error;
@@ -8367,7 +8358,7 @@ function imagePublisher(store, compressor) {
         store.database.sql.prepare("UPDATE image_compressions SET lease_until=? WHERE project_id=? AND path=? AND owner=?").run(Date.now() + 18e4, id, path, owner);
       }, 1e4);
       const pluginRoot = fileURLToPath6(new URL("../../", import.meta.url));
-      const skill = (process.env.WEBSITE_BUILDER_SKILL_ROOT || join12(pluginRoot, "skills/website-builder")).replaceAll("${PLUGIN_ROOT}", pluginRoot);
+      const skill = (process.env.WEBSITE_BUILDER_SKILL_ROOT || join13(pluginRoot, "skills/website-builder")).replaceAll("${PLUGIN_ROOT}", pluginRoot);
       const compress = compressor || (await import(pathToFileURL(resolve5(skill, "../website-image-generator/scripts/compress-image.mjs")).href)).compressImageWithRetry;
       const result = await compress(initial.input, path, { attemptsUsed: initial.attempts, onAttempt: (attempt) => {
         const current2 = row(id, path);
@@ -8386,7 +8377,7 @@ function imagePublisher(store, compressor) {
           throw error;
         });
         if (currentHash !== initial.targetHash) throw Error("\u7F51\u7AD9\u56FE\u7247\u5728\u538B\u7F29\u671F\u95F4\u88AB\u4FEE\u6539\uFF0C\u672A\u8986\u76D6");
-        const temporary = join12(images, "." + path + "." + owner + ".tmp");
+        const temporary = join13(images, "." + path + "." + owner + ".tmp");
         try {
           const handle = await open3(temporary, "wx");
           try {
@@ -8439,10 +8430,151 @@ function imagePublisher(store, compressor) {
   };
 }
 
+// server/submission-files.ts
+import { constants } from "node:fs";
+import { copyFile, lstat as lstat3, mkdir as mkdir5, open as open4, readFile as readFile13, realpath as realpath6, stat as stat7, unlink as unlink3 } from "node:fs/promises";
+import { basename as basename3, extname as extname4, isAbsolute as isAbsolute7, join as join14, relative as relative5, sep as sep5 } from "node:path";
+import { createHash as createHash6 } from "node:crypto";
+var validId = (id) => /^[-a-zA-Z0-9_]{8,128}$/.test(id);
+var hash2 = (bytes) => createHash6("sha256").update(bytes).digest("hex");
+var safeName = (name) => {
+  let value = name.normalize("NFC").replace(/[<>:"/\\|?*\x00-\x1f]/g, "_").replace(/[ .]+$/g, "");
+  if (value.startsWith(".")) value = "file_" + value;
+  if (/^(con|prn|aux|nul|com[1-9]|lpt[1-9])(?:\.|$)/i.test(value)) value = "file_" + value;
+  if (!value || Buffer.byteLength(value) > 240) throw Error("\u9644\u4EF6\u6587\u4EF6\u540D\u4E3A\u7A7A\u6216\u8FC7\u957F");
+  return value;
+};
+var SubmissionFiles = class {
+  constructor(store) {
+    this.store = store;
+    store.database.sql.exec(`CREATE TABLE IF NOT EXISTS submission_files (
+      panel_id TEXT NOT NULL,request_id TEXT NOT NULL,upload_id TEXT NOT NULL,
+      name TEXT NOT NULL,mime TEXT NOT NULL,size INTEGER NOT NULL,received INTEGER NOT NULL,
+      sha256 TEXT NOT NULL,status TEXT NOT NULL,project_id TEXT,path TEXT NOT NULL,
+      PRIMARY KEY(panel_id,request_id,upload_id)
+    )`);
+  }
+  store;
+  rows(panel, request) {
+    return this.store.database.sql.prepare("SELECT * FROM submission_files WHERE panel_id=? AND request_id=? ORDER BY rowid").all(panel, request);
+  }
+  directory(panel, request) {
+    return join14(this.store.stateRoot, "submissions", hash2(panel + ":" + request));
+  }
+  async upload(panel, request, input) {
+    const id = input.upload_id, totalSize = input.total_size, offset2 = input.offset;
+    if (!id || !validId(id) || !validId(panel) || !validId(request)) throw Error("\u9644\u4EF6\u4E0A\u4F20\u6807\u8BB0\u65E0\u6548");
+    if (!input.file_name || input.file_name.length > 255 || typeof totalSize !== "number" || !Number.isInteger(totalSize) || totalSize < 0 || totalSize > 12 * 1024 * 1024) throw Error("\u9644\u4EF6\u540D\u79F0\u6216\u5927\u5C0F\u65E0\u6548");
+    if (!input.sha256 || !/^[a-f0-9]{64}$/.test(input.sha256)) throw Error("\u9644\u4EF6\u6821\u9A8C\u503C\u65E0\u6548");
+    if (typeof input.chunk !== "string" || input.chunk.length > 262144 || !/^(?:[A-Za-z0-9+/]{4})*(?:[A-Za-z0-9+/]{2}==|[A-Za-z0-9+/]{3}=)?$/.test(input.chunk)) throw Error("\u9644\u4EF6\u5206\u7247\u65E0\u6548");
+    if (typeof offset2 !== "number" || !Number.isInteger(offset2) || offset2 < 0) throw Error("\u9644\u4EF6\u5206\u7247\u504F\u79FB\u65E0\u6548");
+    const directory = this.directory(panel, request);
+    await mkdir5(directory, { recursive: true });
+    const state = await realpath6(this.store.stateRoot), actual = await realpath6(directory), rel = relative5(state, actual);
+    if (rel === ".." || rel.startsWith(`..${sep5}`) || isAbsolute7(rel)) throw Error("\u9644\u4EF6\u6682\u5B58\u76EE\u5F55\u4E0D\u80FD\u8D8A\u754C");
+    const lockPath = join14(directory, "upload.lock");
+    let lock;
+    for (let attempt = 0; attempt < 200; attempt++) {
+      try {
+        lock = await open4(lockPath, "wx");
+        break;
+      } catch (error) {
+        if (error.code !== "EEXIST") throw error;
+        const info = await stat7(lockPath).catch(() => null);
+        if (info && Date.now() - info.mtimeMs > 12e4) await unlink3(lockPath).catch(() => {
+        });
+        await new Promise((resolve6) => setTimeout(resolve6, 25));
+      }
+    }
+    if (!lock) throw Error("\u9644\u4EF6\u6B63\u5728\u4E0A\u4F20\uFF0C\u8BF7\u7A0D\u540E\u91CD\u8BD5");
+    try {
+      let row = this.rows(panel, request).find((item) => item.upload_id === id);
+      if (!row) {
+        const rows = this.rows(panel, request);
+        if (rows.length >= 10 || rows.reduce((sum, item) => sum + item.size, 0) + totalSize > 12 * 1024 * 1024) throw Error("\u6700\u591A\u9009\u62E910\u4E2A\u6587\u4EF6\uFF0C\u603B\u5927\u5C0F\u4E0D\u8D85\u8FC712MB\u3002");
+        if (offset2 !== 0) throw Error("\u9644\u4EF6\u5FC5\u987B\u4ECE\u9996\u4E2A\u5206\u7247\u5F00\u59CB\u4E0A\u4F20");
+        const path = join14(directory, id + ".part");
+        const file2 = await open4(path, "wx");
+        await file2.close();
+        this.store.database.sql.prepare("INSERT INTO submission_files VALUES (?,?,?,?,?,?,0,?,'uploading',NULL,?)").run(panel, request, id, safeName(input.file_name), input.mime_type || "application/octet-stream", totalSize, input.sha256, path);
+        row = this.rows(panel, request).find((item) => item.upload_id === id);
+      }
+      if (row.name !== safeName(input.file_name) || row.size !== totalSize || row.sha256 !== input.sha256) throw Error("\u9644\u4EF6\u4E0A\u4F20\u4FE1\u606F\u4E0E\u539F\u8BF7\u6C42\u4E0D\u4E00\u81F4");
+      const bytes = Buffer.from(input.chunk, "base64");
+      if (offset2 > row.received || offset2 + bytes.length > row.size) throw Error("\u9644\u4EF6\u5206\u7247\u987A\u5E8F\u6216\u5927\u5C0F\u65E0\u6548");
+      const info = await lstat3(row.path);
+      if (!info.isFile() || info.isSymbolicLink()) throw Error("\u9644\u4EF6\u6682\u5B58\u8DEF\u5F84\u65E0\u6548");
+      const file = await open4(row.path, "r+");
+      try {
+        if (offset2 < row.received) {
+          if (offset2 + bytes.length > row.received) throw Error("\u9644\u4EF6\u91CD\u8BD5\u5206\u7247\u8303\u56F4\u65E0\u6548");
+          const saved = Buffer.alloc(bytes.length);
+          await file.read(saved, 0, saved.length, offset2);
+          if (!saved.equals(bytes)) throw Error("\u9644\u4EF6\u91CD\u8BD5\u6570\u636E\u4E0D\u4E00\u81F4");
+        } else {
+          let written = 0;
+          while (written < bytes.length) {
+            const result = await file.write(bytes, written, bytes.length - written, offset2 + written);
+            if (!result.bytesWritten) throw Error("\u9644\u4EF6\u5199\u5165\u5931\u8D25");
+            written += result.bytesWritten;
+          }
+          row.received += bytes.length;
+          this.store.database.sql.prepare("UPDATE submission_files SET received=? WHERE panel_id=? AND request_id=? AND upload_id=?").run(row.received, panel, request, id);
+        }
+      } finally {
+        await file.close();
+      }
+      if (input.final) {
+        if (row.received !== row.size || hash2(await readFile13(row.path)) !== row.sha256) throw Error("\u9644\u4EF6\u672A\u5B8C\u6574\u4E0A\u4F20\u6216\u6821\u9A8C\u5931\u8D25");
+        this.store.database.sql.prepare("UPDATE submission_files SET status='ready' WHERE panel_id=? AND request_id=? AND upload_id=?").run(panel, request, id);
+      }
+      return { upload_id: id, name: row.name, size: row.size, received: row.received, complete: input.final || row.status === "ready" };
+    } finally {
+      await lock.close();
+      await unlink3(lockPath).catch(() => {
+      });
+    }
+  }
+  async import(panel, request, view) {
+    const rows = this.rows(panel, request);
+    if (rows.some((row) => row.status !== "ready" && row.status !== "imported")) throw Error("\u9644\u4EF6\u5C1A\u672A\u5B8C\u6574\u4E0A\u4F20\uFF0C\u4E0D\u80FD\u521B\u5EFA\u9879\u76EE");
+    const directory = join14(view.projectDirectory, "files");
+    await mkdir5(directory, { recursive: true });
+    const root = await realpath6(view.projectDirectory), actual = await realpath6(directory), rel = relative5(root, actual);
+    if (rel !== "files") throw Error("\u9879\u76EE files \u76EE\u5F55\u65E0\u6548\u6216\u6307\u5411\u9879\u76EE\u5916\u90E8");
+    const imported = [];
+    for (const row of rows) {
+      if (row.project_id && row.project_id !== view.project.id) throw Error("\u9644\u4EF6\u5DF2\u5C5E\u4E8E\u5176\u4ED6\u9879\u76EE");
+      const bytes = await readFile13(row.path);
+      if (bytes.length !== row.size || hash2(bytes) !== row.sha256) throw Error("\u9644\u4EF6\u539F\u59CB\u6570\u636E\u6821\u9A8C\u5931\u8D25");
+      let name = row.name, path = join14(actual, name);
+      for (let attempt = 0; ; attempt++) {
+        try {
+          await copyFile(row.path, path, constants.COPYFILE_EXCL);
+          break;
+        } catch (error) {
+          if (error.code !== "EEXIST") throw error;
+          const info = await lstat3(path);
+          if (info.isFile() && !info.isSymbolicLink() && info.size === row.size && hash2(await readFile13(path)) === row.sha256) break;
+          const ext = extname4(row.name);
+          name = basename3(row.name, ext) + "-" + row.sha256.slice(0, 12) + (attempt ? "-" + attempt : "") + ext;
+          path = join14(actual, name);
+        }
+      }
+      const id = hash2(view.project.id + path);
+      this.store.database.sql.prepare("INSERT INTO resources VALUES (?,?,?,?,?,?,?) ON CONFLICT(project_id,path) DO UPDATE SET thread_id=excluded.thread_id,mime=excluded.mime,size=excluded.size").run(id, view.project.id, view.threadId || null, name, path, row.mime, row.size);
+      this.store.database.sql.prepare("UPDATE submission_files SET status='imported',project_id=? WHERE panel_id=? AND request_id=? AND upload_id=?").run(view.project.id, panel, request, row.upload_id);
+      imported.push({ id, name, original_name: row.name, path, mime: row.mime, size: row.size, sha256: row.sha256 });
+    }
+    return imported;
+  }
+};
+
 // server/project-manager.ts
-var mime3 = (path) => ({ ".png": "image/png", ".jpg": "image/jpeg", ".jpeg": "image/jpeg", ".webp": "image/webp", ".avif": "image/avif", ".ico": "image/x-icon", ".svg": "image/svg+xml", ".gif": "image/gif", ".pdf": "application/pdf", ".json": "application/json" })[extname4(path).toLowerCase()] || "application/octet-stream";
+var mime3 = (path) => ({ ".png": "image/png", ".jpg": "image/jpeg", ".jpeg": "image/jpeg", ".webp": "image/webp", ".avif": "image/avif", ".ico": "image/x-icon", ".svg": "image/svg+xml", ".gif": "image/gif", ".pdf": "application/pdf", ".json": "application/json" })[extname5(path).toLowerCase()] || "application/octet-stream";
 function projectManager(store) {
   const publisher = imagePublisher(store);
+  const uploads = new SubmissionFiles(store);
   const captures = /* @__PURE__ */ new Map();
   const thumbnails = /* @__PURE__ */ new Map();
   const thumbnailRetry = /* @__PURE__ */ new Map();
@@ -8475,10 +8607,10 @@ function projectManager(store) {
       if (thumbnails.size < 2) void thumbnail(project.id);
       let image;
       if (project.thumbnailPath) {
-        const directory = await realpath6(store.metadataDirectory(project.id));
-        const path = await realpath6(project.thumbnailPath).catch(() => "");
-        const rel = relative5(directory, path);
-        if (path && rel !== ".." && !rel.startsWith(`..${sep5}`) && !isAbsolute7(rel)) image = `data:image/png;base64,${(await readFile13(path)).toString("base64")}`;
+        const directory = await realpath7(store.metadataDirectory(project.id));
+        const path = await realpath7(project.thumbnailPath).catch(() => "");
+        const rel = relative6(directory, path);
+        if (path && rel !== ".." && !rel.startsWith(`..${sep6}`) && !isAbsolute8(rel)) image = `data:image/png;base64,${(await readFile14(path)).toString("base64")}`;
       }
       const details = store.database.project(project.id);
       const status = store.database.status(project.id);
@@ -8494,7 +8626,7 @@ function projectManager(store) {
       const submission = rows.flatMap((row) => {
         try {
           const value = JSON.parse(row.value);
-          return value.state === "created" && value.project_id === view.project.id && value.thread_id === thread ? [{ panel_id: row.key.slice("submission:".length), request_id: value.request_id, state: "created" }] : [];
+          return value.state === "created" && value.project_id === view.project.id && value.thread_id === thread ? [{ panel_id: row.key.slice("submission:".length), request_id: value.request_id, state: "created", files: value.files || [] }] : [];
         } catch {
           return [];
         }
@@ -8511,15 +8643,15 @@ function projectManager(store) {
         throw error;
       })) {
         if (entry.name.startsWith(".") || entry.name === "node_modules") continue;
-        const path = join13(directory, entry.name);
+        const path = join15(directory, entry.name);
         if (entry.isDirectory()) await scan(path);
         else if (entry.isFile() && !/\.(?:html?|js|mjs|css)$/i.test(path)) {
-          const info = await stat7(path).catch((error) => {
+          const info = await stat8(path).catch((error) => {
             if (error.code === "ENOENT") return null;
             throw error;
           });
           if (!info) continue;
-          const resource = { id: createHash6("sha256").update(id + path).digest("hex"), name: entry.name, path, mime: mime3(path), size: info.size };
+          const resource = { id: createHash7("sha256").update(id + path).digest("hex"), name: entry.name, path, mime: mime3(path), size: info.size };
           found.push(resource);
           store.database.sql.prepare("INSERT INTO resources VALUES (?,?,?,?,?,?,?) ON CONFLICT(project_id,path) DO UPDATE SET size=excluded.size,mime=excluded.mime").run(resource.id, id, null, entry.name, path, resource.mime, info.size);
         }
@@ -8533,9 +8665,19 @@ function projectManager(store) {
     if (!view) throw Error("\u9879\u76EE\u4E0D\u5B58\u5728");
     const material = await materialResources(view);
     const rows = store.database.sql.prepare("SELECT id,name,path,mime,size,thread_id FROM resources WHERE project_id=? ORDER BY name").all(id);
-    return [...material, ...rows.filter((row) => {
-      const rel = relative5(join13(view.metadataDirectory, "session-assets"), row.path);
-      return rel !== ".." && !rel.startsWith(`..${sep5}`) && !isAbsolute7(rel);
+    const files = [];
+    const directory = join15(view.projectDirectory, "files");
+    const base = await realpath7(directory).catch(() => null), root = await realpath7(view.projectDirectory);
+    if (base && relative6(root, base) !== "files") throw Error("\u9879\u76EE files \u76EE\u5F55\u4E0D\u80FD\u6307\u5411\u5916\u90E8");
+    if (base) for (const entry of await readdir4(base, { withFileTypes: true })) {
+      if (!entry.isFile()) continue;
+      const path = join15(base, entry.name), info = await stat8(path);
+      const row = rows.find((row2) => row2.path === path);
+      files.push({ id: row?.id || createHash7("sha256").update(id + path).digest("hex"), name: entry.name, path, mime: row?.mime || mime3(path), size: info.size, thread_id: row?.thread_id || null });
+    }
+    return [...material, ...files, ...rows.filter((row) => {
+      const rel = relative6(join15(view.metadataDirectory, "session-assets"), row.path);
+      return rel !== ".." && !rel.startsWith(`..${sep6}`) && !isAbsolute8(rel);
     })];
   }
   async function run(input) {
@@ -8546,7 +8688,7 @@ function projectManager(store) {
     if (action === "context") {
       const value = await context(thread, input.panel_id);
       if (!input.requirement?.trim()) return value;
-      const fingerprint = createHash6("sha256").update(input.requirement.trim().replace(/\s+/g, " ")).digest("hex");
+      const fingerprint = createHash7("sha256").update(input.requirement.trim().replace(/\s+/g, " ")).digest("hex");
       const rows = store.database.sql.prepare("SELECT key,value FROM settings WHERE key LIKE 'submission:%'").all();
       const matches = rows.flatMap((row) => {
         try {
@@ -8577,6 +8719,14 @@ function projectManager(store) {
       return row ? JSON.parse(row.value) : null;
     };
     const saveSubmission = (value) => store.database.sql.prepare("INSERT INTO settings VALUES (?,?) ON CONFLICT(key) DO UPDATE SET value=excluded.value").run(submissionKey, JSON.stringify(value));
+    if (action === "upload") {
+      const record = readSubmission();
+      if (!input.request_id || record?.request_id !== input.request_id || record.state !== "pending") throw Error("\u9644\u4EF6\u6240\u5C5E\u63D0\u4EA4\u5DF2\u53D6\u6D88\u6216\u5931\u6548");
+      if (!record.file_count) throw Error("\u5F53\u524D\u63D0\u4EA4\u6CA1\u6709\u58F0\u660E\u9644\u4EF6");
+      const result = await uploads.upload(input.panel_id, input.request_id, input);
+      if (uploads.rows(input.panel_id, input.request_id).length > record.file_count) throw Error("\u9644\u4EF6\u6570\u91CF\u8D85\u51FA\u672C\u6B21\u63D0\u4EA4\u58F0\u660E");
+      return result;
+    }
     if (action === "submission") {
       if (!input.request_id || !/^[-a-zA-Z0-9_]{8,128}$/.test(input.request_id)) throw Error("\u63D0\u4EA4\u6807\u8BB0\u65E0\u6548");
       const record = readSubmission();
@@ -8586,7 +8736,9 @@ function projectManager(store) {
       }
       if (input.submission_start) {
         if (record?.request_id === input.request_id) return record;
-        saveSubmission({ request_id: input.request_id, state: "pending", created_at: (/* @__PURE__ */ new Date()).toISOString(), ...input.requirement?.trim() ? { requirement_hash: createHash6("sha256").update(input.requirement.trim().replace(/\s+/g, " ")).digest("hex") } : {} });
+        const count = input.file_count ?? 0;
+        if (!Number.isInteger(count) || count < 0 || count > 10) throw Error("\u9644\u4EF6\u6570\u91CF\u65E0\u6548");
+        saveSubmission({ request_id: input.request_id, state: "pending", file_count: count, created_at: (/* @__PURE__ */ new Date()).toISOString(), ...input.requirement?.trim() ? { requirement_hash: createHash7("sha256").update(input.requirement.trim().replace(/\s+/g, " ")).digest("hex") } : {} });
         return { state: "pending" };
       }
       if (record?.request_id !== input.request_id) throw Error("\u6B64\u63D0\u4EA4\u5DF2\u5931\u6548\uFF0C\u8BF7\u68C0\u67E5\u5F53\u524D\u5BF9\u8BDD");
@@ -8621,18 +8773,21 @@ function projectManager(store) {
         if (record.state === "created") {
           const existing = await store.get(void 0, record.project_id);
           if (!existing) throw Error("\u9879\u76EE\u4E0D\u53EF\u7528");
-          return { page: "project", ...compactProject(existing), thread_id: record.thread_id };
+          return { page: "project", ...compactProject(existing), thread_id: record.thread_id, files: record.files || [] };
         }
         if (record.state === "creating") throw Error("\u9879\u76EE\u6B63\u5728\u521B\u5EFA\uFF0C\u8BF7\u7A0D\u540E\u67E5\u8BE2\u7ED3\u679C");
         if (record.state !== "pending") throw Error("\u521B\u5EFA\u8BF7\u6C42\u5DF2\u5931\u6548");
+        const attached = uploads.rows(input.panel_id, input.request_id);
+        if (attached.length !== (record.file_count || 0) || attached.some((file) => file.status !== "ready")) throw Error("\u9644\u4EF6\u5C1A\u672A\u5B8C\u6574\u4E0A\u4F20\uFF0C\u4E0D\u80FD\u521B\u5EFA\u9879\u76EE");
         saveSubmission({ ...record, state: "creating" });
       }
       try {
         const view2 = thread ? await store.open({ threadId: thread, projectId: id, newProject: action === "create", name: input.name, country: input.country, language: input.language, categories: input.categories, brand: input.brand, ...action === "create" ? { pages: [] } : {} }) : action === "create" ? await store.createProject({ name: input.name, country: input.country, language: input.language, categories: input.categories, brand: input.brand, pages: [] }) : await store.get(void 0, id);
         if (!view2) throw Error("\u9879\u76EE\u4E0D\u5B58\u5728\u6216\u5DF2\u5220\u9664");
         store.database.panel(input.panel_id, thread || "", view2.project.id, action === "create" && submissionHandoff);
-        if (input.request_id) saveSubmission({ request_id: input.request_id, state: "created", project_id: view2.project.id, thread_id: thread || null });
-        return { page: "project", panel_id: input.panel_id, ...compactProject(view2), thread_id: thread || null, ...input.request_id ? { ui_reused: true, request_id: input.request_id, next_action: "\u5FC5\u987B\u8C03\u7528open_thread_canvas(thread_id=\u672C\u6B21\u65B0\u5BF9\u8BDD\u771F\u5B9EID)\u4E00\u6B21\uFF0C\u5728\u65B0\u5BF9\u8BDD\u6253\u5F00\u4FA7\u8FB9UI\u5E76\u8FDB\u5165\u672C\u9879\u76EE\uFF1B\u67E5\u8BE2website_projects(action=submission,panel_id,request_id)\u7B49\u5F85chat_detail_ready=true\u518D\u751F\u6210\u3002\u4E0D\u91CD\u5EFA\u9879\u76EE\uFF0C\u4E0D\u53CD\u590D\u6253\u5F00\u9762\u677F\u3002" } : {} };
+        const attachedFiles = input.request_id ? await store.exclusive(view2.project.id, () => uploads.import(input.panel_id, input.request_id, view2)) : [];
+        if (input.request_id) saveSubmission({ request_id: input.request_id, state: "created", project_id: view2.project.id, thread_id: thread || null, files: attachedFiles });
+        return { page: "project", panel_id: input.panel_id, ...compactProject(view2), thread_id: thread || null, files: attachedFiles, ...input.request_id ? { ui_reused: true, request_id: input.request_id, next_action: "\u5FC5\u987B\u8C03\u7528open_thread_canvas(thread_id=\u672C\u6B21\u65B0\u5BF9\u8BDD\u771F\u5B9EID)\u4E00\u6B21\uFF0C\u5728\u65B0\u5BF9\u8BDD\u6253\u5F00\u4FA7\u8FB9UI\u5E76\u8FDB\u5165\u672C\u9879\u76EE\uFF1B\u67E5\u8BE2website_projects(action=submission,panel_id,request_id)\u7B49\u5F85chat_detail_ready=true\u518D\u751F\u6210\u3002\u9644\u4EF6\u5DF2\u5B58\u5165files_directory\uFF0C\u5148\u7528website_projects(resources)\u83B7\u53D6\u672C\u5730\u7EDD\u5BF9\u8DEF\u5F84\uFF0C\u5546\u54C1JSON\u4EA4\u7ED9website_products(file_path)\uFF0C\u4E0D\u8BFB\u53D6attachment://\u5F15\u7528\u3002\u4E0D\u91CD\u5EFA\u9879\u76EE\uFF0C\u4E0D\u53CD\u590D\u6253\u5F00\u9762\u677F\u3002" } : {} };
       } catch (error) {
         if (input.request_id) saveSubmission({ request_id: input.request_id, state: "failed", error: error.message });
         throw error;
@@ -8651,7 +8806,7 @@ function projectManager(store) {
       const tasks = store.database.sql.prepare("SELECT * FROM image_tasks WHERE project_id=? ORDER BY path").all(id).filter((task) => typeof task.path === "string" && !/[\\/]/.test(task.path) && mime3(task.path).startsWith("image/"));
       const pending = /* @__PURE__ */ new Map();
       for (const task of tasks) {
-        const info = await contained(view.materialDirectory, task.path).then((file) => stat7(file)).catch(() => null);
+        const info = await contained(view.materialDirectory, task.path).then((file) => stat8(file)).catch(() => null);
         if (task.status === "generating" && info?.isFile() && info.size > 0 && `${info.size}:${info.mtimeMs}` !== task.baseline) {
           void publisher.publish(view, task.path).catch(() => {
           });
@@ -8661,15 +8816,15 @@ function projectManager(store) {
       for (const resource of await materialResources(view)) {
         if (!resource.mime.startsWith("image/")) continue;
         try {
-          const base = await realpath6(view.materialDirectory), file = await realpath6(resource.path), path = relative5(base, file);
-          if (path === ".." || path.startsWith(`..${sep5}`) || isAbsolute7(path)) continue;
-          const relativePath = path.split(sep5).join("/");
+          const base = await realpath7(view.materialDirectory), file = await realpath7(resource.path), path = relative6(base, file);
+          if (path === ".." || path.startsWith(`..${sep6}`) || isAbsolute8(path)) continue;
+          const relativePath = path.split(sep6).join("/");
           if (pending.has(relativePath)) continue;
           images.push({ ...resource, path: relativePath, status: "ready", ...await imageDimensions(file), url: await registerPreviewFile(file, resource.mime) });
         } catch {
         }
       }
-      for (const task of pending.values()) images.push({ id: createHash6("sha256").update(id + task.path).digest("hex"), path: task.path, name: task.name, mime: mime3(task.path), status: task.status, error: task.error, width: task.width, height: task.height });
+      for (const task of pending.values()) images.push({ id: createHash7("sha256").update(id + task.path).digest("hex"), path: task.path, name: task.name, mime: mime3(task.path), status: task.status, error: task.error, width: task.width, height: task.height });
       return { images };
     }
     if (action === "capture") {
@@ -8706,16 +8861,16 @@ function projectManager(store) {
     }
     if (action === "resources") return { resources: await resources(id) };
     if (action === "attach") {
-      if (!input.source_path || !isAbsolute7(input.source_path)) throw Error("\u9700\u8981\u7528\u6237\u63D0\u4F9B\u7684\u8D44\u6E90\u7EDD\u5BF9\u8DEF\u5F84");
-      const source = await realpath6(input.source_path), info = await stat7(source);
+      if (!input.source_path || !isAbsolute8(input.source_path)) throw Error("\u9700\u8981\u7528\u6237\u63D0\u4F9B\u7684\u8D44\u6E90\u7EDD\u5BF9\u8DEF\u5F84");
+      const source = await realpath7(input.source_path), info = await stat8(source);
       if (!info.isFile() || info.size > 64 * 1024 * 1024) throw Error("\u8D44\u6E90\u5FC5\u987B\u662F\u6587\u4EF6\u4E14\u4E0D\u8D85\u8FC7 64 MB");
-      const bytes = await readFile13(source), hash2 = createHash6("sha256").update(bytes).digest("hex");
-      const folder = join13(view.metadataDirectory, "session-assets");
-      await mkdir5(folder, { recursive: true });
-      const path = join13(folder, hash2 + extname4(source));
-      await copyFile(source, path);
+      const bytes = await readFile14(source), hash3 = createHash7("sha256").update(bytes).digest("hex");
+      const folder = join15(view.metadataDirectory, "session-assets");
+      await mkdir6(folder, { recursive: true });
+      const path = join15(folder, hash3 + extname5(source));
+      await copyFile2(source, path);
       const name = source.split(/[\\/]/).pop();
-      store.database.sql.prepare("INSERT INTO resources VALUES (?,?,?,?,?,?,?) ON CONFLICT(project_id,path) DO UPDATE SET thread_id=excluded.thread_id,name=excluded.name").run(createHash6("sha256").update(id + path).digest("hex"), id, thread || null, name, path, mime3(path), info.size);
+      store.database.sql.prepare("INSERT INTO resources VALUES (?,?,?,?,?,?,?) ON CONFLICT(project_id,path) DO UPDATE SET thread_id=excluded.thread_id,name=excluded.name").run(createHash7("sha256").update(id + path).digest("hex"), id, thread || null, name, path, mime3(path), info.size);
       return { resources: await resources(id) };
     }
     throw Error("\u4E0D\u652F\u6301\u7684\u9879\u76EE\u7BA1\u7406\u64CD\u4F5C");
@@ -8730,7 +8885,7 @@ function projectManager(store) {
     const path = store.path(input.path);
     if (path.includes("/") || !mime3(path).startsWith("image/")) throw Error("\u56FE\u7247\u4EFB\u52A1\u4F7F\u7528 material \u5185\u7684\u56FE\u7247\u6587\u4EF6\u540D\uFF0C\u4F8B\u5982 logo.png\u3001banner1.png\u3001about.png");
     let compression;
-    const info = await contained(view.materialDirectory, path).then((file) => stat7(file)).catch(() => null);
+    const info = await contained(view.materialDirectory, path).then((file) => stat8(file)).catch(() => null);
     if (input.action === "begin") {
       assertEditable(store.database, view.project.id);
       publisher.reset(view.project.id, path);
@@ -8742,12 +8897,12 @@ function projectManager(store) {
       if (input.action === "finish" && (!info?.isFile() || !info.size || `${info.size}:${info.mtimeMs}` === task.baseline)) throw Error("\u672C\u6B21\u56FE\u7247\u6210\u54C1\u5C1A\u672A\u5199\u5165\u9879\u76EE");
       if (input.action === "finish") {
         compression = await publisher.publish(view, path);
-        if (compression?.pending) return { project_id: input.project_id, path, material_path: join13(view.materialDirectory, path), website_path: `images/${path}`, status: "generating", phase: "compressing", compression };
+        if (compression?.pending) return { project_id: input.project_id, path, material_path: join15(view.materialDirectory, path), website_path: `images/${path}`, status: "generating", phase: "compressing", compression };
       }
       store.database.sql.prepare("UPDATE image_tasks SET status=?,error=? WHERE project_id=? AND path=?").run(input.action === "finish" ? "ready" : "error", input.action === "fail" ? input.error || "\u56FE\u7247\u751F\u6210\u5931\u8D25\uFF0C\u8BF7\u91CD\u8BD5" : "", input.project_id, path);
     }
     store.database.activity(input.project_id, "image:" + path, input.action === "begin");
-    return { project_id: input.project_id, path, material_path: join13(view.materialDirectory, path), website_path: `images/${path}`, compression, status: input.action === "begin" ? "generating" : input.action === "finish" ? "ready" : "error" };
+    return { project_id: input.project_id, path, material_path: join15(view.materialDirectory, path), website_path: `images/${path}`, compression, status: input.action === "begin" ? "generating" : input.action === "finish" ? "ready" : "error" };
   }
   return { run, context, thumbnail, imageTask, close: async () => {
     shutdown.abort();
