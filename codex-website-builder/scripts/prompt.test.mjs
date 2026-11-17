@@ -81,10 +81,13 @@ try{
   const imageThumb=app.locator('.prompt-editor .prompt-chip img').first();
   await imageThumb.click();
   await app.locator('.prompt-lightbox-overlay').waitFor();
-  assert.ok(await app.locator('.prompt-lightbox-box img').isVisible());
+  const previewImg=app.locator('.prompt-lightbox-box img');
+  assert.ok(await previewImg.isVisible());
+  assert.equal(await previewImg.getAttribute('draggable'),'false');
+  assert.equal(await app.locator('.image-preview-modal button').count(),0,'panel has no redundant inner close or finish button');
   const box=await app.locator('.prompt-lightbox-overlay').boundingBox();
   assert.equal(box.width,1440);assert.equal(box.height,900);
-  await app.locator('.prompt-lightbox-close').click();
+  await app.locator('.prompt-lightbox-overlay').click({position:{x:10,y:10}});
   await app.locator('.prompt-lightbox-overlay').waitFor({state:'detached'});
   const extraFile=[{name:'extra.txt',mimeType:'text/plain',buffer:Buffer.from('extra')}];
   await app.locator('input[type=file]').setInputFiles(extraFile);

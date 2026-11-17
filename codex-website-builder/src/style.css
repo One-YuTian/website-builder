@@ -98,11 +98,14 @@
 .prompt-lightbox-close:hover{color:#fff;background:#353c46}
 .prompt-lightbox-img-wrap{padding:20px;display:flex;align-items:center;justify-content:center;max-height:calc(90vh - 60px);max-width:100%;overflow:auto}
 .prompt-lightbox-img-wrap img{max-width:100%;max-height:calc(90vh - 100px);object-fit:contain;border-radius:8px;box-shadow:0 8px 32px rgba(0,0,0,.4)}
-.plugin-modal.image-preview-modal{width:min(920px,94vw);max-height:calc(100vh - 48px);display:flex;flex-direction:column}
-.image-preview-modal .image-preview-body{flex:1;min-height:0;display:flex;align-items:center;justify-content:center;padding:16px 0;overflow:auto}
-.image-preview-modal .image-preview-body img{max-width:100%;max-height:calc(85vh - 140px);object-fit:contain;border-radius:10px;box-shadow:0 8px 30px rgba(0,0,0,.15)}
-.independent-plugin-panel .plugin-modal.image-preview-modal{width:100%;max-width:none;height:100vh;max-height:100vh;padding:24px;box-sizing:border-box}
-.independent-plugin-panel .image-preview-modal .image-preview-body img{max-height:calc(100vh - 150px)}
+.plugin-modal.image-preview-modal{width:min(960px,94vw);height:min(88vh,720px);max-height:calc(100vh - 48px);display:flex;flex-direction:column;overflow:hidden;padding:20px 24px}
+.image-preview-modal header{margin-bottom:12px;flex-shrink:0}
+.image-preview-modal header h2{font-size:16px;font-weight:600;margin:0;color:#202428;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.image-preview-modal .image-preview-body{flex:1;min-height:0;width:100%;height:100%;display:flex;align-items:center;justify-content:center;padding:0;overflow:hidden}
+.image-preview-modal .image-preview-body img{max-width:100%;max-height:100%;width:auto;height:auto;object-fit:contain;border-radius:8px;box-shadow:0 8px 30px rgba(0,0,0,.12);user-select:none;-webkit-user-select:none;-webkit-user-drag:none;pointer-events:none}
+.independent-plugin-panel .plugin-modal.image-preview-modal{width:100%;max-width:none;height:100vh;max-height:100vh;padding:20px 24px;box-sizing:border-box;overflow:hidden}
+.independent-plugin-panel .image-preview-modal .image-preview-body{height:calc(100vh - 70px);overflow:hidden}
+.independent-plugin-panel .image-preview-modal .image-preview-body img{max-width:100%;max-height:100%;object-fit:contain}
 @keyframes prompt-fade-in{from{opacity:0}to{opacity:1}}
 .prompt-toolbar{display:flex;justify-content:space-between;align-items:center;flex:0 0 56px;padding:0 24px 16px 24px;box-sizing:border-box;cursor:default}
 .prompt-toolbar button{width:40px;height:40px;display:grid;place-items:center;border:0;border-radius:50%;padding:9px;background:transparent}
