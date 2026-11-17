@@ -26,7 +26,7 @@
 @media(max-width:767px){.project-home{grid-template-columns:240px minmax(0,1fr)}.project-sidebar{padding:22px 12px}.project-description strong{max-width:120px}.project-compose{padding:20px}.project-compose h2{font-size:21px}.project-prompt{padding:18px}.project-delete{opacity:1}}
 @media(max-width:560px){.project-home{display:flex;flex-direction:column}.project-sidebar{flex:1;min-height:0;border-right:0;border-bottom:1px solid #d9dcdf;gap:16px}.project-compose{flex-shrink:0;padding:20px}.project-compose h2{display:none}.project-prompt textarea{min-height:70px;height:70px}.project-description strong{max-width:240px}.project-delete{opacity:1}}
 
-.project-home .project-prompt textarea:focus,.project-home .project-prompt textarea:focus-visible{outline:none;box-shadow:none}
+.project-home .project-prompt textarea:focus,.project-home .project-prompt textarea:focus-visible,.project-home .project-prompt .prompt-editor:focus,.project-home .project-prompt .prompt-editor:focus-visible{outline:none;box-shadow:none}
 
 .project-prompt textarea:disabled{cursor:default;opacity:1;-webkit-text-fill-color:#777c83}.project-prompt>button:disabled{cursor:not-allowed}
 
@@ -57,7 +57,7 @@
 /* A continuous full-width fade avoids a hard seam beside the raised library. */
 .project-home::before{clip-path:none}
 .project-open{padding-left:8px;padding-right:4px}.project-groups h2{padding-left:8px;padding-right:8px}
-.project-search input:focus,.project-search input:focus-visible,.project-prompt textarea:focus,.project-prompt textarea:focus-visible{outline:none;border:0;box-shadow:none}
+.project-search input:focus,.project-search input:focus-visible,.project-prompt textarea:focus,.project-prompt textarea:focus-visible,.project-prompt .prompt-editor:focus,.project-prompt .prompt-editor:focus-visible{outline:none;border:0;box-shadow:none}
 .project-delete:hover{background:transparent;color:#34383d}
 .asset-gallery{justify-items:start;align-items:start}
 .asset-panel{min-width:320px;max-width:960px;justify-self:start}
@@ -79,8 +79,26 @@
 .dot-background canvas{display:block;width:100%;height:100%;pointer-events:none}
 .project-compose,.page-stage{background-image:none}
 .project-prompt{height:260px;min-height:260px;padding:24px 24px 16px;gap:12px;position:relative;background:rgba(226,228,232,.92);border:1px solid #cbd0d4;border-radius:28px;box-shadow:none}
-.project-prompt textarea{flex:1;min-height:0;height:100%;max-height:none;resize:none;overflow:auto;font-size:17px;line-height:1.6;padding:0;border:0;border-radius:0;outline:none;user-select:text;-webkit-user-select:text}
-.project-prompt textarea:disabled{opacity:.7}
+.project-prompt textarea,.project-prompt .prompt-editor{flex:1;min-height:0;height:100%;max-height:none;resize:none;overflow:auto;font-size:17px;line-height:1.6;padding:0;border:0;border-radius:0;outline:none;user-select:text;-webkit-user-select:text;word-break:break-word;white-space:pre-wrap}
+.project-prompt textarea:disabled,.project-prompt .prompt-editor[contenteditable="false"]{opacity:.7;cursor:default}
+.project-prompt .prompt-editor:empty::before{content:attr(data-placeholder);color:#777c83;pointer-events:none}
+.prompt-chip{display:inline-flex;align-items:center;gap:6px;background:#d8dce2;border:1px solid #bcc3cc;color:#202428;border-radius:9999px;padding:2px 8px 2px 5px;margin:1px 3px;vertical-align:middle;font-size:13px;line-height:1.4;max-width:260px;box-sizing:border-box;user-select:none;-webkit-user-select:none}
+.prompt-chip .chip-thumb-btn{border:0;background:none;padding:0;display:inline-flex;cursor:pointer;border-radius:50%;overflow:hidden;flex-shrink:0}
+.prompt-chip .chip-thumb{width:20px;height:20px;object-fit:cover;display:block}
+.prompt-chip .chip-icon{display:inline-flex;align-items:center;color:#555d65;flex-shrink:0}
+.prompt-chip .chip-icon svg{width:14px;height:14px}
+.prompt-chip .chip-title{overflow:hidden;text-overflow:ellipsis;white-space:nowrap;font-size:12px;font-weight:500}
+.prompt-chip .chip-close{border:0;background:transparent;padding:0 2px;margin-left:2px;font-size:15px;line-height:1;color:#606770;cursor:pointer;border-radius:50%;display:inline-flex;align-items:center;justify-content:center}
+.prompt-chip .chip-close:hover{color:#d32f2f;background:rgba(0,0,0,.08)}
+.prompt-lightbox-overlay{position:fixed;inset:0;background:rgba(0,0,0,.75);z-index:999;display:flex;flex-direction:column;align-items:center;justify-content:center;padding:24px;backdrop-filter:blur(6px);animation:prompt-fade-in .15s ease}
+.prompt-lightbox-box{position:relative;max-width:min(90vw,960px);max-height:85vh;display:flex;flex-direction:column;align-items:center;background:#1e2227;border-radius:16px;overflow:hidden;box-shadow:0 20px 60px rgba(0,0,0,.5);border:1px solid #333a42}
+.prompt-lightbox-header{display:flex;align-items:center;justify-content:space-between;width:100%;padding:10px 16px;background:#262b32;color:#e1e4e8;font-size:13px;font-weight:500;gap:12px;box-sizing:border-box}
+.prompt-lightbox-header .lightbox-title{overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.prompt-lightbox-close{border:0;background:transparent;color:#9da5b0;font-size:20px;cursor:pointer;padding:2px 8px;border-radius:6px;line-height:1}
+.prompt-lightbox-close:hover{color:#fff;background:#353c46}
+.prompt-lightbox-img-wrap{padding:16px;display:flex;align-items:center;justify-content:center;max-height:calc(85vh - 50px);overflow:auto}
+.prompt-lightbox-img-wrap img{max-width:100%;max-height:calc(85vh - 82px);object-fit:contain;border-radius:6px}
+@keyframes prompt-fade-in{from{opacity:0}to{opacity:1}}
 .prompt-toolbar{display:flex;justify-content:space-between;align-items:center;flex:0 0 40px}
 .prompt-toolbar button{width:40px;height:40px;display:grid;place-items:center;border:0;border-radius:50%;padding:9px;background:transparent}
 .prompt-toolbar button svg{width:24px;height:24px}
@@ -92,7 +110,7 @@
 .prompt-files>span{display:flex;align-items:center;gap:8px;white-space:nowrap;max-width:240px;font-size:12px;background:#d5d9df;border-radius:8px;padding:4px 8px;overflow:hidden;text-overflow:ellipsis}
 .prompt-files button{border:0;background:transparent;padding:0 2px}
 .prompt-error{position:absolute;left:24px;right:24px;top:calc(100% + 8px);font-size:12px;color:#a24b42}
-@media(max-width:560px){.project-prompt{height:240px;min-height:240px}.project-prompt textarea{min-height:0;height:100%}.project-compose-inner{transform:none}}
+@media(max-width:560px){.project-prompt{height:240px;min-height:240px}.project-prompt textarea,.project-prompt .prompt-editor{min-height:0;height:100%}.project-compose-inner{transform:none}}
 @media(prefers-reduced-motion:reduce){.prompt-spinner{animation:none}}
 
 .project-home{position:relative;background-image:none}

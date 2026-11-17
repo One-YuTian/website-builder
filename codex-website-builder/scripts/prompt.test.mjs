@@ -67,16 +67,27 @@ try{
   const pdf=Buffer.from('%PDF-1.7\nOriginal brief\x00\xff\n');
   const attachments=[{name:'reference.png',mimeType:'image/png',buffer:png},{name:'products.json',mimeType:'application/json',buffer:products},{name:'products.json',mimeType:'application/json',buffer:duplicate},{name:'需求文件.pdf',mimeType:'application/pdf',buffer:pdf}];
   await app.locator('input[type=file]').setInputFiles(attachments);
-  assert.equal(await app.locator('.prompt-files>span').count(),4);
+  assert.equal(await app.locator('.prompt-editor .prompt-chip').count(),4);
   assert.ok(await app.locator('.project-prompt').evaluate(form=>{
-    const files=form.querySelector('.prompt-files').getBoundingClientRect();
-    const input=form.querySelector('textarea').getBoundingClientRect();
-    return files.bottom<=input.top;
-  }),'imported files appear above the text area');
+    const editor=form.querySelector('.prompt-editor');
+    const chips=editor.querySelectorAll('.prompt-chip');
+    return chips.length===4&&editor.contains(chips[0]);
+  }),'imported files appear inline inside the editor');
+  const imageThumb=app.locator('.prompt-editor .prompt-chip img').first();
+  await imageThumb.click();
+  await app.locator('.prompt-lightbox-overlay').waitFor();
+  assert.ok(await app.locator('.prompt-lightbox-box img').isVisible());
+  await app.locator('.prompt-lightbox-close').click();
+  await app.locator('.prompt-lightbox-overlay').waitFor({state:'detached'});
+  const extraFile=[{name:'extra.txt',mimeType:'text/plain',buffer:Buffer.from('extra')}];
+  await app.locator('input[type=file]').setInputFiles(extraFile);
+  assert.equal(await app.locator('.prompt-editor .prompt-chip').count(),5);
+  await app.locator('.prompt-editor .prompt-chip .chip-close').last().click();
+  assert.equal(await app.locator('.prompt-editor .prompt-chip').count(),4,'close button removes inline bubble');
   await app.getByRole('button',{name:'发送需求',exact:true}).click();
   await app.getByRole('alert').filter({hasText:'未接受消息'}).waitFor();
-  assert.ok((await textarea.inputValue()).includes('巴西'));
-  assert.equal(await app.locator('.prompt-files>span').count(),4,'rejection retains attachments');
+  assert.ok((await textarea.innerText()).includes('巴西'));
+  assert.equal(await app.locator('.prompt-editor .prompt-chip').count(),4,'rejection retains attachments');
   await page.evaluate(()=>window.rejectMessage=false);
   await app.getByRole('button',{name:'发送需求',exact:true}).click();
   await app.getByRole('button',{name:'正在创建项目'}).waitFor();
@@ -84,10 +95,15 @@ try{
   await page.waitForFunction(()=>window.sent.length===2);
   const sent=await page.evaluate(()=>window.sent[1]);
   assert.deepEqual(sent._meta['openai/message'],{target:'new',send:true});
-  const requirement=(await textarea.inputValue()).trim();
-  assert.deepEqual(sent.content.filter(c=>c.type==='text').map(c=>c.text),[requirement],'visible text contains only the user requirement');
-  assert.ok(sent.content.some(c=>c.type==='image'&&c.data===png.toString('base64')));
-  assert.ok(sent.content.some(c=>c.type==='resource'&&c.resource.mimeType==='application/json'));
+  const textBlock=sent.content.find(c=>c.type==='text')?.text||'';
+  assert.ok(textBlock.includes('巴西'));
+  assert.ok(textBlock.includes('[reference.png]'));
+  assert.ok(textBlock.includes('[products.json]'));
+  assert.ok(textBlock.includes('[需求文件.pdf]'));
+  assert.equal(sent.content.filter(c=>c.type==='resource_link').length,4);
+  assert.ok(sent.content.some(c=>c.type==='resource_link'&&c.name==='products.json'));
+  assert.ok(sent.content.some(c=>c.type==='resource_link'&&c.name==='reference.png'));
+  const requirement=textBlock.trim();
   const submission=await page.evaluate(()=>window.contexts.map(c=>c.structuredContent?.submission).filter(Boolean).at(-1));
   const discover=async text=>JSON.parse((await call('website_panel_context',{thread_id:'prompt-new-thread',requirement:text})).content[0].text);
   assert.equal((await discover('Unrelated requirement')).submission,undefined);
@@ -193,8 +209,8 @@ try{
   await page.evaluate(()=>document.querySelector('#reopened').remove());
   assert.equal(await textarea.count(),0);
   await app.getByRole('button',{name:'返回主界面',exact:true}).click();
-  await textarea.waitFor();assert.equal(await textarea.inputValue(),'');
-  assert.equal(await app.locator('.prompt-files>span').count(),0);
+  await textarea.waitFor();assert.equal(await textarea.innerText(),'');
+  assert.equal(await app.locator('.prompt-editor .prompt-chip').count(),0);
   assert.ok(await app.getByRole('button',{name:'发送需求',exact:true}).isDisabled());
   const threadLaunch=await call('open_thread_canvas',{thread_id:'prompt-new-thread'});
   assert.equal(threadLaunch.structuredContent.canvas_launch.scope,'thread');
@@ -217,7 +233,7 @@ try{
   await textarea.waitFor();
   await mkdir('artifacts',{recursive:true});
   await page.screenshot({path:'artifacts/home-prompt.png'});
-  for(const width of [375,768]){await page.setViewportSize({width,height:900});await page.screenshot({path:`artifacts/home-prompt-${width}.png`});assert.equal(await app.locator('textarea').evaluate(n=>getComputedStyle(n).resize),'none');}
+  for(const width of [375,768]){await page.setViewportSize({width,height:900});await page.screenshot({path:`artifacts/home-prompt-${width}.png`});assert.equal(await app.locator('.prompt-editor').evaluate(n=>getComputedStyle(n).resize),'none');}
   assert.deepEqual(errors,[]);
   // Direct chat requests also create an empty project before opening details and planning.
   const chat=JSON.parse((await call('website_project',{action:'open',thread_id:'chat-request-thread',new_project:true,name:'Chat Store'})).content[0].text);
