@@ -12,7 +12,8 @@ import { PROJECT_FORMAT, recognizedProject, scaffoldProject, assertMainRepositor
 
 export type PageState = 'queued'|'generating'|'ready'|'error';
 export interface ProjectPage { path: string; title: string; status: PageState; version: number; error?: string; generationHash?: string; resourceSignature?: string }
-export interface WebsiteProject { formatVersion?:number; country?:string; categories?:string[]; brand?:string; hasPublished?:boolean; hasPreview?:boolean; id: string; name: string; brief: string; language: string; revision: string; pages: ProjectPage[]; updatedAt: string }
+export interface WebsiteProject { formatVersion?:number; country?:string; categories?:string[]; brand?:string; domain?:string; hasPublished?:boolean; hasPreview?:boolean; id: string; name: string; brief: string; language: string; revision: string; pages: ProjectPage[]; updatedAt: string }
+const normalizeDomain=(value?:string)=>{const trimmed=value?.trim().toLowerCase()||'';return trimmed||undefined;};
 export interface ProjectView { project: WebsiteProject; threadId: string; directory: string; metadataDirectory: string; projectDirectory:string; materialDirectory:string; revision: string; git?:ProjectCommit }
 export const DEFAULT_PAGES = ['index','shop','product','wishlist','checkout','login','register','about','contact','terms','privacy','return'].map(name=>({path:`${name}.html`,title:name}));
 const idPattern = /^[a-f0-9]{4}(?:-[a-f0-9]{4}){3}$/;
@@ -57,16 +58,16 @@ export class ProjectStore {
     return {project,threadId:currentThread,directory:join(this.folder(id),'src'),projectDirectory:this.folder(id),materialDirectory:join(this.folder(id),'material'),metadataDirectory:this.metadataDirectory(id),revision:`${id}:${currentThread}:${project.revision}`};
   }
   async list() {await mkdir(this.root,{recursive:true});const rows=this.database.list();const checks=await Promise.all(rows.map(row=>this.database.project(row.id)?.formatVersion===PROJECT_FORMAT&&operationLock(this.database,row.id)?Promise.resolve(true):recognizedProject(this.folder(row.id),this.database.project(row.id)?.formatVersion)));return rows.filter((_,index)=>checks[index]);}
-  async createProject(input: {name?:string;brief?:string;language?:string;country?:string;categories?:string[];brand?:string;pages?:{path:string;title:string}[]}) {
+  async createProject(input: {name?:string;brief?:string;language?:string;country?:string;categories?:string[];brand?:string;domain?:string;pages?:{path:string;title:string}[]}) {
     const id=randomBytes(8).toString('hex').match(/.{4}/g)!.join('-');
     const pages=(input.pages || DEFAULT_PAGES).map(page=>({...page,path:this.path(page.path,true),status:'queued' as const,version:0}));
     if(new Set(pages.map(page=>page.path)).size!==pages.length)throw new Error('页面路径重复');
-    const project:WebsiteProject={formatVersion:PROJECT_FORMAT,id,name:input.name||'Ecommerce website',brief:input.brief||'',language:input.language||'en',hasPublished:false,country:input.country,categories:input.categories,brand:input.brand,revision:'',pages,updatedAt:''};
+    const project:WebsiteProject={formatVersion:PROJECT_FORMAT,id,name:input.name||'Ecommerce website',brief:input.brief||'',language:input.language||'en',hasPublished:false,country:input.country,categories:input.categories,brand:input.brand,domain:normalizeDomain(input.domain),revision:'',pages,updatedAt:''};
     const git=await scaffoldProject(this.folder(id),project);await this.save(project);
     if(!pages.length)this.database.activity(id,'project:start');
     return {project,threadId:'',directory:join(this.folder(id),'src'),projectDirectory:this.folder(id),materialDirectory:join(this.folder(id),'material'),metadataDirectory:this.metadataDirectory(id),revision:`${id}::${project.revision}`,git};
   }
-  async open(input: {threadId:string;projectId?:string;newProject?:boolean;name?:string;brief?:string;language?:string;country?:string;categories?:string[];brand?:string;pages?:{path:string;title:string}[]}) {
+  async open(input: {threadId:string;projectId?:string;newProject?:boolean;name?:string;brief?:string;language?:string;country?:string;categories?:string[];brand?:string;domain?:string;pages?:{path:string;title:string}[]}) {
     return this.lock(`thread:${input.threadId}`,async()=>{
       let view = input.newProject ? null : await this.get(input.threadId,input.projectId);
       if(!view) {
@@ -74,10 +75,11 @@ export class ProjectStore {
         const created=await this.createProject(input);
         view={...created,threadId:input.threadId,revision:`${created.project.id}:${input.threadId}:${created.project.revision}`};
       }
-      if(input.country!==undefined||input.categories!==undefined||input.brand!==undefined){assertEditable(this.database,view.project.id);
+      if(input.country!==undefined||input.categories!==undefined||input.brand!==undefined||input.domain!==undefined){assertEditable(this.database,view.project.id);
         if(input.country!==undefined)view.project.country=input.country;
         if(input.categories!==undefined)view.project.categories=input.categories;
         if(input.brand!==undefined)view.project.brand=input.brand;
+        if(input.domain!==undefined)view.project.domain=normalizeDomain(input.domain);
         if(input.language!==undefined)view.project.language=input.language;
         await this.save(view.project);
       }
@@ -85,6 +87,16 @@ export class ProjectStore {
       this.database.setActive(binding);
       await atomic(this.binding(input.threadId),JSON.stringify(binding));await atomic(join(this.stateRoot,'active.json'),JSON.stringify(binding));
       return view;
+    });
+  }
+  async setDomain(projectId:string,domain?:string,owner?:string){
+    return this.exclusive(projectId,async()=>{
+      assertEditable(this.database,projectId,owner);
+      const project=await this.loadProject(projectId);
+      if(!project)throw new Error('项目不存在或已删除');
+      const next=normalizeDomain(domain);
+      if(project.domain!==next){project.domain=next;await this.save(project);}
+      return project.domain||'';
     });
   }
   path(value: string, htmlOnly=false) {

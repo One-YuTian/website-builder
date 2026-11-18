@@ -1,4 +1,4 @@
-import { ProjectPrompt, type PromptContent, type CreatedProject } from './ProjectPrompt';
+import { ProjectPrompt, type PromptContent, type CreatedProject, type PromptOptions } from './ProjectPrompt';
 import { useCallback, useEffect, useRef, useState, type ReactNode } from 'react';
 import { WebsiteCanvas } from './WebsiteCanvas';
 import { manageProjects, uploadPromptFiles } from './project-api';
@@ -11,7 +11,7 @@ type Project = {id:string;name:string;brand?:string;displayName?:string;country?
 type Detail = {project_id:string;thread_id:string|null;name:string;directory:string};
 export function ProjectManager({background}:{background:ReactNode}) {
   useEffect(()=>{
-    const block=(event:Event)=>{if(event.target instanceof Element&&event.target.closest('textarea,input'))return;event.preventDefault();event.stopImmediatePropagation();};
+    const block=(event:Event)=>{if(event.target instanceof Element&&event.target.closest('textarea,input,[contenteditable="true"],.prompt-editor'))return;event.preventDefault();event.stopImmediatePropagation();};
     document.addEventListener('selectstart',block,true);document.addEventListener('contextmenu',block,true);
     return()=>{document.removeEventListener('selectstart',block,true);document.removeEventListener('contextmenu',block,true);};
   },[]);
@@ -23,6 +23,7 @@ export function ProjectManager({background}:{background:ReactNode}) {
   const [detail,setDetail]=useState<Detail|null>(null);
 
   const [openingSettings,setOpeningSettings]=useState(false);
+  const [sidebarOpen,setSidebarOpen]=useState(false);
   const [query,setQuery]=useState('');
   const [error,setError]=useState('');
   useEffect(()=>{if(!detail||!error)return;const timer=setTimeout(()=>setError(''),3000);return()=>clearTimeout(timer);},[detail?.project_id,error]);
@@ -69,7 +70,7 @@ export function ProjectManager({background}:{background:ReactNode}) {
   const home=async()=>{navigation.current++;try{await request({action:'home'});current.current=null;setDetail(null);setError('');await refresh();await publish({page:'home'});}catch(error){setError((error as Error).message);}};
   const open=async(id:string)=>{navigation.current++;setBusy(true);try{const value=await request({action:'open',project_id:id});current.current=value;setDetail(value);setError('');await publish(value);}catch(error){setError((error as Error).message);}finally{setBusy(false);}};
   const remove=async(id:string)=>{setBusy(true);try{await request({action:'delete',project_id:id});setDeleted(id);if(detail?.project_id===id)setDetail(null);await refresh();setError('');}catch(error){setError((error as Error).message);}finally{setBusy(false);}};
-  const sendPrompt=async(text:string,content:PromptContent,signal:AbortSignal,files:File[]):Promise<CreatedProject>=>{
+  const sendPrompt=async(text:string,content:PromptContent,signal:AbortSignal,files:File[],options?:PromptOptions):Promise<CreatedProject>=>{
     if(!hostApp)throw Error('请在 Codex 插件面板中发送需求。');
     await hostReady;
     const requestId=crypto.randomUUID();
@@ -78,7 +79,16 @@ export function ProjectManager({background}:{background:ReactNode}) {
     try{
       const uploadedFiles=await uploadPromptFiles(request,requestId,files,signal);
       if(signal.aborted)throw Error('附件上传已取消');
-      await hostApp.updateModelContext({structuredContent:{panel_id:panelId,page:'home',submission:{request_id:requestId,action:'create',panel_id:panelId,files:uploadedFiles,instructions:'用户从首页提交了新建网站需求。必须使用 website-builder SKILL，先调用 website_projects(action=create, panel_id=此panel_id, request_id=此request_id, thread_id=当前真实会话ID)，提供国家/语言/主要类目/品牌等元数据。先创建空项目，再立即调用open_thread_canvas(thread_id=当前新对话真实ID)一次，在新对话打开侧边UI并进入详情，不新建重复项目。查询website_projects(action=submission,panel_id,request_id)直到chat_detail_ready=true，再沿用project_id规划页面、导入商品和生成内容，不能复用旧项目。附件完整原件已由插件保存，创建后自动导入项目files_directory；先查询website_projects(action=resources,project_id,panel_id)获取本地绝对路径，商品JSON使用website_products(file_path=该路径)，不要读取attachment://，不要用新建Mock替代用户商品数据。'}}});
+      const mode=options?.verificationMode||'auto';
+      const modeInstruction=mode==='manual'
+        ?'当前为【手动验证模式】：仅负责商品库处理、图片生成与页面生成，禁止调用网站验证 SKILL 或执行截图/全流程自动验证，直接输出网站结果，由用户手动验证。无论自动或手动模式，均不负责网站部署。'
+        :'当前为【自动验证模式】：除商品库处理、图片生成、页面生成外，还需使用网站验证 SKILL 进行全流程检查。无论自动或手动模式，均不负责网站部署。';
+      const metaHint=[
+        options?.country?`country=${options.country}`:'',
+        options?.language?`language=${options.language}`:'',
+        options?.colorTheme&&options.colorTheme!=='auto'?`color_theme=${options.colorThemeLabel||options.colorTheme}`:'',
+      ].filter(Boolean).join(', ');
+      await hostApp.updateModelContext({structuredContent:{panel_id:panelId,page:'home',submission:{request_id:requestId,action:'create',panel_id:panelId,files:uploadedFiles,verification_mode:mode,...(options?.colorTheme&&options.colorTheme!=='auto'?{color_theme:options.colorTheme,color_palette:options.colorPalette}:{}),...(options?.country?{country:options.country}:{}),...(options?.language?{language:options.language}:{}),instructions:`用户从首页提交了新建网站需求。必须使用 website-builder SKILL，先调用 website_projects(action=create, panel_id=此panel_id, request_id=此request_id, thread_id=当前真实会话ID)，提供国家/语言/主要类目/品牌/域名等元数据${metaHint?`（用户已选：${metaHint}）`:''}。先创建空项目，再立即调用open_thread_canvas(thread_id=当前新对话真实ID)一次，在新对话打开侧边UI并进入详情，不新建重复项目。查询website_projects(action=submission,panel_id,request_id)直到chat_detail_ready=true，再沿用project_id规划页面、导入商品和生成内容，不能复用旧项目。附件完整原件已由插件保存，创建后自动导入项目files_directory；先查询website_projects(action=resources,project_id,panel_id)获取本地绝对路径，商品JSON使用website_products(file_path=该路径)，不要读取attachment://，不要用新建Mock替代用户商品数据。${modeInstruction}`}}});
       const message={role:'user' as const,content,_meta:{'openai/message':{target:'new',send:true}}};
       const result=await hostApp.sendMessage(message,{timeout:60000});
       if(result.isError)throw Error('新对话未接受消息，请重试。草稿已保留。');
@@ -103,15 +113,19 @@ export function ProjectManager({background}:{background:ReactNode}) {
 
     {deleted&&<div className="manager-error" role="status">项目已删除<button onClick={()=>void request({action:'restore',project_id:deleted}).then(()=>{setDeleted(null);return refresh();}).catch(error=>setError(error.message))}>撤销</button><button aria-label="关闭删除提示" onClick={()=>setDeleted(null)}>×</button></div>}
     {error&&<div className="manager-error" role="alert">{error}<button aria-label="关闭错误" onClick={()=>setError('')}>×</button></div>}
-    {detail?<WebsiteCanvas key={detail.project_id} background={background} projectId={detail.project_id} panelId={panelId} threadId={detail.thread_id||undefined} onHome={()=>void home()} onProject={id=>void open(id)} onFolder={()=>void request({action:'folder',project_id:detail.project_id}).catch(error=>setError(error.message))}/>:<div className="project-home">{background}
-      <aside className="project-sidebar" aria-label="项目目录">
-        <label className="project-search"><Icon name="search"/><input aria-label="搜索项目" placeholder="搜索项目" value={query} onChange={event=>setQuery(event.target.value)}/></label>
-        <div className="project-groups">{[...groups].map(([label,items])=><section key={label}><h2>{label}</h2>{items.map(project=><div className="project-row" data-project-id={project.id} key={project.id}>
-          <button className="project-open" onClick={()=>void open(project.id)} disabled={busy}><span className="project-thumbnail">{project.thumbnail?<img src={project.thumbnail} alt=""/>:<Icon name="pages"/>}</span><span className="project-description"><strong title={project.displayName||`网站-${project.name}`}>{project.displayName||`网站-${project.name}`}</strong><time dateTime={project.updatedAt} title={projectTime(project.updatedAt)}>{projectTime(project.updatedAt)}</time></span></button>
-          <div className="project-actions">{project.deletable===false?<span className="project-running" role="status" aria-label={project.deploying?'部署中':statusLabels[project.status||'generating']}><span className="project-status-spinner" aria-hidden="true"/></span>:<>{project.status==='failed'&&<span className="project-status failed" role="status" aria-label={statusLabels.failed}>{statusLabels.failed}</span>}<button className="project-delete" aria-label={`删除项目 ${project.name}`} title="删除项目" disabled={busy} onClick={()=>void remove(project.id)}><Icon name="trash"/></button></>}</div>
-        </div>)}</section>)}{!projects.length&&<p className="projects-empty">暂无项目</p>}{projects.length>0&&!groups.size&&<p className="projects-empty">没有匹配的项目</p>}</div>
-      </aside>
-      <section className="project-compose" aria-label="项目需求输入"><div className="project-compose-inner"><div className="project-compose-heading"><h2>开始构建你的网站</h2>{/* GitLab 配置入口暂时注释保留：<button className="plugin-settings-button" aria-label="插件配置" title="插件配置" aria-haspopup="dialog" disabled={openingSettings} onClick={()=>{if(openingSettings)return;setOpeningSettings(true);void openPluginModal('settings',{},true).catch(error=>setError(error.message)).finally(()=>setOpeningSettings(false));}}><Icon name="settings"/></button> */}</div><ProjectPrompt send={sendPrompt} onCreated={created}/></div></section>
+    {detail?<WebsiteCanvas key={detail.project_id} background={background} projectId={detail.project_id} panelId={panelId} threadId={detail.thread_id||undefined} onHome={()=>void home()} onProject={id=>void open(id)} onFolder={()=>void request({action:'folder',project_id:detail.project_id}).catch(error=>setError(error.message))}/>:<div className={`project-home${projects.length===0?' is-empty-projects':''}`}>{background}
+      {projects.length>0&&<>
+        <button type="button" className="sidebar-toggle-button" aria-label={sidebarOpen?'收起项目列表':'展开项目列表'} title="项目列表" aria-expanded={sidebarOpen} onClick={()=>setSidebarOpen(v=>!v)}><Icon name="sidebar"/></button>
+        <div className={`sidebar-backdrop${sidebarOpen?' is-open':''}`} aria-hidden="true" onClick={()=>setSidebarOpen(false)}/>
+        <aside className={`project-sidebar${sidebarOpen?' is-open':''}`} aria-label="项目目录">
+          <label className="project-search"><Icon name="search"/><input aria-label="搜索项目" placeholder="搜索项目" value={query} onChange={event=>setQuery(event.target.value)}/></label>
+          <div className="project-groups">{[...groups].map(([label,items])=><section key={label}><h2>{label}</h2>{items.map(project=><div className="project-row" data-project-id={project.id} key={project.id}>
+            <button className="project-open" onClick={()=>{setSidebarOpen(false);void open(project.id);}} disabled={busy}><span className="project-thumbnail">{project.thumbnail?<img src={project.thumbnail} alt=""/>:<Icon name="pages"/>}</span><span className="project-description"><strong title={project.displayName||`网站-${project.name}`}>{project.displayName||`网站-${project.name}`}</strong><time dateTime={project.updatedAt} title={projectTime(project.updatedAt)}>{projectTime(project.updatedAt)}</time></span></button>
+            <div className="project-actions">{project.deletable===false?<span className="project-running" role="status" aria-label={project.deploying?'部署中':statusLabels[project.status||'generating']}><span className="project-status-spinner" aria-hidden="true"/></span>:<>{project.status==='failed'&&<span className="project-status failed" role="status" aria-label={statusLabels.failed}>{statusLabels.failed}</span>}<button className="project-delete" aria-label={`删除项目 ${project.name}`} title="删除项目" disabled={busy} onClick={()=>void remove(project.id)}><Icon name="trash"/></button></>}</div>
+          </div>)}</section>)}{groups.size===0&&<p className="projects-empty">没有匹配的项目</p>}</div>
+        </aside>
+      </>}
+      <section className="project-compose" aria-label="项目需求输入"><div className="project-compose-inner"><div className="project-compose-heading"><h2>开始构建你的网站</h2><button className="plugin-settings-button" aria-label="插件配置" title="插件配置" aria-haspopup="dialog" disabled={openingSettings} onClick={()=>{if(openingSettings)return;setOpeningSettings(true);void openPluginModal('settings',{},true).catch(error=>setError(error.message)).finally(()=>setOpeningSettings(false));}}><Icon name="settings"/></button></div><ProjectPrompt send={sendPrompt} onCreated={created}/></div></section>
     </div>}
   </div>;
 }

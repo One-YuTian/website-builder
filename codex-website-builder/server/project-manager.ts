@@ -109,7 +109,7 @@ export function projectManager(store: ProjectStore) {
     }
     return [...material,...files,...rows.filter(row=>{const rel=relative(join(view.metadataDirectory,'session-assets'),row.path);return rel!=='..'&&!rel.startsWith(`..${sep}`)&&!isAbsolute(rel);})];
   }
-  async function run(input: UploadInput & {file_count?:number;visible_panel_id?:string;requirement?:string;request_id?:string;submission_start?:boolean;detail_ready?:boolean;cancel?:boolean;action?: string; panel_id?: string; thread_id?: string; project_id?: string; country?:string;language?:string;categories?:string[];brand?:string;name?: string; source_path?: string; path?:string;width?:number;capture_id?:string}) {
+  async function run(input: UploadInput & {file_count?:number;visible_panel_id?:string;requirement?:string;request_id?:string;submission_start?:boolean;detail_ready?:boolean;cancel?:boolean;action?: string; panel_id?: string; thread_id?: string; project_id?: string; country?:string;language?:string;categories?:string[];brand?:string;domain?:string;name?: string; source_path?: string; path?:string;width?:number;capture_id?:string}) {
     const action = input.action || 'list';
     const panel=input.panel_id?store.database.panelById(input.panel_id):undefined;
     const thread = input.thread_id || process.env.CODEX_THREAD_ID || process.env.CODEX_SESSION_ID || panel?.thread_id || undefined;
@@ -182,8 +182,8 @@ export function projectManager(store: ProjectStore) {
       if (action !== 'create' && !id) throw Error('需要项目 ID');
       if(input.request_id){const record=readSubmission();if(record?.request_id!==input.request_id||record.state==='cancelled')throw Error('创建请求已取消或失效');if(record.state==='created'){const existing=await store.get(undefined,record.project_id);if(!existing)throw Error('项目不可用');return{page:'project',...compactProject(existing),thread_id:record.thread_id,files:record.files||[]};}if(record.state==='creating')throw Error('项目正在创建，请稍后查询结果');if(record.state!=='pending')throw Error('创建请求已失效');const attached=uploads.rows(input.panel_id,input.request_id);if(attached.length!==(record.file_count||0)||attached.some(file=>file.status!=='ready'))throw Error('附件尚未完整上传，不能创建项目');saveSubmission({...record,state:'creating'});}
       try {
-      const view = thread ? await store.open({ threadId: thread, projectId: id, newProject: action === 'create', name: input.name,country:input.country,language:input.language,categories:input.categories,brand:input.brand,...(action==='create'?{pages:[]}:{}) })
-        : action === 'create' ? await store.createProject({name:input.name,country:input.country,language:input.language,categories:input.categories,brand:input.brand,pages:[]}) : await store.get(undefined,id);
+      const view = thread ? await store.open({ threadId: thread, projectId: id, newProject: action === 'create', name: input.name,country:input.country,language:input.language,categories:input.categories,brand:input.brand,domain:input.domain,...(action==='create'?{pages:[]}:{}) })
+        : action === 'create' ? await store.createProject({name:input.name,country:input.country,language:input.language,categories:input.categories,brand:input.brand,domain:input.domain,pages:[]}) : await store.get(undefined,id);
       if(!view)throw Error('项目不存在或已删除');
       store.database.panel(input.panel_id, thread||'', view.project.id, action==='create' && submissionHandoff);
       const attachedFiles=input.request_id?await store.exclusive(view.project.id,()=>uploads.import(input.panel_id!,input.request_id!,view)):[];

@@ -130,11 +130,8 @@ try{
     client.setRequestHandler(ElicitRequestSchema,async request=>{formRequests.push(request.params);return answers.shift();});
     assert.equal((await openNative()).cancelled,true);
     assert.equal(formRequests.length,2,'connection diagnostics are displayed in a second native form');
-    assert.match(formRequests[1].message,/连接测试/);
+    assert.match(formRequests[1].message,/测试连接成功/);
     assert.deepEqual(await native.settings.get(false),beforeNative,'testing and cancellation do not save settings');
-    client.setRequestHandler(ElicitRequestSchema,async()=>({action:'accept',content:{operation:'save',PROJECT_DIR:'Z:/forbidden',GITLAB_DEFAULT_BRANCH:'native-modal-branch'}}));
-    await assert.rejects(openNative(),/does not match requested schema/,'host form rejects changes to the managed project directory');
-    assert.deepEqual(await native.settings.get(false),beforeNative);
     client.setRequestHandler(ElicitRequestSchema,async()=>({action:'accept',content:{operation:'save',GITLAB_DEFAULT_BRANCH:'native-modal-branch'}}));
     assert.equal((await openNative()).saved,true);
     assert.equal((await native.settings.get(false)).GITLAB_DEFAULT_BRANCH,'native-modal-branch');

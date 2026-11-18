@@ -12,7 +12,7 @@ export class R2Settings {
 }
 export const r2SettingsCapability={readTool:'website_s3_settings_read',updateTool:'website_s3_settings_update'};
 export function registerR2Settings(server:McpServer,settings:R2Settings){
- const read=async()=>{const values=await settings.public();return {schema:{type:'object',properties:Object.fromEntries(r2Fields.map(name=>[name,{type:'string',title:name,readOnly:true}]))},values,layout:[{kind:'group',title:'S3配置',items:r2Fields.map(property=>({kind:'property',property}))}]};};
+ const read=async()=>{const values=await settings.public();return {schema:{type:'object',properties:Object.fromEntries(r2Fields.map(name=>[name,{type:'string',title:name,readOnly:true}]))},values,layout:[{kind:'group',title:'预览环境配置',items:r2Fields.map(property=>({kind:'property',property}))}]};};
  server.registerTool(r2SettingsCapability.readTool,{title:'读取 S3 配置',inputSchema:{},outputSchema:{schema:z.record(z.string(),z.unknown()),values:z.record(z.string(),z.string()),layout:z.array(z.record(z.string(),z.unknown()))},annotations:{readOnlyHint:true,openWorldHint:false},_meta:{ui:{visibility:['app']}}},async()=>({content:[],structuredContent:await read()}));
  server.registerTool(r2SettingsCapability.updateTool,{title:'S3 配置只读',inputSchema:{set:z.record(z.string(),z.union([z.string(),z.number(),z.boolean()]))},outputSchema:{values:z.record(z.string(),z.string())},annotations:{readOnlyHint:true,openWorldHint:false},_meta:{ui:{visibility:['app']}}},async()=>({content:[{type:'text',text:'S3 配置不可修改，已恢复预配置值。'}],structuredContent:{values:(await read()).values}}));
 }

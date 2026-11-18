@@ -1,4 +1,5 @@
-import {useCallback,useEffect,useState} from 'react';
+import {useCallback,useEffect,useRef,useState} from 'react';
+import {createPortal} from 'react-dom';
 
 import {pluginControl} from './plugin-control';
 import {openPluginModal,closePluginModal} from './plugin-modal';
@@ -6,23 +7,203 @@ import {Icon} from './Icons';
 import {hostApp} from './bridge';
 
 
-export function DeploymentPanel({projectId,panelId,threadId,onClose}:{projectId:string;panelId:string;threadId?:string;onClose?:()=>void}){
-  const [open,setOpen]=useState(true),[domain,setDomain]=useState(''),[environment,setEnvironment]=useState(''),[status,setStatus]=useState<any>({}),[result,setResult]=useState<any>(null),[challenge,setChallenge]=useState<any>(null),[decision,setDecision]=useState(''),[busy,setBusy]=useState(false),[error,setError]=useState('');
+const deployTimelineSteps=[
+ {id:'check',label:'检查连接与版本'},
+ {id:'confirm',label:'确认发布方案'},
+ {id:'sync',label:'同步代码与仓库'},
+ {id:'verify',label:'最终核验'},
+ {id:'deploy',label:'部署（添加 Tag / Push）'},
+] as const;
+
+function resolveTimelineIndex(stage:string,challenge:any,result:any,busy:boolean){
+ if(result?.status==='deployment_triggered')return 5;
+ if(stage.includes('创建发布标签'))return 4;
+ if(stage.includes('最终发布核验'))return 3;
+ if(stage.includes('创建官网仓库')||stage.includes('备份本地')||stage.includes('保留本地')||stage.includes('提交本地版本')||stage.includes('核对并推送'))return 2;
+ if(challenge||stage.includes('等待用户确认'))return 1;
+ if(busy||stage.includes('检查中'))return 0;
+ return -1;
+}
+
+export function DeploymentPanel({projectId,panelId,threadId,onClose,inline,onBack}:{projectId:string;panelId:string;threadId?:string;onClose?:()=>void;inline?:boolean;onBack?:()=>void}){
+  const envStorageKey=`website-builder:deploy-env:${projectId}`;
+  const envTouched=useRef(false);
+  const domainTouched=useRef(false);
+  const savedDomain=useRef('');
+  const [open,setOpen]=useState(true),[domain,setDomain]=useState(''),[environment,setEnvironment]=useState<string>(()=>{try{const saved=localStorage.getItem(envStorageKey);if(saved==='test'||saved==='production')return saved;}catch{}return 'test';}),[status,setStatus]=useState<any>({}),[result,setResult]=useState<any>(null),[challenge,setChallenge]=useState<any>(null),[decision,setDecision]=useState(''),[busy,setBusy]=useState(false),[error,setError]=useState('');
   const request=useCallback((action:string,values:Record<string,unknown>={})=>pluginControl({type:'deploy',action,project_id:projectId,panel_id:panelId,thread_id:threadId,...values}),[projectId,panelId,threadId]);
   useEffect(()=>{if(!hostApp)return;hostApp.onteardown=async()=>{try{const value=await request('status');if(value.locked&&value.cancellable)await request('cancel');}catch{/* The backend retains the lease until any in-flight work settles. */}return {};};return()=>{if(hostApp)hostApp.onteardown=undefined;};},[request]);
-  useEffect(()=>{let stopped=false,inflight=false;const poll=async()=>{if(inflight)return;inflight=true;try{const value=await request('status');if(!stopped){setStatus(value);setDomain(previous=>previous||value.domain||value.last?.domain||'');}}catch{/* A transient status failure must not unlock an active deployment. */}finally{inflight=false;}};void poll();const timer=setInterval(()=>void poll(),1000);return()=>{stopped=true;clearInterval(timer);};},[request]);
+  useEffect(()=>{let stopped=false,inflight=false;const poll=async()=>{if(inflight)return;inflight=true;try{const value=await request('status');if(!stopped){setStatus(value);if(value.domain){savedDomain.current=value.domain;if(!domainTouched.current)setDomain(previous=>previous||value.domain);}if(!envTouched.current&&value.last?.environment&&['test','production'].includes(value.last.environment)){try{if(!localStorage.getItem(envStorageKey))setEnvironment(value.last.environment);}catch{setEnvironment(value.last.environment);}}}}catch{/* A transient status failure must not unlock an active deployment. */}finally{inflight=false;}};void poll();const timer=setInterval(()=>void poll(),1000);return()=>{stopped=true;clearInterval(timer);};},[request,envStorageKey]);
 
+  const persistDomain=async(value:string)=>{const trimmed=value.trim().toLowerCase();if(trimmed===savedDomain.current)return;try{const res=await request('domain',{domain:trimmed});savedDomain.current=res.domain||'';}catch{}};
+
+  const selectEnvironment=(value:'test'|'production')=>{envTouched.current=true;setEnvironment(value);try{localStorage.setItem(envStorageKey,value);}catch{}};
   const accept=(value:any)=>{if(value.status==='confirmation_required'){setChallenge(value.challenge);setDecision(value.challenge.choices.length===1?'confirm':'');setResult(null);}else{setResult(value);setChallenge(null);}};
   const prepare=async()=>{setBusy(true);setError('');try{accept(await request('prepare',{domain,environment}));}catch(error){setError((error as Error).message);}finally{setBusy(false);setStatus(await request('status').catch(()=>({locked:true,stage:'状态未知，请重开确认窗口'})));}};
   const execute=async()=>{setBusy(true);setError('');try{accept(await request('execute',{confirmation_id:challenge.id,decision}));}catch(error){setChallenge(null);setError((error as Error).message);}finally{setBusy(false);setStatus(await request('status').catch(()=>({locked:true,stage:'状态未知'})));}};
-  const close=async()=>{try{if(status.locked||busy||challenge){const value=await request('cancel',{confirmation_id:challenge?.id});if(value.status==='cancelling'){setStatus(await request('status'));return;}}setChallenge(null);setResult(null);setError('');setOpen(false);if(onClose)onClose();else await closePluginModal();}catch(error){setError((error as Error).message);}};
-  const label=challenge?.kind==='create'?'创建官网仓库':challenge?.kind==='bind'?'拉取 / 绑定官网仓库':'确认发布';
-  return <>{open&&<section className="plugin-modal deploy-modal" role="dialog" aria-modal="true" aria-labelledby="deploy-title"><header><h2 id="deploy-title">{label}</h2></header>{!challenge&&!result?<form onSubmit={event=>{event.preventDefault();void prepare();}}><label>真实官网域名<input autoComplete="off" placeholder="www.example.com" value={domain} disabled={busy||status.locked} onChange={event=>setDomain(event.target.value)}/></label><fieldset disabled={busy||status.locked}><legend>发布环境（必须选择）</legend><label className="modal-check"><input type="radio" name="deploy-environment" value="test" checked={environment==='test'} onChange={()=>setEnvironment('test')}/>测试环境</label><label className="modal-check"><input type="radio" name="deploy-environment" value="production" checked={environment==='production'} onChange={()=>setEnvironment('production')}/>正式环境</label></fieldset><p>依次核验 OPEN VPN/IP、Token、分组、部署仓库、官网仓库与版本。检查通过后还需确认，不会直接发布。</p><footer><button type="button" disabled={busy||status.locked} onClick={()=>void openPluginModal('settings',{},true).catch(error=>setError(error.message))}>插件配置</button><button className="primary" disabled={busy||status.locked||!domain||!environment}>{busy?'检查中…':'检查连接与版本'}</button></footer></form>:null}{challenge&&<><dl><dt>GitLab用户</dt><dd>{challenge.gitlab_user}</dd><dt>官网</dt><dd>{challenge.domain}</dd><dt>网站仓库</dt><dd>{challenge.repository}</dd><dt>环境</dt><dd className={challenge.environment==='production'?'production-label':''}>{challenge.environment==='production'?'正式环境':'测试环境'}</dd><dt>本地 main</dt><dd>{challenge.local}</dd><dt>云端 main</dt><dd>{challenge.remote||'空仓库'}</dd><dt>部署仓库</dt><dd>{challenge.deploy_repository}</dd><dt>基准分支</dt><dd>{challenge.deploy_branch}</dd><dt>部署基准</dt><dd>{challenge.deploy}</dd></dl>{challenge.uncommitted&&<p>本地存在未提交修改；确认后会先提交最新文件，再核对并推送。</p>}<ul className="deployment-checks">{challenge.checks.map((item:string)=><li key={item}>{item} · 通过</li>)}</ul>{challenge.kind==='create'&&<p>官网仓库不存在。是否在指定分组创建 {challenge.domain} 并绑定？创建完成后会再次确认发布。</p>}{challenge.kind==='bind'&&<><p>绑定前请确认内容来源。以本地为准只绑定地址，不覆盖本地、不强推；以云端为准将先备份，然后覆盖本地项目。</p>{challenge.choices.length>1&&<fieldset disabled={busy}>{[['local','以本地为准（不覆盖本地）'],['cloud','以云端为准（备份后覆盖本地）']].map(([value,label])=><label className="modal-check" key={value}><input type="radio" name="binding-strategy" checked={decision===value} onChange={()=>setDecision(value)}/>{label}</label>)}</fieldset>}</>}{challenge.kind==='publish'&&<p>确认后将提交并核对推送官网 main，再通过 GitLab API 创建本官网专用的北京时间发布标签，触发部署流水线。</p>}<footer><button disabled={status.locked&&status.cancellable===false} onClick={()=>void close()}>取消</button><button className="primary" disabled={busy||!decision} onClick={()=>void execute()}>{busy?'执行中…':challenge.kind==='create'?'确认创建仓库':challenge.kind==='bind'?'确认内容来源并绑定':`确认发布到${challenge.environment==='production'?'正式':'测试'}环境`}</button></footer></>}{result&&<><p role="status">{result.message||'操作完成'}</p></>}{(busy||status.locked)&&<p className="deployment-running" role="status"><span className="prompt-spinner"/>{status.stage||'正在检查'} · 页面修改已锁定</p>}{busy&&<button disabled={status.locked&&status.cancellable===false} onClick={()=>void close()}>{status.cancellable===false?'发布请求已发出':'取消任务'}</button>}{error&&<p className="deployment-error" role="alert">{error}</p>}</section>}</>;
+  const close=async()=>{try{if(status.locked||busy||challenge){const value=await request('cancel',{confirmation_id:challenge?.id});if(value.status==='cancelling'){setStatus(await request('status'));return;}}setChallenge(null);setResult(null);setError('');if(!inline)setOpen(false);if(onClose)onClose();else await closePluginModal();}catch(error){setError((error as Error).message);}};
+  const label=challenge?.kind==='create'?'创建官网仓库':challenge?.kind==='bind'?'拉取 / 绑定官网仓库':challenge?'确认发布':'部署到线上';
+  const timelineIndex=resolveTimelineIndex(String(status.stage||''),challenge,result,busy);
+  const showTimeline=timelineIndex>=0&&(busy||status.locked||challenge||result?.status==='deployment_triggered');
+  const canCancel=(busy||status.locked)&&status.cancellable!==false;
+  const body=<>
+    {showTimeline&&<ol className="deploy-timeline" aria-label="发布时间轴">
+      {deployTimelineSteps.map((step,index)=>{
+        const state=timelineIndex>index?'done':timelineIndex===index?'active':'pending';
+        return <li key={step.id} className={`deploy-timeline-item is-${state}`} data-state={state}><span className="deploy-timeline-dot" aria-hidden="true"/><span className="deploy-timeline-label">{step.label}</span>{state==='active'&&status.stage?<small className="deploy-timeline-stage">{status.stage}</small>:null}</li>;
+      })}
+    </ol>}
+    {!challenge&&!result?<form className="gitlab-inline-form" onSubmit={event=>{event.preventDefault();void prepare();}}><label>部署域名<input autoComplete="off" value={domain} disabled={busy||status.locked} onChange={event=>{domainTouched.current=true;setDomain(event.target.value);}} onBlur={()=>void persistDomain(domain)}/></label><fieldset disabled={busy||status.locked}><legend>发布环境</legend><label className="modal-check"><input type="radio" name="deploy-environment" value="test" checked={environment==='test'} onChange={()=>selectEnvironment('test')}/>测试环境</label><label className="modal-check"><input type="radio" name="deploy-environment" value="production" checked={environment==='production'} onChange={()=>selectEnvironment('production')}/>正式环境</label></fieldset><footer>{inline?onBack&&<button type="button" disabled={busy||status.locked} onClick={onBack}>返回</button>:<button type="button" disabled={busy||status.locked} onClick={()=>void openPluginModal('settings',{},true).catch(error=>setError(error.message))}>插件配置</button>}<button className="primary" disabled={busy||status.locked||!domain||!environment}>{busy?'检查中…':'开始检查并发布'}</button></footer></form>:null}
+    {challenge&&<><dl className="gitlab-inline-dl"><dt>GitLab用户</dt><dd>{challenge.gitlab_user}</dd><dt>官网</dt><dd>{challenge.domain}</dd><dt>网站仓库</dt><dd>{challenge.repository}</dd><dt>环境</dt><dd className={challenge.environment==='production'?'production-label':''}>{challenge.environment==='production'?'正式环境':'测试环境'}</dd><dt>本地 main</dt><dd>{challenge.local}</dd><dt>云端 main</dt><dd>{challenge.remote||'空仓库'}</dd><dt>部署仓库</dt><dd>{challenge.deploy_repository}</dd><dt>基准分支</dt><dd>{challenge.deploy_branch}</dd><dt>部署基准</dt><dd>{challenge.deploy}</dd></dl>{challenge.uncommitted&&<p>本地存在未提交修改；确认后会先提交最新文件，再核对并推送。</p>}<ul className="deployment-checks">{challenge.checks.map((item:string)=><li key={item}>{item} · 通过</li>)}</ul>{challenge.kind==='create'&&<p>官网仓库不存在。是否在指定分组创建 {challenge.domain} 并绑定？创建完成后会再次确认发布。</p>}{challenge.kind==='bind'&&<><p>绑定前请确认内容来源。以本地为准只绑定地址，不覆盖本地、不强推；以云端为准将先备份，然后覆盖本地项目。</p>{challenge.choices.length>1&&<fieldset disabled={busy}>{[['local','以本地为准（不覆盖本地）'],['cloud','以云端为准（备份后覆盖本地）']].map(([value,label])=><label className="modal-check" key={value}><input type="radio" name="binding-strategy" checked={decision===value} onChange={()=>setDecision(value)}/>{label}</label>)}</fieldset>}</>}{challenge.kind==='publish'&&<p>确认后将提交并核对推送官网 main，再通过 GitLab API 创建本官网专用的北京时间发布标签，触发部署流水线。</p>}<footer><button disabled={status.locked&&status.cancellable===false} onClick={()=>void close()}>取消发布</button><button className="primary" disabled={busy||!decision} onClick={()=>void execute()}>{busy?'执行中…':challenge.kind==='create'?'确认创建仓库':challenge.kind==='bind'?'确认内容来源并绑定':`确认发布到${challenge.environment==='production'?'正式':'测试'}环境`}</button></footer></>}
+    {result&&<><p role="status">{result.message||'操作完成'}</p>{inline&&<footer><button type="button" onClick={()=>{setResult(null);onBack?.();}}>返回</button><button type="button" className="primary" onClick={()=>void close()}>完成</button></footer>}</>}
+    {(busy||status.locked)&&!challenge&&<><p className="deployment-running" role="status"><span className="prompt-spinner"/>{status.stage||'正在检查'} · 页面修改已锁定</p><footer><button type="button" disabled={!canCancel} onClick={()=>void close()}>{canCancel?'取消发布':'正在执行最终部署（不可取消）'}</button></footer></>}
+    {error&&<p className="deployment-error" role="alert">{error}</p>}
+  </>;
+  if(inline)return <><header><h2 id="deploy-title">{label}</h2><button aria-label="关闭部署面板" onClick={()=>void close()}>×</button></header><p className="r2-project">项目 {projectId}</p>{body}</>;
+  return <>{open&&<section className="plugin-modal deploy-modal" role="dialog" aria-modal="true" aria-labelledby="deploy-title"><header><h2 id="deploy-title">{label}</h2></header>{body}</section>}</>;
 }
 
 export function DeploymentControls({projectId,panelId,threadId,onLocked}:{projectId:string;panelId:string;threadId?:string;onLocked:(locked:boolean)=>void}){
- const [status,setStatus]=useState<any>({}),[error,setError]=useState('');
- useEffect(()=>{let stopped=false;const poll=async()=>{try{const value=await pluginControl({type:'deploy',action:'status',project_id:projectId,panel_id:panelId,thread_id:threadId});if(!stopped){setStatus(value);onLocked(!!value.locked);}}catch{}};void poll();const timer=setInterval(()=>void poll(),500);return()=>{stopped=true;clearInterval(timer);};},[projectId,panelId,threadId,onLocked]);
- useEffect(()=>{if(error){const timer=setTimeout(()=>setError(''),3000);return()=>clearTimeout(timer);}},[error]);
- return <><button aria-label="部署网站" title="部署网站" className={status.locked?'active':''} onClick={()=>void openPluginModal('deploy',{project_id:projectId,panel_id:panelId,thread_id:threadId},true).catch(error=>setError(error.message))}><Icon name="deploy"/></button>{error&&<div className="toast" role="alert">{error}</div>}</>;
+ const button=useRef<HTMLButtonElement>(null);
+ const [open,setOpen]=useState(false);
+ const [mode,setMode]=useState<'select'|'r2'|'gitlab'>('select');
+ const [r2State,setR2State]=useState<any>({});
+ const [gitlabStatus,setGitlabStatus]=useState<any>({});
+ const [busy,setBusy]=useState(false);
+ const [error,setError]=useState('');
+ const [copied,setCopied]=useState(false);
+ const [position,setPosition]=useState({left:12,top:12});
+
+ const callR2=useCallback((action:string)=>pluginControl({type:'r2',action,project_id:projectId,panel_id:panelId,thread_id:threadId}),[projectId,panelId,threadId]);
+ const callGitLab=useCallback((action:string)=>pluginControl({type:'deploy',action,project_id:projectId,panel_id:panelId,thread_id:threadId}),[projectId,panelId,threadId]);
+
+ useEffect(()=>{
+  let stopped=false,inflight=false;
+  const poll=async()=>{
+   if(inflight)return;
+   inflight=true;
+   try{
+    const [r2Res,gitlabRes]=await Promise.allSettled([callR2('status'),callGitLab('status')]);
+    if(stopped)return;
+    const nextR2=r2Res.status==='fulfilled'?r2Res.value:null;
+    const nextGitLab=gitlabRes.status==='fulfilled'?gitlabRes.value:null;
+    if(nextR2)setR2State(nextR2);
+    if(nextGitLab)setGitlabStatus(nextGitLab);
+    onLocked(Boolean((nextR2??r2State)?.locked||(nextGitLab??gitlabStatus)?.locked));
+   }finally{inflight=false;}
+  };
+  void poll();
+  const timer=setInterval(()=>void poll(),500);
+  return()=>{stopped=true;clearInterval(timer);};
+ },[callR2,callGitLab,onLocked]);
+
+ useEffect(()=>{
+  if(!open)return;
+  const layout=()=>{
+   const rect=button.current?.getBoundingClientRect();
+   const width=mode==='gitlab'?452:392;
+   const reserve=mode==='gitlab'?680:460;
+   if(rect)setPosition({left:Math.max(12,rect.left-width),top:Math.max(12,Math.min(rect.top,innerHeight-reserve))});
+  };
+  layout();
+  addEventListener('resize',layout);
+  return()=>removeEventListener('resize',layout);
+ },[open,mode]);
+
+ useEffect(()=>{
+  if(copied){const timer=setTimeout(()=>setCopied(false),2000);return()=>clearTimeout(timer);}
+ },[copied]);
+
+ const startR2=async()=>{
+  setBusy(true);setError('');
+  try{
+   const value=await callR2('start');
+   setR2State(value);
+   onLocked(Boolean(value.locked||gitlabStatus.locked));
+  }catch(err){setError((err as Error).message);}
+  finally{setBusy(false);}
+ };
+
+ const show=async()=>{
+  setOpen(true);setError('');
+  try{
+   const [r2Res,gitlabRes]=await Promise.allSettled([callR2('status'),callGitLab('status')]);
+   const nextR2=r2Res.status==='fulfilled'?r2Res.value:r2State;
+   const nextGitLab=gitlabRes.status==='fulfilled'?gitlabRes.value:gitlabStatus;
+   if(r2Res.status==='fulfilled')setR2State(nextR2);
+   if(gitlabRes.status==='fulfilled')setGitlabStatus(nextGitLab);
+   setMode(nextR2?.locked&&nextR2?.id?'r2':nextGitLab?.locked?'gitlab':'select');
+  }catch(err){setError((err as Error).message);}
+ };
+
+ const chooseR2=async()=>{
+  setMode('r2');setError('');
+  try{
+   const value=await callR2('status');
+   setR2State(value);
+   if(!value.id&&!value.locked)await startR2();
+  }catch(err){setError((err as Error).message);}
+ };
+
+ const chooseGitLab=()=>{
+  setError('');
+  setMode('gitlab');
+ };
+
+ const cancelR2=async()=>{
+  try{setR2State(await callR2('cancel'));}
+  catch(err){setError((err as Error).message);}
+ };
+
+ const copy=async()=>{
+  try{await navigator.clipboard.writeText(r2State.url);setCopied(true);setError('');}
+  catch{setError('复制失败，请选中链接后手动复制');}
+ };
+
+ const preview=async()=>{
+  try{await callR2('preview');setError('');}
+  catch(err){setError((err as Error).message);}
+ };
+
+ const r2Active=Boolean(r2State.locked||busy);
+ const active=Boolean(r2Active||gitlabStatus.locked);
+ const percent=r2State.total?Math.round((r2State.completed||0)/r2State.total*100):0;
+
+ const popupStyle={...position,maxHeight:`calc(100vh - ${position.top+12}px)`};
+
+ return <>
+  <button ref={button} aria-label="部署网站" title="部署网站" aria-expanded={open} className={active?'active':''} onClick={()=>void show()}><Icon name="deploy"/></button>
+  {open&&createPortal(<div className="r2-popup-overlay" onPointerDown={event=>{if(event.target===event.currentTarget)setOpen(false);}}>
+   {mode==='select'?<section className="r2-deploy-popup" style={popupStyle} role="dialog" aria-modal="true" aria-label="部署网站">
+    <header><h2>部署网站</h2><button aria-label="关闭部署面板" onClick={()=>setOpen(false)}>×</button></header>
+    <p className="r2-project">项目 {projectId}</p>
+    <p className="deploy-mode-hint">请选择部署方式：</p>
+    <div className="deploy-mode-list">
+     <button type="button" className="deploy-mode-option" disabled={Boolean(gitlabStatus.locked||busy)} onClick={()=>void chooseR2()}>
+      <span className="deploy-mode-title">部署到预览环境{r2State.status==='completed'&&r2State.url?<small className="deploy-mode-badge">已部署</small>:null}</span>
+      <span className="deploy-mode-desc">同步静态资源到预览服务器，生成临时预览链接</span>
+     </button>
+     <button type="button" className="deploy-mode-option" disabled={Boolean(r2Active)} onClick={chooseGitLab}>
+      <span className="deploy-mode-title">部署到线上{gitlabStatus.locked?<small className="deploy-mode-badge">进行中</small>:null}</span>
+      <span className="deploy-mode-desc">通过 GitLab 仓库与发布标签部署到测试或正式环境</span>
+     </button>
+    </div>
+    {gitlabStatus.locked&&<p className="deployment-running" role="status"><span className="prompt-spinner"/>{gitlabStatus.stage||'GitLab 发布进行中'}</p>}
+    {error&&<p className="r2-error" role="alert">{error}</p>}
+   </section>:mode==='gitlab'?<section className="r2-deploy-popup is-gitlab" style={popupStyle} role="dialog" aria-modal="true" aria-labelledby="deploy-title">
+    <DeploymentPanel projectId={projectId} panelId={panelId} threadId={threadId} inline onBack={()=>{setError('');setMode('select');}} onClose={()=>setOpen(false)}/>
+   </section>:<section className="r2-deploy-popup" style={popupStyle} role="dialog" aria-modal="true" aria-label="预览环境部署">
+    <header><h2>部署到预览环境</h2><button aria-label="关闭部署面板" onClick={()=>setOpen(false)}>×</button></header>
+    <p className="r2-project">项目 {projectId}</p>
+    <p role="status">{r2State.phase||'准备部署'}</p>
+    {r2Active&&<div className="r2-progress"><progress max={100} value={percent}/><span>{percent}% · {r2State.completed||0}/{r2State.total||0} 个文件</span></div>}
+    {r2State.total_bytes>0&&<p>{((r2State.uploaded_bytes||0)/1048576).toFixed(2)} / {(r2State.total_bytes/1048576).toFixed(2)} MB{r2State.deleted>0?` · 已清理 ${r2State.deleted} 个失效文件`:''}</p>}
+    {r2State.current_file&&r2Active&&<p className="r2-current-file">{r2State.current_file}</p>}
+    {r2State.message&&r2State.status!=='completed'&&<p className={r2State.status==='failed'?'r2-error':''}>{r2State.message}</p>}
+    {r2State.status==='completed'&&r2State.url&&<div className="r2-result"><div className="r2-link-field"><input aria-label="预览链接" aria-hidden="true" tabIndex={-1} type="text" readOnly autoComplete="off" value={r2State.url}/><a className="r2-preview-anchor" href={r2State.url} title="在外部浏览器中打开" onClick={event=>{event.preventDefault();void preview();}}>{r2State.url}</a><button className="r2-copy-button" aria-label={copied?'已复制':'复制链接'} title={copied?'已复制':'复制链接'} onClick={()=>void copy()}><Icon name="copy"/></button></div></div>}
+    {error&&<p className="r2-error" role="alert">{error}</p>}
+    <footer>{r2Active?<button disabled={r2State.status==='cancelling'} onClick={()=>void cancelR2()}>{r2State.status==='cancelling'?'正在取消…':'取消部署'}</button>:<><button type="button" onClick={()=>{setError('');setMode('select');}}>返回</button><button className="primary" onClick={()=>void startR2()}>{r2State.status==='completed'?'重新部署':'开始部署'}</button></>}</footer>
+   </section>}
+  </div>,document.body)}
+ </>;
 }

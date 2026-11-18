@@ -1,7 +1,7 @@
 import { readFile } from 'node:fs/promises';
 import { McpServer } from '@modelcontextprotocol/sdk/server/mcp.js';
-// GitLab 暂停：import {ResourceTemplate} from '@modelcontextprotocol/sdk/server/mcp.js';
-// GitLab 暂停：import {randomUUID} from 'node:crypto';
+import {ResourceTemplate} from '@modelcontextprotocol/sdk/server/mcp.js';
+import {randomUUID} from 'node:crypto';
 import { StdioServerTransport } from '@modelcontextprotocol/sdk/server/stdio.js';
 import { registerAppResource, registerAppTool, RESOURCE_MIME_TYPE } from '@modelcontextprotocol/ext-apps/server';
 import { resolve } from 'node:path';
@@ -18,13 +18,13 @@ import { screenshotPage } from './screenshot';
 import { importProducts } from './product-import';
 import { dataPaths } from './data-paths';
 import { projectManager } from './project-manager';
-// GitLab 暂停：import {PluginSettings,settingNames} from './plugin-settings';
-// GitLab 暂停：import {testGitLabConnection} from './gitlab-diagnostics';
-// GitLab 暂停：import {GitLabWorkflow} from './gitlab-workflow';
-// GitLab 暂停：import {registerGitLabTools} from './gitlab-tools';
-// GitLab 暂停：import {registerNativeSettings,settingsCapability} from './native-settings';
+import {PluginSettings,settingNames} from './plugin-settings';
+import {testGitLabConnection} from './gitlab-diagnostics';
+import {GitLabWorkflow} from './gitlab-workflow';
+import {registerGitLabTools} from './gitlab-tools';
+import {registerNativeSettings,settingsCapability} from './native-settings';
 
-import {R2Settings,registerR2Settings,r2SettingsCapability as settingsCapability} from './r2-settings';
+import {R2Settings,registerR2Settings} from './r2-settings';
 import {R2Deployment} from './r2-deployment';
 import {openPreviewBrowser} from './open-browser';
 
@@ -33,67 +33,64 @@ const sidebarIcon = await readFile(new URL('../../assets/icon.png', import.meta.
 const html = await readFile(new URL('../ui/index.html', import.meta.url), 'utf8');
 const paths = dataPaths();
 const projects = new ProjectStore(paths.project);
-// GitLab 配置与部署流程暂时注释保留。
-// const settings=new PluginSettings(paths.root,paths.project);
-// await settings.get();
-// const gitlab=new GitLabWorkflow(projects,settings);
-// let openNativeSettings:()=>Promise<unknown>;
-// const control=async(input:any)=>{
-//  if(input.type==='panel'){
-//   if(!['settings','deploy'].includes(input.view))throw Error('未知独立面板');
-//   if(input.view==='deploy'){const panel=projects.database.panelById(input.panel_id);if(!panel||panel.project_id!==input.project_id||input.thread_id&&panel.thread_id!==input.thread_id)throw Error('发布面板不属于当前项目');}
-//   const key=randomUUID();projects.database.sql.prepare('INSERT INTO settings VALUES (?,?)').run('modal:'+key,JSON.stringify({view:input.view,project_id:input.project_id,panel_id:input.panel_id,thread_id:input.thread_id,expires:Date.now()+600000}));
-//   return {resource_uri:'ui://codex-website-builder/panel/'+key};
-//  }
-//  if(input.type==='settings'){
-//   if(input.action==='open')return openNativeSettings();
-//   if(input.action==='get')return settings.public();
-//   if(input.action==='test'){
-//    const config=await settings.get(false);for(const name of settingNames){const value=input.values?.[name];if(typeof value==='string')config[name]=name==='GITLAB_TOKEN'?value:value.trim();}
-//    if(input.clear_token)config.GITLAB_TOKEN='';config.GITLAB_DEFAULT_BRANCH ||= 'main';
-//    return testGitLabConnection(config);
-//   }
-//   if(input.action==='save'){if(projects.database.sql.prepare('SELECT owner FROM deployment_locks WHERE expires_at>?').get(Date.now()))throw Error('部署期间不能更改配置，请先完成或取消');return settings.save(input.values||{});}
-//   throw Error('未知配置操作');
-//  }
-//  const panel=projects.database.panelById(input.panel_id);
-//  if(!panel||panel.project_id!==input.project_id||input.thread_id&&panel.thread_id!==input.thread_id)throw Error('部署请求不属于当前项目面板');
-//  const actor='ui:'+input.panel_id;
-//  if(input.action==='status')return gitlab.status(input.project_id);
-//  if(input.action==='cancel')return gitlab.cancel(input.project_id,actor,input.confirmation_id);
-//  if(input.action==='prepare')return gitlab.prepare({project_id:input.project_id,actor,intent:'deploy',domain:input.domain,environment:input.environment});
-//  if(input.action==='execute')return gitlab.execute(input.confirmation_id,actor,input.decision,'deploy',input.project_id);
-//  throw Error('未知部署操作');
-// };
-//
+const settings=new PluginSettings(paths.root,paths.project);
+await settings.get();
+const gitlab=new GitLabWorkflow(projects,settings);
+let openNativeSettings:()=>Promise<unknown>;
 const r2Settings=new R2Settings(paths.root);
 const r2=new R2Deployment(projects,r2Settings);
 const control=async(input:any)=>{
- if(input.type!=='r2')throw Error('Website Builder GitLab 配置/部署入口暂时停用');
+ if(input.type==='panel'){
+  if(!['settings','deploy'].includes(input.view))throw Error('未知独立面板');
+  if(input.view==='deploy'){const panel=projects.database.panelById(input.panel_id);if(!panel||panel.project_id!==input.project_id||input.thread_id&&panel.thread_id!==input.thread_id)throw Error('发布面板不属于当前项目');}
+  const key=randomUUID();projects.database.sql.prepare('INSERT INTO settings VALUES (?,?)').run('modal:'+key,JSON.stringify({view:input.view,project_id:input.project_id,panel_id:input.panel_id,thread_id:input.thread_id,expires:Date.now()+600000}));
+  return {resource_uri:'ui://codex-website-builder/panel/'+key};
+ }
+ if(input.type==='settings'){
+  if(input.action==='open')return openNativeSettings();
+  if(input.action==='get')return {...await settings.public(),...await r2Settings.public()};
+  if(input.action==='test'){
+   const config=await settings.get(false);for(const name of settingNames){const value=input.values?.[name];if(typeof value==='string')config[name]=name==='GITLAB_TOKEN'?value:value.trim();}
+   if(input.clear_token)config.GITLAB_TOKEN='';config.GITLAB_DEFAULT_BRANCH ||= 'main';
+   return testGitLabConnection(config);
+  }
+  if(input.action==='save'){if(projects.database.sql.prepare('SELECT owner FROM deployment_locks WHERE expires_at>?').get(Date.now()))throw Error('部署期间不能更改配置，请先完成或取消');return settings.save(input.values||{});}
+  throw Error('未知配置操作');
+ }
  const panel=projects.database.panelById(input.panel_id);
  if(!panel||panel.project_id!==input.project_id||input.thread_id&&panel.thread_id!==input.thread_id)throw Error('部署请求不属于当前项目面板');
  const actor='ui:'+input.panel_id;
- if(input.action==='status')return r2.status(input.project_id);
- if(input.action==='start')return r2.start(input.project_id,actor);
- if(input.action==='cancel')return r2.cancel(input.project_id,actor);
- if(input.action==='preview'){const state=r2.status(input.project_id);if(state.status!=='completed'||!state.url)throw Error('项目尚未部署完成');return openPreviewBrowser(state.url);}
- throw Error('未知 R2 操作');
+ if(input.type==='r2'){
+  if(input.action==='status')return r2.status(input.project_id);
+  if(input.action==='start')return r2.start(input.project_id,actor);
+  if(input.action==='cancel')return r2.cancel(input.project_id,actor);
+  if(input.action==='preview'){const state=r2.status(input.project_id);if(state.status!=='completed'||!state.url)throw Error('项目尚未部署完成');return openPreviewBrowser(state.url);}
+  throw Error('未知 R2 操作');
+ }
+ if(input.type==='deploy'){
+  if(input.action==='status')return gitlab.status(input.project_id);
+  if(input.action==='domain')return gitlab.updateDomain(input.project_id,input.domain||'');
+  if(input.action==='cancel')return gitlab.cancel(input.project_id,actor,input.confirmation_id);
+  if(input.action==='prepare')return gitlab.prepare({project_id:input.project_id,actor,intent:'deploy',domain:input.domain,environment:input.environment});
+  if(input.action==='execute')return gitlab.execute(input.confirmation_id,actor,input.decision,'deploy',input.project_id);
+  throw Error('未知部署操作');
+ }
+ throw Error('未知控制类型');
 };
 const manager = projectManager(projects);
 const syncProject = projectService(projects);
 const preview = await createPreview(html, paths.reference, 'www.noventrad.com', syncProject, manager.run,control);
 const skillRoot = (process.env.WEBSITE_BUILDER_SKILL_ROOT || resolve('skills/website-builder')).replaceAll('${PLUGIN_ROOT}',fileURLToPath(new URL('../../',import.meta.url)));
-const server = new McpServer({ name: 'codex-website-builder', version: '0.9.1', icons: [{ src: `data:image/png;base64,${sidebarIcon.toString('base64')}`, mimeType: 'image/png', sizes: ['200x200'] }] },{capabilities:{experimental:{'openai/settings':settingsCapability}}});
+const server = new McpServer({ name: 'codex-website-builder', version: '0.9.2', icons: [{ src: `data:image/png;base64,${sidebarIcon.toString('base64')}`, mimeType: 'image/png', sizes: ['200x200'] }] },{capabilities:{experimental:{'openai/settings':settingsCapability}}});
 const csp = { connectDomains: ['data:', 'blob:'], resourceDomains: ['data:', 'blob:'], frameDomains: ['blob:', 'data:'], baseUriDomains: ['https://website-builder.invalid'] };
 const legacyCsp = { connect_domains: csp.connectDomains, resource_domains: csp.resourceDomains, frame_domains: csp.frameDomains, base_uri_domains: csp.baseUriDomains };
-// const panelContent=(resourceUri:string,context:unknown)=>({contents:[{uri:resourceUri,mimeType:RESOURCE_MIME_TYPE,text:preview.render().replace('</head>',`<script>window.__WEBSITE_PANEL_CONTEXT__=${JSON.stringify(context).replaceAll('<','\\u003c')}</script></head>`),_meta:{ui:{csp},'openai/widgetCSP':legacyCsp}}]});
-// server.registerResource('independent-panel',new ResourceTemplate('ui://codex-website-builder/panel/{token}',{list:undefined}),{mimeType:RESOURCE_MIME_TYPE,_meta:{ui:{csp}}},async(resourceUri,variables)=>{
-//  const row=projects.database.sql.prepare('SELECT value FROM settings WHERE key=?').get('modal:'+variables.token) as any;
-//  const context=row?JSON.parse(row.value):null;if(!context||context.expires<Date.now())throw Error('面板请求已失效，请重新打开');
-//  return panelContent(resourceUri.href,context);
-// });
-// openNativeSettings=registerNativeSettings(server,settings,values=>control({type:'settings',action:'save',values}),values=>control({type:'settings',action:'test',values}));
-//
+const panelContent=(resourceUri:string,context:unknown)=>({contents:[{uri:resourceUri,mimeType:RESOURCE_MIME_TYPE,text:preview.render().replace('</head>',`<script>window.__WEBSITE_PANEL_CONTEXT__=${JSON.stringify(context).replaceAll('<','\\u003c')}</script></head>`),_meta:{ui:{csp},'openai/widgetCSP':legacyCsp}}]});
+server.registerResource('independent-panel',new ResourceTemplate('ui://codex-website-builder/panel/{token}',{list:undefined}),{mimeType:RESOURCE_MIME_TYPE,_meta:{ui:{csp}}},async(resourceUri,variables)=>{
+ const row=projects.database.sql.prepare('SELECT value FROM settings WHERE key=?').get('modal:'+variables.token) as any;
+ const context=row?JSON.parse(row.value):null;if(!context||context.expires<Date.now())throw Error('面板请求已失效，请重新打开');
+ return panelContent(resourceUri.href,context);
+});
+openNativeSettings=registerNativeSettings(server,settings,values=>control({type:'settings',action:'save',values}),values=>control({type:'settings',action:'test',values}),r2Settings);
 registerR2Settings(server,r2Settings);
 registerAppResource(server, 'canvas', uri, { _meta: { ui: { csp }, 'openai/widgetCSP': legacyCsp } }, async () => ({
   contents: [{ uri, mimeType: RESOURCE_MIME_TYPE, text: preview.render(), _meta: {
@@ -123,7 +120,7 @@ server.registerTool('website_panel_context', {
 }, async input => { try { const value=await manager.run({...input,action:'context'});return {content:[{type:'text',text:JSON.stringify(value)}]}; } catch(error) { return {isError:true,content:[{type:'text',text:(error as Error).message}]}; } });
 server.registerTool('website_projects', {
   description: '管理全局 SQLite 项目：list 列出项目，open/create 绑定当前会话和面板，home 返回主界面，delete 软删除（保留文件），resources 列出资源，attach 复制用户明确提供的图片/文件到项目资源目录。panel_id 来自面板上下文；thread_id 必须是真实当前会话 ID。首页submission用create与request_id创建空项目，随后必须调用open_thread_canvas(thread_id=新对话ID)一次打开侧边UI进入详情，查询submission到chat_detail_ready=true后再规划页面和生成；会话途中可按需open_canvas(thread_id)恢复同一项目详情。',
-  inputSchema: { action:z.enum(['list','resume','open','create','bind','home','delete','restore','resources','attach','folder','images','capture','submission','upload']).default('list'), upload_id:z.string().optional(),file_name:z.string().max(255).optional(),mime_type:z.string().max(200).optional(),total_size:z.number().int().min(0).max(12*1024*1024).optional(),sha256:z.string().regex(/^[a-f0-9]{64}$/).optional(),file_count:z.number().int().min(0).max(10).optional(),visible_panel_id:z.string().optional(),requirement:z.string().max(100000).optional(),request_id:z.string().max(128).optional(),submission_start:z.boolean().optional(),detail_ready:z.boolean().optional(),cancel:z.boolean().optional(),panel_id:z.string().optional(),thread_id:z.string().optional(),project_id:z.string().optional(),name:z.string().max(200).optional(),country:z.string().trim().max(100).optional(),language:z.string().trim().max(100).optional(),categories:z.array(z.string().trim().min(1).max(100)).max(2).optional(),brand:z.string().trim().max(200).optional(),source_path:z.string().optional(),path:z.string().optional(),width:z.number().int().min(320).max(2560).optional(),capture_id:z.string().optional(),chunk:z.string().max(512000).optional(),offset:z.number().int().nonnegative().optional(),final:z.boolean().optional() },
+  inputSchema: { action:z.enum(['list','resume','open','create','bind','home','delete','restore','resources','attach','folder','images','capture','submission','upload']).default('list'), upload_id:z.string().optional(),file_name:z.string().max(255).optional(),mime_type:z.string().max(200).optional(),total_size:z.number().int().min(0).max(12*1024*1024).optional(),sha256:z.string().regex(/^[a-f0-9]{64}$/).optional(),file_count:z.number().int().min(0).max(10).optional(),visible_panel_id:z.string().optional(),requirement:z.string().max(100000).optional(),request_id:z.string().max(128).optional(),submission_start:z.boolean().optional(),detail_ready:z.boolean().optional(),cancel:z.boolean().optional(),panel_id:z.string().optional(),thread_id:z.string().optional(),project_id:z.string().optional(),name:z.string().max(200).optional(),country:z.string().trim().max(100).optional(),language:z.string().trim().max(100).optional(),categories:z.array(z.string().trim().min(1).max(100)).max(2).optional(),brand:z.string().trim().max(200).optional(),domain:z.string().trim().max(255).optional(),source_path:z.string().optional(),path:z.string().optional(),width:z.number().int().min(320).max(2560).optional(),capture_id:z.string().optional(),chunk:z.string().max(512000).optional(),offset:z.number().int().nonnegative().optional(),final:z.boolean().optional() },
   annotations: { readOnlyHint:false,destructiveHint:false,openWorldHint:true },
 }, async input => { try {const value=await manager.run(input);return {content:[{type:'text',text:JSON.stringify(value)}],_meta:{manager:value}};} catch(error) {return {isError:true,content:[{type:'text',text:(error as Error).message}]};} });
 server.registerTool('website_images', {
@@ -158,12 +155,12 @@ const pageSchema=z.object({path:z.string(),title:z.string()});
 server.registerTool('website_project',{
   title:'Website Builder',
   description:'Use the bundled skill and reuse the exact thread project. Create/open an empty project BEFORE planning pages or generating content. For a panel submission use website_projects(create,panel_id,request_id), then call open_thread_canvas with the NEW real thread_id once to open its sidebar and wait for submission chat_detail_ready=true before generating. The originating panel does not replace the new chat sidebar. Never create a replacement project. For chat requests create/open without pages, open_canvas once to enter details, THEN plan and generate. For a complete ecommerce site, explicitly plan home/shop/product/wishlist/checkout/login/register/about/contact/terms/privacy/return, Default to a shared drawer cart (no cart.html); include cart.html only for an explicit page-cart request or preserved existing page mode. Default to the chosen Home chain; excluding Header/Footer, generation permits at most 0–2 justified composition changes and N±1 main sections. Preserve independent component source structures; this is not an acceptance or readiness gate. Logo must be a transparent, tightly cropped brand wordmark image, favicon square. Fonts and third-party dependencies must use online CDN URLs. Implement project WebComponent Toast from the toast-01 template document before writing pages; the assembler only reuses that supplied component; overlay closing is a per-component documentation requirement, without a unified Overlay API. Product JSON must go through website_products/SDK. Avoid jsDelivr CDN; page-specific logic stays in inline script. never use browser alert. Avoid home categories when Header already provides category navigation. mobile html root font-size is 12px. Do not silently reduce a complete site to transaction pages. Existing custom names or partial user requests may differ. Header must include working Home, Shop, About Us and Contact Us links on desktop and mobile. Projects have project_directory containing README.md, src/, material/, files/ and a local Git repository initialized and first committed on main without a remote. End every creation/modification round (including images/README-only changes) with finish to commit locally to main; no changes means no empty commit, never push. GIT_CONFIRMATION_REQUIRED means ask the user first, then use system Git for approved merge/branch/conflict handling; never auto-repair or bypass confirmation. directory/source_directory is src; source paths are relative to src, no src prefix. Generated originals go in material_directory, final website assets in src/images with fixed semantic filenames. Never migrate legacy formats automatically. The returned directory is production-only. Home-prompt attachments are saved byte-for-byte under files_directory (project root files/); use the returned files or website_projects(resources) local absolute paths with website_products, never attachment://. Keep other drafts, reports and raw sources in metadata_directory. Plan missing pages, begin before edits, finish after complete files; finish without paths validates all unfinished planned pages and settles their status before ending the task. New projects require new_project=true.',
-  inputSchema:{action:z.enum(['open','plan','begin','finish','status']).default('open'),thread_id:z.string().min(1),project_id:z.string().optional(),new_project:z.boolean().optional(),name:z.string().optional(),country:z.string().trim().max(100).optional(),categories:z.array(z.string().trim().min(1).max(100)).max(2).optional(),brand:z.string().trim().max(200).optional(),brief:z.string().optional(),language:z.string().optional(),pages:z.array(pageSchema).min(1).optional(),paths:z.array(z.string()).optional()},
+  inputSchema:{action:z.enum(['open','plan','begin','finish','status']).default('open'),thread_id:z.string().min(1),project_id:z.string().optional(),new_project:z.boolean().optional(),name:z.string().optional(),country:z.string().trim().max(100).optional(),categories:z.array(z.string().trim().min(1).max(100)).max(2).optional(),brand:z.string().trim().max(200).optional(),domain:z.string().trim().max(255).optional(),brief:z.string().optional(),language:z.string().optional(),pages:z.array(pageSchema).min(1).optional(),paths:z.array(z.string()).optional()},
   annotations:{readOnlyHint:false,destructiveHint:false,openWorldHint:false},
 },async input=>{
   try {
     let view;
-    if(input.action==='open')view=await projects.open({threadId:input.thread_id,projectId:input.project_id,newProject:input.new_project,name:input.name,brief:input.brief,country:input.country,categories:input.categories,brand:input.brand,language:input.language,pages:input.pages??(input.new_project?[]:undefined)});
+    if(input.action==='open')view=await projects.open({threadId:input.thread_id,projectId:input.project_id,newProject:input.new_project,name:input.name,brief:input.brief,country:input.country,categories:input.categories,brand:input.brand,domain:input.domain,language:input.language,pages:input.pages??(input.new_project?[]:undefined)});
     else {
       const current=await projects.get(input.thread_id);if(!current)throw new Error('请先打开当前会话项目');
       if(input.project_id&&input.project_id!==current.project.id)throw new Error('会话项目已切换，不能继续修改旧项目');
@@ -233,9 +230,8 @@ server.registerTool('project_sync',{
   inputSchema:{metadata_only:z.boolean().optional(),page_limit:z.number().int().min(1).max(10).optional(),priority_path:z.string().optional(),since:z.string().optional(),known:z.record(z.string(),z.number()).optional(),thread_id:z.string().optional(),project_id:z.string().optional(),wait_ms:z.number().int().min(0).max(20000).default(20000)},
   annotations:{readOnlyHint:true,destructiveHint:false,openWorldHint:false},_meta:{ui:{visibility:['app']}},
 },async input=>{try{return{content:[],_meta:{sync:await syncProject({metadataOnly:input.metadata_only,pageLimit:input.page_limit,priorityPath:input.priority_path,since:input.since,known:input.known,threadId:input.thread_id,projectId:input.project_id,waitMs:input.wait_ms})}};}catch(error){return{isError:true,content:[{type:'text',text:(error as Error).message}]};}});
-// GitLab 暂停：registerGitLabTools(server,gitlab,projects);
-// GitLab 暂停：server.registerTool('website_control',{description:'UI-only plugin configuration and deployment dialogs; settings fields are visible only to the app; redact credentials from diagnostics.',inputSchema:{type:z.enum(['settings','deploy','panel']),action:z.enum(['get','save','test','status','prepare','execute','cancel','open']),view:z.enum(['settings','deploy']).optional(),panel_id:z.string().optional(),thread_id:z.string().optional(),project_id:z.string().optional(),values:z.record(z.string(),z.string()).optional(),clear_token:z.boolean().optional(),domain:z.string().optional(),environment:z.enum(['test','production']).optional(),confirmation_id:z.string().optional(),decision:z.enum(['confirm','local','cloud']).optional()},annotations:{readOnlyHint:false,destructiveHint:true,openWorldHint:true},_meta:{ui:{visibility:['app']}}},async input=>{try{return{content:[],_meta:{control:await control(input)}};}catch(error){return{isError:true,content:[{type:'text',text:(error as Error).message}]};}});
-server.registerTool('website_control',{description:'App-only R2 deployment controls',inputSchema:{type:z.literal('r2'),action:z.enum(['start','status','cancel','preview']),project_id:z.string(),panel_id:z.string(),thread_id:z.string().optional()},annotations:{readOnlyHint:false,destructiveHint:true,openWorldHint:true},_meta:{ui:{visibility:['app']}}},async input=>{try{return {content:[],_meta:{control:await control(input)}};}catch(error){return {isError:true,content:[{type:'text',text:(error as Error).message}]};}});
+registerGitLabTools(server,gitlab,projects);
+server.registerTool('website_control',{description:'UI-only plugin configuration and deployment dialogs (GitLab & R2 preview); settings fields are visible only to the app; redact credentials from diagnostics.',inputSchema:{type:z.enum(['settings','deploy','panel','r2']),action:z.enum(['get','save','test','status','domain','prepare','execute','cancel','open','start','preview']),view:z.enum(['settings','deploy']).optional(),panel_id:z.string().optional(),thread_id:z.string().optional(),project_id:z.string().optional(),values:z.record(z.string(),z.string()).optional(),clear_token:z.boolean().optional(),domain:z.string().optional(),environment:z.enum(['test','production']).optional(),confirmation_id:z.string().optional(),decision:z.enum(['confirm','local','cloud']).optional()},annotations:{readOnlyHint:false,destructiveHint:true,openWorldHint:true},_meta:{ui:{visibility:['app']}}},async input=>{try{return{content:[],_meta:{control:await control(input)}};}catch(error){return{isError:true,content:[{type:'text',text:(error as Error).message}]};}});
 server.registerTool('website_r2_deploy',{description:'将当前会话项目src精确同步到R2项目ID目录；start覆盖同名文件并删除该前缀内本地不存在的文件，仅用户明确要求部署时调用。status查询进度，cancel取消。成功返回链接，不自动配置DNS/Worker。',inputSchema:{action:z.enum(['start','status','cancel']),thread_id:z.string(),project_id:z.string()},annotations:{readOnlyHint:false,destructiveHint:true,openWorldHint:true}},async input=>{try{if(projects.database.binding(input.thread_id)?.projectId!==input.project_id)throw Error('只能部署当前真实会话绑定项目');const value=input.action==='status'?r2.status(input.project_id):input.action==='cancel'?r2.cancel(input.project_id,input.thread_id):await r2.start(input.project_id,input.thread_id);return {content:[{type:'text',text:JSON.stringify(value)}]};}catch(error){return {isError:true,content:[{type:'text',text:(error as Error).message}]};}});
 const shutdown = async () => { preview.service.closeAllConnections(); preview.service.close(); await manager.close(); };
 process.once('SIGTERM', () => { void shutdown().finally(()=>process.exit(0)); });

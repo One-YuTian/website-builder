@@ -90,7 +90,6 @@ function PanelRoot(){
  if(!ready)return null;
  if(modal&&!panel)return <div className="empty-state" role="status">正在加载弹窗内容…</div>;
  if(panel?.view==='image-preview'&&panel.url)return <ImagePreviewPanel url={panel.url} name={panel.name}/>;
- // GitLab UI 暂停：return panel?.view==='settings'?<PluginSettings/>:panel?.view==='deploy'&&panel.project_id&&panel.panel_id?<DeploymentPanel projectId={panel.project_id} panelId={panel.panel_id} threadId={panel.thread_id}/>:<ProjectManager background={<DotCanvas />} />;
- return <ProjectManager background={<DotCanvas/>}/>;
+ return panel?.view==='settings'?<PluginSettings/>:panel?.view==='deploy'&&panel.project_id&&panel.panel_id?<DeploymentPanel projectId={panel.project_id} panelId={panel.panel_id} threadId={panel.thread_id}/>:<ProjectManager background={<DotCanvas />} />;
 }
 createRoot(document.getElementById('root')!).render(<StrictMode><PanelRoot/></StrictMode>);

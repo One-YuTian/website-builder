@@ -47,8 +47,14 @@ export class GitLabWorkflow {
   status(id:string){
     const lock=operationLock(this.store.database,id),row=this.store.database.sql.prepare('SELECT value FROM settings WHERE key=?').get('gitlab:'+id) as any;
     const binding=this.store.database.sql.prepare('SELECT value FROM settings WHERE key=?').get('gitlab-binding:'+id) as any;
+    const project=this.store.database.project(id);
+    const last=row?JSON.parse(row.value):null;
     const request=lock?this.store.database.sql.prepare('SELECT used FROM deployment_requests WHERE id=?').get(lock.owner) as any:null;
-    return {locked:!!lock,cancellable:!!lock&&request?.used!==3,stage:lock?.stage||'',domain:binding?JSON.parse(binding.value).domain:'',last:row?JSON.parse(row.value):null};
+    return {locked:!!lock,cancellable:!!lock&&request?.used!==3,stage:lock?.stage||'',domain:project?.domain||(binding?JSON.parse(binding.value).domain:'')||last?.domain||'',last};
+  }
+  async updateDomain(id:string,domain:string){
+    const saved=await this.store.setDomain(id,domain);
+    return {domain:saved};
   }
   challenge(id:string,actor:string,projectId:string){
     const row=this.store.database.sql.prepare('SELECT * FROM deployment_requests WHERE id=? AND project_id=?').get(id,projectId) as any;
@@ -158,6 +164,7 @@ export class GitLabWorkflow {
     });
     const stop=this.begin(id);
     try{
+      await this.store.setDomain(input.project_id,input.domain,id);
       const ctx=await this.context(input,id),origin=await this.origin(ctx.view);
       if(input.intent==='create'&&ctx.remote)throw Error('官网仓库已存在，请使用拉取/绑定');
       let kind:Plan['kind']=input.intent==='deploy'?'publish':input.intent;

@@ -1,5 +1,11 @@
-export function Icon({ name }: { name: 'select'|'hand'|'fit'|'width'|'pages'|'refresh'|'zoom'|'reset'|'folder'|'search'|'trash'|'send'|'copy'|'images'|'deploy'|'settings' }) {
+export function Icon({ name }: { name: 'select'|'hand'|'fit'|'width'|'pages'|'refresh'|'zoom'|'reset'|'folder'|'search'|'trash'|'send'|'copy'|'images'|'deploy'|'settings'|'palette'|'globe'|'sparkles'|'bolt'|'chevronDown'|'sidebar' }) {
   const paths = {
+    sidebar:<><rect x="3" y="4" width="18" height="16" rx="3"/><path d="M9 4v16"/></>,
+    palette:<><path d="M12 2a10 10 0 0 0 0 20c1.4 0 2.2-.8 2.2-1.8 0-.5-.2-.9-.5-1.3-.3-.4-.5-.8-.5-1.3 0-1 .8-1.8 1.8-1.8h2.2A4.8 4.8 0 0 0 22 11C22 6 17.5 2 12 2Z"/><circle cx="7.5" cy="10.5" r="1.15" fill="currentColor" stroke="none"/><circle cx="10.5" cy="7" r="1.15" fill="currentColor" stroke="none"/><circle cx="15" cy="7.5" r="1.15" fill="currentColor" stroke="none"/><circle cx="17.5" cy="11" r="1.15" fill="currentColor" stroke="none"/></>,
+    globe:<><circle cx="12" cy="12" r="9"/><path d="M3.6 9h16.8M3.6 15h16.8M12 3a14 14 0 0 1 0 18M12 3a14 14 0 0 0 0 18"/></>,
+    sparkles:<><path d="m12 3 1.7 4.3L18 9l-4.3 1.7L12 15l-1.7-4.3L6 9l4.3-1.7L12 3Z"/><path d="m19 15 .9 2.1L22 18l-2.1.9L19 21l-.9-2.1L16 18l2.1-.9L19 15Z"/></>,
+    bolt:<path d="M13 2 4 14h7l-1 8 9-12h-7l1-8Z"/>,
+    chevronDown:<path d="m6 9 6 6 6-6"/>,
     deploy:<><path d="M14 3c3-1 6-1 7 0 1 1 1 4 0 7l-7 7-7-7 7-7Z"/><circle cx="16" cy="7" r="2"/><path d="m7 10-4 1-2 5 6-1m7 2-1 5-5 1 1-6M5 19l-3 3"/></>,
     settings:<><polygon points={Array.from({length:8},(_,tooth)=>[-16,-9,9,16].map((offset,index)=>{const angle=(tooth*45+offset)*Math.PI/180,radius=index===0||index===3?7.5:9.5;return `${12+Math.cos(angle)*radius},${12+Math.sin(angle)*radius}`;})).flat().join(' ')}/><circle cx="12" cy="12" r="3.25"/></>,
     copy:<><rect x="8" y="8" width="12" height="13" rx="2"/><path d="M16 8V3H3v13h5"/></>,

@@ -62,6 +62,30 @@ try{
   await page.keyboard.type('测试');
   const textarea=app.getByRole('textbox',{name:'项目需求',exact:true});
   assert.ok((await textarea.innerText()).includes('测试'),'clicking front section of prompt box focuses editor');
+  const canSelect=await textarea.evaluate(el=>{
+    const sel=window.getSelection(),range=document.createRange();
+    range.selectNodeContents(el);sel.removeAllRanges();sel.addRange(range);
+    const ev=new Event('selectstart',{bubbles:true,cancelable:true});
+    const allowed=el.dispatchEvent(ev);
+    return allowed&&sel.toString().includes('测试');
+  });
+  assert.ok(canSelect,'prompt editor allows text selection');
+  const uploadCenter=await app.locator('.prompt-upload').evaluate(btn=>{
+    const b=btn.getBoundingClientRect(),s=btn.querySelector('svg').getBoundingClientRect();
+    return {dx:Math.abs((s.left+s.width/2)-(b.left+b.width/2)),dy:Math.abs((s.top+s.height/2)-(b.top+b.height/2))};
+  });
+  assert.ok(uploadCenter.dx<=1&&uploadCenter.dy<=1,'plus icon is centered inside upload button');
+  await app.getByRole('button',{name:'选择国家与语言',exact:true}).click();
+  assert.equal(await app.getByRole('menuitemradio',{name:/中文|中国/}).count(),0,'Chinese locales excluded');
+  await app.getByRole('menuitemradio',{name:/孟加拉国/}).waitFor();
+  await app.getByRole('menuitemradio',{name:/巴基斯坦/}).first().waitFor();
+  assert.ok(await app.locator('.prompt-menu-popover .prompt-flag').count()>40,'country flags rendered');
+  await app.getByRole('searchbox',{name:'搜索国家或语言',exact:true}).fill('巴西');
+  await app.getByRole('menuitemradio',{name:/巴西/}).click();
+  await app.getByRole('button',{name:'选择配色主题',exact:true}).click();
+  await app.getByRole('menuitemradio',{name:/森林绿/}).click();
+  await app.getByRole('button',{name:'选择验证模式',exact:true}).click();
+  await app.getByRole('menuitemradio',{name:/手动验证/}).click();
   await textarea.fill('创建巴西葡萄牙语家居电商网站');
   const height=await app.locator('.project-prompt').evaluate(n=>n.getBoundingClientRect().height);
   await textarea.fill('创建巴西葡萄牙语家居电商网站\n'.repeat(30));
@@ -117,6 +141,12 @@ try{
   assert.ok(sent.content.some(c=>c.type==='resource_link'&&c.name==='reference.png'));
   const requirement=textBlock.trim();
   const submission=await page.evaluate(()=>window.contexts.map(c=>c.structuredContent?.submission).filter(Boolean).at(-1));
+  assert.equal(submission.verification_mode,'manual');
+  assert.equal(submission.color_theme,'forest');
+  assert.equal(submission.country,'BR');
+  assert.equal(submission.language,'pt-BR');
+  assert.ok(textBlock.includes('手动验证'));
+  assert.ok(textBlock.includes('森林绿'));
   const discover=async text=>JSON.parse((await call('website_panel_context',{thread_id:'prompt-new-thread',requirement:text})).content[0].text);
   assert.equal((await discover('Unrelated requirement')).submission,undefined);
   assert.equal((await discover(requirement)).submission.request_id,submission.request_id,'new chat discovers routing from backend without visible instructions');
@@ -236,7 +266,9 @@ try{
   await page.waitForFunction(()=>window.sent.length===3);
   const threadSent=await page.evaluate(()=>window.sent[2]);
   assert.deepEqual(threadSent._meta['openai/message'],{target:'new',send:true},'thread entry also creates a new chat');
-  assert.deepEqual(threadSent.content.filter(c=>c.type==='text').map(c=>c.text),['从对话内插件面板创建另一个任务']);
+  const threadText=threadSent.content.filter(c=>c.type==='text').map(c=>c.text);
+  assert.equal(threadText.length,1);
+  assert.ok(threadText[0].startsWith('从对话内插件面板创建另一个任务'));
   const nextSubmission=await page.evaluate(()=>window.contexts.map(c=>c.structuredContent?.submission).filter(Boolean).at(-1));
   const second=JSON.parse((await call('website_projects',{action:'create',panel_id:nextSubmission.panel_id,request_id:nextSubmission.request_id,thread_id:'prompt-another-new-thread',name:'Second'})).content[0].text);
   assert.notEqual(second.project_id,created.project_id);
