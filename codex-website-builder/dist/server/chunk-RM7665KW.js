@@ -6200,6 +6200,10 @@ async function scaffoldProject(directory, project) {
 }
 
 // server/projects.ts
+var normalizeDomain = (value) => {
+  const trimmed = value?.trim().toLowerCase() || "";
+  return trimmed || void 0;
+};
 var DEFAULT_PAGES = ["index", "shop", "product", "wishlist", "checkout", "login", "register", "about", "contact", "terms", "privacy", "return"].map((name) => ({ path: `${name}.html`, title: name }));
 var idPattern = /^[a-f0-9]{4}(?:-[a-f0-9]{4}){3}$/;
 var pause = (ms) => new Promise((resolve6) => setTimeout(resolve6, ms));
@@ -6322,7 +6326,7 @@ var ProjectStore = class {
     const id = randomBytes(8).toString("hex").match(/.{4}/g).join("-");
     const pages = (input.pages || DEFAULT_PAGES).map((page) => ({ ...page, path: this.path(page.path, true), status: "queued", version: 0 }));
     if (new Set(pages.map((page) => page.path)).size !== pages.length) throw new Error("\u9875\u9762\u8DEF\u5F84\u91CD\u590D");
-    const project = { formatVersion: PROJECT_FORMAT, id, name: input.name || "Ecommerce website", brief: input.brief || "", language: input.language || "en", hasPublished: false, country: input.country, categories: input.categories, brand: input.brand, revision: "", pages, updatedAt: "" };
+    const project = { formatVersion: PROJECT_FORMAT, id, name: input.name || "Ecommerce website", brief: input.brief || "", language: input.language || "en", hasPublished: false, country: input.country, categories: input.categories, brand: input.brand, domain: normalizeDomain(input.domain), revision: "", pages, updatedAt: "" };
     const git = await scaffoldProject(this.folder(id), project);
     await this.save(project);
     if (!pages.length) this.database.activity(id, "project:start");
@@ -6336,11 +6340,12 @@ var ProjectStore = class {
         const created = await this.createProject(input);
         view = { ...created, threadId: input.threadId, revision: `${created.project.id}:${input.threadId}:${created.project.revision}` };
       }
-      if (input.country !== void 0 || input.categories !== void 0 || input.brand !== void 0) {
+      if (input.country !== void 0 || input.categories !== void 0 || input.brand !== void 0 || input.domain !== void 0) {
         assertEditable(this.database, view.project.id);
         if (input.country !== void 0) view.project.country = input.country;
         if (input.categories !== void 0) view.project.categories = input.categories;
         if (input.brand !== void 0) view.project.brand = input.brand;
+        if (input.domain !== void 0) view.project.domain = normalizeDomain(input.domain);
         if (input.language !== void 0) view.project.language = input.language;
         await this.save(view.project);
       }
@@ -6349,6 +6354,19 @@ var ProjectStore = class {
       await atomic(this.binding(input.threadId), JSON.stringify(binding));
       await atomic(join5(this.stateRoot, "active.json"), JSON.stringify(binding));
       return view;
+    });
+  }
+  async setDomain(projectId, domain, owner) {
+    return this.exclusive(projectId, async () => {
+      assertEditable(this.database, projectId, owner);
+      const project = await this.loadProject(projectId);
+      if (!project) throw new Error("\u9879\u76EE\u4E0D\u5B58\u5728\u6216\u5DF2\u5220\u9664");
+      const next = normalizeDomain(domain);
+      if (project.domain !== next) {
+        project.domain = next;
+        await this.save(project);
+      }
+      return project.domain || "";
     });
   }
   path(value, htmlOnly = false) {
@@ -7477,7 +7495,7 @@ function previewPayload(gzip) {
   return gzip.length <= 1e6 ? gzip : { resource: registerPreviewBuffer(Buffer.from(gzip, "base64"), "application/gzip") };
 }
 function compactProject(view) {
-  return { ...view.git ? { git: view.git } : {}, project_id: view.project.id, thread_id: view.threadId, directory: view.directory, metadata_directory: view.metadataDirectory, project_directory: view.projectDirectory, files_directory: join7(view.projectDirectory, "files"), source_directory: view.directory, material_directory: view.materialDirectory, format_version: view.project.formatVersion, name: view.project.name, country: view.project.country, categories: view.project.categories, brand: view.project.brand, language: view.project.language, brief: view.project.brief, pages: view.project.pages.map(({ path, status, error }) => ({ path, status, ...error ? { error } : {} })) };
+  return { ...view.git ? { git: view.git } : {}, project_id: view.project.id, thread_id: view.threadId, directory: view.directory, metadata_directory: view.metadataDirectory, project_directory: view.projectDirectory, files_directory: join7(view.projectDirectory, "files"), source_directory: view.directory, material_directory: view.materialDirectory, format_version: view.project.formatVersion, name: view.project.name, country: view.project.country, categories: view.project.categories, brand: view.project.brand, domain: view.project.domain, language: view.project.language, brief: view.project.brief, pages: view.project.pages.map(({ path, status, error }) => ({ path, status, ...error ? { error } : {} })) };
 }
 function projectService(store) {
   const cache4 = /* @__PURE__ */ new Map();
@@ -8782,7 +8800,7 @@ function projectManager(store) {
         saveSubmission({ ...record, state: "creating" });
       }
       try {
-        const view2 = thread ? await store.open({ threadId: thread, projectId: id, newProject: action === "create", name: input.name, country: input.country, language: input.language, categories: input.categories, brand: input.brand, ...action === "create" ? { pages: [] } : {} }) : action === "create" ? await store.createProject({ name: input.name, country: input.country, language: input.language, categories: input.categories, brand: input.brand, pages: [] }) : await store.get(void 0, id);
+        const view2 = thread ? await store.open({ threadId: thread, projectId: id, newProject: action === "create", name: input.name, country: input.country, language: input.language, categories: input.categories, brand: input.brand, domain: input.domain, ...action === "create" ? { pages: [] } : {} }) : action === "create" ? await store.createProject({ name: input.name, country: input.country, language: input.language, categories: input.categories, brand: input.brand, domain: input.domain, pages: [] }) : await store.get(void 0, id);
         if (!view2) throw Error("\u9879\u76EE\u4E0D\u5B58\u5728\u6216\u5DF2\u5220\u9664");
         store.database.panel(input.panel_id, thread || "", view2.project.id, action === "create" && submissionHandoff);
         const attachedFiles = input.request_id ? await store.exclusive(view2.project.id, () => uploads.import(input.panel_id, input.request_id, view2)) : [];
@@ -8915,6 +8933,8 @@ export {
   readTemplates,
   operationLock,
   assertEditable,
+  assertMainRepository,
+  commitProject,
   ProjectStore,
   resourceChunk,
   createPreview,

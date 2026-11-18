@@ -1,6 +1,6 @@
 # Website Builder
 
-当前版本0.9.1，见[版本说明](CHANGELOG.md)。beta分支提供可直接加载的预构建插件，使用Codex内置Node运行。
+当前版本0.9.2，见[版本说明](CHANGELOG.md)。beta分支提供可直接加载的预构建插件，使用Codex内置Node运行。
 
 ## 项目与画布
 

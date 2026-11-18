@@ -2,6 +2,8 @@ import { createRequire } from 'node:module'; const require = createRequire(impor
 import {
   ProjectStore,
   assertEditable,
+  assertMainRepository,
+  commitProject,
   compactProject,
   createPreview,
   dataPaths,
@@ -14,7 +16,7 @@ import {
   readTemplates,
   resourceChunk,
   screenshotPage
-} from "./chunk-7EZN6SMH.js";
+} from "./chunk-RM7665KW.js";
 import {
   $ZodObject,
   $ZodType,
@@ -3393,8 +3395,8 @@ var require_utils = __commonJS({
     var HOST_DELIMS = { "@": "%40", "/": "%2F", "?": "%3F", "#": "%23", ":": "%3A" };
     var HOST_DELIM_RE = /[@/?#:]/g;
     var HOST_DELIM_NO_COLON_RE = /[@/?#]/g;
-    function reescapeHostDelimiters(host, isIP) {
-      const re = isIP ? HOST_DELIM_NO_COLON_RE : HOST_DELIM_RE;
+    function reescapeHostDelimiters(host, isIP3) {
+      const re = isIP3 ? HOST_DELIM_NO_COLON_RE : HOST_DELIM_RE;
       re.lastIndex = 0;
       return host.replace(re, (ch) => HOST_DELIMS[ch]);
     }
@@ -3786,7 +3788,7 @@ var require_schemes = __commonJS({
       urnComponent.nss = (uuidComponent.uuid || "").toLowerCase();
       return urnComponent;
     }
-    var http = (
+    var http2 = (
       /** @type {SchemeHandler} */
       {
         scheme: "http",
@@ -3795,11 +3797,11 @@ var require_schemes = __commonJS({
         serialize: httpSerialize
       }
     );
-    var https = (
+    var https2 = (
       /** @type {SchemeHandler} */
       {
         scheme: "https",
-        domainHost: http.domainHost,
+        domainHost: http2.domainHost,
         parse: httpParse,
         serialize: httpSerialize
       }
@@ -3843,8 +3845,8 @@ var require_schemes = __commonJS({
     var SCHEMES = (
       /** @type {Record<SchemeName, SchemeHandler>} */
       {
-        http,
-        https,
+        http: http2,
+        https: https2,
         ws,
         wss,
         urn,
@@ -3933,50 +3935,50 @@ var require_fast_uri = __commonJS({
       schemelessOptions.skipEscape = true;
       return serialize(resolved, schemelessOptions);
     }
-    function resolveComponent(base, relative2, options, skipNormalization) {
+    function resolveComponent(base, relative3, options, skipNormalization) {
       const target = {};
       if (!skipNormalization) {
         base = parse2(serialize(base, options), options);
-        relative2 = parse2(serialize(relative2, options), options);
+        relative3 = parse2(serialize(relative3, options), options);
       }
       options = options || {};
-      if (!options.tolerant && relative2.scheme) {
-        target.scheme = relative2.scheme;
-        target.userinfo = relative2.userinfo;
-        target.host = relative2.host;
-        target.port = relative2.port;
-        target.path = removeDotSegments(relative2.path || "");
-        target.query = relative2.query;
+      if (!options.tolerant && relative3.scheme) {
+        target.scheme = relative3.scheme;
+        target.userinfo = relative3.userinfo;
+        target.host = relative3.host;
+        target.port = relative3.port;
+        target.path = removeDotSegments(relative3.path || "");
+        target.query = relative3.query;
       } else {
-        if (relative2.userinfo !== void 0 || relative2.host !== void 0 || relative2.port !== void 0) {
-          target.userinfo = relative2.userinfo;
-          target.host = relative2.host;
-          target.port = relative2.port;
-          target.path = removeDotSegments(relative2.path || "");
-          target.query = relative2.query;
+        if (relative3.userinfo !== void 0 || relative3.host !== void 0 || relative3.port !== void 0) {
+          target.userinfo = relative3.userinfo;
+          target.host = relative3.host;
+          target.port = relative3.port;
+          target.path = removeDotSegments(relative3.path || "");
+          target.query = relative3.query;
         } else {
-          if (!relative2.path) {
+          if (!relative3.path) {
             target.path = base.path;
-            if (relative2.query !== void 0) {
-              target.query = relative2.query;
+            if (relative3.query !== void 0) {
+              target.query = relative3.query;
             } else {
               target.query = base.query;
             }
           } else {
-            if (relative2.path[0] === "/") {
-              target.path = removeDotSegments(relative2.path);
+            if (relative3.path[0] === "/") {
+              target.path = removeDotSegments(relative3.path);
             } else {
               const baseHasAuthority = base.userinfo !== void 0 || base.host !== void 0 || base.port !== void 0;
               if (baseHasAuthority && !base.path) {
-                target.path = "/" + relative2.path;
+                target.path = "/" + relative3.path;
               } else if (!base.path) {
-                target.path = relative2.path;
+                target.path = relative3.path;
               } else {
-                target.path = base.path.slice(0, base.path.lastIndexOf("/") + 1) + relative2.path;
+                target.path = base.path.slice(0, base.path.lastIndexOf("/") + 1) + relative3.path;
               }
               target.path = base.scheme === void 0 && !baseHasAuthority && target.path[0] !== "/" ? removeDotSegmentsRelative(target.path) : removeDotSegments(target.path);
             }
-            target.query = relative2.query;
+            target.query = relative3.query;
           }
           target.userinfo = base.userinfo;
           target.host = base.host;
@@ -3984,7 +3986,7 @@ var require_fast_uri = __commonJS({
         }
         target.scheme = base.scheme;
       }
-      target.fragment = relative2.fragment;
+      target.fragment = relative3.fragment;
       return target;
     }
     function equal(uriA, uriB, options) {
@@ -4091,12 +4093,12 @@ var require_fast_uri = __commonJS({
       const host = matches[4];
       return hasMalformedPercentEncoding(matches[3]) || host !== void 0 && !isIPLiteral(host) && hasMalformedPercentEncoding(host) || hasMalformedPercentEncoding(matches[6]) || hasMalformedPercentEncoding(matches[7]) || hasMalformedPercentEncoding(matches[8]);
     }
-    function canonicalizeHost(parsed, options, schemeHandler, isIP) {
-      if (hasForbiddenDomainHost(parsed, options, schemeHandler, isIP)) {
+    function canonicalizeHost(parsed, options, schemeHandler, isIP3) {
+      if (hasForbiddenDomainHost(parsed, options, schemeHandler, isIP3)) {
         parsed.error = parsed.error || MALFORMED_HOST_ERROR;
         return true;
       }
-      if (!options.unicodeSupport && (!schemeHandler || !schemeHandler.unicodeSupport) && parsed.host && !isIPLiteral(parsed.host) && (options.domainHost || schemeHandler && schemeHandler.domainHost) && isIP === false && nonSimpleDomain(parsed.host)) {
+      if (!options.unicodeSupport && (!schemeHandler || !schemeHandler.unicodeSupport) && parsed.host && !isIPLiteral(parsed.host) && (options.domainHost || schemeHandler && schemeHandler.domainHost) && isIP3 === false && nonSimpleDomain(parsed.host)) {
         let url;
         try {
           url = new URL("http://" + parsed.host);
@@ -4112,9 +4114,9 @@ var require_fast_uri = __commonJS({
       }
       return false;
     }
-    function hasForbiddenDomainHost(parsed, options, schemeHandler, isIP) {
+    function hasForbiddenDomainHost(parsed, options, schemeHandler, isIP3) {
       return Boolean(
-        parsed.host && isIP === false && !isIPLiteral(parsed.host) && (options.domainHost || schemeHandler && schemeHandler.domainHost) && FORBIDDEN_DOMAIN_HOST_CHARACTER.test(parsed.host)
+        parsed.host && isIP3 === false && !isIPLiteral(parsed.host) && (options.domainHost || schemeHandler && schemeHandler.domainHost) && FORBIDDEN_DOMAIN_HOST_CHARACTER.test(parsed.host)
       );
     }
     function isHostOnlyURL(url) {
@@ -4137,7 +4139,7 @@ var require_fast_uri = __commonJS({
       let malformedHost = false;
       let malformedIPLiteral = false;
       let malformedScheme = false;
-      let isIP = false;
+      let isIP3 = false;
       if (options.reference === "suffix") {
         if (options.scheme) {
           uri2 = options.scheme + ":" + uri2;
@@ -4199,15 +4201,15 @@ var require_fast_uri = __commonJS({
             const bracketedIPLiteral = isIPLiteral(parsed.host);
             const hasIPLiteralBracket = parsed.host.indexOf("[") !== -1 || parsed.host.indexOf("]") !== -1;
             const ipv6result = normalizeIPv6(parsed.host);
-            isIP = ipv6result.isIPV6 || ipv6result.isIPVFuture === true;
+            isIP3 = ipv6result.isIPV6 || ipv6result.isIPVFuture === true;
             malformedIPLiteral = hasIPLiteralBracket && (!bracketedIPLiteral || ipv6result.error === true);
-            parsed.host = isIP ? ipv6result.host : ipv6result.host.toLowerCase();
+            parsed.host = isIP3 ? ipv6result.host : ipv6result.host.toLowerCase();
             if (malformedIPLiteral) {
               parsed.error = parsed.error || MALFORMED_HOST_ERROR;
               malformedAuthorityOrPort = true;
             }
           } else {
-            isIP = true;
+            isIP3 = true;
           }
         }
         if (parsed.scheme === void 0 && parsed.userinfo === void 0 && parsed.host === void 0 && parsed.port === void 0 && parsed.query === void 0 && !parsed.path) {
@@ -4224,14 +4226,14 @@ var require_fast_uri = __commonJS({
         }
         const schemeHandler = getSchemeHandler(options.scheme || parsed.scheme);
         if (!malformedIPLiteral) {
-          malformedHost = canonicalizeHost(parsed, options, schemeHandler, isIP);
+          malformedHost = canonicalizeHost(parsed, options, schemeHandler, isIP3);
         }
         if (uri2.indexOf("%") !== -1 && parsed.host !== void 0 && !malformedIPLiteral) {
-          let host = isIP ? parsed.host : normalizePercentEncoding(parsed.host, true);
-          if (!isIP) {
+          let host = isIP3 ? parsed.host : normalizePercentEncoding(parsed.host, true);
+          if (!isIP3) {
             host = normalizePercentEncoding(host.toLowerCase());
           }
-          parsed.host = isIP || options.scheme !== "null" ? reescapeHostDelimiters(host, isIP) : host;
+          parsed.host = isIP3 || options.scheme !== "null" ? reescapeHostDelimiters(host, isIP3) : host;
         }
         if (!schemeHandler || schemeHandler && !schemeHandler.skipNormalize) {
           if (parsed.path) {
@@ -7264,12 +7266,12 @@ var require_dist = __commonJS({
         throw new Error(`Unknown format "${name}"`);
       return f2;
     };
-    function addFormats(ajv, list, fs, exportName) {
+    function addFormats(ajv, list, fs2, exportName) {
       var _a;
       var _b;
       (_a = (_b = ajv.opts.code).formats) !== null && _a !== void 0 ? _a : _b.formats = (0, codegen_1._)`require("ajv-formats/dist/formats").${exportName}`;
       for (const f2 of list)
-        ajv.addFormat(f2, fs[f2]);
+        ajv.addFormat(f2, fs2[f2]);
     }
     module.exports = exports = formatsPlugin;
     Object.defineProperty(exports, "__esModule", { value: true });
@@ -7278,7 +7280,7 @@ var require_dist = __commonJS({
 });
 
 // server/index.ts
-import { readFile } from "node:fs/promises";
+import { readFile as readFile3 } from "node:fs/promises";
 
 // node_modules/.pnpm/zod@4.6.7/node_modules/zod/v3/helpers/util.js
 var util;
@@ -15941,6 +15943,228 @@ var McpZodTypeKind;
   McpZodTypeKind2["Completable"] = "McpCompletable";
 })(McpZodTypeKind || (McpZodTypeKind = {}));
 
+// node_modules/.pnpm/@modelcontextprotocol+sdk@1.32.2_zod@4.6.7/node_modules/@modelcontextprotocol/sdk/dist/esm/shared/uriTemplate.js
+var MAX_TEMPLATE_LENGTH = 1e6;
+var MAX_VARIABLE_LENGTH = 1e6;
+var MAX_TEMPLATE_EXPRESSIONS = 1e4;
+var MAX_REGEX_LENGTH = 1e6;
+var UriTemplate = class _UriTemplate {
+  /**
+   * Returns true if the given string contains any URI template expressions.
+   * A template expression is a sequence of characters enclosed in curly braces,
+   * like {foo} or {?bar}.
+   */
+  static isTemplate(str) {
+    return /\{[^}\s]+\}/.test(str);
+  }
+  static validateLength(str, max, context) {
+    if (str.length > max) {
+      throw new Error(`${context} exceeds maximum length of ${max} characters (got ${str.length})`);
+    }
+  }
+  get variableNames() {
+    return this.parts.flatMap((part) => typeof part === "string" ? [] : part.names);
+  }
+  constructor(template) {
+    _UriTemplate.validateLength(template, MAX_TEMPLATE_LENGTH, "Template");
+    this.template = template;
+    this.parts = this.parse(template);
+  }
+  toString() {
+    return this.template;
+  }
+  parse(template) {
+    const parts = [];
+    let currentText = "";
+    let i = 0;
+    let expressionCount = 0;
+    while (i < template.length) {
+      if (template[i] === "{") {
+        if (currentText) {
+          parts.push(currentText);
+          currentText = "";
+        }
+        const end = template.indexOf("}", i);
+        if (end === -1)
+          throw new Error("Unclosed template expression");
+        expressionCount++;
+        if (expressionCount > MAX_TEMPLATE_EXPRESSIONS) {
+          throw new Error(`Template contains too many expressions (max ${MAX_TEMPLATE_EXPRESSIONS})`);
+        }
+        const expr = template.slice(i + 1, end);
+        const operator = this.getOperator(expr);
+        const exploded = expr.includes("*");
+        const names = this.getNames(expr);
+        const name = names[0];
+        for (const name2 of names) {
+          _UriTemplate.validateLength(name2, MAX_VARIABLE_LENGTH, "Variable name");
+        }
+        parts.push({ name, operator, names, exploded });
+        i = end + 1;
+      } else {
+        currentText += template[i];
+        i++;
+      }
+    }
+    if (currentText) {
+      parts.push(currentText);
+    }
+    return parts;
+  }
+  getOperator(expr) {
+    const operators = ["+", "#", ".", "/", "?", "&"];
+    return operators.find((op) => expr.startsWith(op)) || "";
+  }
+  getNames(expr) {
+    const operator = this.getOperator(expr);
+    return expr.slice(operator.length).split(",").map((name) => name.replace("*", "").trim()).filter((name) => name.length > 0);
+  }
+  encodeValue(value, operator) {
+    _UriTemplate.validateLength(value, MAX_VARIABLE_LENGTH, "Variable value");
+    if (operator === "+" || operator === "#") {
+      return encodeURI(value);
+    }
+    return encodeURIComponent(value);
+  }
+  expandPart(part, variables) {
+    if (part.operator === "?" || part.operator === "&") {
+      const pairs = part.names.map((name) => {
+        const value2 = variables[name];
+        if (value2 === void 0)
+          return "";
+        const encoded2 = Array.isArray(value2) ? value2.map((v2) => this.encodeValue(v2, part.operator)).join(",") : this.encodeValue(value2.toString(), part.operator);
+        return `${name}=${encoded2}`;
+      }).filter((pair) => pair.length > 0);
+      if (pairs.length === 0)
+        return "";
+      const separator = part.operator === "?" ? "?" : "&";
+      return separator + pairs.join("&");
+    }
+    if (part.names.length > 1) {
+      const values2 = part.names.map((name) => variables[name]).filter((v2) => v2 !== void 0);
+      if (values2.length === 0)
+        return "";
+      return values2.map((v2) => Array.isArray(v2) ? v2[0] : v2).join(",");
+    }
+    const value = variables[part.name];
+    if (value === void 0)
+      return "";
+    const values = Array.isArray(value) ? value : [value];
+    const encoded = values.map((v2) => this.encodeValue(v2, part.operator));
+    switch (part.operator) {
+      case "":
+        return encoded.join(",");
+      case "+":
+        return encoded.join(",");
+      case "#":
+        return "#" + encoded.join(",");
+      case ".":
+        return "." + encoded.join(".");
+      case "/":
+        return "/" + encoded.join("/");
+      default:
+        return encoded.join(",");
+    }
+  }
+  expand(variables) {
+    let result = "";
+    let hasQueryParam = false;
+    for (const part of this.parts) {
+      if (typeof part === "string") {
+        result += part;
+        continue;
+      }
+      const expanded = this.expandPart(part, variables);
+      if (!expanded)
+        continue;
+      if ((part.operator === "?" || part.operator === "&") && hasQueryParam) {
+        result += expanded.replace("?", "&");
+      } else {
+        result += expanded;
+      }
+      if (part.operator === "?" || part.operator === "&") {
+        hasQueryParam = true;
+      }
+    }
+    return result;
+  }
+  escapeRegExp(str) {
+    return str.replace(/[.*+?^${}()|[\]\\]/g, "\\$&");
+  }
+  partToRegExp(part) {
+    const patterns = [];
+    for (const name2 of part.names) {
+      _UriTemplate.validateLength(name2, MAX_VARIABLE_LENGTH, "Variable name");
+    }
+    if (part.operator === "?" || part.operator === "&") {
+      for (let i = 0; i < part.names.length; i++) {
+        const name2 = part.names[i];
+        const prefix = i === 0 ? "\\" + part.operator : "&";
+        patterns.push({
+          pattern: prefix + this.escapeRegExp(name2) + "=([^&]+)",
+          name: name2
+        });
+      }
+      return patterns;
+    }
+    let pattern;
+    const name = part.name;
+    switch (part.operator) {
+      case "":
+        pattern = part.exploded ? "([^/,]+(?:,[^/,]+)*)" : "([^/,]+)";
+        break;
+      case "+":
+      case "#":
+        pattern = "(.+)";
+        break;
+      case ".":
+        pattern = "\\.([^/,]+)";
+        break;
+      case "/":
+        pattern = "/" + (part.exploded ? "([^/,]+(?:,[^/,]+)*)" : "([^/,]+)");
+        break;
+      default:
+        pattern = "([^/]+)";
+    }
+    patterns.push({ pattern, name });
+    return patterns;
+  }
+  match(uri2) {
+    _UriTemplate.validateLength(uri2, MAX_TEMPLATE_LENGTH, "URI");
+    let pattern = "^";
+    const names = [];
+    for (const part of this.parts) {
+      if (typeof part === "string") {
+        pattern += this.escapeRegExp(part);
+      } else {
+        const patterns = this.partToRegExp(part);
+        for (const { pattern: partPattern, name } of patterns) {
+          pattern += partPattern;
+          names.push({ name, exploded: part.exploded });
+        }
+      }
+    }
+    pattern += "$";
+    _UriTemplate.validateLength(pattern, MAX_REGEX_LENGTH, "Generated regex pattern");
+    const regex = new RegExp(pattern);
+    const match = uri2.match(regex);
+    if (!match)
+      return null;
+    const result = {};
+    for (let i = 0; i < names.length; i++) {
+      const { name, exploded } = names[i];
+      const value = match[i + 1];
+      const cleanName = name.replace("*", "");
+      if (exploded && value.includes(",")) {
+        result[cleanName] = value.split(",");
+      } else {
+        result[cleanName] = value;
+      }
+    }
+    return result;
+  }
+};
+
 // node_modules/.pnpm/@modelcontextprotocol+sdk@1.32.2_zod@4.6.7/node_modules/@modelcontextprotocol/sdk/dist/esm/shared/toolNameValidation.js
 var TOOL_NAME_REGEX = /^[A-Za-z0-9._-]{1,128}$/;
 function validateToolName(name) {
@@ -16779,6 +17003,30 @@ var McpServer = class {
     }
   }
 };
+var ResourceTemplate = class {
+  constructor(uriTemplate, _callbacks) {
+    this._callbacks = _callbacks;
+    this._uriTemplate = typeof uriTemplate === "string" ? new UriTemplate(uriTemplate) : uriTemplate;
+  }
+  /**
+   * Gets the URI template pattern.
+   */
+  get uriTemplate() {
+    return this._uriTemplate;
+  }
+  /**
+   * Gets the list callback, if one was provided.
+   */
+  get listCallback() {
+    return this._callbacks.list;
+  }
+  /**
+   * Gets the callback for completing a specific URI template variable, if one was provided.
+   */
+  completeCallback(variable) {
+    return this._callbacks.complete?.[variable];
+  }
+};
 var EMPTY_OBJECT_JSON_SCHEMA = {
   type: "object",
   properties: {}
@@ -16854,6 +17102,9 @@ var EMPTY_COMPLETION_RESULT = {
     hasMore: false
   }
 };
+
+// server/index.ts
+import { randomUUID as randomUUID4 } from "node:crypto";
 
 // node_modules/.pnpm/@modelcontextprotocol+sdk@1.32.2_zod@4.6.7/node_modules/@modelcontextprotocol/sdk/dist/esm/server/stdio.js
 import process2 from "node:process";
@@ -16962,7 +17213,7 @@ var StdioServerTransport = class {
   }
 };
 
-// node_modules/.pnpm/@modelcontextprotocol+ext-apps@1.7.5_@modelcontextprotocol+sdk@1.32.2_zod@4.6.7__react-_aa47506489abf8dc9ab0acdff469545b/node_modules/@modelcontextprotocol/ext-apps/dist/src/server/index.js
+// node_modules/.pnpm/@modelcontextprotocol+ext-apps@1.7.5_@modelcontextprotocol+sdk@1.32.2_zod@4.6.7__react-dom@19_bdnqo3wvk4r3rn3q7t4jcwi6ye/node_modules/@modelcontextprotocol/ext-apps/dist/src/server/index.js
 var r = ((Z) => typeof __require < "u" ? __require : typeof Proxy < "u" ? new Proxy(Z, { get: ($, J) => (typeof __require < "u" ? __require : $)[J] }) : Z)(function(Z) {
   if (typeof __require < "u") return __require.apply(this, arguments);
   throw Error('Dynamic require of "' + Z + '" is not supported');
@@ -17059,7 +17310,809 @@ function N3(Z, $, J, X, V) {
 // server/index.ts
 import { resolve } from "node:path";
 import { gzipSync } from "node:zlib";
+import { fileURLToPath as fileURLToPath2 } from "node:url";
+
+// server/plugin-settings.ts
+import { mkdir, readFile, writeFile, rename } from "node:fs/promises";
+import { join } from "node:path";
+import { createDecipheriv, randomUUID, createHash } from "node:crypto";
+
+// server/gitlab-transport.ts
+import http from "node:http";
+import https from "node:https";
+import { connect, isIP } from "node:net";
+import { once } from "node:events";
+import { connect as connectTLS, checkServerIdentity } from "node:tls";
+function gitlabHost(value) {
+  const address = value.trim();
+  const url = new URL(address.includes("://") ? address : `http://${address}`);
+  if (!["http:", "https:"].includes(url.protocol) || url.username || url.password || url.search || url.hash) throw Error("GITLAB_HOST \u5FC5\u987B\u662F\u65E0\u51ED\u636E\u7684 HTTP(S) \u5730\u5740");
+  return url.href.replace(/\/$/, "");
+}
+function gitlabPath(value, host) {
+  let path = value.trim();
+  if (path.includes("://")) {
+    const url = new URL(path), base = new URL(host);
+    if (url.origin !== base.origin || url.username || url.password || url.search || url.hash) throw Error("GitLab \u5730\u5740\u5FC5\u987B\u5C5E\u4E8E\u914D\u7F6E\u7684 HOST");
+    path = url.pathname;
+    if (base.pathname !== "/") {
+      if (!path.startsWith(base.pathname + "/")) throw Error("GitLab \u8DEF\u5F84\u4E0D\u5C5E\u4E8E HOST");
+      path = path.slice(base.pathname.length);
+    }
+  }
+  path = path.replace(/^\/+|\/+$/g, "").replace(/\.git$/, "");
+  if (!path || path.split("/").some((part) => !part || part === "." || part === ".." || !/^[\w.-]+$/.test(part))) throw Error("GitLab \u5206\u7EC4\u6216\u4ED3\u5E93\u8DEF\u5F84\u65E0\u6548");
+  return path;
+}
+function gitlabGroupPath(value, host) {
+  const path = gitlabPath(value, host);
+  return value.includes("://") ? path.replace(/^groups\//, "").replace(/\/-\/(?:projects|activity|details)$/, "") : path;
+}
+function gitlabNetworkError(error, settings2) {
+  const original = error, detail = String(original?.message || error).replaceAll(settings2.GITLAB_TOKEN || "\0", "[REDACTED]");
+  if (original?.name === "AbortError") return original;
+  if (/^TLS 连接失败：|^TLS\/证书校验失败：/.test(detail)) return Object.assign(Error(detail), { code: original?.code });
+  let message = detail;
+  if (/EPROTO|SSL|TLS|CERT_|CERTIFICATE|SELF_SIGNED|UNABLE_TO_VERIFY|UNABLE_TO_GET_ISSUER/i.test((original?.code || "") + " " + detail)) {
+    message = /internal.error|alert number 80|0A000438/i.test(detail) ? "TLS \u8FDE\u63A5\u5931\u8D25\uFF1A\u5BF9\u7AEF\u8FD4\u56DE internal_error\uFF08alert 80\uFF09\uFF0C\u672A\u5F97\u5230\u6709\u6548\u7684 GitLab API \u54CD\u5E94\uFF0C\u4E0D\u80FD\u636E\u6B64\u5224\u65AD Token \u662F\u5426\u6709\u6548\u3002\u82E5\u5185\u7F51\u670D\u52A1\u53EA\u652F\u6301 HTTP\uFF0C\u8BF7\u5C06 GITLAB_HOST \u6539\u4E3A http://\u57DF\u540D\u6216IP:\u7AEF\u53E3\uFF08\u4E0D\u662F https://\uFF09\uFF1B\u540C\u65F6\u6838\u5BF9 IP\u3001\u7AEF\u53E3\u4E0E\u670D\u52A1\u7AEF\u914D\u7F6E\u3002" : "TLS/\u8BC1\u4E66\u6821\u9A8C\u5931\u8D25\uFF1A\u8BF7\u6838\u5BF9 HOST \u57DF\u540D\u3001IP\u3001\u7AEF\u53E3\u4E0E\u8BC1\u4E66\u540D\u79F0/\u8BC1\u4E66\u94FE\uFF1B\u5185\u90E8 CA \u9700\u7531\u8FD0\u884C\u63D2\u4EF6\u7684 Node \u73AF\u5883\u4FE1\u4EFB\u3002";
+    message += " \u539F\u59CB\u9519\u8BEF\uFF1A" + detail;
+  } else if (/ECONNREFUSED|ETIMEDOUT|EHOSTUNREACH|ENETUNREACH|ECONNRESET/.test(original?.code || "")) message = "GitLab \u7F51\u7EDC\u8FDE\u63A5\u5931\u8D25\uFF0C\u8BF7\u68C0\u67E5 OPEN VPN\u3001IP \u548C\u7AEF\u53E3\u3002\u539F\u59CB\u9519\u8BEF\uFF1A" + detail;
+  return Object.assign(Error(message), { code: original?.code });
+}
+var hostName = (url) => url.hostname.replace(/^\[|\]$/g, "");
+function nodeGitLabIO() {
+  const request = async (settings2, input) => {
+    const host = gitlabHost(settings2.GITLAB_HOST), url = new URL(input.url);
+    if (!url.href.startsWith(host + "/") || url.username || url.password) throw Error("\u62D2\u7EDD\u5411\u5176\u4ED6\u5730\u5740\u53D1\u9001 GitLab \u51ED\u636E");
+    if (!isIP(settings2.GITLAB_IP)) throw Error("GITLAB_IP \u9700\u8981\u6709\u6548 IP \u5730\u5740");
+    return new Promise((resolve2, reject) => {
+      const name = hostName(url);
+      const req = (url.protocol === "https:" ? https : http).request(url, { method: input.method || "GET", hostname: settings2.GITLAB_IP, headers: { ...input.headers, Host: url.host }, servername: isIP(name) ? void 0 : name, checkServerIdentity: (_server, cert) => checkServerIdentity(name, cert), rejectUnauthorized: true, signal: input.signal }, (res) => {
+        if ((res.statusCode || 0) >= 300 && (res.statusCode || 0) < 400) {
+          res.resume();
+          reject(Error("GitLab \u8FD4\u56DE\u91CD\u5B9A\u5411\uFF1B\u8BF7\u4F7F\u7528\u6700\u7EC8 HOST \u5730\u5740\uFF0C\u672A\u8F6C\u53D1\u51ED\u636E"));
+          return;
+        }
+        resolve2({ url: url.href, statusCode: res.statusCode, statusMessage: res.statusMessage, headers: res.headers, body: res });
+      });
+      req.setTimeout(12e4, () => req.destroy(Error("GitLab \u8BF7\u6C42\u8D85\u65F6\uFF0C\u8BF7\u68C0\u67E5 OPEN VPN \u8FDE\u63A5")));
+      req.on("error", (error) => reject(gitlabNetworkError(error, settings2)));
+      void (async () => {
+        try {
+          if (input.body) {
+            for await (const chunk of typeof input.body === "string" || ArrayBuffer.isView(input.body) ? [input.body] : input.body) if (!req.write(chunk)) await once(req, "drain");
+          }
+          req.end();
+        } catch (error) {
+          req.destroy(error);
+        }
+      })();
+    });
+  };
+  return {
+    tls: async (settings2, signal) => {
+      const url = new URL(gitlabHost(settings2.GITLAB_HOST)), name = hostName(url);
+      if (url.protocol !== "https:") return "HTTP\uFF0C\u65E0 TLS \u63E1\u624B";
+      if (!isIP(settings2.GITLAB_IP)) throw Error("GITLAB_IP \u9700\u8981\u6709\u6548 IP \u5730\u5740");
+      signal?.throwIfAborted();
+      return new Promise((resolve2, reject) => {
+        const socket = connectTLS({ host: settings2.GITLAB_IP, port: Number(url.port) || 443, servername: isIP(name) ? void 0 : name, checkServerIdentity: (_server, cert) => checkServerIdentity(name, cert), rejectUnauthorized: true });
+        const abort = () => socket.destroy(Object.assign(Error("\u8FDE\u63A5\u6D4B\u8BD5\u5DF2\u53D6\u6D88"), { name: "AbortError" }));
+        signal?.addEventListener("abort", abort, { once: true });
+        socket.once("close", () => signal?.removeEventListener("abort", abort));
+        socket.setTimeout(1e4, () => socket.destroy(Error("TLS \u63E1\u624B\u8D85\u65F6\uFF0C\u8BF7\u68C0\u67E5 HTTPS \u7AEF\u53E3\u548C\u53CD\u5411\u4EE3\u7406\u914D\u7F6E")));
+        socket.once("secureConnect", () => {
+          const protocol = socket.getProtocol();
+          socket.destroy();
+          resolve2(`${protocol}\uFF0C\u8BC1\u4E66\u4E0E\u57DF\u540D\u6821\u9A8C\u901A\u8FC7`);
+        });
+        socket.once("error", (error) => reject(gitlabNetworkError(error, settings2)));
+      });
+    },
+    probe: async (settings2, signal) => {
+      if (!isIP(settings2.GITLAB_IP)) throw Error("\u8BF7\u586B\u5199\u6709\u6548 GITLAB_IP \u5E76\u68C0\u67E5 OPEN VPN \u8FDE\u63A5");
+      const url = new URL(gitlabHost(settings2.GITLAB_HOST));
+      await new Promise((resolve2, reject) => {
+        const socket = connect({ host: settings2.GITLAB_IP, port: Number(url.port) || (url.protocol === "https:" ? 443 : 80), signal });
+        socket.setTimeout(5e3);
+        socket.once("connect", () => {
+          socket.destroy();
+          resolve2();
+        });
+        socket.once("timeout", () => socket.destroy(Error("\u8FDE\u63A5\u8D85\u65F6")));
+        socket.once("error", () => reject(Error("GITLAB_IP \u65E0\u6CD5\u8FDE\u901A\uFF0C\u8BF7\u68C0\u67E5 OPEN VPN \u8FDE\u63A5")));
+      });
+    },
+    api: async (settings2, method, path, body, signal) => {
+      const result = await request(settings2, { url: gitlabHost(settings2.GITLAB_HOST) + "/api/v4" + path, method, signal, headers: { Accept: "application/json", "PRIVATE-TOKEN": settings2.GITLAB_TOKEN, ...body ? { "Content-Type": "application/json" } : {} }, body: body ? JSON.stringify(body) : void 0 });
+      const buffers = [];
+      let size = 0;
+      for await (const chunk of result.body) {
+        size += chunk.length;
+        if (size > 8 * 1024 * 1024) throw Error("GitLab API \u54CD\u5E94\u8FC7\u5927");
+        buffers.push(chunk);
+      }
+      let data;
+      try {
+        data = JSON.parse(Buffer.concat(buffers).toString());
+      } catch {
+        throw Error("GitLab API \u672A\u8FD4\u56DE JSON");
+      }
+      return { status: result.statusCode, data };
+    },
+    http: (settings2, signal) => ({ request: (input) => request(settings2, { ...input, signal: signal || input.signal }) })
+  };
+}
+
+// server/plugin-settings.ts
+var settingNames = ["GITLAB_HOST", "GITLAB_IP", "GITLAB_TOKEN", "GITLAB_WEBSITE_DIR", "GITLAB_WEBSITE_DEPLOY_DIR", "GITLAB_DEFAULT_BRANCH"];
+var PluginSettings = class {
+  constructor(root, projectDir, env = process.env) {
+    this.root = root;
+    this.projectDir = projectDir;
+    this.env = env;
+    this.file = join(root, "config", "website-builder.json");
+  }
+  root;
+  projectDir;
+  env;
+  file;
+  async key() {
+    const file = join(this.root, "config", "secret.key");
+    const key = await readFile(file);
+    if (key.length !== 32) throw Error("\u914D\u7F6E\u5BC6\u94A5\u65E0\u6548\uFF0C\u8BF7\u68C0\u67E5\u672C\u673A\u914D\u7F6E\u76EE\u5F55");
+    return key;
+  }
+  async read() {
+    try {
+      return JSON.parse(await readFile(this.file, "utf8"));
+    } catch (error) {
+      if (error.code === "ENOENT") return {};
+      throw Error("\u63D2\u4EF6\u914D\u7F6E\u6587\u4EF6\u4E0D\u53EF\u8BFB\u53D6");
+    }
+  }
+  async persist(data) {
+    await mkdir(join(this.root, "config"), { recursive: true });
+    const file = this.file + "." + randomUUID() + ".tmp";
+    await writeFile(file, JSON.stringify({ ...data, PROJECT_DIR: this.projectDir }, null, 2), { mode: 384 });
+    await rename(file, this.file);
+  }
+  async get(repair = true) {
+    const data = await this.read();
+    const result = { PROJECT_DIR: this.projectDir };
+    for (const name of settingNames) result[name] = typeof data[name] === "string" ? data[name] : this.env[name] || (name === "GITLAB_DEFAULT_BRANCH" ? "main" : "");
+    if (result.GITLAB_HOST) {
+      try {
+        result.GITLAB_HOST = gitlabHost(result.GITLAB_HOST);
+      } catch {
+      }
+    }
+    if (data.token && typeof data.GITLAB_TOKEN !== "string") {
+      try {
+        const decipher = createDecipheriv("aes-256-gcm", await this.key(), Buffer.from(data.token.iv, "hex"));
+        decipher.setAuthTag(Buffer.from(data.token.tag, "hex"));
+        result.GITLAB_TOKEN = Buffer.concat([decipher.update(Buffer.from(data.token.value, "hex")), decipher.final()]).toString();
+      } catch {
+        throw Error("\u65E7\u7248 GitLab Token \u65E0\u6CD5\u8BFB\u53D6\uFF0C\u8BF7\u5728\u63D2\u4EF6\u914D\u7F6E\u9875\u91CD\u65B0\u586B\u5199");
+      }
+    }
+    if (repair && (data.PROJECT_DIR !== this.projectDir || data.token)) {
+      if (data.token) {
+        data.GITLAB_TOKEN = result.GITLAB_TOKEN;
+        delete data.token;
+      }
+      await this.persist(data);
+    }
+    return result;
+  }
+  async public(readonly = false) {
+    const data = await this.get(!readonly);
+    return { ...data, token_configured: !!data.GITLAB_TOKEN, read_only: ["PROJECT_DIR"] };
+  }
+  async save(input) {
+    const data = await this.read();
+    for (const name of settingNames) {
+      if (name === "GITLAB_TOKEN" || input[name] === void 0) continue;
+      if (typeof input[name] !== "string" || input[name].length > 2048) throw Error(`\u914D\u7F6E ${name} \u65E0\u6548`);
+      data[name] = input[name].trim();
+      if (name === "GITLAB_HOST" && data[name]) data[name] = gitlabHost(data[name]);
+    }
+    if (input.GITLAB_TOKEN !== void 0) {
+      if (typeof input.GITLAB_TOKEN !== "string" || input.GITLAB_TOKEN.length > 8192) throw Error("Token \u683C\u5F0F\u65E0\u6548");
+      data.GITLAB_TOKEN = input.GITLAB_TOKEN;
+      delete data.token;
+    } else if (data.token) {
+      data.GITLAB_TOKEN = (await this.get(false)).GITLAB_TOKEN;
+      delete data.token;
+    }
+    data.GITLAB_DEFAULT_BRANCH ||= "main";
+    await this.persist(data);
+    return this.public();
+  }
+};
+var settingsDigest = (settings2) => createHash("sha256").update(JSON.stringify(settings2)).digest("hex");
+
+// server/gitlab-diagnostics.ts
+import { isIP as isIP2 } from "node:net";
+async function testGitLabConnection(settings2, io = nodeGitLabIO()) {
+  const checks = ["\u914D\u7F6E\u5730\u5740", "IP / OPEN VPN", "TLS / \u8BC1\u4E66", "Token \u7528\u6237", "\u7F51\u7AD9\u5206\u7EC4", "\u90E8\u7F72\u4ED3\u5E93", "\u90E8\u7F72\u57FA\u51C6\u5206\u652F"].map((name) => ({ name, status: "pending", detail: "" }));
+  const controller = new AbortController(), timer = setTimeout(() => controller.abort(), 45e3);
+  let current = 0;
+  const redact = (text) => text.replaceAll(settings2.GITLAB_TOKEN || "\0", "[REDACTED]").slice(0, 2500);
+  const step = async (index, run) => {
+    current = index;
+    checks[index].detail = redact(await run());
+    checks[index].status = "passed";
+  };
+  const api = async (path) => {
+    const result = await io.api(settings2, "GET", path, void 0, controller.signal);
+    if (result.status < 200 || result.status >= 300) {
+      const hint = result.status === 401 ? "Token \u65E0\u6548\u6216\u5DF2\u8FC7\u671F" : result.status === 403 ? "Token \u6743\u9650\u4E0D\u8DB3" : result.status === 404 ? "\u5730\u5740\u4E0D\u5B58\u5728\u6216\u5F53\u524D Token \u65E0\u6743\u8BBF\u95EE" : "\u8BF7\u68C0\u67E5 GitLab \u670D\u52A1";
+      throw Error(`HTTP ${result.status}\uFF1A${hint}`);
+    }
+    return result.data;
+  };
+  try {
+    let host = "";
+    await step(0, async () => {
+      if (!settings2.GITLAB_HOST) throw Error("\u8BF7\u586B\u5199 GITLAB_HOST");
+      host = gitlabHost(settings2.GITLAB_HOST);
+      if (!isIP2(settings2.GITLAB_IP)) throw Error("\u8BF7\u586B\u5199\u6709\u6548 GITLAB_IP");
+      return `${host} \u2192 ${settings2.GITLAB_IP}`;
+    });
+    await step(1, async () => {
+      await io.probe(settings2, controller.signal);
+      return "\u6307\u5B9A IP \u548C\u7AEF\u53E3 TCP \u8FDE\u901A\uFF08\u4E0D\u4EE3\u8868 TLS/API \u5DF2\u901A\u8FC7\uFF09";
+    });
+    if (new URL(host).protocol === "https:") await step(2, async () => {
+      if (!io.tls) throw Error("\u5F53\u524D\u8FDE\u63A5\u9002\u914D\u5668\u672A\u63D0\u4F9B TLS \u6D4B\u8BD5");
+      return io.tls(settings2, controller.signal);
+    });
+    else {
+      checks[2].status = "skipped";
+      checks[2].detail = "\u914D\u7F6E\u4E3A HTTP\uFF0C\u4E0D\u8FDB\u884C TLS \u6D4B\u8BD5";
+    }
+    await step(3, async () => {
+      if (!settings2.GITLAB_TOKEN) throw Error("\u8BF7\u586B\u5199 GITLAB_TOKEN");
+      const user = await api("/user");
+      if (!Number.isInteger(user?.id) || !user.username || user.state && user.state !== "active") throw Error("Token \u7528\u6237\u65E0\u6548\u6216\u5DF2\u505C\u7528");
+      return "\u8EAB\u4EFD\u9A8C\u8BC1\u901A\u8FC7\uFF1A" + user.username;
+    });
+    await step(4, async () => {
+      if (!settings2.GITLAB_WEBSITE_DIR) throw Error("\u8BF7\u586B\u5199 GITLAB_WEBSITE_DIR");
+      const path = gitlabGroupPath(settings2.GITLAB_WEBSITE_DIR, host), group = await api("/groups/" + encodeURIComponent(path));
+      if (!Number.isInteger(group?.id) || group.full_path !== path) throw Error("\u7F51\u7AD9\u5206\u7EC4\u8EAB\u4EFD\u4E0D\u5339\u914D");
+      return path;
+    });
+    let repository;
+    await step(5, async () => {
+      if (!settings2.GITLAB_WEBSITE_DEPLOY_DIR) throw Error("\u8BF7\u586B\u5199 GITLAB_WEBSITE_DEPLOY_DIR");
+      const path = gitlabPath(settings2.GITLAB_WEBSITE_DEPLOY_DIR, host);
+      repository = await api("/projects/" + encodeURIComponent(path));
+      if (!Number.isInteger(repository?.id) || repository.archived || repository.path_with_namespace !== path) throw Error("\u90E8\u7F72\u4ED3\u5E93\u65E0\u6548\u3001\u5DF2\u5F52\u6863\u6216\u8EAB\u4EFD\u4E0D\u5339\u914D");
+      return path;
+    });
+    await step(6, async () => {
+      const branch = settings2.GITLAB_DEFAULT_BRANCH || "main", value = await api(`/projects/${repository.id}/repository/branches/${encodeURIComponent(branch)}`);
+      if (!/^[0-9a-f]{40}$/.test(value?.commit?.id || "")) throw Error("\u90E8\u7F72\u57FA\u51C6\u5206\u652F\u6CA1\u6709\u6709\u6548\u63D0\u4EA4");
+      return branch + " \xB7 " + value.commit.id.slice(0, 12);
+    });
+    return { success: true, message: "\u8FDE\u63A5\u6D4B\u8BD5\u901A\u8FC7\uFF08\u53EA\u8BFB\u68C0\u67E5\uFF0C\u4E0D\u521B\u5EFA\u4ED3\u5E93\u3001\u4E0D\u63A8\u9001\u3001\u4E0D\u90E8\u7F72\uFF09", checks };
+  } catch (error) {
+    checks[current].status = "failed";
+    checks[current].detail = redact(controller.signal.aborted ? "\u8FDE\u63A5\u6D4B\u8BD5\u5DF2\u8D85\u65F6\uFF0C\u8BF7\u68C0\u67E5 VPN \u4E0E\u670D\u52A1\u54CD\u5E94" : gitlabNetworkError(error, settings2).message);
+    for (const check of checks) if (check.status === "pending") {
+      check.status = "skipped";
+      check.detail = "\u524D\u7F6E\u68C0\u67E5\u672A\u901A\u8FC7\uFF0C\u672A\u6267\u884C";
+    }
+    return { success: false, message: "\u8FDE\u63A5\u6D4B\u8BD5\u5931\u8D25\uFF1A" + checks[current].name, checks };
+  } finally {
+    clearTimeout(timer);
+  }
+}
+
+// server/gitlab-workflow.ts
+import fs from "node:fs";
+import { readFile as readFile2, readdir, lstat, stat, mkdir as mkdir2, rename as rename2, writeFile as writeFile2, realpath } from "node:fs/promises";
+import { join as join2, relative, isAbsolute, sep } from "node:path";
+import { domainToASCII } from "node:url";
+import { randomUUID as randomUUID2, createHash as createHash2 } from "node:crypto";
+import { createRequire as createGitRequire } from "node:module";
 import { fileURLToPath } from "node:url";
+function websiteDomain(value) {
+  const domain = domainToASCII(value.trim().toLowerCase());
+  if (!/^www\.(?:[a-z0-9](?:[a-z0-9-]{0,61}[a-z0-9])?\.)+[a-z]{2,63}$/.test(domain)) throw Error("\u8BF7\u786E\u8BA4\u771F\u5B9E\u5B98\u7F51\u57DF\u540D\uFF0C\u683C\u5F0F\u5FC5\u987B\u4E3A www.xxx.xxx\uFF0C\u4E0D\u542B\u534F\u8BAE\u3001\u7AEF\u53E3\u6216\u8DEF\u5F84");
+  return domain;
+}
+function releaseName(environment, date = /* @__PURE__ */ new Date()) {
+  const parts = Object.fromEntries(new Intl.DateTimeFormat("en-GB", { timeZone: "Asia/Shanghai", year: "2-digit", month: "2-digit", day: "2-digit", hour: "2-digit", minute: "2-digit", hourCycle: "h23" }).formatToParts(date).map((p2) => [p2.type, p2.value]));
+  return `${environment === "production" ? "release" : "test"}-${parts.year}${parts.month}${parts.day}${parts.hour}${parts.minute}`;
+}
+async function fileFingerprint(root) {
+  const hash = createHash2("sha256");
+  const scan = async (folder) => {
+    for (const entry of (await readdir(folder, { withFileTypes: true })).sort((a, b) => a.name.localeCompare(b.name))) {
+      if (entry.name === ".git" && folder === root) continue;
+      const file = join2(folder, entry.name);
+      if (entry.isSymbolicLink()) throw Error("GIT_CONFIRMATION_REQUIRED\uFF1A\u9879\u76EE\u542B\u7B26\u53F7\u94FE\u63A5\uFF0C\u5148\u786E\u8BA4\u5E76\u7531\u7CFB\u7EDF Git \u5904\u7406");
+      if (entry.isDirectory()) await scan(file);
+      else if (entry.isFile()) {
+        hash.update(relative(root, file));
+        hash.update(await readFile2(file));
+      }
+    }
+  };
+  await scan(root);
+  return hash.digest("hex");
+}
+var GitLabWorkflow = class {
+  constructor(store, settings2, io = nodeGitLabIO(), git, now = () => /* @__PURE__ */ new Date()) {
+    this.store = store;
+    this.settings = settings2;
+    this.io = io;
+    this.now = now;
+    this.git = git || createGitRequire(import.meta.url)(fileURLToPath(new URL("../runtime/isomorphic-git/load.cjs", import.meta.url)));
+  }
+  store;
+  settings;
+  io;
+  now;
+  git;
+  active = /* @__PURE__ */ new Map();
+  owners = /* @__PURE__ */ new WeakMap();
+  cancelled(id) {
+    return this.store.database.sql.prepare("SELECT used FROM deployment_requests WHERE id=?").get(id)?.used === 2;
+  }
+  checkpoint(id) {
+    if (this.cancelled(id)) throw Error("DEPLOYMENT_CANCELLED\uFF1A\u53D1\u5E03\u4EFB\u52A1\u5DF2\u53D6\u6D88\uFF0C\u5DF2\u5B8C\u6210\u7684\u4ED3\u5E93\u64CD\u4F5C\u4E88\u4EE5\u4FDD\u7559\uFF0C\u672A\u521B\u5EFA\u53D1\u5E03\u6807\u7B7E");
+  }
+  begin(id) {
+    const controller = new AbortController();
+    this.active.set(id, controller);
+    let heartbeat = 0;
+    const timer = setInterval(() => {
+      if (this.cancelled(id)) controller.abort();
+      if (Date.now() - heartbeat >= 1e4) {
+        heartbeat = Date.now();
+        this.store.database.sql.prepare("UPDATE deployment_locks SET expires_at=? WHERE owner=?").run(Date.now() + 12e4, id);
+      }
+    }, 100);
+    return () => {
+      clearInterval(timer);
+      this.active.delete(id);
+    };
+  }
+  signal(c) {
+    const id = this.owners.get(c);
+    if (id) this.checkpoint(id);
+    return id ? this.active.get(id)?.signal : void 0;
+  }
+  options(view) {
+    return { fs, dir: view.projectDirectory.replaceAll("\\", "/") };
+  }
+  save(id, value) {
+    this.store.database.sql.prepare("INSERT INTO settings VALUES (?,?) ON CONFLICT(key) DO UPDATE SET value=excluded.value").run("gitlab:" + id, JSON.stringify(value));
+  }
+  status(id) {
+    const lock = operationLock(this.store.database, id), row = this.store.database.sql.prepare("SELECT value FROM settings WHERE key=?").get("gitlab:" + id);
+    const binding = this.store.database.sql.prepare("SELECT value FROM settings WHERE key=?").get("gitlab-binding:" + id);
+    const project = this.store.database.project(id);
+    const last = row ? JSON.parse(row.value) : null;
+    const request = lock ? this.store.database.sql.prepare("SELECT used FROM deployment_requests WHERE id=?").get(lock.owner) : null;
+    return { locked: !!lock, cancellable: !!lock && request?.used !== 3, stage: lock?.stage || "", domain: project?.domain || (binding ? JSON.parse(binding.value).domain : "") || last?.domain || "", last };
+  }
+  async updateDomain(id, domain) {
+    const saved = await this.store.setDomain(id, domain);
+    return { domain: saved };
+  }
+  challenge(id, actor, projectId) {
+    const row = this.store.database.sql.prepare("SELECT * FROM deployment_requests WHERE id=? AND project_id=?").get(id, projectId);
+    if (!row || row.thread_id !== actor || row.used || row.expires_at < Date.now()) throw Error("\u786E\u8BA4\u8BF7\u6C42\u65E0\u6548\u3001\u8FC7\u671F\u6216\u5DF2\u7ECF\u4F7F\u7528");
+    const plan = JSON.parse(row.data);
+    if (!plan.kind) throw Error("\u68C0\u67E5\u5C1A\u672A\u5B8C\u6210");
+    return plan;
+  }
+  stage(id, owner, stage) {
+    if (stage !== "\u6B63\u5728\u53D6\u6D88") this.checkpoint(owner);
+    assertEditable(this.store.database, id, owner);
+    this.store.database.sql.prepare("UPDATE deployment_locks SET stage=? WHERE project_id=? AND owner=?").run(stage, id, owner);
+  }
+  release(id, owner) {
+    this.store.database.sql.prepare("DELETE FROM deployment_locks WHERE project_id=? AND owner=?").run(id, owner);
+  }
+  cancel(id, actor, requestId) {
+    let owner = requestId || operationLock(this.store.database, id)?.owner;
+    if (!owner) return { status: "cancelled" };
+    const row = this.store.database.sql.prepare("SELECT thread_id FROM deployment_requests WHERE id=? AND project_id=?").get(owner, id);
+    if (row?.thread_id !== actor) throw Error("\u4E0D\u80FD\u53D6\u6D88\u5176\u4ED6\u4F1A\u8BDD\u7684\u90E8\u7F72");
+    const lock = operationLock(this.store.database, id);
+    if (lock && lock.owner !== owner) {
+      const next = this.store.database.sql.prepare("SELECT thread_id FROM deployment_requests WHERE id=?").get(lock.owner);
+      if (next?.thread_id !== actor) throw Error("\u4E0D\u80FD\u53D6\u6D88\u5176\u4ED6\u4F1A\u8BDD\u7684\u90E8\u7F72");
+      owner = lock.owner;
+    }
+    const current = this.store.database.sql.prepare("SELECT used FROM deployment_requests WHERE id=?").get(owner);
+    if (current?.used === 3) throw Error("\u521B\u5EFA\u53D1\u5E03\u6807\u7B7E\u7684\u8BF7\u6C42\u5DF2\u53D1\u51FA\uFF0C\u8BF7\u7B49\u5F85\u7ED3\u679C\uFF0C\u4E0D\u80FD\u53D6\u6D88\u6216\u91CD\u590D\u53D1\u5E03");
+    if (current?.used === 2) return { status: lock ? "cancelling" : "cancelled" };
+    if (!lock) return { status: "cancelled" };
+    const running = current?.used === 1;
+    this.store.database.sql.prepare("UPDATE deployment_requests SET used=2 WHERE id=? AND used IN (0,1)").run(owner);
+    this.active.get(owner)?.abort();
+    if (running) {
+      this.stage(id, owner, "\u6B63\u5728\u53D6\u6D88");
+      return { status: "cancelling" };
+    }
+    this.release(id, owner);
+    return { status: "cancelled" };
+  }
+  async api(c, method, path, body, missing = false) {
+    const response = await this.io.api(c, method, path, body, this.signal(c));
+    this.signal(c);
+    if (missing && response.status === 404) return null;
+    if (response.status < 200 || response.status >= 300) throw Error(`GitLab API ${method} ${path.split("?")[0]} \u8FD4\u56DE ${response.status}\uFF0C\u8BF7\u68C0\u67E5Token\u6743\u9650\u53CA\u5730\u5740`);
+    return response.data;
+  }
+  async context(input, owner) {
+    const c = await this.settings.get();
+    this.owners.set(c, owner);
+    this.signal(c);
+    for (const name of ["GITLAB_HOST", "GITLAB_IP", "GITLAB_TOKEN", "GITLAB_WEBSITE_DIR", "GITLAB_WEBSITE_DEPLOY_DIR"]) if (!c[name]) throw Error(`\u8BF7\u5728\u63D2\u4EF6\u914D\u7F6E\u9875\u586B\u5199 ${name}`);
+    if (!/^[\w./-]+$/.test(c.GITLAB_DEFAULT_BRANCH) || c.GITLAB_DEFAULT_BRANCH.includes("..") || c.GITLAB_DEFAULT_BRANCH.endsWith("/")) throw Error("GITLAB_DEFAULT_BRANCH \u65E0\u6548");
+    const view = await this.store.get(void 0, input.project_id);
+    if (!view) throw Error("\u9879\u76EE\u4E0D\u5B58\u5728");
+    const checks = [];
+    const step = async (name, run) => {
+      this.stage(input.project_id, owner, name);
+      const data = await run();
+      checks.push(name);
+      return data;
+    };
+    await step("\u8FDE\u63A5 GitLab IP", () => this.io.probe(c, this.signal(c)));
+    const user = await step("\u9A8C\u8BC1 Token \u7528\u6237", () => this.api(c, "GET", "/user"));
+    if (!Number.isInteger(user?.id) || !user.username || user.state && user.state !== "active") throw Error("GitLab Token \u7528\u6237\u65E0\u6548\u6216\u5DF2\u505C\u7528");
+    const host = gitlabHost(c.GITLAB_HOST), groupPath = gitlabGroupPath(c.GITLAB_WEBSITE_DIR, host), deployPath = gitlabPath(c.GITLAB_WEBSITE_DEPLOY_DIR, host);
+    const group = await step("\u9A8C\u8BC1\u7F51\u7AD9\u5206\u7EC4", () => this.api(c, "GET", "/groups/" + encodeURIComponent(groupPath)));
+    if (!Number.isInteger(group?.id) || group.full_path !== groupPath) throw Error("GitLab \u7F51\u7AD9\u5206\u7EC4\u5730\u5740\u4E0D\u5339\u914D");
+    const deployment = await step("\u9A8C\u8BC1\u90E8\u7F72\u4ED3\u5E93", () => this.api(c, "GET", "/projects/" + encodeURIComponent(deployPath)));
+    if (!Number.isInteger(deployment?.id) || deployment.archived || deployment.path_with_namespace !== deployPath) throw Error("GitLab \u90E8\u7F72\u4ED3\u5E93\u5730\u5740\u4E0D\u5339\u914D");
+    const deployBranch = await step("\u9A8C\u8BC1\u90E8\u7F72\u57FA\u51C6\u5206\u652F", () => this.api(c, "GET", `/projects/${deployment.id}/repository/branches/${encodeURIComponent(c.GITLAB_DEFAULT_BRANCH)}`));
+    if (!/^[0-9a-f]{40}$/.test(deployBranch?.commit?.id || "")) throw Error("\u90E8\u7F72\u57FA\u51C6\u5206\u652F\u6CA1\u6709\u6709\u6548\u7248\u672C");
+    const repoPath = group.full_path + "/" + input.domain;
+    if (repoPath === deployPath) throw Error("\u7F51\u7AD9\u4ED3\u5E93\u4E0D\u80FD\u4E0E\u90E8\u7F72\u4ED3\u5E93\u76F8\u540C");
+    const remote = await step("\u9A8C\u8BC1\u5B98\u7F51\u4ED3\u5E93", () => this.api(c, "GET", "/projects/" + encodeURIComponent(repoPath), void 0, true));
+    let branch = null, empty = true;
+    const url = host + "/" + repoPath + ".git";
+    if (remote) {
+      if (!Number.isInteger(remote.id) || remote.archived || remote.path !== input.domain || remote.path_with_namespace !== repoPath || remote.http_url_to_repo !== url) throw Error("\u5B98\u7F51\u4ED3\u5E93\u540D\u79F0\u3001\u5206\u7EC4\u6216Git\u5730\u5740\u4E0D\u5339\u914D");
+      const branches = await this.api(c, "GET", `/projects/${remote.id}/repository/branches?per_page=1`);
+      const tags = await this.api(c, "GET", `/projects/${remote.id}/repository/tags?per_page=1`);
+      if (!Array.isArray(branches) || !Array.isArray(tags)) throw Error("\u65E0\u6CD5\u786E\u8BA4\u5B98\u7F51\u4ED3\u5E93\u7248\u672C");
+      empty = branches.length === 0 && tags.length === 0 && remote.empty_repo === true;
+      if (!empty) {
+        if (remote.default_branch !== "main") throw Error("GIT_CONFIRMATION_REQUIRED\uFF1A\u5B98\u7F51\u4E91\u7AEF\u5206\u652F\u4E0D\u662Fmain\uFF0C\u8BF7\u7528\u6237\u786E\u8BA4\u540E\u901A\u8FC7\u7CFB\u7EDFGit\u5904\u7406");
+        branch = await this.api(c, "GET", `/projects/${remote.id}/repository/branches/main`);
+        if (!/^[0-9a-f]{40}$/.test(branch?.commit?.id || "")) throw Error("\u5B98\u7F51\u4ED3\u5E93main\u6CA1\u6709\u6709\u6548\u7248\u672C");
+        if (branch.can_push === false && input.intent !== "bind") throw Error("Token \u65E0\u6743\u63A8\u9001\u5B98\u7F51main\u5206\u652F");
+      }
+    }
+    await step("\u9A8C\u8BC1\u672C\u5730\u5206\u652F\u4E0E\u9879\u76EE", async () => {
+      await assertMainRepository(view.projectDirectory);
+    });
+    const local = await this.git.resolveRef({ ...this.options(view), ref: "refs/heads/main" });
+    return { c, view, user, group, deployment, deployBranch, remote, branch, empty, url, local, checks };
+  }
+  async ready(view) {
+    if (!view.project.pages.length || view.project.pages.some((page) => page.status !== "ready")) throw Error("\u5B98\u7F51\u9875\u9762\u5C1A\u672A\u5168\u90E8\u5B8C\u6210\uFF0C\u8BF7\u5148\u5B8C\u6210\u751F\u6210\u548C\u6821\u9A8C");
+    const tasks = this.store.database.sql.prepare("SELECT path FROM image_tasks WHERE project_id=? AND status='generating'").all(view.project.id);
+    if (tasks.length) throw Error("\u56FE\u7247\u751F\u6210\u5C1A\u672A\u5168\u90E8\u5B8C\u6210\uFF0C\u4E0D\u80FD\u53D1\u5E03");
+    for (const page of view.project.pages) {
+      const path = this.store.path(page.path, true), html2 = await readFile2(join2(view.directory, path), "utf8");
+      if (!/<html\b/i.test(html2) || !/<\/body>/i.test(html2) || !/<\/html>\s*$/i.test(html2)) throw Error("\u9875\u9762\u6E90\u7801\u672A\u5B8C\u6574\u8F93\u51FA\uFF1A" + path);
+      for (const match of html2.matchAll(/\b(?:src|href)\s*=\s*["']([^"']+\.(?:js|css|png|jpe?g|webp|avif|svg|ico))(?:\?[^"']*)?["']/gi)) {
+        if (/^(?:[a-z]+:|\/\/)/i.test(match[1]) || /[${}]/.test(match[1])) continue;
+        const url = new URL(match[1], "https://site.invalid/" + path);
+        const file = decodeURIComponent(url.pathname.slice(1));
+        this.store.path(file);
+        await stat(join2(view.directory, file));
+      }
+    }
+  }
+  async ancestor(ctx) {
+    if (!ctx.branch || ctx.branch.commit.id === ctx.local) return;
+    await this.git.fetch({ ...this.options(ctx.view), http: this.io.http(ctx.c, this.signal(ctx.c)), url: ctx.url, remote: "origin", ref: "main", singleBranch: true, onAuth: () => ({ username: "oauth2", password: ctx.c.GITLAB_TOKEN }) });
+    if (!await this.git.isDescendent({ ...this.options(ctx.view), oid: ctx.local, ancestor: ctx.branch.commit.id })) throw Error("GIT_CONFIRMATION_REQUIRED\uFF1A\u672C\u5730\u4E0E\u4E91\u7AEF\u7248\u672C\u51B2\u7A81\u6216\u4E91\u7AEF\u9886\u5148\uFF0C\u8BF7\u5148\u5411\u7528\u6237\u786E\u8BA4\u5408\u5E76\u7B49\u65B9\u6848\uFF0C\u518D\u7528\u7CFB\u7EDFGit\u5904\u7406\uFF1B\u4E0D\u4F1A\u5F3A\u63A8");
+  }
+  async origin(view) {
+    return await this.git.getConfig({ ...this.options(view), path: "remote.origin.url" }) || "";
+  }
+  async snapshot(view) {
+    return { files: await fileFingerprint(view.projectDirectory), index: createHash2("sha256").update(await readFile2(join2(view.projectDirectory, ".git/index")).catch(() => Buffer.alloc(0))).digest("hex") };
+  }
+  async trackedSource(view) {
+    const tracked = new Set(await this.git.listFiles(this.options(view)));
+    const scan = async (folder) => {
+      for (const entry of await readdir(folder, { withFileTypes: true })) {
+        const file = join2(folder, entry.name);
+        if (entry.isDirectory()) await scan(file);
+        else if (entry.isFile() && !tracked.has(relative(view.projectDirectory, file).split(sep).join("/"))) throw Error("\u6E90\u7801\u672A\u88ABGit\u8DDF\u8E2A\uFF08\u53EF\u80FD\u88AB.gitignore\u6392\u9664\uFF09\uFF0C\u4E0D\u80FD\u53D1\u5E03\uFF1A" + relative(view.directory, file));
+      }
+    };
+    await scan(view.directory);
+  }
+  async prepare(raw, replacingOwner) {
+    const input = { ...raw, domain: websiteDomain(raw.domain) };
+    if (input.intent === "deploy" && !["test", "production"].includes(input.environment || "")) throw Error("\u5FC5\u987B\u660E\u786E\u9009\u62E9\u6D4B\u8BD5\u6216\u6B63\u5F0F\u73AF\u5883");
+    const id = randomUUID2(), expires = Date.now() + 10 * 60 * 1e3;
+    await this.store.exclusive(input.project_id, async () => {
+      if (replacingOwner) this.checkpoint(replacingOwner);
+      const inserted = this.store.database.sql.prepare("INSERT INTO deployment_locks VALUES (?,?,?,'\u68C0\u67E5\u4E2D') ON CONFLICT(project_id) DO UPDATE SET owner=excluded.owner,expires_at=excluded.expires_at,stage=excluded.stage WHERE deployment_locks.expires_at<=? OR deployment_locks.owner=?").run(input.project_id, id, expires, Date.now(), replacingOwner || "");
+      if (!inserted.changes) throw Error("\u9879\u76EE\u5DF2\u6709\u90E8\u7F72\u4EFB\u52A1\u6216\u786E\u8BA4\u7A97\u53E3\uFF0C\u8BF7\u5148\u5B8C\u6210\u6216\u53D6\u6D88");
+      this.store.database.sql.prepare("INSERT INTO deployment_requests(id,project_id,thread_id,data,expires_at,used) VALUES (?,?,?,?,?,1)").run(id, input.project_id, input.actor, "{}", expires);
+    });
+    const stop = this.begin(id);
+    try {
+      await this.store.setDomain(input.project_id, input.domain, id);
+      const ctx = await this.context(input, id), origin = await this.origin(ctx.view);
+      if (input.intent === "create" && ctx.remote) throw Error("\u5B98\u7F51\u4ED3\u5E93\u5DF2\u5B58\u5728\uFF0C\u8BF7\u4F7F\u7528\u62C9\u53D6/\u7ED1\u5B9A");
+      let kind = input.intent === "deploy" ? "publish" : input.intent;
+      if (!ctx.remote) kind = "create";
+      else {
+        const row = this.store.database.sql.prepare("SELECT value FROM settings WHERE key=?").get("gitlab-binding:" + input.project_id);
+        const binding = row ? JSON.parse(row.value) : null;
+        if (input.intent === "bind" || origin !== ctx.url || binding?.repository_id !== ctx.remote.id || binding?.repository !== ctx.url) kind = "bind";
+      }
+      if (input.intent === "deploy" || input.intent === "push") await this.ready(ctx.view);
+      if (kind !== "bind" && kind !== "create") await this.ancestor(ctx);
+      const matrix = await this.git.statusMatrix(this.options(ctx.view));
+      const snapshot = await this.snapshot(ctx.view);
+      const plan = { ...input, id, kind, config: settingsDigest(ctx.c), ...snapshot, local: ctx.local, remote: ctx.branch?.commit.id || null, deploy: ctx.deployBranch.commit.id, repository: ctx.url, deploy_repository: gitlabHost(ctx.c.GITLAB_HOST) + "/" + gitlabPath(ctx.c.GITLAB_WEBSITE_DEPLOY_DIR, gitlabHost(ctx.c.GITLAB_HOST)), deploy_branch: ctx.c.GITLAB_DEFAULT_BRANCH, gitlab_user: ctx.user.username, uncommitted: matrix.some(([, head, work, stage]) => head !== work || head !== stage), choices: kind === "bind" && !ctx.empty && ctx.local !== ctx.branch?.commit.id ? ["local", "cloud"] : ["confirm"], checks: ctx.checks, expires_at: expires };
+      assertEditable(this.store.database, input.project_id, id);
+      this.checkpoint(id);
+      this.store.database.sql.prepare("UPDATE deployment_requests SET data=?,used=0 WHERE id=? AND used=1").run(JSON.stringify(plan), id);
+      this.stage(input.project_id, id, "\u7B49\u5F85\u7528\u6237\u786E\u8BA4");
+      return { status: "confirmation_required", challenge: plan };
+    } catch (error) {
+      this.release(input.project_id, id);
+      if (this.cancelled(id)) return { status: "cancelled", message: "\u53D1\u5E03\u4EFB\u52A1\u5DF2\u53D6\u6D88\uFF0C\u672A\u521B\u5EFA\u53D1\u5E03\u6807\u7B7E" };
+      const token = (await this.settings.get()).GITLAB_TOKEN;
+      throw Error(error.message.replaceAll(token || "\0", "[REDACTED]"));
+    } finally {
+      stop();
+    }
+  }
+  async bind(view, url) {
+    await this.git.addRemote({ ...this.options(view), remote: "origin", url, force: true });
+  }
+  async cloud(ctx, owner) {
+    const metadata = await realpath(ctx.view.metadataDirectory), state = await realpath(this.store.stateRoot);
+    const inside = (root, target) => {
+      const rel = relative(root, target);
+      if (rel === ".." || rel.startsWith(".." + sep) || isAbsolute(rel)) throw Error("\u5907\u4EFD\u8DEF\u5F84\u8D8A\u754C");
+    };
+    inside(state, metadata);
+    await mkdir2(join2(metadata, "gitlab-backups"), { recursive: true });
+    const parent = await realpath(join2(metadata, "gitlab-backups"));
+    inside(metadata, parent);
+    const backup = join2(parent, randomUUID2()), stage = join2(backup, "cloud");
+    await mkdir2(backup, { recursive: true });
+    await this.git.clone({ fs, dir: stage.replaceAll("\\", "/"), http: this.io.http(ctx.c, this.signal(ctx.c)), url: ctx.url, ref: "main", singleBranch: true, onAuth: () => ({ username: "oauth2", password: ctx.c.GITLAB_TOKEN }) });
+    this.checkpoint(owner);
+    if (!(await lstat(join2(stage, "src"))).isDirectory() || !(await lstat(join2(stage, "README.md"))).isFile()) throw Error("\u4E91\u7AEF\u4E0D\u662F\u5F53\u524Dsrc/README\u9879\u76EE\u683C\u5F0F\uFF0C\u4E0D\u8986\u76D6\u672C\u5730");
+    await mkdir2(join2(stage, "material"), { recursive: true });
+    await mkdir2(join2(stage, "src/images"), { recursive: true });
+    await assertMainRepository(stage);
+    const pages = [];
+    const walk = async (folder) => {
+      for (const entry of await readdir(folder, { withFileTypes: true })) {
+        const file = join2(folder, entry.name);
+        if (entry.isDirectory()) await walk(file);
+        else if (/\.html?$/i.test(entry.name)) {
+          const html2 = await readFile2(file, "utf8");
+          if (!/<\/html>\s*$/i.test(html2)) throw Error("\u4E91\u7AEF\u9875\u9762\u4E0D\u5B8C\u6574");
+          pages.push({ path: relative(join2(stage, "src"), file).split(sep).join("/"), title: html2.match(/<title[^>]*>(.*?)<\/title>/is)?.[1] || entry.name, status: "ready", version: 1 });
+        }
+      }
+    };
+    await walk(join2(stage, "src"));
+    if (!pages.length) throw Error("\u4E91\u7AEF\u6CA1\u6709\u53EF\u7528\u9875\u9762\uFF0C\u4E0D\u8986\u76D6\u672C\u5730");
+    const backupSource = join2(backup, "local");
+    for (const path of [stage, backupSource]) inside(metadata, path);
+    assertEditable(this.store.database, ctx.view.project.id, owner);
+    await writeFile2(join2(backup, "project.json"), JSON.stringify(ctx.view.project, null, 2));
+    this.checkpoint(owner);
+    await rename2(ctx.view.projectDirectory, backupSource);
+    try {
+      await rename2(stage, ctx.view.projectDirectory);
+    } catch (error) {
+      await rename2(backupSource, ctx.view.projectDirectory);
+      throw error;
+    }
+    const project = { ...ctx.view.project, pages, hasPreview: true, hasPublished: true, revision: randomUUID2(), updatedAt: (/* @__PURE__ */ new Date()).toISOString() };
+    try {
+      this.store.database.save(project);
+      await writeFile2(join2(ctx.view.metadataDirectory, "project.json"), JSON.stringify(project, null, 2));
+      this.store.database.sql.prepare("DELETE FROM resources WHERE project_id=?").run(project.id);
+      this.store.database.sql.prepare("DELETE FROM image_tasks WHERE project_id=?").run(project.id);
+    } catch (error) {
+      await rename2(ctx.view.projectDirectory, join2(backup, "failed-cloud"));
+      await rename2(backupSource, ctx.view.projectDirectory);
+      this.store.database.save(ctx.view.project);
+      await writeFile2(join2(ctx.view.metadataDirectory, "project.json"), JSON.stringify(ctx.view.project, null, 2));
+      throw error;
+    }
+    return backup;
+  }
+  async execute(id, actor, decision, expectedIntent, expectedProject) {
+    const row = this.store.database.sql.prepare("SELECT * FROM deployment_requests WHERE id=?").get(id);
+    if (!row || row.thread_id !== actor || row.used || row.expires_at < Date.now() || expectedProject && row.project_id !== expectedProject) throw Error("\u786E\u8BA4\u8BF7\u6C42\u65E0\u6548\u3001\u8FC7\u671F\u6216\u5DF2\u7ECF\u4F7F\u7528\uFF0C\u8BF7\u91CD\u65B0\u68C0\u67E5");
+    const plan = JSON.parse(row.data);
+    if (expectedIntent && plan.intent !== expectedIntent) throw Error("\u786E\u8BA4\u8BF7\u6C42\u4E0E\u5F53\u524D\u64CD\u4F5C\u4E0D\u5339\u914D");
+    if (!plan.kind || !plan.choices.includes(decision)) throw Error("\u5FC5\u987B\u9009\u62E9\u5F53\u524D\u786E\u8BA4\u7A97\u53E3\u63D0\u4F9B\u7684\u9009\u9879");
+    assertEditable(this.store.database, plan.project_id, id);
+    if (!this.store.database.sql.prepare("UPDATE deployment_requests SET used=1 WHERE id=? AND used=0").run(id).changes) throw Error("\u786E\u8BA4\u5DF2\u4F7F\u7528");
+    const stop = this.begin(id);
+    try {
+      const ctx = await this.context(plan, id), snapshot = await this.snapshot(ctx.view);
+      if (settingsDigest(ctx.c) !== plan.config || snapshot.files !== plan.files || snapshot.index !== plan.index || ctx.local !== plan.local || (ctx.branch?.commit.id || null) !== plan.remote || ctx.deployBranch.commit.id !== plan.deploy || ctx.url !== plan.repository) throw Error("\u914D\u7F6E\u3001\u672C\u5730\u6216\u4E91\u7AEF\u7248\u672C\u5DF2\u7ECF\u53D8\u5316\uFF0C\u5FC5\u987B\u91CD\u65B0\u68C0\u67E5\u5E76\u786E\u8BA4");
+      this.checkpoint(id);
+      let result;
+      if (plan.kind === "create") {
+        if (ctx.remote) throw Error("\u4ED3\u5E93\u5DF2\u88AB\u521B\u5EFA\uFF0C\u5FC5\u987B\u91CD\u65B0\u68C0\u67E5");
+        this.stage(plan.project_id, id, "\u521B\u5EFA\u5B98\u7F51\u4ED3\u5E93");
+        const created = await this.api(ctx.c, "POST", "/projects", { name: plan.domain, path: plan.domain, namespace_id: ctx.group.id, visibility: "private", initialize_with_readme: false });
+        if (!Number.isInteger(created.id) || created.empty_repo !== true || created.path_with_namespace !== ctx.group.full_path + "/" + plan.domain || created.http_url_to_repo !== ctx.url) throw Error("\u521B\u5EFA\u7ED3\u679C\u4E0E\u786E\u8BA4\u7684\u7A7A\u5B98\u7F51\u4ED3\u5E93\u4E0D\u4E00\u81F4\uFF0C\u8BF7\u4EBA\u5DE5\u6838\u5BF9");
+        this.checkpoint(id);
+        await this.bind(ctx.view, ctx.url);
+        result = { status: "created", repository: ctx.url, repository_id: created.id };
+      } else if (plan.kind === "bind") {
+        this.stage(plan.project_id, id, decision === "cloud" ? "\u5907\u4EFD\u672C\u5730\u5E76\u540C\u6B65\u4E91\u7AEF" : "\u4FDD\u7559\u672C\u5730\u5E76\u7ED1\u5B9A\u4ED3\u5E93");
+        const backup = decision === "cloud" ? await this.cloud(ctx, id) : void 0;
+        this.checkpoint(id);
+        await this.bind(ctx.view, ctx.url);
+        result = { status: "bound", strategy: decision === "cloud" ? "cloud" : "local", repository: ctx.url, repository_id: ctx.remote.id, backup };
+      } else {
+        if (!ctx.remote || await this.origin(ctx.view) !== ctx.url) throw Error("\u5B98\u7F51\u4ED3\u5E93\u5C1A\u672A\u6B63\u786E\u7ED1\u5B9A");
+        if (plan.intent === "deploy" || plan.kind === "push") await this.ready(ctx.view);
+        await this.ancestor(ctx);
+        this.stage(plan.project_id, id, "\u63D0\u4EA4\u672C\u5730\u7248\u672C");
+        const commit = await commitProject(ctx.view.projectDirectory, "Update website for " + plan.domain);
+        this.checkpoint(id);
+        const local = await this.git.resolveRef({ ...this.options(ctx.view), ref: "refs/heads/main" });
+        if (plan.kind === "commit") result = { status: "committed", git: commit };
+        else {
+          await this.trackedSource(ctx.view);
+          if (await fileFingerprint(ctx.view.projectDirectory) !== plan.files) throw Error("\u53D1\u5E03\u671F\u95F4\u9879\u76EE\u6587\u4EF6\u53D1\u751F\u53D8\u5316\uFF0C\u5DF2\u505C\u6B62");
+          this.stage(plan.project_id, id, "\u6838\u5BF9\u5E76\u63A8\u9001\u5B98\u7F51main");
+          const fresh = await this.api(ctx.c, "GET", `/projects/${ctx.remote.id}/repository/branches/main`, void 0, true);
+          if ((fresh?.commit?.id || null) !== plan.remote) throw Error("GIT_CONFIRMATION_REQUIRED\uFF1A\u4E91\u7AEF\u7248\u672C\u53D1\u751F\u53D8\u5316\uFF0C\u8BF7\u5148\u786E\u8BA4\u5E76\u4F7F\u7528\u7CFB\u7EDFGit\u5904\u7406");
+          if (fresh?.commit?.id !== local) try {
+            await this.git.push({ ...this.options(ctx.view), http: this.io.http(ctx.c, this.signal(ctx.c)), url: ctx.url, remote: "origin", ref: "main", remoteRef: "main", force: false, onAuth: () => ({ username: "oauth2", password: ctx.c.GITLAB_TOKEN }) });
+          } catch (error) {
+            if (/non.?fast.?forward|push.?rejected|conflict|diverg/i.test(error.message + " " + error.code)) throw Error("GIT_CONFIRMATION_REQUIRED\uFF1A\u4E91\u7AEF\u62D2\u7EDD\u975E\u5FEB\u8FDB\u63A8\u9001\uFF0C\u8BF7\u7528\u6237\u786E\u8BA4\u540E\u4F7F\u7528\u7CFB\u7EDFGit\u5904\u7406\uFF0C\u4E0D\u5F3A\u63A8");
+            throw error;
+          }
+          const verified = await this.api(ctx.c, "GET", `/projects/${ctx.remote.id}/repository/branches/main`);
+          if (verified.commit?.id !== local) throw Error("\u63A8\u9001\u540E\u4E91\u7AEF\u7248\u672C\u4E0E\u672C\u5730\u4E0D\u4E00\u81F4\uFF0C\u672A\u53D1\u5E03");
+          result = { status: "pushed", oid: local, repository: ctx.url };
+          if (plan.kind === "publish") {
+            this.stage(plan.project_id, id, "\u6700\u7EC8\u53D1\u5E03\u6838\u9A8C");
+            const target = await this.api(ctx.c, "GET", `/projects/${ctx.deployment.id}/repository/branches/${encodeURIComponent(ctx.c.GITLAB_DEFAULT_BRANCH)}`);
+            if (target.commit?.id !== plan.deploy || await fileFingerprint(ctx.view.projectDirectory) !== plan.files) throw Error("\u53D1\u5E03\u57FA\u51C6\u6216\u672C\u5730\u6587\u4EF6\u53D8\u5316\uFF0C\u8BF7\u91CD\u65B0\u786E\u8BA4");
+            const tag = releaseName(plan.environment, this.now()), path = `/projects/${ctx.deployment.id}/repository/tags`;
+            if (await this.api(ctx.c, "GET", path + "/" + encodeURIComponent(tag), void 0, true)) throw Error("\u8BE5\u5206\u949F\u7684\u53D1\u5E03\u6807\u7B7E\u5DF2\u5B58\u5728\uFF0C\u4E0D\u8986\u76D6\u3001\u4E0D\u590D\u7528\uFF1B\u8BF7\u4E0B\u4E00\u5206\u949F\u91CD\u65B0\u786E\u8BA4");
+            assertEditable(this.store.database, plan.project_id, id);
+            const source = await this.api(ctx.c, "GET", `/projects/${ctx.remote.id}/repository/branches/main`);
+            if (source.commit?.id !== local) throw Error("\u5B98\u7F51\u4E91\u7AEF\u7248\u672C\u518D\u6B21\u53D8\u5316\uFF0C\u672A\u53D1\u5E03");
+            await assertMainRepository(ctx.view.projectDirectory);
+            if (await this.git.resolveRef({ ...this.options(ctx.view), ref: "refs/heads/main" }) !== local || await this.origin(ctx.view) !== ctx.url || settingsDigest(await this.settings.get()) !== plan.config) throw Error("\u672C\u5730Git\u6216\u914D\u7F6E\u5728\u53D1\u5E03\u671F\u95F4\u53D8\u5316\uFF0C\u672A\u53D1\u5E03");
+            const matrix = await this.git.statusMatrix(this.options(ctx.view));
+            if (matrix.some(([, head, work, stage]) => head !== work || head !== stage)) throw Error("\u53D1\u5E03\u671F\u95F4\u4EA7\u751F\u4E86\u672A\u63D0\u4EA4\u6216\u6682\u5B58\u4FEE\u6539\uFF0C\u672A\u53D1\u5E03");
+            let tagged;
+            this.checkpoint(id);
+            if (!this.store.database.sql.prepare("UPDATE deployment_requests SET used=3 WHERE id=? AND used=1").run(id).changes) throw Error("DEPLOYMENT_CANCELLED\uFF1A\u53D1\u5E03\u4EFB\u52A1\u5DF2\u53D6\u6D88");
+            this.stage(plan.project_id, id, "\u521B\u5EFA\u53D1\u5E03\u6807\u7B7E\uFF08\u4E0D\u53EF\u53D6\u6D88\uFF09");
+            try {
+              tagged = await this.api(ctx.c, "POST", path, { tag_name: tag, ref: target.commit.id, message: plan.domain });
+            } catch (error) {
+              throw Error(`\u53D1\u5E03\u6807\u7B7E ${tag} \u7684\u8BF7\u6C42\u672A\u80FD\u786E\u8BA4\uFF0C\u8BF7\u5148\u4EBA\u5DE5\u6838\u5BF9\u8FDC\u7AEF\u6807\u7B7E\uFF0C\u4E0D\u81EA\u52A8\u91CD\u590D\u53D1\u5E03\u3002${error.message}`);
+            }
+            if (tagged.name !== tag || tagged.message?.trim() !== plan.domain || tagged.commit?.id !== target.commit.id) throw Error("\u53D1\u5E03API\u7ED3\u679C\u4E0D\u7B26\u5408\u786E\u8BA4\u5185\u5BB9\uFF1B\u8BF7\u4EBA\u5DE5\u6838\u5BF9\u6807\u7B7E\uFF0C\u4E0D\u80FD\u81EA\u52A8\u91CD\u590D\u53D1\u5E03");
+            result = { status: "deployment_triggered", tag, domain: plan.domain, environment: plan.environment, website_oid: local, deploy_oid: target.commit.id, repository: ctx.url, message: "\u53D1\u5E03\u6807\u7B7E\u5DF2\u521B\u5EFA\uFF1B\u7F51\u7AD9\u4E0A\u7EBF\u7ED3\u679C\u7531GitLab\u90E8\u7F72\u6D41\u6C34\u7EBF\u51B3\u5B9A" };
+            this.save(plan.project_id, result);
+          }
+        }
+      }
+      if (["create", "bind"].includes(plan.kind)) {
+        this.save(plan.project_id, { ...result, domain: plan.domain });
+        this.store.database.sql.prepare("INSERT INTO settings VALUES (?,?) ON CONFLICT(key) DO UPDATE SET value=excluded.value").run("gitlab-binding:" + plan.project_id, JSON.stringify({ repository: ctx.url, repository_id: result.repository_id, domain: plan.domain }));
+      }
+      this.checkpoint(id);
+      if (["create", "bind"].includes(plan.kind) && plan.intent === "deploy") return await this.prepare({ project_id: plan.project_id, actor, intent: "deploy", domain: plan.domain, environment: plan.environment }, id);
+      this.release(plan.project_id, id);
+      return result;
+    } catch (error) {
+      if (this.cancelled(id)) {
+        const result = { status: "cancelled", message: "\u53D1\u5E03\u4EFB\u52A1\u5DF2\u53D6\u6D88\uFF0C\u5DF2\u5B8C\u6210\u7684\u63D0\u4EA4\u6216\u540C\u6B65\u4E88\u4EE5\u4FDD\u7559\uFF0C\u672A\u521B\u5EFA\u53D1\u5E03\u6807\u7B7E" };
+        this.save(plan.project_id, result);
+        return result;
+      }
+      const token = (await this.settings.get()).GITLAB_TOKEN;
+      const message = error.message.replaceAll(token || "\0", "[REDACTED]");
+      this.save(plan.project_id, { status: "failed", message });
+      throw Error(message);
+    } finally {
+      stop();
+      this.release(plan.project_id, id);
+    }
+  }
+};
+
+// server/gitlab-tools.ts
+function registerGitLabTools(server2, workflow, store) {
+  let formUnavailable = false;
+  const ask = async (message, properties, required2) => {
+    const capabilities = server2.server.getClientCapabilities();
+    if (formUnavailable || !capabilities?.elicitation || capabilities.elicitation.url && !capabilities.elicitation.form) return null;
+    try {
+      return await server2.server.elicitInput({ ...capabilities.elicitation.form ? { mode: "form" } : {}, message, requestedSchema: { type: "object", properties, required: required2 } });
+    } catch (error) {
+      if ([-32601, -32602].includes(error.code)) {
+        formUnavailable = true;
+        return null;
+      }
+      throw error;
+    }
+  };
+  const confirm = async (initial, actor, intent, projectId) => {
+    let result = initial;
+    while (result.status === "confirmation_required") {
+      const p2 = result.challenge;
+      let answer;
+      try {
+        answer = await ask(`\u786E\u8BA4 ${p2.kind}\uFF1A${p2.domain}\uFF1B\u4ED3\u5E93 ${p2.repository}\uFF1B\u73AF\u5883 ${p2.environment || "\u4E0D\u53D1\u5E03"}\uFF1B\u90E8\u7F72\u4ED3\u5E93 ${p2.deploy_repository} / ${p2.deploy_branch}\uFF1B\u672C\u5730 ${p2.local}\u3001\u4E91\u7AEF ${p2.remote || "\u7A7A\u4ED3\u5E93"}\u3002\u53D1\u5E03\u65F6\u4F1A\u63D0\u4EA4\u6700\u65B0\u6587\u4EF6\u5E76\u666E\u901A\u63A8\u9001main\u3002cloud\u5C06\u5148\u5907\u4EFD\u518D\u8986\u76D6\u672C\u5730\uFF1B\u53D1\u5E03\u4F1A\u89E6\u53D1\u90E8\u7F72\u6D41\u6C34\u7EBF\u3002`, { approved: { type: "boolean", title: "\u6211\u786E\u8BA4\u6267\u884C\u4E0A\u8FF0\u64CD\u4F5C" }, ...p2.choices.length > 1 ? { decision: { type: "string", title: "\u5185\u5BB9\u6765\u6E90", enum: p2.choices } } : {} }, ["approved", ...p2.choices.length > 1 ? ["decision"] : []]);
+      } catch (error) {
+        workflow.cancel(projectId, actor, p2.id);
+        throw error;
+      }
+      if (!answer) return { ...result, next_action: "\u5FC5\u987B\u4F7F\u7528Codex\u63D0\u95EE\u5BF9\u8BDD\u6846\u5C55\u793Achallenge\u5E76\u7B49\u5F85\u7528\u6237\u786E\u8BA4\uFF1B\u786E\u8BA4\u540E\u643A\u5E26confirmation_id=challenge.id\u4E0Edecision\u7EE7\u7EED\u3002\u4E0D\u5F97\u81EA\u884C\u6279\u51C6\uFF1B\u53D6\u6D88\u65F6decision=cancel\u3002" };
+      if (answer.action !== "accept" || answer.content?.approved !== true) return workflow.cancel(projectId, actor, p2.id);
+      result = await workflow.execute(p2.id, actor, String(answer.content.decision || "confirm"), intent, projectId);
+    }
+    return result;
+  };
+  const names = { create: "website_gitlab_create", bind: "website_gitlab_bind", commit: "website_gitlab_commit", push: "website_gitlab_push", deploy: "website_deploy" };
+  for (const intent of Object.keys(names)) server2.registerTool(names[intent], {
+    description: `${intent}: \u4E25\u683C\u6838\u9A8C\u914D\u7F6E\u3001VPN/IP\u3001Token\u8EAB\u4EFD\u3001\u5206\u7EC4\u3001\u90E8\u7F72\u4ED3\u5E93\u548C\u5B98\u7F51\u4ED3\u5E93\u3002\u5148\u51C6\u5907\u786E\u8BA4\u8BF7\u6C42\uFF0C\u4E0D\u9ED8\u8BA4\u53D1\u5E03\u3002\u521B\u5EFA\u4ED3\u5E93\u3001\u57DF\u540D\u3001\u4E91\u7AEF\u8986\u76D6\u548C\u53D1\u5E03\u73AF\u5883\u5FC5\u987B\u7ECFCodex\u786E\u8BA4\u5BF9\u8BDD\u6846\uFF1B\u652F\u6301MCP elicitation\uFF0C\u65E0\u6B64\u80FD\u529B\u65F6\u8FD4\u56DEconfirmation_required\uFF0CAgent\u5FC5\u987B\u8C03\u7528Codex\u63D0\u95EE\u5DE5\u5177\u53D6\u5F97\u771F\u5B9E\u7528\u6237\u7B54\u590D\u540E\u624D\u80FD\u643A\u5E26confirmation_id/decision\u7EE7\u7EED\uFF0C\u4E0D\u5F97\u81EA\u884C\u4EE3\u7B54\u3002\u975E\u5FEB\u8FDB/\u51B2\u7A81\u53EA\u63D0\u793A\u7528\u6237\u786E\u8BA4\u540E\u7528\u7CFB\u7EDFGit\u5904\u7406\uFF0C\u4E0D\u5F3A\u63A8\u3002deploy\u4EC5\u4EE5API\u5728\u90E8\u7F72\u4ED3\u5E93\u521B\u5EFA\u4E00\u4E2A\u5B98\u7F51\u5BF9\u5E94\u7684\u5317\u4EAC\u65F6\u95F4release/test\u6807\u7B7E\uFF0C\u8FD4\u56DE\u89E6\u53D1\u7ED3\u679C\u4E0D\u4EE3\u8868\u7F51\u7AD9\u5DF2\u4E0A\u7EBF\u3002`,
+    inputSchema: { action: external_exports.enum(["run", "status", "cancel"]).default("run"), thread_id: external_exports.string(), project_id: external_exports.string(), domain: external_exports.string().optional(), environment: external_exports.enum(["test", "production"]).optional(), confirmation_id: external_exports.string().optional(), decision: external_exports.enum(["confirm", "local", "cloud", "cancel"]).optional() },
+    annotations: { readOnlyHint: false, destructiveHint: true, openWorldHint: true }
+  }, async (input) => {
+    try {
+      if (store.database.binding(input.thread_id)?.projectId !== input.project_id) throw Error("\u90E8\u7F72\u5DE5\u5177\u53EA\u80FD\u64CD\u4F5C\u5F53\u524D\u771F\u5B9E\u4F1A\u8BDD\u7ED1\u5B9A\u7684\u7F51\u7AD9\u9879\u76EE");
+      if (input.action === "status") return { content: [{ type: "text", text: JSON.stringify(workflow.status(input.project_id)) }] };
+      if (input.action === "cancel") return { content: [{ type: "text", text: JSON.stringify(workflow.cancel(input.project_id, input.thread_id, input.confirmation_id)) }] };
+      if (input.confirmation_id) {
+        if (input.decision === "cancel") return { content: [{ type: "text", text: JSON.stringify(workflow.cancel(input.project_id, input.thread_id, input.confirmation_id)) }] };
+        const challenge = workflow.challenge(input.confirmation_id, input.thread_id, input.project_id);
+        const capabilities = server2.server.getClientCapabilities();
+        const native = !formUnavailable && !!capabilities?.elicitation && (!capabilities.elicitation.url || !!capabilities.elicitation.form);
+        const result2 = native ? { status: "confirmation_required", challenge } : await workflow.execute(input.confirmation_id, input.thread_id, input.decision || "", intent, input.project_id);
+        return { content: [{ type: "text", text: JSON.stringify(await confirm(result2, input.thread_id, intent, input.project_id)) }] };
+      }
+      let domain = input.domain, environment = input.environment;
+      if (!domain || intent === "deploy" && !environment) {
+        const answer = await ask("\u786E\u8BA4\u8981\u64CD\u4F5C\u7684\u771F\u5B9E\u5B98\u7F51\u57DF\u540D\uFF1B\u90E8\u7F72\u65F6\u8BF7\u9009\u62E9\u6D4B\u8BD5\u6216\u6B63\u5F0F\u73AF\u5883\u3002", { domain: { type: "string", title: "\u771F\u5B9E\u5B98\u7F51\u57DF\u540D\uFF0C\u4F8B\u5982 www.example.com" }, ...intent === "deploy" ? { environment: { type: "string", title: "\u53D1\u5E03\u73AF\u5883", enum: ["test", "production"], description: "test\u4E3A\u6D4B\u8BD5\u73AF\u5883\uFF0Cproduction\u4E3A\u6B63\u5F0F\u73AF\u5883" } } : {} }, ["domain", ...intent === "deploy" ? ["environment"] : []]);
+        if (!answer) return { content: [{ type: "text", text: JSON.stringify({ status: "input_required", questions: ["\u8BF7\u5728Codex\u786E\u8BA4\u5BF9\u8BDD\u6846\u8BE2\u95EE\u771F\u5B9Ewww\u57DF\u540D", ...intent === "deploy" ? ["\u8BF7\u5728\u786E\u8BA4\u53D1\u5E03\u5BF9\u8BDD\u6846\u8BE2\u95EE\u6D4B\u8BD5/\u6B63\u5F0F\u73AF\u5883"] : []], next_action: "\u4F7F\u7528Codex\u63D0\u95EE\u5DE5\u5177\u7B49\u5F85\u7528\u6237\u56DE\u7B54\uFF0C\u518D\u8C03\u7528\u672C\u5DE5\u5177\uFF1B\u4E0D\u80FD\u81EA\u52A8\u586B\u5199\u786E\u8BA4\u7ED3\u679C" }) }] };
+        if (answer.action !== "accept") return { content: [{ type: "text", text: JSON.stringify({ status: "cancelled" }) }] };
+        domain = String(answer.content?.domain || "");
+        environment = answer.content?.environment;
+      }
+      const result = await workflow.prepare({ project_id: input.project_id, actor: input.thread_id, intent, domain, environment });
+      return { content: [{ type: "text", text: JSON.stringify(await confirm(result, input.thread_id, intent, input.project_id)) }] };
+    } catch (error) {
+      return { isError: true, content: [{ type: "text", text: error.message }] };
+    }
+  });
+}
 
 // server/r2-config.ts
 var r2Fields = ["R2_ACCOUNT_ID", "R2_BUCKET_NAME", "R2_ACCESS_KEY_ID", "R2_SECRET_ACCESS_KEY", "R2_DEPLOY_HOST"];
@@ -17087,36 +18140,112 @@ var R2Settings = class {
   }
 };
 var r2SettingsCapability = { readTool: "website_s3_settings_read", updateTool: "website_s3_settings_update" };
-function registerR2Settings(server2, settings) {
+function registerR2Settings(server2, settings2) {
   const read = async () => {
-    const values = await settings.public();
-    return { schema: { type: "object", properties: Object.fromEntries(r2Fields.map((name) => [name, { type: "string", title: name, readOnly: true }])) }, values, layout: [{ kind: "group", title: "S3\u914D\u7F6E", items: r2Fields.map((property) => ({ kind: "property", property })) }] };
+    const values = await settings2.public();
+    return { schema: { type: "object", properties: Object.fromEntries(r2Fields.map((name) => [name, { type: "string", title: name, readOnly: true }])) }, values, layout: [{ kind: "group", title: "\u9884\u89C8\u73AF\u5883\u914D\u7F6E", items: r2Fields.map((property) => ({ kind: "property", property })) }] };
   };
   server2.registerTool(r2SettingsCapability.readTool, { title: "\u8BFB\u53D6 S3 \u914D\u7F6E", inputSchema: {}, outputSchema: { schema: external_exports.record(external_exports.string(), external_exports.unknown()), values: external_exports.record(external_exports.string(), external_exports.string()), layout: external_exports.array(external_exports.record(external_exports.string(), external_exports.unknown())) }, annotations: { readOnlyHint: true, openWorldHint: false }, _meta: { ui: { visibility: ["app"] } } }, async () => ({ content: [], structuredContent: await read() }));
   server2.registerTool(r2SettingsCapability.updateTool, { title: "S3 \u914D\u7F6E\u53EA\u8BFB", inputSchema: { set: external_exports.record(external_exports.string(), external_exports.union([external_exports.string(), external_exports.number(), external_exports.boolean()])) }, outputSchema: { values: external_exports.record(external_exports.string(), external_exports.string()) }, annotations: { readOnlyHint: true, openWorldHint: false }, _meta: { ui: { visibility: ["app"] } } }, async () => ({ content: [{ type: "text", text: "S3 \u914D\u7F6E\u4E0D\u53EF\u4FEE\u6539\uFF0C\u5DF2\u6062\u590D\u9884\u914D\u7F6E\u503C\u3002" }], structuredContent: { values: (await read()).values } }));
 }
 
+// server/native-settings.ts
+var settingsCapability = { readTool: "website_settings_read", updateTool: "website_settings_update" };
+var defaultTestDescription = "\u53EA\u8BFB\u6D4B\u8BD5\u5DF2\u4FDD\u5B58\u914D\u7F6E\u7684\u7F51\u7EDC\u3001TLS\u3001\u8EAB\u4EFD\u3001\u5206\u7EC4\u548C\u90E8\u7F72\u4ED3\u5E93\uFF0C\u4E0D\u53D1\u5E03\u7F51\u7AD9";
+var gitlabKeys = ["GITLAB_HOST", "GITLAB_IP", "GITLAB_TOKEN", "GITLAB_WEBSITE_DIR", "GITLAB_WEBSITE_DEPLOY_DIR", "GITLAB_DEFAULT_BRANCH"];
+function registerNativeSettings(server2, settings2, save, test, r2Settings2) {
+  const output = { schema: external_exports.record(external_exports.string(), external_exports.unknown()), values: external_exports.record(external_exports.string(), external_exports.unknown()), layout: external_exports.array(external_exports.record(external_exports.string(), external_exports.unknown())).optional() };
+  let testDescription = defaultTestDescription;
+  const read = async () => {
+    const value = await settings2.public(true);
+    const r2Value = r2Settings2 ? await r2Settings2.public() : {};
+    const r2Properties = r2Settings2 ? Object.fromEntries(r2Fields.map((name) => [name, { type: "string", title: name, readOnly: true }])) : {};
+    const gitlabProperties = {
+      GITLAB_HOST: { type: "string", title: "GITLAB_HOST", description: "\u5185\u7F51 HTTP \u670D\u52A1\u586B\u5199 http://\u57DF\u540D\u6216IP:\u7AEF\u53E3\uFF1B\u4E0D\u5E26\u534F\u8BAE\u9ED8\u8BA4 HTTP\uFF0C\u53EA\u6709\u652F\u6301 HTTPS \u65F6\u624D\u586B https://" },
+      GITLAB_IP: { type: "string", title: "GITLAB_IP", description: "\u9700 OPEN VPN \u8FDE\u901A\u7684 IP\uFF1B\u534F\u8BAE\u548C\u7AEF\u53E3\u5728 GITLAB_HOST \u4E2D\u586B\u5199" },
+      GITLAB_TOKEN: { type: "string", title: "GITLAB_TOKEN", description: "GitLab Token\uFF0C\u660E\u6587\u4FDD\u5B58\u5E76\u56DE\u663E\uFF1B\u6E05\u7A7A\u540E\u4FDD\u5B58\u53EF\u5220\u9664" },
+      GITLAB_WEBSITE_DIR: { type: "string", title: "GITLAB_WEBSITE_DIR", description: "\u5B98\u7F51\u5206\u7EC4\u5730\u5740" },
+      GITLAB_WEBSITE_DEPLOY_DIR: { type: "string", title: "GITLAB_WEBSITE_DEPLOY_DIR", description: "\u90E8\u7F72\u4ED3\u5E93\u5730\u5740" },
+      GITLAB_DEFAULT_BRANCH: { type: "string", title: "GITLAB_DEFAULT_BRANCH", description: "\u90E8\u7F72\u4ED3\u5E93\u57FA\u51C6\u5206\u652F" }
+    };
+    const properties = { ...r2Properties, ...gitlabProperties };
+    const values = {
+      ...Object.fromEntries(Object.keys(r2Properties).map((key) => [key, r2Value[key] || ""])),
+      ...Object.fromEntries(Object.keys(gitlabProperties).map((key) => [key, value[key] || ""]))
+    };
+    const layout = [];
+    if (r2Settings2) layout.push({ kind: "group", title: "\u9884\u89C8\u73AF\u5883\u914D\u7F6E", items: r2Fields.map((property) => ({ kind: "property", property })) });
+    layout.push({ kind: "group", title: "\u7EBF\u4E0A\u90E8\u7F72\u914D\u7F6E", items: [...Object.keys(gitlabProperties).map((property) => ({ kind: "property", property })), { kind: "tool", tool: "website_settings_test", description: testDescription }] });
+    return { schema: { type: "object", properties }, values, layout };
+  };
+  server2.registerTool("website_settings_test", { title: "\u6D4B\u8BD5\u8FDE\u63A5", inputSchema: {}, outputSchema: { success: external_exports.boolean(), message: external_exports.string(), checks: external_exports.array(external_exports.object({ name: external_exports.string(), status: external_exports.enum(["pending", "passed", "failed", "skipped"]), detail: external_exports.string() })) }, annotations: { readOnlyHint: true, openWorldHint: true }, _meta: { ui: { visibility: ["app"] } } }, async () => {
+    const result = await test();
+    const failed = result.checks?.find((item) => item.status === "failed");
+    testDescription = result.success ? "\u6D4B\u8BD5\u8FDE\u63A5\u6210\u529F\uFF1A\u7F51\u7EDC\u3001\u8EAB\u4EFD\u4E0E\u90E8\u7F72\u4ED3\u5E93\u68C0\u67E5\u901A\u8FC7" : `\u6D4B\u8BD5\u8FDE\u63A5\u5931\u8D25\uFF08${failed?.name || "\u68C0\u67E5\u5F02\u5E38"}\uFF09\uFF1A${failed?.detail || result.message}`;
+    return { content: [{ type: "text", text: testDescription }], structuredContent: result };
+  });
+  server2.registerTool(settingsCapability.readTool, { title: "\u8BFB\u53D6\u63D2\u4EF6\u914D\u7F6E", inputSchema: {}, outputSchema: output, annotations: { readOnlyHint: true, openWorldHint: false }, _meta: { ui: { visibility: ["app"] } } }, async () => ({ content: [], structuredContent: await read() }));
+  server2.registerTool(settingsCapability.updateTool, { title: "\u66F4\u65B0\u63D2\u4EF6\u914D\u7F6E", inputSchema: { set: external_exports.object({ GITLAB_HOST: external_exports.string().optional(), GITLAB_IP: external_exports.string().optional(), GITLAB_TOKEN: external_exports.string().max(8192).optional(), GITLAB_WEBSITE_DIR: external_exports.string().optional(), GITLAB_WEBSITE_DEPLOY_DIR: external_exports.string().optional(), GITLAB_DEFAULT_BRANCH: external_exports.string().optional() }).passthrough() }, outputSchema: { values: external_exports.record(external_exports.string(), external_exports.unknown()) }, annotations: { readOnlyHint: false, openWorldHint: false }, _meta: { ui: { visibility: ["app"] } } }, async ({ set }) => {
+    try {
+      const filtered = Object.fromEntries(gitlabKeys.filter((key) => key in set && typeof set[key] === "string").map((key) => [key, set[key]]));
+      await save(filtered);
+      testDescription = defaultTestDescription;
+      return { content: [], structuredContent: { values: (await read()).values } };
+    } catch (error) {
+      return { isError: true, content: [{ type: "text", text: error.message }] };
+    }
+  });
+  return async () => {
+    const capabilities = server2.server.getClientCapabilities();
+    if (!capabilities?.elicitation || capabilities.elicitation.url && !capabilities.elicitation.form) throw Error("\u5F53\u524D\u5BBF\u4E3B\u4E0D\u652F\u6301\u63D2\u4EF6\u7EA7\u914D\u7F6E\u5F39\u7A97\uFF0C\u8BF7\u5728 Codex \u7684\u63D2\u4EF6\u8BBE\u7F6E\u4E2D\u6253\u5F00 Website Builder \u914D\u7F6E\u3002");
+    const current = await read();
+    let draft = { ...current.values }, message = "\u7EBF\u4E0A\u90E8\u7F72\u914D\u7F6E\u3002\u9009\u62E9\u4FDD\u5B58\u914D\u7F6E\uFF0C\u6216\u5148\u6D4B\u8BD5\u8FDE\u63A5\uFF08\u4E0D\u4FDD\u5B58\uFF09\u3002";
+    for (; ; ) {
+      const source = current.schema.properties;
+      const editable = Object.fromEntries(Object.entries(source).filter(([name]) => gitlabKeys.includes(name)).map(([name, value]) => [name, { ...value, default: draft[name] }]));
+      editable.operation = { type: "string", title: "\u64CD\u4F5C", enum: ["save", "test"], enumNames: ["\u4FDD\u5B58\u914D\u7F6E", "\u6D4B\u8BD5\u8FDE\u63A5\uFF08\u4E0D\u4FDD\u5B58\uFF09"], default: "save" };
+      const answer = await server2.server.elicitInput({ ...capabilities.elicitation.form ? { mode: "form" } : {}, message, requestedSchema: { type: "object", properties: editable } }, { timeout: 6e5 });
+      if (answer.action !== "accept") return { cancelled: true };
+      const input = answer.content || {};
+      draft = { ...draft, ...Object.fromEntries(Object.entries(input).filter(([key, value]) => gitlabKeys.includes(key) && typeof value === "string")) };
+      const values = Object.fromEntries(gitlabKeys.map((key) => [key, String(draft[key] || "")]));
+      try {
+        if (input.operation === "test") {
+          const report = await test(values);
+          const failed = report.checks?.find((item) => item.status === "failed");
+          message = (report.success ? "\u6D4B\u8BD5\u8FDE\u63A5\u6210\u529F\uFF1A\u7F51\u7EDC\u3001\u8EAB\u4EFD\u4E0E\u90E8\u7F72\u4ED3\u5E93\u68C0\u67E5\u901A\u8FC7" : `\u6D4B\u8BD5\u8FDE\u63A5\u5931\u8D25\uFF08${failed?.name || "\u68C0\u67E5\u5F02\u5E38"}\uFF09\uFF1A${failed?.detail || report.message}`) + "\n\u6D4B\u8BD5\u4E0D\u4F1A\u4FDD\u5B58\u914D\u7F6E\uFF1B\u9009\u62E9\u4FDD\u5B58\u914D\u7F6E\u540E\u63D0\u4EA4\uFF0C\u6216\u53D6\u6D88\u5173\u95ED\u3002";
+        } else {
+          await save(values);
+          return { saved: true };
+        }
+      } catch (error) {
+        message = error.message + "\n\u8BF7\u4FEE\u6539\u914D\u7F6E\u540E\u91CD\u65B0\u63D0\u4EA4\uFF0C\u6216\u53D6\u6D88\u5173\u95ED\u3002";
+      }
+    }
+  };
+}
+
 // server/r2-deployment.ts
-import { readdir, lstat, realpath } from "node:fs/promises";
+import { readdir as readdir2, lstat as lstat2, realpath as realpath2 } from "node:fs/promises";
 import { createReadStream } from "node:fs";
-import { createHash, randomUUID } from "node:crypto";
-import { join, relative, isAbsolute, sep, extname } from "node:path";
+import { createHash as createHash3, randomUUID as randomUUID3 } from "node:crypto";
+import { join as join3, relative as relative2, isAbsolute as isAbsolute2, sep as sep2, extname } from "node:path";
 var mime = { ".html": "text/html; charset=utf-8", ".htm": "text/html; charset=utf-8", ".js": "text/javascript; charset=utf-8", ".mjs": "text/javascript; charset=utf-8", ".css": "text/css; charset=utf-8", ".json": "application/json", ".svg": "image/svg+xml", ".png": "image/png", ".jpg": "image/jpeg", ".jpeg": "image/jpeg", ".webp": "image/webp", ".avif": "image/avif", ".gif": "image/gif", ".ico": "image/x-icon", ".woff": "font/woff", ".woff2": "font/woff2", ".ttf": "font/ttf", ".txt": "text/plain; charset=utf-8", ".xml": "application/xml", ".mp4": "video/mp4", ".pdf": "application/pdf", ".webmanifest": "application/manifest+json" };
 async function sourceSnapshot(root) {
-  const canonical = await realpath(root), files = [];
+  const canonical = await realpath2(root), files = [];
   const walk = async (folder) => {
-    for (const entry of (await readdir(folder, { withFileTypes: true })).sort((a, b) => a.name.localeCompare(b.name))) {
+    for (const entry of (await readdir2(folder, { withFileTypes: true })).sort((a, b) => a.name.localeCompare(b.name))) {
       if (entry.name === ".git" || /^\.env(?:\.|$)/.test(entry.name)) throw Error("src \u5305\u542B\u79C1\u6709\u914D\u7F6E\u76EE\u5F55\u6216\u6587\u4EF6\uFF0C\u4E0D\u80FD\u90E8\u7F72");
-      const file = join(folder, entry.name), info = await lstat(file);
+      const file = join3(folder, entry.name), info = await lstat2(file);
       if (info.isSymbolicLink()) throw Error("src \u5305\u542B\u7B26\u53F7\u94FE\u63A5\uFF0C\u4E0D\u80FD\u90E8\u7F72");
-      const actual = await realpath(file), rel = relative(canonical, actual);
-      if (rel === ".." || rel.startsWith(".." + sep) || isAbsolute(rel)) throw Error("src \u8D44\u6E90\u8DEF\u5F84\u8D8A\u754C");
+      const actual = await realpath2(file), rel = relative2(canonical, actual);
+      if (rel === ".." || rel.startsWith(".." + sep2) || isAbsolute2(rel)) throw Error("src \u8D44\u6E90\u8DEF\u5F84\u8D8A\u754C");
       if (info.isDirectory()) await walk(file);
       else if (info.isFile()) {
-        if (/(?:^|\/)(?:\.git|\.env(?:\..*)?)$/.test(rel.split(sep).join("/"))) throw Error("src \u5305\u542B\u79C1\u6709\u914D\u7F6E\u6587\u4EF6\uFF0C\u4E0D\u80FD\u90E8\u7F72");
-        const hash = createHash("sha256");
+        if (/(?:^|\/)(?:\.git|\.env(?:\..*)?)$/.test(rel.split(sep2).join("/"))) throw Error("src \u5305\u542B\u79C1\u6709\u914D\u7F6E\u6587\u4EF6\uFF0C\u4E0D\u80FD\u90E8\u7F72");
+        const hash = createHash3("sha256");
         for await (const chunk of createReadStream(file)) hash.update(chunk);
-        files.push({ path: relative(root, file).split(sep).join("/"), file, size: info.size, sha256: hash.digest("hex"), contentType: mime[extname(file).toLowerCase()] || "application/octet-stream" });
+        files.push({ path: relative2(root, file).split(sep2).join("/"), file, size: info.size, sha256: hash.digest("hex"), contentType: mime[extname(file).toLowerCase()] || "application/octet-stream" });
       }
     }
   };
@@ -17125,9 +18254,9 @@ async function sourceSnapshot(root) {
 }
 var fingerprint = (files) => JSON.stringify(files.map(({ path, size, sha256 }) => ({ path, size, sha256 })));
 var R2Deployment = class {
-  constructor(store, settings, factory) {
+  constructor(store, settings2, factory) {
     this.store = store;
-    this.settings = settings;
+    this.settings = settings2;
     this.factory = factory;
   }
   store;
@@ -17164,7 +18293,7 @@ var R2Deployment = class {
   }
   async start(project, actor) {
     if (!/^[a-z0-9](?:[a-z0-9-]{0,61}[a-z0-9])?$/.test(project)) throw Error("\u9879\u76EEID\u4E0D\u80FD\u4F5C\u4E3A\u90E8\u7F72\u5B50\u57DF\u540D");
-    const id = randomUUID();
+    const id = randomUUID3();
     await this.store.exclusive(project, async () => {
       if (this.store.database.status(project) !== "completed") throw Error("\u9879\u76EE\u5C1A\u672A\u5B8C\u6210\uFF0C\u6682\u4E0D\u80FD\u90E8\u7F72\uFF0C\u8BF7\u5148\u5B8C\u6210\u6216\u4FEE\u590D\u5F53\u524D\u4EFB\u52A1");
       if (this.store.database.sql.prepare("SELECT path FROM image_tasks WHERE project_id=? AND status='generating' LIMIT 1").get(project) || this.store.database.sql.prepare("SELECT path FROM image_compressions WHERE project_id=? AND status='running' AND lease_until>? LIMIT 1").get(project, Date.now())) throw Error("\u56FE\u7247\u4ECD\u5728\u751F\u6210\u6216\u538B\u7F29\uFF0C\u6682\u4E0D\u80FD\u90E8\u7F72");
@@ -17280,34 +18409,85 @@ async function openPreviewBrowser(value, platform = process.platform, run = exec
 
 // server/index.ts
 var uri = "ui://codex-website-builder/canvas";
-var sidebarIcon = await readFile(new URL("../../assets/icon.png", import.meta.url));
-var html = await readFile(new URL("../ui/index.html", import.meta.url), "utf8");
+var sidebarIcon = await readFile3(new URL("../../assets/icon.png", import.meta.url));
+var html = await readFile3(new URL("../ui/index.html", import.meta.url), "utf8");
 var paths = dataPaths();
 var projects = new ProjectStore(paths.project);
+var settings = new PluginSettings(paths.root, paths.project);
+await settings.get();
+var gitlab = new GitLabWorkflow(projects, settings);
+var openNativeSettings;
 var r2Settings = new R2Settings(paths.root);
 var r2 = new R2Deployment(projects, r2Settings);
 var control = async (input) => {
-  if (input.type !== "r2") throw Error("Website Builder GitLab \u914D\u7F6E/\u90E8\u7F72\u5165\u53E3\u6682\u65F6\u505C\u7528");
+  if (input.type === "panel") {
+    if (!["settings", "deploy"].includes(input.view)) throw Error("\u672A\u77E5\u72EC\u7ACB\u9762\u677F");
+    if (input.view === "deploy") {
+      const panel2 = projects.database.panelById(input.panel_id);
+      if (!panel2 || panel2.project_id !== input.project_id || input.thread_id && panel2.thread_id !== input.thread_id) throw Error("\u53D1\u5E03\u9762\u677F\u4E0D\u5C5E\u4E8E\u5F53\u524D\u9879\u76EE");
+    }
+    const key = randomUUID4();
+    projects.database.sql.prepare("INSERT INTO settings VALUES (?,?)").run("modal:" + key, JSON.stringify({ view: input.view, project_id: input.project_id, panel_id: input.panel_id, thread_id: input.thread_id, expires: Date.now() + 6e5 }));
+    return { resource_uri: "ui://codex-website-builder/panel/" + key };
+  }
+  if (input.type === "settings") {
+    if (input.action === "open") return openNativeSettings();
+    if (input.action === "get") return { ...await settings.public(), ...await r2Settings.public() };
+    if (input.action === "test") {
+      const config = await settings.get(false);
+      for (const name of settingNames) {
+        const value = input.values?.[name];
+        if (typeof value === "string") config[name] = name === "GITLAB_TOKEN" ? value : value.trim();
+      }
+      if (input.clear_token) config.GITLAB_TOKEN = "";
+      config.GITLAB_DEFAULT_BRANCH ||= "main";
+      return testGitLabConnection(config);
+    }
+    if (input.action === "save") {
+      if (projects.database.sql.prepare("SELECT owner FROM deployment_locks WHERE expires_at>?").get(Date.now())) throw Error("\u90E8\u7F72\u671F\u95F4\u4E0D\u80FD\u66F4\u6539\u914D\u7F6E\uFF0C\u8BF7\u5148\u5B8C\u6210\u6216\u53D6\u6D88");
+      return settings.save(input.values || {});
+    }
+    throw Error("\u672A\u77E5\u914D\u7F6E\u64CD\u4F5C");
+  }
   const panel = projects.database.panelById(input.panel_id);
   if (!panel || panel.project_id !== input.project_id || input.thread_id && panel.thread_id !== input.thread_id) throw Error("\u90E8\u7F72\u8BF7\u6C42\u4E0D\u5C5E\u4E8E\u5F53\u524D\u9879\u76EE\u9762\u677F");
   const actor = "ui:" + input.panel_id;
-  if (input.action === "status") return r2.status(input.project_id);
-  if (input.action === "start") return r2.start(input.project_id, actor);
-  if (input.action === "cancel") return r2.cancel(input.project_id, actor);
-  if (input.action === "preview") {
-    const state = r2.status(input.project_id);
-    if (state.status !== "completed" || !state.url) throw Error("\u9879\u76EE\u5C1A\u672A\u90E8\u7F72\u5B8C\u6210");
-    return openPreviewBrowser(state.url);
+  if (input.type === "r2") {
+    if (input.action === "status") return r2.status(input.project_id);
+    if (input.action === "start") return r2.start(input.project_id, actor);
+    if (input.action === "cancel") return r2.cancel(input.project_id, actor);
+    if (input.action === "preview") {
+      const state = r2.status(input.project_id);
+      if (state.status !== "completed" || !state.url) throw Error("\u9879\u76EE\u5C1A\u672A\u90E8\u7F72\u5B8C\u6210");
+      return openPreviewBrowser(state.url);
+    }
+    throw Error("\u672A\u77E5 R2 \u64CD\u4F5C");
   }
-  throw Error("\u672A\u77E5 R2 \u64CD\u4F5C");
+  if (input.type === "deploy") {
+    if (input.action === "status") return gitlab.status(input.project_id);
+    if (input.action === "domain") return gitlab.updateDomain(input.project_id, input.domain || "");
+    if (input.action === "cancel") return gitlab.cancel(input.project_id, actor, input.confirmation_id);
+    if (input.action === "prepare") return gitlab.prepare({ project_id: input.project_id, actor, intent: "deploy", domain: input.domain, environment: input.environment });
+    if (input.action === "execute") return gitlab.execute(input.confirmation_id, actor, input.decision, "deploy", input.project_id);
+    throw Error("\u672A\u77E5\u90E8\u7F72\u64CD\u4F5C");
+  }
+  throw Error("\u672A\u77E5\u63A7\u5236\u7C7B\u578B");
 };
 var manager = projectManager(projects);
 var syncProject = projectService(projects);
 var preview = await createPreview(html, paths.reference, "www.noventrad.com", syncProject, manager.run, control);
-var skillRoot = (process.env.WEBSITE_BUILDER_SKILL_ROOT || resolve("skills/website-builder")).replaceAll("${PLUGIN_ROOT}", fileURLToPath(new URL("../../", import.meta.url)));
-var server = new McpServer({ name: "codex-website-builder", version: "0.9.1", icons: [{ src: `data:image/png;base64,${sidebarIcon.toString("base64")}`, mimeType: "image/png", sizes: ["200x200"] }] }, { capabilities: { experimental: { "openai/settings": r2SettingsCapability } } });
+var skillRoot = (process.env.WEBSITE_BUILDER_SKILL_ROOT || resolve("skills/website-builder")).replaceAll("${PLUGIN_ROOT}", fileURLToPath2(new URL("../../", import.meta.url)));
+var server = new McpServer({ name: "codex-website-builder", version: "0.9.2", icons: [{ src: `data:image/png;base64,${sidebarIcon.toString("base64")}`, mimeType: "image/png", sizes: ["200x200"] }] }, { capabilities: { experimental: { "openai/settings": settingsCapability } } });
 var csp = { connectDomains: ["data:", "blob:"], resourceDomains: ["data:", "blob:"], frameDomains: ["blob:", "data:"], baseUriDomains: ["https://website-builder.invalid"] };
 var legacyCsp = { connect_domains: csp.connectDomains, resource_domains: csp.resourceDomains, frame_domains: csp.frameDomains, base_uri_domains: csp.baseUriDomains };
+var panelContent = (resourceUri, context) => ({ contents: [{ uri: resourceUri, mimeType: p, text: preview.render().replace("</head>", `<script>window.__WEBSITE_PANEL_CONTEXT__=${JSON.stringify(context).replaceAll("<", "\\u003c")}</script></head>`), _meta: { ui: { csp }, "openai/widgetCSP": legacyCsp } }] });
+server.registerResource("independent-panel", new ResourceTemplate("ui://codex-website-builder/panel/{token}", { list: void 0 }), { mimeType: p, _meta: { ui: { csp } } }, async (resourceUri, variables) => {
+  const row = projects.database.sql.prepare("SELECT value FROM settings WHERE key=?").get("modal:" + variables.token);
+  const context = row ? JSON.parse(row.value) : null;
+  if (!context || context.expires < Date.now()) throw Error("\u9762\u677F\u8BF7\u6C42\u5DF2\u5931\u6548\uFF0C\u8BF7\u91CD\u65B0\u6253\u5F00");
+  return panelContent(resourceUri.href, context);
+});
+openNativeSettings = registerNativeSettings(server, settings, (values) => control({ type: "settings", action: "save", values }), (values) => control({ type: "settings", action: "test", values }), r2Settings);
 registerR2Settings(server, r2Settings);
 N3(server, "canvas", uri, { _meta: { ui: { csp }, "openai/widgetCSP": legacyCsp } }, async () => ({
   contents: [{ uri, mimeType: p, text: preview.render(), _meta: {
@@ -17344,7 +18524,7 @@ server.registerTool("website_panel_context", {
 });
 server.registerTool("website_projects", {
   description: "\u7BA1\u7406\u5168\u5C40 SQLite \u9879\u76EE\uFF1Alist \u5217\u51FA\u9879\u76EE\uFF0Copen/create \u7ED1\u5B9A\u5F53\u524D\u4F1A\u8BDD\u548C\u9762\u677F\uFF0Chome \u8FD4\u56DE\u4E3B\u754C\u9762\uFF0Cdelete \u8F6F\u5220\u9664\uFF08\u4FDD\u7559\u6587\u4EF6\uFF09\uFF0Cresources \u5217\u51FA\u8D44\u6E90\uFF0Cattach \u590D\u5236\u7528\u6237\u660E\u786E\u63D0\u4F9B\u7684\u56FE\u7247/\u6587\u4EF6\u5230\u9879\u76EE\u8D44\u6E90\u76EE\u5F55\u3002panel_id \u6765\u81EA\u9762\u677F\u4E0A\u4E0B\u6587\uFF1Bthread_id \u5FC5\u987B\u662F\u771F\u5B9E\u5F53\u524D\u4F1A\u8BDD ID\u3002\u9996\u9875submission\u7528create\u4E0Erequest_id\u521B\u5EFA\u7A7A\u9879\u76EE\uFF0C\u968F\u540E\u5FC5\u987B\u8C03\u7528open_thread_canvas(thread_id=\u65B0\u5BF9\u8BDDID)\u4E00\u6B21\u6253\u5F00\u4FA7\u8FB9UI\u8FDB\u5165\u8BE6\u60C5\uFF0C\u67E5\u8BE2submission\u5230chat_detail_ready=true\u540E\u518D\u89C4\u5212\u9875\u9762\u548C\u751F\u6210\uFF1B\u4F1A\u8BDD\u9014\u4E2D\u53EF\u6309\u9700open_canvas(thread_id)\u6062\u590D\u540C\u4E00\u9879\u76EE\u8BE6\u60C5\u3002",
-  inputSchema: { action: external_exports.enum(["list", "resume", "open", "create", "bind", "home", "delete", "restore", "resources", "attach", "folder", "images", "capture", "submission", "upload"]).default("list"), upload_id: external_exports.string().optional(), file_name: external_exports.string().max(255).optional(), mime_type: external_exports.string().max(200).optional(), total_size: external_exports.number().int().min(0).max(12 * 1024 * 1024).optional(), sha256: external_exports.string().regex(/^[a-f0-9]{64}$/).optional(), file_count: external_exports.number().int().min(0).max(10).optional(), visible_panel_id: external_exports.string().optional(), requirement: external_exports.string().max(1e5).optional(), request_id: external_exports.string().max(128).optional(), submission_start: external_exports.boolean().optional(), detail_ready: external_exports.boolean().optional(), cancel: external_exports.boolean().optional(), panel_id: external_exports.string().optional(), thread_id: external_exports.string().optional(), project_id: external_exports.string().optional(), name: external_exports.string().max(200).optional(), country: external_exports.string().trim().max(100).optional(), language: external_exports.string().trim().max(100).optional(), categories: external_exports.array(external_exports.string().trim().min(1).max(100)).max(2).optional(), brand: external_exports.string().trim().max(200).optional(), source_path: external_exports.string().optional(), path: external_exports.string().optional(), width: external_exports.number().int().min(320).max(2560).optional(), capture_id: external_exports.string().optional(), chunk: external_exports.string().max(512e3).optional(), offset: external_exports.number().int().nonnegative().optional(), final: external_exports.boolean().optional() },
+  inputSchema: { action: external_exports.enum(["list", "resume", "open", "create", "bind", "home", "delete", "restore", "resources", "attach", "folder", "images", "capture", "submission", "upload"]).default("list"), upload_id: external_exports.string().optional(), file_name: external_exports.string().max(255).optional(), mime_type: external_exports.string().max(200).optional(), total_size: external_exports.number().int().min(0).max(12 * 1024 * 1024).optional(), sha256: external_exports.string().regex(/^[a-f0-9]{64}$/).optional(), file_count: external_exports.number().int().min(0).max(10).optional(), visible_panel_id: external_exports.string().optional(), requirement: external_exports.string().max(1e5).optional(), request_id: external_exports.string().max(128).optional(), submission_start: external_exports.boolean().optional(), detail_ready: external_exports.boolean().optional(), cancel: external_exports.boolean().optional(), panel_id: external_exports.string().optional(), thread_id: external_exports.string().optional(), project_id: external_exports.string().optional(), name: external_exports.string().max(200).optional(), country: external_exports.string().trim().max(100).optional(), language: external_exports.string().trim().max(100).optional(), categories: external_exports.array(external_exports.string().trim().min(1).max(100)).max(2).optional(), brand: external_exports.string().trim().max(200).optional(), domain: external_exports.string().trim().max(255).optional(), source_path: external_exports.string().optional(), path: external_exports.string().optional(), width: external_exports.number().int().min(320).max(2560).optional(), capture_id: external_exports.string().optional(), chunk: external_exports.string().max(512e3).optional(), offset: external_exports.number().int().nonnegative().optional(), final: external_exports.boolean().optional() },
   annotations: { readOnlyHint: false, destructiveHint: false, openWorldHint: true }
 }, async (input) => {
   try {
@@ -17405,12 +18585,12 @@ var pageSchema = external_exports.object({ path: external_exports.string(), titl
 server.registerTool("website_project", {
   title: "Website Builder",
   description: "Use the bundled skill and reuse the exact thread project. Create/open an empty project BEFORE planning pages or generating content. For a panel submission use website_projects(create,panel_id,request_id), then call open_thread_canvas with the NEW real thread_id once to open its sidebar and wait for submission chat_detail_ready=true before generating. The originating panel does not replace the new chat sidebar. Never create a replacement project. For chat requests create/open without pages, open_canvas once to enter details, THEN plan and generate. For a complete ecommerce site, explicitly plan home/shop/product/wishlist/checkout/login/register/about/contact/terms/privacy/return, Default to a shared drawer cart (no cart.html); include cart.html only for an explicit page-cart request or preserved existing page mode. Default to the chosen Home chain; excluding Header/Footer, generation permits at most 0\u20132 justified composition changes and N\xB11 main sections. Preserve independent component source structures; this is not an acceptance or readiness gate. Logo must be a transparent, tightly cropped brand wordmark image, favicon square. Fonts and third-party dependencies must use online CDN URLs. Implement project WebComponent Toast from the toast-01 template document before writing pages; the assembler only reuses that supplied component; overlay closing is a per-component documentation requirement, without a unified Overlay API. Product JSON must go through website_products/SDK. Avoid jsDelivr CDN; page-specific logic stays in inline script. never use browser alert. Avoid home categories when Header already provides category navigation. mobile html root font-size is 12px. Do not silently reduce a complete site to transaction pages. Existing custom names or partial user requests may differ. Header must include working Home, Shop, About Us and Contact Us links on desktop and mobile. Projects have project_directory containing README.md, src/, material/, files/ and a local Git repository initialized and first committed on main without a remote. End every creation/modification round (including images/README-only changes) with finish to commit locally to main; no changes means no empty commit, never push. GIT_CONFIRMATION_REQUIRED means ask the user first, then use system Git for approved merge/branch/conflict handling; never auto-repair or bypass confirmation. directory/source_directory is src; source paths are relative to src, no src prefix. Generated originals go in material_directory, final website assets in src/images with fixed semantic filenames. Never migrate legacy formats automatically. The returned directory is production-only. Home-prompt attachments are saved byte-for-byte under files_directory (project root files/); use the returned files or website_projects(resources) local absolute paths with website_products, never attachment://. Keep other drafts, reports and raw sources in metadata_directory. Plan missing pages, begin before edits, finish after complete files; finish without paths validates all unfinished planned pages and settles their status before ending the task. New projects require new_project=true.",
-  inputSchema: { action: external_exports.enum(["open", "plan", "begin", "finish", "status"]).default("open"), thread_id: external_exports.string().min(1), project_id: external_exports.string().optional(), new_project: external_exports.boolean().optional(), name: external_exports.string().optional(), country: external_exports.string().trim().max(100).optional(), categories: external_exports.array(external_exports.string().trim().min(1).max(100)).max(2).optional(), brand: external_exports.string().trim().max(200).optional(), brief: external_exports.string().optional(), language: external_exports.string().optional(), pages: external_exports.array(pageSchema).min(1).optional(), paths: external_exports.array(external_exports.string()).optional() },
+  inputSchema: { action: external_exports.enum(["open", "plan", "begin", "finish", "status"]).default("open"), thread_id: external_exports.string().min(1), project_id: external_exports.string().optional(), new_project: external_exports.boolean().optional(), name: external_exports.string().optional(), country: external_exports.string().trim().max(100).optional(), categories: external_exports.array(external_exports.string().trim().min(1).max(100)).max(2).optional(), brand: external_exports.string().trim().max(200).optional(), domain: external_exports.string().trim().max(255).optional(), brief: external_exports.string().optional(), language: external_exports.string().optional(), pages: external_exports.array(pageSchema).min(1).optional(), paths: external_exports.array(external_exports.string()).optional() },
   annotations: { readOnlyHint: false, destructiveHint: false, openWorldHint: false }
 }, async (input) => {
   try {
     let view;
-    if (input.action === "open") view = await projects.open({ threadId: input.thread_id, projectId: input.project_id, newProject: input.new_project, name: input.name, brief: input.brief, country: input.country, categories: input.categories, brand: input.brand, language: input.language, pages: input.pages ?? (input.new_project ? [] : void 0) });
+    if (input.action === "open") view = await projects.open({ threadId: input.thread_id, projectId: input.project_id, newProject: input.new_project, name: input.name, brief: input.brief, country: input.country, categories: input.categories, brand: input.brand, domain: input.domain, language: input.language, pages: input.pages ?? (input.new_project ? [] : void 0) });
     else {
       const current = await projects.get(input.thread_id);
       if (!current) throw new Error("\u8BF7\u5148\u6253\u5F00\u5F53\u524D\u4F1A\u8BDD\u9879\u76EE");
@@ -17529,7 +18709,8 @@ server.registerTool("project_sync", {
     return { isError: true, content: [{ type: "text", text: error.message }] };
   }
 });
-server.registerTool("website_control", { description: "App-only R2 deployment controls", inputSchema: { type: external_exports.literal("r2"), action: external_exports.enum(["start", "status", "cancel", "preview"]), project_id: external_exports.string(), panel_id: external_exports.string(), thread_id: external_exports.string().optional() }, annotations: { readOnlyHint: false, destructiveHint: true, openWorldHint: true }, _meta: { ui: { visibility: ["app"] } } }, async (input) => {
+registerGitLabTools(server, gitlab, projects);
+server.registerTool("website_control", { description: "UI-only plugin configuration and deployment dialogs (GitLab & R2 preview); settings fields are visible only to the app; redact credentials from diagnostics.", inputSchema: { type: external_exports.enum(["settings", "deploy", "panel", "r2"]), action: external_exports.enum(["get", "save", "test", "status", "domain", "prepare", "execute", "cancel", "open", "start", "preview"]), view: external_exports.enum(["settings", "deploy"]).optional(), panel_id: external_exports.string().optional(), thread_id: external_exports.string().optional(), project_id: external_exports.string().optional(), values: external_exports.record(external_exports.string(), external_exports.string()).optional(), clear_token: external_exports.boolean().optional(), domain: external_exports.string().optional(), environment: external_exports.enum(["test", "production"]).optional(), confirmation_id: external_exports.string().optional(), decision: external_exports.enum(["confirm", "local", "cloud"]).optional() }, annotations: { readOnlyHint: false, destructiveHint: true, openWorldHint: true }, _meta: { ui: { visibility: ["app"] } } }, async (input) => {
   try {
     return { content: [], _meta: { control: await control(input) } };
   } catch (error) {

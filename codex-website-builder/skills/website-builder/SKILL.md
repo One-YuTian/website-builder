@@ -32,13 +32,13 @@ description: 规划电商页面并组合模板，协调文案、图片和商品�
 
 上下文或查询结果包含 submission（request_id、panel_id）时：
 
-1. 尚未创建项目时，首个建站业务操作调用 website_projects(action="create", panel_id=上下文panel_id, request_id=上下文request_id, thread_id=当前真实会话ID, name, country, language, categories, brand)，创建空项目。不得遗漏 request_id，不复用旧项目，不传页面计划；同一 request_id 重试返回同一个项目。
+1. 尚未创建项目时，首个建站业务操作调用 website_projects(action="create", panel_id=上下文panel_id, request_id=上下文request_id, thread_id=当前真实会话ID, name, country, language, categories, brand, domain)，创建空项目（domain 为可选官网域名，如 www.xxx.xx，用户提供时自动填入）。不得遗漏 request_id，不复用旧项目，不传页面计划；同一 request_id 重试返回同一个项目。
 2. 创建成功后立即调用 open_thread_canvas(thread_id=当前新对话真实ID) **一次**，在新对话中打开侧边 UI；它恢复本次已绑定项目并自动进入详情。随后查询 website_projects(action="submission", panel_id=来源提交panel_id, request_id)，等待 chat_detail_ready=true，再执行下方生成流程。不能只等待来源面板的 detail_ready，也不能仅在文字里说“已打开”；实际调用画布工具。已收到新对话详情就绪回执时跳过重复打开。未就绪继续查询并处理报错，不循环打开多个 UI。
 3. 如果上下文已返回 state="created" 的 submission，直接沿用既有项目执行第2步，不另建项目。会话中用户关闭UI后可按需重新打开同一项目。禁止用打开动作调用new_project=true。沿用返回的 project_id 与 directory；后续 website_project(action="open", project_id=该ID, ...) 仅补齐元数据。进入详情后才读取附件、规划页面或生成内容。
 
 ### Codex 对话提交
 
-无 submission 时先查询 website_panel_context(thread_id=当前真实会话ID)。新站调用 website_project(action="open", thread_id, new_project=true, name, country, language, categories, brand) 创建空项目，**此时不传 pages**；已有项目局部修改则传 project_id 复用。随后 open_canvas(thread_id=当前真实会话ID) 进入该项目详情，初次打开一次；已有对应详情时跳过无谓重复，用户需要时可在会话途中再次打开同一项目详情。完成项目创建与详情进入后，才规划页面、准备数据和生成内容。
+无 submission 时先查询 website_panel_context(thread_id=当前真实会话ID)。新站调用 website_project(action="open", thread_id, new_project=true, name, country, language, categories, brand, domain) 创建空项目（domain 为可选官网域名，如 www.xxx.xx），**此时不传 pages**；已有项目局部修改则传 project_id 复用。随后 open_canvas(thread_id=当前真实会话ID) 进入该项目详情，初次打开一次；已有对应详情时跳过无谓重复，用户需要时可在会话途中再次打开同一项目详情。完成项目创建与详情进入后，才规划页面、准备数据和生成内容。
 
 ## 生成流程
 
@@ -80,6 +80,12 @@ description: 规划电商页面并组合模板，协调文案、图片和商品�
 主题、状态样式和基础工具类按创建规范统一。页面专属逻辑放当前HTML的script；全站移动端html根字号12px，其他断点遵循所选组件。所有需要显示商品图的槽位/骨架/加载区使用纯白色#fff背景，包含卡片、详情主图/缩略图、分类商品坑位及购物车；不以灰色或渐变底替代。Logo必须是图片；图标不用字符/Emoji，商品及Banner不用自绘SVG。素材生成、图文主体安全区和画布加载状态归图片技能，主技能负责按实际图片/文案完成响应式排版。
 
 所有字体/第三方库通过在线CDN加载并避免jsDelivr，只输出实际依赖。预览资源异常先区分源码和传输，不为绕过限制删图、降质或删板块；预览代理不改写网站源文件。
+
+## 验证模式与部署边界
+
+- **自动验证（默认 / `verification_mode: "auto"`）**：除商品库处理、图片生成、页面生成外，还需调用网站验证 SKILL（如 `website-verifier` / 截图与交互验证）进行全流程检查，确保页面与功能无误后再收尾。
+- **手动验证（`verification_mode: "manual"`）**：仅负责商品库处理、图片生成与页面生成并执行 `website_project(action="finish")` 完成输出；**禁止**调用网站验证 SKILL 或执行截图/全流程自动验收，由用户手动验证页面与功能逻辑。
+- **禁止自动部署**：无论是自动验证还是手动验证模式，普通建站流程均**不负责网站部署**；仅当用户明确要求部署时，才按需执行[R2静态网站部署](references/r2-deployment.md)或[GitLab部署流程](references/gitlab-deployment.md)。
 
 ## 工具未加载时
 
