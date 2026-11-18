@@ -6,7 +6,7 @@ import {PluginSettings} from './PluginSettings';
 import {DeploymentPanel} from './DeploymentControls';
 import {ImagePreviewPanel} from './ImagePreviewPanel';
 import {getPluginPanelContext,isPluginModal} from './plugin-modal';
-import {hostApp,hostReady} from './bridge';
+import {applyTheme,hostApp,hostReady,resolveTheme} from './bridge';
 declare global { interface Window { __WEBSITE_BUILDER__?: { api: string; projectApi?:string; managerApi?:string; resourceApi?:string; origin: string; defaultDirectory: string } } }
 
 function DotCanvas() {
@@ -21,6 +21,7 @@ function DotCanvas() {
     const base=document.createElement('canvas');
     const baseContext=base.getContext('2d')!;
     const reduced = matchMedia('(prefers-reduced-motion: reduce)');
+    const isDark = () => document.documentElement.dataset.theme === 'dark';
     const draw = (time: number) => {
       frame = 0;
       const dt = Math.min(time - last || 16, 64);
@@ -30,13 +31,15 @@ function DotCanvas() {
       ctx.clearRect(0, 0, width, height);
       if(base.width&&base.height)ctx.drawImage(base,0,0,base.width,base.height,0,0,width,height);
       const spacing = 10, radius = 190;
+      const rgb = isDark() ? '220, 228, 232' : '25, 30, 30';
+      const baseAlpha = isDark() ? 0.14 : 0.19;
       for (let py = Math.max(0,Math.ceil((y-radius)/spacing)*spacing); strength>0&&py < Math.min(height,y+radius); py += spacing) {
         for (let px = 14+Math.max(0,Math.ceil((x-radius-14)/spacing))*spacing; px < Math.min(width,x+radius); px += spacing) {
           const distance = Math.hypot(px - x, py - y) / radius;
           const falloff = Math.max(0, 1 - distance);
           if(!falloff)continue;
-          const alpha = 0.66 / (1-0.19) * strength * falloff * falloff * (3 - 2 * falloff);
-          ctx.fillStyle = `rgba(25, 30, 30, ${alpha})`;
+          const alpha = 0.66 / (1-baseAlpha) * strength * falloff * falloff * (3 - 2 * falloff);
+          ctx.fillStyle = `rgba(${rgb}, ${alpha})`;
           ctx.beginPath(); ctx.arc(px, py, 0.85, 0, Math.PI * 2); ctx.fill();
         }
       }
@@ -49,7 +52,7 @@ function DotCanvas() {
       const dpr = Math.min(devicePixelRatio || 1, 2);
       canvas.width = Math.round(width * dpr); canvas.height = Math.round(height * dpr);
       base.width=canvas.width;base.height=canvas.height;baseContext.setTransform(dpr,0,0,dpr,0,0);
-      baseContext.fillStyle='rgba(25,30,30,.19)';baseContext.beginPath();
+      baseContext.fillStyle=isDark()?'rgba(220,228,232,.14)':'rgba(25,30,30,.19)';baseContext.beginPath();
       for(let py=0;py<height;py+=10)for(let px=14;px<width;px+=10){baseContext.moveTo(px+.85,py);baseContext.arc(px,py,.85,0,Math.PI*2);}
       baseContext.fill();
       ctx.setTransform(dpr, 0, 0, dpr, 0, 0); invalidate();
@@ -63,12 +66,14 @@ function DotCanvas() {
     };
     const leave = () => { target = 0; invalidate(); };
     const observer = new ResizeObserver(resize); observer.observe(canvas);
+    const themeObserver = new MutationObserver(resize);
+    themeObserver.observe(document.documentElement, { attributes: true, attributeFilter: ['data-theme'] });
     document.addEventListener('pointermove', move, true);
     document.addEventListener('pointerleave', leave);
     window.addEventListener('blur', leave);
     resize();
     return () => {
-      cancelAnimationFrame(frame); observer.disconnect();
+      cancelAnimationFrame(frame); observer.disconnect(); themeObserver.disconnect();
       document.removeEventListener('pointermove', move, true);
       document.removeEventListener('pointerleave', leave);
       window.removeEventListener('blur', leave);
@@ -82,9 +87,23 @@ function PanelRoot(){
  const [modal,setModal]=useState(isPluginModal);
  useEffect(()=>{
   let stopped=false;const sync=(event?:Event)=>{if(!stopped){setPanel(getPluginPanelContext((event as CustomEvent|undefined)?.detail?.globals));setModal(isPluginModal());}};
-  window.addEventListener('website-builder:panel-input',sync);window.addEventListener('openai:set_globals',sync);
-  void hostReady.then(()=>{if(!stopped){sync();setReady(true);}}).catch(()=>{if(!stopped)setReady(true);});
-  return()=>{stopped=true;window.removeEventListener('website-builder:panel-input',sync);window.removeEventListener('openai:set_globals',sync);};
+  const syncTheme=(event?:Event)=>{if(!stopped){const globals=(event as CustomEvent|undefined)?.detail?.globals as Record<string,unknown>|undefined;applyTheme(resolveTheme(globals));}};
+  syncTheme();
+  const mq=typeof window.matchMedia==='function'?window.matchMedia('(prefers-color-scheme: dark)'):null;
+  mq?.addEventListener('change',syncTheme);
+  window.addEventListener('website-builder:panel-input',sync);
+  window.addEventListener('openai:set_globals',sync);
+  window.addEventListener('openai:set_globals',syncTheme);
+  if(hostApp)hostApp.onhostcontextchanged=()=>syncTheme();
+  void hostReady.then(()=>{if(!stopped){sync();syncTheme();setReady(true);}}).catch(()=>{if(!stopped)setReady(true);});
+  return()=>{
+   stopped=true;
+   mq?.removeEventListener('change',syncTheme);
+   window.removeEventListener('website-builder:panel-input',sync);
+   window.removeEventListener('openai:set_globals',sync);
+   window.removeEventListener('openai:set_globals',syncTheme);
+   if(hostApp)hostApp.onhostcontextchanged=undefined;
+  };
  },[]);
  useEffect(()=>{document.body.classList.toggle('independent-plugin-panel',!!panel);document.documentElement.classList.toggle('independent-plugin-root',!!panel);},[panel]);
  if(!ready)return null;
