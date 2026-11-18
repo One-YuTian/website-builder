@@ -25,6 +25,13 @@ function resolveTimelineIndex(stage:string,challenge:any,result:any,busy:boolean
  return -1;
 }
 
+function ProjectIdChip({projectId}:{projectId:string}){
+  const [copied,setCopied]=useState(false);
+  useEffect(()=>{if(!copied)return;const timer=setTimeout(()=>setCopied(false),1800);return()=>clearTimeout(timer);},[copied]);
+  const copyId=async()=>{try{await navigator.clipboard.writeText(projectId);setCopied(true);}catch{}};
+  return <span className="deploy-id-chip"><span>ID: {projectId}</span><button type="button" className={copied?'deploy-id-copy is-copied':'deploy-id-copy'} aria-label={copied?'已复制项目ID':'复制项目ID'} title={copied?'已复制':'复制项目ID'} onClick={()=>void copyId()}><Icon name="copy"/></button></span>;
+}
+
 export function DeploymentPanel({projectId,panelId,threadId,onClose,inline,onBack}:{projectId:string;panelId:string;threadId?:string;onClose?:()=>void;inline?:boolean;onBack?:()=>void}){
   const envStorageKey=`website-builder:deploy-env:${projectId}`;
   const envTouched=useRef(false);
@@ -42,7 +49,7 @@ export function DeploymentPanel({projectId,panelId,threadId,onClose,inline,onBac
   const prepare=async()=>{setBusy(true);setError('');try{accept(await request('prepare',{domain,environment}));}catch(error){setError((error as Error).message);}finally{setBusy(false);setStatus(await request('status').catch(()=>({locked:true,stage:'状态未知，请重开确认窗口'})));}};
   const execute=async()=>{setBusy(true);setError('');try{accept(await request('execute',{confirmation_id:challenge.id,decision}));}catch(error){setChallenge(null);setError((error as Error).message);}finally{setBusy(false);setStatus(await request('status').catch(()=>({locked:true,stage:'状态未知'})));}};
   const close=async()=>{try{if(status.locked||busy||challenge){const value=await request('cancel',{confirmation_id:challenge?.id});if(value.status==='cancelling'){setStatus(await request('status'));return;}}setChallenge(null);setResult(null);setError('');if(!inline)setOpen(false);if(onClose)onClose();else await closePluginModal();}catch(error){setError((error as Error).message);}};
-  const label=challenge?.kind==='create'?'创建官网仓库':challenge?.kind==='bind'?'拉取 / 绑定官网仓库':challenge?'确认发布':'部署到线上';
+  const label=challenge?.kind==='create'?'创建官网仓库':challenge?.kind==='bind'?'拉取 / 绑定官网仓库':challenge?'确认发布':'部署到线上环境';
   const timelineIndex=resolveTimelineIndex(String(status.stage||''),challenge,result,busy);
   const showTimeline=timelineIndex>=0&&(busy||status.locked||challenge||result?.status==='deployment_triggered');
   const canCancel=(busy||status.locked)&&status.cancellable!==false;
@@ -59,7 +66,7 @@ export function DeploymentPanel({projectId,panelId,threadId,onClose,inline,onBac
     {(busy||status.locked)&&!challenge&&<><p className="deployment-running" role="status"><span className="prompt-spinner"/>{status.stage||'正在检查'} · 页面修改已锁定</p><footer><button type="button" disabled={!canCancel} onClick={()=>void close()}>{canCancel?'取消发布':'正在执行最终部署（不可取消）'}</button></footer></>}
     {error&&<p className="deployment-error" role="alert">{error}</p>}
   </>;
-  if(inline)return <><header><h2 id="deploy-title">{label}</h2><button aria-label="关闭部署面板" onClick={()=>void close()}>×</button></header><p className="r2-project">项目 {projectId}</p>{body}</>;
+  if(inline)return <><header><div className="deploy-header-main"><h2 id="deploy-title">{label}</h2><ProjectIdChip projectId={projectId}/></div><button aria-label="关闭部署面板" onClick={()=>void close()}>×</button></header>{body}</>;
   return <>{open&&<section className="plugin-modal deploy-modal" role="dialog" aria-modal="true" aria-labelledby="deploy-title"><header><h2 id="deploy-title">{label}</h2></header>{body}</section>}</>;
 }
 
@@ -102,7 +109,7 @@ export function DeploymentControls({projectId,panelId,threadId,onLocked}:{projec
   const layout=()=>{
    const rect=button.current?.getBoundingClientRect();
    const width=mode==='gitlab'?452:392;
-   const reserve=mode==='gitlab'?680:460;
+   const reserve=460;
    if(rect)setPosition({left:Math.max(12,rect.left-width),top:Math.max(12,Math.min(rect.top,innerHeight-reserve))});
   };
   layout();
@@ -175,8 +182,7 @@ export function DeploymentControls({projectId,panelId,threadId,onLocked}:{projec
   <button ref={button} aria-label="部署网站" title="部署网站" aria-expanded={open} className={active?'active':''} onClick={()=>void show()}><Icon name="deploy"/></button>
   {open&&createPortal(<div className="r2-popup-overlay" onPointerDown={event=>{if(event.target===event.currentTarget)setOpen(false);}}>
    {mode==='select'?<section className="r2-deploy-popup" style={popupStyle} role="dialog" aria-modal="true" aria-label="部署网站">
-    <header><h2>部署网站</h2><button aria-label="关闭部署面板" onClick={()=>setOpen(false)}>×</button></header>
-    <p className="r2-project">项目 {projectId}</p>
+    <header><div className="deploy-header-main"><h2>部署网站</h2><ProjectIdChip projectId={projectId}/></div><button aria-label="关闭部署面板" onClick={()=>setOpen(false)}>×</button></header>
     <p className="deploy-mode-hint">请选择部署方式：</p>
     <div className="deploy-mode-list">
      <button type="button" className="deploy-mode-option" disabled={Boolean(gitlabStatus.locked||busy)} onClick={()=>void chooseR2()}>
@@ -184,7 +190,7 @@ export function DeploymentControls({projectId,panelId,threadId,onLocked}:{projec
       <span className="deploy-mode-desc">同步静态资源到预览服务器，生成临时预览链接</span>
      </button>
      <button type="button" className="deploy-mode-option" disabled={Boolean(r2Active)} onClick={chooseGitLab}>
-      <span className="deploy-mode-title">部署到线上{gitlabStatus.locked?<small className="deploy-mode-badge">进行中</small>:null}</span>
+      <span className="deploy-mode-title">部署到线上环境{gitlabStatus.locked?<small className="deploy-mode-badge">进行中</small>:null}</span>
       <span className="deploy-mode-desc">通过 GitLab 仓库与发布标签部署到测试或正式环境</span>
      </button>
     </div>
@@ -193,8 +199,7 @@ export function DeploymentControls({projectId,panelId,threadId,onLocked}:{projec
    </section>:mode==='gitlab'?<section className="r2-deploy-popup is-gitlab" style={popupStyle} role="dialog" aria-modal="true" aria-labelledby="deploy-title">
     <DeploymentPanel projectId={projectId} panelId={panelId} threadId={threadId} inline onBack={()=>{setError('');setMode('select');}} onClose={()=>setOpen(false)}/>
    </section>:<section className="r2-deploy-popup" style={popupStyle} role="dialog" aria-modal="true" aria-label="预览环境部署">
-    <header><h2>部署到预览环境</h2><button aria-label="关闭部署面板" onClick={()=>setOpen(false)}>×</button></header>
-    <p className="r2-project">项目 {projectId}</p>
+    <header><div className="deploy-header-main"><h2>部署到预览环境</h2><ProjectIdChip projectId={projectId}/></div><button aria-label="关闭部署面板" onClick={()=>setOpen(false)}>×</button></header>
     <p role="status">{r2State.phase||'准备部署'}</p>
     {r2Active&&<div className="r2-progress"><progress max={100} value={percent}/><span>{percent}% · {r2State.completed||0}/{r2State.total||0} 个文件</span></div>}
     {r2State.total_bytes>0&&<p>{((r2State.uploaded_bytes||0)/1048576).toFixed(2)} / {(r2State.total_bytes/1048576).toFixed(2)} MB{r2State.deleted>0?` · 已清理 ${r2State.deleted} 个失效文件`:''}</p>}

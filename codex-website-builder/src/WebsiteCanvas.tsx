@@ -202,8 +202,8 @@ export function WebsiteCanvas({ background, projectId: pinnedProjectId, panelId,
       while(!stopped){
         try{
           let value:any;
-          if(hostApp){const result=await hostApp.callServerTool({name:'project_sync',arguments:{metadata_only:!probed,page_limit:3,priority_path:selectedRef.current,since,known,thread_id:threadId,project_id:pinnedProjectId,wait_ms:probed?20000:0}},{signal:controller.signal,timeout:25000});if(result.isError)throw new Error('项目状态读取失败');value=result._meta?.sync;}
-          else if(config!.projectApi){const url=new URL(config!.projectApi);url.searchParams.set('metadata_only',probed?'0':'1');url.searchParams.set('page_limit','3');url.searchParams.set('priority_path',selectedRef.current);url.searchParams.set('since',since);url.searchParams.set('known',JSON.stringify(known));url.searchParams.set('wait',probed?'20000':'0');if(threadId)url.searchParams.set('thread_id',threadId);if(pinnedProjectId)url.searchParams.set('project_id',pinnedProjectId);const response=await fetch(url,{signal:controller.signal});if(!response.ok)throw new Error('项目状态读取失败');value=await response.json();}
+          if(hostApp){const result=await hostApp.callServerTool({name:'project_sync',arguments:{metadata_only:!probed,page_limit:2,priority_path:selectedRef.current,since,known,thread_id:threadId,project_id:pinnedProjectId,wait_ms:probed?10000:0}},{signal:controller.signal,timeout:45000});if(result.isError)throw new Error('项目状态读取失败');value=result._meta?.sync;}
+          else if(config!.projectApi){const url=new URL(config!.projectApi);url.searchParams.set('metadata_only',probed?'0':'1');url.searchParams.set('page_limit','2');url.searchParams.set('priority_path',selectedRef.current);url.searchParams.set('since',since);url.searchParams.set('known',JSON.stringify(known));url.searchParams.set('wait',probed?'10000':'0');if(threadId)url.searchParams.set('thread_id',threadId);if(pinnedProjectId)url.searchParams.set('project_id',pinnedProjectId);const response=await fetch(url,{signal:controller.signal});if(!response.ok)throw new Error('项目状态读取失败');value=await response.json();}
           else return;
           if(stopped)return;
           if(!value)throw new Error('项目状态响应无效');
@@ -215,10 +215,15 @@ export function WebsiteCanvas({ background, projectId: pinnedProjectId, panelId,
           displayedProject.current=manifest.projectId;
           if(changed){known={};projectId=manifest.projectId;sequence.current++;projectMode.current=true;storage.current={};setWidths({});setSelected(manifest.pages.find(page=>page.path==='index.html')?.path||manifest.pages[0]?.path||'');setView({x:28,y:30,zoom:.26});}
           const decoded:Record<string,string>={},nextKnown={...known},decodeErrors:Record<string,string>={};
-          for(const [path,payload]of Object.entries(value.pages||{})){
-            try{decoded[path]=await unzip(payload as string | {resource:string});const page=manifest.pages.find(item=>item.path===path);if(page)nextKnown[path]=page.version||0;}
-            catch(error){decodeErrors[path]=`预览传输失败，正在重试：${(error as Error).message}`;}
-          }
+          const entries=Object.entries(value.pages||{});
+          let cursor=0;
+          await Promise.all(Array.from({length:Math.min(2,entries.length)},async()=>{
+            while(cursor<entries.length){
+              const [path,payload]=entries[cursor++];
+              try{decoded[path]=await unzip(payload as string | {resource:string});const page=manifest.pages.find(item=>item.path===path);if(page)nextKnown[path]=page.version||0;}
+              catch(error){decodeErrors[path]=`预览传输失败，正在重试：${(error as Error).message}`;}
+            }
+          }));
           if(stopped)return;
           setSite(previous=>({...manifest,pages:manifest.pages.map(page=>{
             const old=!changed?previous?.pages.find(item=>item.path===page.path):undefined;

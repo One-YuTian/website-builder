@@ -49,7 +49,7 @@ function download(value:string,redirects=0):Promise<Resource>{
    response.on('error',reject);response.on('end',()=>{try{let bytes=Buffer.concat(chunks);const encoding=response.headers['content-encoding'];const options={maxOutputLength:maximum};if(encoding==='gzip')bytes=gunzipSync(bytes,options);else if(encoding==='br')bytes=brotliDecompressSync(bytes,options);else if(encoding==='deflate')bytes=inflateSync(bytes,options);
     const mime=(response.headers['content-type']||mimeByPath[url.pathname.split('.').pop()||'']||'application/octet-stream').split(';')[0];resolve({bytes,mime,url:url.href,status});
    }catch(error){reject(error);}});
-  });request.setTimeout(20000,()=>request.destroy(new Error(`资源请求超时：${url.href}`)));request.on('error',reject);
+  });request.setTimeout(10000,()=>request.destroy(new Error(`资源请求超时：${url.href}`)));request.on('error',reject);
  });
 }
 const replaceAsync=async(text:string,pattern:RegExp,fn:(match:RegExpMatchArray)=>Promise<string>)=>{const matches=[...text.matchAll(pattern)],values=await Promise.all(matches.map(fn));let i=0;return text.replace(pattern,()=>values[i++]);};
@@ -71,6 +71,7 @@ export async function proxyResource(url:string,raw=false,chain:string[]=[]):Prom
    const embed=async(path:string)=>{if(/^(?:data:|blob:|#)/i.test(path))return path;const value=await proxyResource(new URL(path,resource.url).href,false,[...chain,url]);return `data:${value.mime};base64,${value.bytes.toString('base64')}`;};
    if(resource.mime==='text/css'){
     let css=resource.bytes.toString('utf8');
+    css=css.replace(/src\s*:[^;{}]*\.woff2[^;{}]*/gi,rule=>rule.replace(/,\s*url\([^)]*\.(?:ttf|eot|woff)(?:[?#][^)]*)?\)(?:\s*format\([^)]*\))?/gi,''));
     css=await replaceAsync(css,/@import\s+(['"])([^'"]+)\1/gi,async match=>`@import url("${await embed(match[2])}")`);
     css=await replaceAsync(css,/url\(\s*(['"]?)([^)'"\s]+)\1\s*\)/gi,async match=>`url("${await embed(match[2])}")`);
     resource.bytes=Buffer.from(css);

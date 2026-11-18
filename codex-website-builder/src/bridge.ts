@@ -1,5 +1,5 @@
 import { App } from '@modelcontextprotocol/ext-apps';
-export const hostApp = window.parent !== window ? new App({ name: 'codex-website-builder', version: '0.9.2' }) : null;
+export const hostApp = window.parent !== window ? new App({ name: 'codex-website-builder', version: '0.9.3' }) : null;
 let launchThread:string|undefined;
 let panelInput:Record<string,unknown>|undefined;
 export const getPanelInput=()=>panelInput;

@@ -41,7 +41,7 @@
 .asset-gallery{grid-column:1/-1;display:grid;gap:90px 72px;padding:0 0 90px;width:max-content}.asset-gallery>h2{grid-column:1/-1;font-size:calc(17px / var(--canvas-scale));font-weight:500;display:flex;gap:calc(12px / var(--canvas-scale));align-items:center;color:#4c5c59}.asset-gallery>h2 span{font-size:calc(11px / var(--canvas-scale));color:#87958e}
 .asset-panel{cursor:default}.asset-label{height:calc(35px / var(--canvas-scale));display:flex;align-items:center;gap:calc(12px / var(--canvas-scale));font-size:calc(11px / var(--canvas-scale));color:#4c5c59}.asset-label>span{flex:1;display:flex;align-items:center;gap:calc(7px / var(--canvas-scale));min-width:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}.asset-label svg{width:calc(15px / var(--canvas-scale));height:calc(15px / var(--canvas-scale));flex-shrink:0}.asset-label button{border:0;background:transparent;padding:calc(4px / var(--canvas-scale));display:flex}
 .asset-surface{height:600px;display:grid;place-items:center;border-radius:0;padding:0;background:transparent;box-shadow:none;overflow:hidden}.asset-surface img{max-width:100%;max-height:100%;width:100%;height:100%;min-width:0;min-height:0;object-fit:contain;display:block}.asset-surface p{font-size:18px;color:#65766e}.asset-caption{padding-top:calc(7px / var(--canvas-scale));font-size:calc(10px / var(--canvas-scale));color:#89988f}
-@media(max-width:900px){.project-home{grid-template-columns:minmax(0,1fr);gap:12px;padding:56px 16px 24px}.project-compose{padding:12px}.project-compose h2{font-size:28px}.project-description strong{max-width:170px}.sidebar-toggle-button{display:inline-flex}.project-sidebar{position:fixed;top:16px;bottom:16px;left:14px;width:min(300px,calc(100vw - 28px));z-index:30;opacity:0;visibility:hidden;pointer-events:none;transform:translateX(calc(-100% - 28px));transition:transform .28s cubic-bezier(.22,1,.36,1),opacity .24s ease,visibility .24s ease;box-shadow:0 18px 48px rgba(20,30,28,.16)}.project-sidebar.is-open{opacity:1;visibility:visible;pointer-events:auto;transform:translateX(0)}}
+@media(max-width:1160px){.project-home{grid-template-columns:minmax(0,1fr);gap:12px;padding:56px 16px 24px}.project-compose{padding:12px clamp(16px,6vw,64px)}.project-compose h2{font-size:28px}.project-description strong{max-width:170px}.sidebar-toggle-button{display:inline-flex}.project-sidebar{position:fixed;top:16px;bottom:16px;left:14px;width:min(300px,calc(100vw - 28px));z-index:30;opacity:0;visibility:hidden;pointer-events:none;transform:translateX(calc(-100% - 28px));transition:transform .28s cubic-bezier(.22,1,.36,1),opacity .24s ease,visibility .24s ease;box-shadow:0 18px 48px rgba(20,30,28,.16)}.project-sidebar.is-open{opacity:1;visibility:visible;pointer-events:auto;transform:translateX(0)}}
 @media(max-width:560px){.project-home{display:flex;flex-direction:column;justify-content:center;gap:14px;padding:56px 12px 20px}.project-sidebar{border:1px solid #bcc6c9a1;border-radius:20px;padding:18px 10px;gap:16px}.project-compose{padding:0;overflow:visible;flex-shrink:0}.project-prompt{min-height:150px;padding:16px 18px}.project-prompt textarea{min-height:64px;height:64px}.project-description strong{max-width:190px}.project-home::before{height:56px}}
 
 .project-groups{scrollbar-width:none;scrollbar-gutter:auto}
@@ -58,11 +58,12 @@
 .project-home::before{clip-path:none}
 .project-open{padding-left:8px;padding-right:4px}.project-groups h2{padding-left:8px;padding-right:8px}
 .project-home.is-empty-projects{grid-template-columns:minmax(0,1fr)}
-.sidebar-toggle-button{display:none;position:fixed;top:14px;left:14px;z-index:25;width:36px;height:36px;padding:0;border-radius:10px;border:1px solid rgba(184,192,197,.75);background:rgba(240,242,243,.92);backdrop-filter:blur(12px);align-items:center;justify-content:center;color:#34413c;box-shadow:0 2px 10px rgba(0,0,0,.06)}
+.sidebar-toggle-button{display:none;position:fixed;top:14px;left:14px;z-index:25;width:36px;height:36px;padding:0;border-radius:10px;border:1px solid rgba(184,192,197,.75);background:rgba(240,242,243,.92);backdrop-filter:blur(12px);align-items:center;justify-content:center;color:#34413c;box-shadow:0 2px 10px rgba(0,0,0,.06);transition:opacity .18s ease,visibility .18s ease,background-color .15s ease}
+.sidebar-toggle-button.is-hidden{opacity:0;visibility:hidden;pointer-events:none}
 .sidebar-toggle-button:hover{background:#e3e7e9}
 .sidebar-toggle-button svg{width:18px;height:18px}
 .sidebar-backdrop{display:none}
-@media(max-width:900px){.sidebar-toggle-button{display:inline-flex}.sidebar-backdrop{display:block;position:fixed;inset:0;z-index:29;background:rgba(25,32,30,.07);backdrop-filter:blur(1px);opacity:0;visibility:hidden;pointer-events:none;transition:opacity .24s ease,visibility .24s ease}.sidebar-backdrop.is-open{opacity:1;visibility:visible;pointer-events:auto}.project-sidebar{z-index:30}}
+@media(max-width:1160px){.sidebar-toggle-button{display:inline-flex}.sidebar-backdrop{display:block;position:fixed;inset:0;z-index:29;background:rgba(25,32,30,.07);backdrop-filter:blur(1px);opacity:0;visibility:hidden;pointer-events:none;transition:opacity .24s ease,visibility .24s ease}.sidebar-backdrop.is-open{opacity:1;visibility:visible;pointer-events:auto}.project-sidebar{z-index:30}}
 .project-search input:focus,.project-search input:focus-visible,.project-prompt textarea:focus,.project-prompt textarea:focus-visible,.project-prompt .prompt-editor:focus,.project-prompt .prompt-editor:focus-visible{outline:none;border:0;box-shadow:none}
 .project-delete:hover{background:transparent;color:#34383d}
 .asset-gallery{justify-items:start;align-items:start}
@@ -86,7 +87,7 @@
 .project-compose,.page-stage{background-image:none}
 .project-prompt{height:260px;min-height:260px;padding:0;gap:0;position:relative;background:rgba(232,234,238,.92);border:1.5px solid #cbd0d4;border-radius:28px;box-shadow:none;cursor:text;overflow:hidden;display:flex;flex-direction:column;transition:border-color .3s ease,box-shadow .3s ease}
 @keyframes prompt-shimmer{0%{background-position:0% 50%,0% 50%}50%{background-position:0% 50%,100% 50%}100%{background-position:0% 50%,0% 50%}}
-.project-prompt:hover,.project-prompt:focus-within{border-color:transparent;background-image:linear-gradient(rgba(234,236,240,.96),rgba(234,236,240,.96)),linear-gradient(115deg,#cbd0d4 0%,#cbd0d4 28%,#60a5fa 38%,#818cf8 48%,#c084fc 58%,#67e8f9 65%,#cbd0d4 74%,#cbd0d4 100%);background-origin:padding-box,border-box;background-clip:padding-box,border-box;background-size:100% 100%,300% 300%;animation:prompt-shimmer 4.5s ease-in-out infinite;box-shadow:inset -14px -8px 20px -13px rgba(96,165,250,.22),inset -6px -12px 20px -13px rgba(167,139,250,.2)}
+.project-prompt:hover,.project-prompt:focus-within{border-color:transparent;background-image:linear-gradient(rgba(234,236,240,.96),rgba(234,236,240,.96)),linear-gradient(115deg,#cbd0d4 0%,#cbd0d4 28%,#78aae8 38%,#8f97ea 48%,#bc8cf2 58%,#77d5e4 65%,#cbd0d4 74%,#cbd0d4 100%);background-origin:padding-box,border-box;background-clip:padding-box,border-box;background-size:100% 100%,300% 300%;animation:prompt-shimmer 4.5s ease-in-out infinite;box-shadow:inset -14px -8px 20px -13px rgba(96,165,250,.22),inset -6px -12px 20px -13px rgba(167,139,250,.2)}
 @media(prefers-reduced-motion:reduce){.project-prompt:hover,.project-prompt:focus-within{animation:none}}
 .project-prompt>*{position:relative;z-index:1}
 .project-prompt textarea,.project-prompt .prompt-editor{flex:1;min-height:0;height:100%;max-height:none;resize:none;overflow:auto;font-size:17px;line-height:1.6;padding:24px 24px 8px 24px;box-sizing:border-box;border:0;border-radius:0;outline:none;user-select:text!important;-webkit-user-select:text!important;cursor:text;word-break:break-word;white-space:pre-wrap}
@@ -494,3 +495,59 @@ input,input:focus,input:focus-visible,textarea,textarea:focus,textarea:focus-vis
 :root[data-theme="dark"] .deploy-timeline-item.is-active{color:#eef1f5}
 :root[data-theme="dark"] .deploy-timeline-item.is-active .deploy-timeline-dot{border-color:#e6ebf0;box-shadow:0 0 0 3px rgba(230,235,240,.2)}
 :root[data-theme="dark"] .gitlab-inline-form fieldset{border-color:#343a44;background:#252932}
+
+
+/* Top manager notification bar, canvas Toast (.message), and project initialization panel */
+.manager-error{display:flex;align-items:center;gap:10px;padding:9px 18px;background:rgba(254,242,242,.96);border-bottom:1px solid rgba(220,38,38,.16);color:#a53d34;z-index:20;font-size:12.5px;font-weight:500}
+.manager-error button{margin-left:0;border:0;background:transparent;color:inherit;cursor:pointer;transition:background-color .15s,opacity .15s}
+.manager-error button:not(:last-child){padding:3px 11px;border-radius:9999px;border:1px solid currentColor;font-size:11.5px;font-weight:500;opacity:.88}
+.manager-error button:not(:last-child):hover{opacity:1;background:rgba(165,61,52,.09)}
+.manager-error button:last-child{margin-left:auto;width:24px;height:24px;padding:0;border-radius:50%;display:inline-flex;align-items:center;justify-content:center;font-size:15px;line-height:1}
+.manager-error button:last-child:hover{background:rgba(165,61,52,.1)}
+
+.message{padding:8px 14px 8px 18px;border-radius:9999px;border:1px solid rgba(0,0,0,.08);background:rgba(244,246,248,.92);backdrop-filter:blur(20px) saturate(1.2);-webkit-backdrop-filter:blur(20px) saturate(1.2);color:#1f2428;box-shadow:0 8px 28px rgba(15,23,42,.12);font-size:12.5px;font-weight:500;gap:10px}
+.message button{width:24px;height:24px;padding:0;border:0;border-radius:50%;background:transparent;color:#606770;display:inline-flex;align-items:center;justify-content:center;font-size:15px;line-height:1;transition:background-color .15s,color .15s}
+.message button:hover{background:rgba(0,0,0,.07);color:#1f2428}
+.message.error{border-radius:16px;padding:9px 16px;background:rgba(254,242,242,.95);border-color:rgba(220,38,38,.18);color:#a53d34;white-space:normal}
+
+.project-initializing{background:rgba(241,243,243,.45);backdrop-filter:blur(8px);-webkit-backdrop-filter:blur(8px)}
+.initializing-panel{width:min(320px,calc(100% - 48px));padding:30px 26px 24px;border:1px solid rgba(0,0,0,.08);border-radius:24px;background:rgba(244,246,248,.9);backdrop-filter:blur(24px) saturate(1.25);-webkit-backdrop-filter:blur(24px) saturate(1.25);box-shadow:inset 0 1px 0 rgba(255,255,255,.85),0 14px 40px rgba(15,23,42,.12);color:#1f2428}
+.initializing-panel p{margin:0 0 18px;font-size:16px;font-weight:500;letter-spacing:-.2px}
+.initializing-progress{display:inline-flex;align-items:center;justify-content:center;gap:8px;padding:6px 14px;border-radius:9999px;background:rgba(0,0,0,.05);font-size:12px;color:#5d6670}
+
+:root[data-theme="dark"] .manager-error{background:rgba(58,32,30,.96);border-bottom-color:rgba(248,113,113,.2);color:#f6b3a5}
+:root[data-theme="dark"] .manager-error button:not(:last-child):hover{background:rgba(246,179,165,.12)}
+:root[data-theme="dark"] .manager-error button:last-child:hover{background:rgba(246,179,165,.14)}
+:root[data-theme="dark"] .message{background:rgba(35,39,47,.92);border-color:rgba(255,255,255,.12);color:#eef1f5;box-shadow:0 10px 32px rgba(0,0,0,.45)}
+:root[data-theme="dark"] .message button{color:#9ba3ae}
+:root[data-theme="dark"] .message button:hover{background:rgba(255,255,255,.1);color:#fff}
+:root[data-theme="dark"] .message.error{background:rgba(58,32,30,.95);border-color:rgba(248,113,113,.22);color:#f6b3a5}
+:root[data-theme="dark"] .project-initializing{background:rgba(20,22,25,.55)}
+:root[data-theme="dark"] .initializing-panel{border-color:rgba(255,255,255,.12);background:rgba(34,38,45,.9);box-shadow:inset 0 1px 0 rgba(255,255,255,.06),0 14px 40px rgba(0,0,0,.45);color:#eef1f5}
+:root[data-theme="dark"] .initializing-progress{background:rgba(255,255,255,.08);color:#9ba3ae}
+
+
+/* Settings modal Toast positioning & dark-mode prompt shimmer */
+.plugin-modal.settings-modal{position:relative}
+.settings-modal .message{max-width:calc(100% - 48px)}
+:root[data-theme="dark"] .project-prompt:hover,:root[data-theme="dark"] .project-prompt:focus-within{border-color:transparent;background-image:linear-gradient(rgba(34,38,45,.96),rgba(34,38,45,.96)),linear-gradient(115deg,rgba(255,255,255,.12) 0%,rgba(255,255,255,.12) 28%,rgba(96,165,250,.55) 38%,rgba(129,140,248,.52) 48%,rgba(192,132,252,.5) 58%,rgba(103,232,249,.48) 65%,rgba(255,255,255,.12) 74%,rgba(255,255,255,.12) 100%);background-origin:padding-box,border-box;background-clip:padding-box,border-box;background-size:100% 100%,300% 300%;animation:prompt-shimmer 4.5s ease-in-out infinite;box-shadow:inset -14px -8px 20px -13px rgba(96,165,250,.22),inset -6px -12px 20px -13px rgba(167,139,250,.2)}
+@media(prefers-reduced-motion:reduce){:root[data-theme="dark"] .project-prompt:hover,:root[data-theme="dark"] .project-prompt:focus-within{animation:none}}
+
+
+/* Settings header spacing, inline button spinner & deploy ID copy chip */
+.settings-modal header{margin-bottom:clamp(14px,2vh,20px)}
+.settings-modal footer button{display:inline-flex;align-items:center;justify-content:center;gap:6px}
+.settings-modal footer .prompt-spinner{width:14px;height:14px;flex:none}
+.r2-deploy-popup header{align-items:center;margin-bottom:12px}
+.deploy-header-main{display:flex;align-items:flex-end;gap:8px;min-width:0;flex:1;flex-wrap:nowrap}
+.r2-deploy-popup .deploy-header-main h2{white-space:nowrap;flex-shrink:0;line-height:1.25}
+.deploy-id-chip{display:inline-flex;align-items:center;gap:3px;height:18px;padding:0 3px 0 6px;border-radius:9999px;background:rgba(0,0,0,.055);border:1px solid rgba(0,0,0,.08);color:#5d6670;font-size:10px;line-height:1;font-variant-numeric:tabular-nums;min-width:0;max-width:100%}
+.deploy-id-chip span{overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.r2-deploy-popup header .deploy-id-copy{width:13px;height:13px;padding:0;border:0;border-radius:50%;background:transparent;color:#606770;font-size:10px;display:inline-flex;align-items:center;justify-content:center;cursor:pointer;transition:background-color .15s,color .15s;flex:none}
+.r2-deploy-popup header .deploy-id-copy:hover{background:rgba(0,0,0,.08);color:#1f2428}
+.r2-deploy-popup header .deploy-id-copy.is-copied{color:#276843}
+.r2-deploy-popup header .deploy-id-copy svg{width:9.5px;height:9.5px;display:block}
+:root[data-theme="dark"] .deploy-id-chip{background:rgba(255,255,255,.08);border-color:rgba(255,255,255,.12);color:#b0b8c4}
+:root[data-theme="dark"] .r2-deploy-popup header .deploy-id-copy{color:#9ba3ae}
+:root[data-theme="dark"] .r2-deploy-popup header .deploy-id-copy:hover{background:rgba(255,255,255,.12);color:#fff}
+:root[data-theme="dark"] .r2-deploy-popup header .deploy-id-copy.is-copied{color:#5bc28b}

@@ -36,6 +36,26 @@ const COLOR_PRESETS = [
   { id: 'rose', label: '玫瑰粉', color: '#be185d' },
 ] as const;
 
+const VERIFICATION_MODE_STORAGE_KEY = 'website-builder:verification-mode';
+const COLOR_ID_STORAGE_KEY = 'website-builder:color-id';
+const LOCALE_ID_STORAGE_KEY = 'website-builder:locale-id';
+const PROMPT_DRAFT_STORAGE_KEY = 'website-builder:prompt-draft';
+
+function readStorage(key: string): string | null {
+  try {
+    return localStorage.getItem(key);
+  } catch {
+    return null;
+  }
+}
+
+function writeStorage(key: string, value: string): void {
+  try {
+    if (value) localStorage.setItem(key, value);
+    else localStorage.removeItem(key);
+  } catch {}
+}
+
 const VERIFICATION_MODES = [
   { id: 'auto' as const, label: '自动验证', icon: 'sparkles' as const, desc: '生成后自动执行网站全流程检查，确保页面与交互正常' },
   { id: 'manual' as const, label: '手动验证', icon: 'bolt' as const, desc: '仅生成商品、图片与页面，由用户手动验证页面与功能逻辑' },
@@ -46,7 +66,7 @@ interface FileEntry {
   previewUrl?: string;
 }
 
-function extractPromptContent(root: HTMLElement): { text: string; orderedFileIds: string[] } {
+function extractPromptContent(root: HTMLElement, includeChips = true): { text: string; orderedFileIds: string[] } {
   let text = '';
   const orderedFileIds: string[] = [];
 
@@ -59,7 +79,7 @@ function extractPromptContent(root: HTMLElement): { text: string; orderedFileIds
         const fileName = el.dataset.fileName || 'file';
         const fileId = el.dataset.fileId;
         if (fileId) orderedFileIds.push(fileId);
-        text += `[${fileName}]`;
+        if (includeChips) text += `[${fileName}]`;
         return;
       }
       if (el.tagName === 'BR') {
@@ -93,9 +113,18 @@ export function ProjectPrompt({send,onCreated}:{send:(text:string,content:Prompt
   const [pending, setPending] = useState(false);
   const [error, setError] = useState('');
   const [lightbox, setLightbox] = useState<{ url: string; name: string } | null>(null);
-  const [verificationMode, setVerificationMode] = useState<VerificationMode>('auto');
-  const [colorId, setColorId] = useState<string>('auto');
-  const [localeId, setLocaleId] = useState<string>('auto');
+  const [verificationMode, setVerificationMode] = useState<VerificationMode>(() => {
+    const saved = readStorage(VERIFICATION_MODE_STORAGE_KEY);
+    return saved === 'auto' || saved === 'manual' ? saved : 'auto';
+  });
+  const [colorId, setColorId] = useState<string>(() => {
+    const saved = readStorage(COLOR_ID_STORAGE_KEY);
+    return saved && COLOR_PRESETS.some(c => c.id === saved) ? saved : 'auto';
+  });
+  const [localeId, setLocaleId] = useState<string>(() => {
+    const saved = readStorage(LOCALE_ID_STORAGE_KEY);
+    return saved && LOCALE_PRESETS.some(l => l.id === saved) ? saved : 'auto';
+  });
   const [menu, setMenu] = useState<'locale'|'color'|'mode'|null>(null);
   const [localeQuery, setLocaleQuery] = useState('');
   const [menuStyle, setMenuStyle] = useState<{left?:number;right?:number;top?:number;bottom?:number}>({});
@@ -108,6 +137,12 @@ export function ProjectPrompt({send,onCreated}:{send:(text:string,content:Prompt
   const savedRange = useRef<Range|null>(null);
 
   useEffect(() => {
+    const editor = editorRef.current;
+    const savedDraft = readStorage(PROMPT_DRAFT_STORAGE_KEY);
+    if (editor && savedDraft && !editor.textContent) {
+      editor.textContent = savedDraft;
+      setHasContent(true);
+    }
     return () => {
       operation.current?.abort();
       for (const entry of filesMap.current.values()) {
@@ -183,6 +218,8 @@ export function ProjectPrompt({send,onCreated}:{send:(text:string,content:Prompt
       }
     }
     const { text, orderedFileIds } = extractPromptContent(editor);
+    const { text: draftText } = extractPromptContent(editor, false);
+    writeStorage(PROMPT_DRAFT_STORAGE_KEY, draftText);
     const empty = !text && orderedFileIds.length === 0 && filesMap.current.size === 0;
     if (empty && editor.innerHTML !== '') editor.innerHTML = '';
     setHasContent(!empty);
@@ -379,6 +416,7 @@ export function ProjectPrompt({send,onCreated}:{send:(text:string,content:Prompt
       if (controller.signal.aborted) return;
 
       editor.innerHTML = '';
+      writeStorage(PROMPT_DRAFT_STORAGE_KEY, '');
       for (const entry of filesMap.current.values()) {
         if (entry.previewUrl) URL.revokeObjectURL(entry.previewUrl);
       }
@@ -626,7 +664,7 @@ export function ProjectPrompt({send,onCreated}:{send:(text:string,content:Prompt
                   role="menuitemradio"
                   aria-checked={localeId === item.id}
                   className={`prompt-menu-item${localeId === item.id ? ' is-active' : ''}`}
-                  onClick={() => { setLocaleId(item.id); setMenu(null); }}
+                  onClick={() => { setLocaleId(item.id); writeStorage(LOCALE_ID_STORAGE_KEY, item.id); setMenu(null); }}
                 >
                   {item.country ? <CountryFlag country={item.country} /> : <span className="prompt-flag-auto" aria-hidden="true"><Icon name="globe" /></span>}
                   <span className="prompt-menu-item-title">{item.label}</span>
@@ -644,7 +682,7 @@ export function ProjectPrompt({send,onCreated}:{send:(text:string,content:Prompt
                 role="menuitemradio"
                 aria-checked={colorId === item.id}
                 className={`prompt-menu-item${colorId === item.id ? ' is-active' : ''}`}
-                onClick={() => { setColorId(item.id); setMenu(null); }}
+                onClick={() => { setColorId(item.id); writeStorage(COLOR_ID_STORAGE_KEY, item.id); setMenu(null); }}
               >
                 {item.color ? (
                   <span className="prompt-color-swatch" style={{ backgroundColor: item.color }} aria-hidden="true" />
@@ -665,7 +703,11 @@ export function ProjectPrompt({send,onCreated}:{send:(text:string,content:Prompt
                 role="menuitemradio"
                 aria-checked={verificationMode === item.id}
                 className={`prompt-menu-item prompt-menu-item-rich${verificationMode === item.id ? ' is-active' : ''}`}
-                onClick={() => { setVerificationMode(item.id); setMenu(null); }}
+                onClick={() => {
+                  setVerificationMode(item.id);
+                  writeStorage(VERIFICATION_MODE_STORAGE_KEY, item.id);
+                  setMenu(null);
+                }}
               >
                 <Icon name={item.icon} />
                 <div className="prompt-menu-item-text">

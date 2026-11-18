@@ -1,6 +1,6 @@
 {
   "name": "codex-website-builder",
-  "version": "0.9.2",
+  "version": "0.9.3",
   "description": "Build ecommerce websites with the bundled skill, reuse thread projects, and preview page generation live.",
   "mcpServers": "./mcp.json",
   "skills": "./skills/",
@@ -12,6 +12,6 @@
     "capabilities": [
       "Interactive"
     ],
-    "defaultPrompt": "根据我的需求生成完整电商网站，在当前会话项目中逐页预览。"
+    "defaultPrompt": "根据需求生成完整电商网站。"
   }
 }

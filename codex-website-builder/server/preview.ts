@@ -168,11 +168,25 @@ function instrument(html: string, embedded = false) {
   return /<head\b[^>]*>/i.test(html) ? html.replace(/<head\b[^>]*>/i, match => match + base + script + (embedded?previewMock:'') + proxyRuntime) : base + script + (embedded?previewMock:'') + proxyRuntime + html;
 }
 
+let cachedVendorManifest: Promise<{ vendor: string; assets: Record<string, string> }> | undefined;
+function getVendorManifest() {
+  if (!cachedVendorManifest) {
+    const vendor = fileURLToPath(new URL('../vendor/', import.meta.url));
+    cachedVendorManifest = readFile(join(vendor, 'manifest.json'), 'utf8')
+      .then(text => ({ vendor, assets: JSON.parse(text) as Record<string, string> }));
+  }
+  return cachedVendorManifest;
+}
+
+export async function createProjectCompiler(sourceDirectory: string) {
+  const [{ vendor, assets }, source] = await Promise.all([getVendorManifest(), realpath(sourceDirectory)]);
+  const compile = snapshotCompiler(source, source, vendor, assets);
+  return async (path: string) => instrument(await compile(path), true);
+}
+
 export async function compileProjectPage(sourceDirectory:string,path:string) {
-  const vendor=fileURLToPath(new URL('../vendor/',import.meta.url));
-  const assets:Record<string,string>=JSON.parse(await readFile(join(vendor,'manifest.json'),'utf8'));
-  const source=await realpath(sourceDirectory);
-  return instrument(await snapshotCompiler(source,source,vendor,assets)(path),true);
+  const compile = await createProjectCompiler(sourceDirectory);
+  return compile(path);
 }
 
 export async function createPreview(ui: string, configuredRoot: string, defaultDirectory = 'www.noventrad.com', projectSync?: (input:{since?:string;known?:Record<string,number>;waitMs?:number;threadId?:string;projectId?:string;metadataOnly?:boolean;pageLimit?:number;priorityPath?:string})=>Promise<unknown>, manageProjects?: (input:any)=>Promise<unknown>, control?: (input:any)=>Promise<unknown>) {

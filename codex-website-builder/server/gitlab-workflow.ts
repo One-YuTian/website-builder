@@ -15,7 +15,7 @@ export type GitLabIntent='create'|'bind'|'commit'|'push'|'deploy';
 export type DeployEnvironment='test'|'production';
 export function websiteDomain(value:string){
   const domain=domainToASCII(value.trim().toLowerCase());
-  if(!/^www\.(?:[a-z0-9](?:[a-z0-9-]{0,61}[a-z0-9])?\.)+[a-z]{2,63}$/.test(domain))throw Error('请确认真实官网域名，格式必须为 www.xxx.xxx，不含协议、端口或路径');return domain;
+  if(!/^(?:[a-z0-9](?:[a-z0-9-]{0,61}[a-z0-9])?\.)+[a-z]{2,63}$/.test(domain))throw Error('请确认真实官网域名，格式如 example.com 或 www.example.com，不含协议、端口或路径');return domain;
 }
 export function releaseName(environment:DeployEnvironment,date=new Date()){
   const parts=Object.fromEntries(new Intl.DateTimeFormat('en-GB',{timeZone:'Asia/Shanghai',year:'2-digit',month:'2-digit',day:'2-digit',hour:'2-digit',minute:'2-digit',hourCycle:'h23'}).formatToParts(date).map(p=>[p.type,p.value]));

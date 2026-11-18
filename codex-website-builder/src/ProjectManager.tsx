@@ -24,6 +24,10 @@ export function ProjectManager({background}:{background:ReactNode}) {
 
   const [openingSettings,setOpeningSettings]=useState(false);
   const [sidebarOpen,setSidebarOpen]=useState(false);
+  const sidebarCloseTimer=useRef<number|null>(null);
+  const openSidebar=useCallback(()=>{if(sidebarCloseTimer.current!==null){window.clearTimeout(sidebarCloseTimer.current);sidebarCloseTimer.current=null;}setSidebarOpen(true);},[]);
+  const closeSidebarSoon=useCallback(()=>{if(sidebarCloseTimer.current!==null)window.clearTimeout(sidebarCloseTimer.current);sidebarCloseTimer.current=window.setTimeout(()=>{sidebarCloseTimer.current=null;setSidebarOpen(false);},120);},[]);
+  useEffect(()=>()=>{if(sidebarCloseTimer.current!==null)window.clearTimeout(sidebarCloseTimer.current);},[]);
   const [query,setQuery]=useState('');
   const [error,setError]=useState('');
   useEffect(()=>{if(!detail||!error)return;const timer=setTimeout(()=>setError(''),3000);return()=>clearTimeout(timer);},[detail?.project_id,error]);
@@ -115,9 +119,9 @@ export function ProjectManager({background}:{background:ReactNode}) {
     {error&&<div className="manager-error" role="alert">{error}<button aria-label="关闭错误" onClick={()=>setError('')}>×</button></div>}
     {detail?<WebsiteCanvas key={detail.project_id} background={background} projectId={detail.project_id} panelId={panelId} threadId={detail.thread_id||undefined} onHome={()=>void home()} onProject={id=>void open(id)} onFolder={()=>void request({action:'folder',project_id:detail.project_id}).catch(error=>setError(error.message))}/>:<div className={`project-home${projects.length===0?' is-empty-projects':''}`}>{background}
       {projects.length>0&&<>
-        <button type="button" className="sidebar-toggle-button" aria-label={sidebarOpen?'收起项目列表':'展开项目列表'} title="项目列表" aria-expanded={sidebarOpen} onClick={()=>setSidebarOpen(v=>!v)}><Icon name="sidebar"/></button>
+        <button type="button" className={`sidebar-toggle-button${sidebarOpen?' is-hidden':''}`} aria-label="展开项目列表" title="项目列表" aria-expanded={sidebarOpen} onMouseEnter={openSidebar} onMouseLeave={closeSidebarSoon}><Icon name="sidebar"/></button>
         <div className={`sidebar-backdrop${sidebarOpen?' is-open':''}`} aria-hidden="true" onClick={()=>setSidebarOpen(false)}/>
-        <aside className={`project-sidebar${sidebarOpen?' is-open':''}`} aria-label="项目目录">
+        <aside className={`project-sidebar${sidebarOpen?' is-open':''}`} aria-label="项目目录" onMouseEnter={openSidebar} onMouseLeave={closeSidebarSoon}>
           <label className="project-search"><Icon name="search"/><input aria-label="搜索项目" placeholder="搜索项目" value={query} onChange={event=>setQuery(event.target.value)}/></label>
           <div className="project-groups">{[...groups].map(([label,items])=><section key={label}><h2>{label}</h2>{items.map(project=><div className="project-row" data-project-id={project.id} key={project.id}>
             <button className="project-open" onClick={()=>{setSidebarOpen(false);void open(project.id);}} disabled={busy}><span className="project-thumbnail">{project.thumbnail?<img src={project.thumbnail} alt=""/>:<Icon name="pages"/>}</span><span className="project-description"><strong title={project.displayName||`网站-${project.name}`}>{project.displayName||`网站-${project.name}`}</strong><time dateTime={project.updatedAt} title={projectTime(project.updatedAt)}>{projectTime(project.updatedAt)}</time></span></button>
