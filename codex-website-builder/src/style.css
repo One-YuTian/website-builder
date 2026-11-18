@@ -350,3 +350,147 @@
 :root[data-theme="dark"] .gitlab-inline-form input:disabled{background:#232730;color:#838c97}
 :root[data-theme="dark"] .gitlab-inline-form fieldset,:root[data-theme="dark"] .plugin-modal fieldset{border-color:#343a44}
 :root[data-theme="dark"] .r2-deploy-popup footer .primary{background:#3d6b52;border-color:#3d6b52}
+
+
+/* Unified popup/modal controls (inputs, selects, buttons, radios, progress) */
+button:focus-visible,select:focus-visible{outline:2px solid #525d68;outline-offset:2px}
+:root[data-theme="dark"] button:focus-visible,:root[data-theme="dark"] select:focus-visible{outline-color:#9aa5b1}
+input,input:focus,input:focus-visible,textarea,textarea:focus,textarea:focus-visible,.prompt-editor,.prompt-editor:focus,.prompt-editor:focus-visible{outline:none!important}
+
+/* Tool popover (canvas right-rail popovers) */
+.tool-popover{border-radius:22px;padding:16px 18px;background:rgba(244,246,248,.88);backdrop-filter:blur(24px) saturate(1.25);-webkit-backdrop-filter:blur(24px) saturate(1.25);border:1px solid rgba(0,0,0,.08);box-shadow:0 12px 36px rgba(15,23,42,.13);color:#1f2428}
+.popover-heading{margin-bottom:14px;font-size:13px;font-weight:600;color:#1b2024}
+.popover-heading button{width:28px;height:28px;padding:0;border-radius:50%;display:inline-flex;align-items:center;justify-content:center;font-size:18px;line-height:1;color:#606770;transition:background-color .15s,color .15s}
+.popover-heading button:hover{background:rgba(0,0,0,.07);color:#1f2428}
+.tool-popover label{font-size:12px;color:#5d6670;margin:10px 0}
+.tool-popover input,.tool-popover select{font-size:12.5px;border:1px solid #d5d9df;border-radius:10px;background:#fff;color:#1f2428;padding:7px 10px;outline:none;transition:border-color .15s,box-shadow .15s}
+.tool-popover select{appearance:none;-webkit-appearance:none;padding-right:28px;cursor:pointer;background-image:url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='14' height='14' viewBox='0 0 24 24' fill='none' stroke='%235d6670' stroke-width='2' stroke-linecap='round' stroke-linejoin='round'%3E%3Cpath d='m6 9 6 6 6-6'/%3E%3C/svg%3E");background-repeat:no-repeat;background-position:right 9px center}
+.tool-popover input:focus,.tool-popover select:focus{border-color:#525d68;box-shadow:0 0 0 3px rgba(52,59,64,.12)}
+.tool-popover .selected-file,.resource-note{border-top:1px solid #e1e4e8;color:#6b727b}
+.order-buttons button,.full-button,.zoom-row button{border-radius:9999px;border:1px solid #d5d9df;background:#fff;color:#2c3237;font-size:12px;padding:6px 12px;transition:background-color .15s,border-color .15s}
+.order-buttons button:hover,.full-button:hover,.zoom-row button:hover{background:#e7eaee;border-color:#c4cad2}
+.zoom-row button{width:34px;height:34px;padding:0;display:inline-flex;align-items:center;justify-content:center}
+.tool-popover form>button{border-radius:9999px;background:#343b40;color:#fff;border:0;padding:8px 14px;font-size:12.5px;font-weight:500;transition:background-color .15s}
+.tool-popover form>button:hover:not(:disabled){background:#22282c}
+.tool-popover input[type=range]{accent-color:#343b40;border:0;background:transparent;padding:0}
+.page-list button{border-radius:10px;padding:8px 10px;color:#5d6670;font-size:11.5px;transition:background-color .12s}
+.page-list button:hover{background:#e5e8ec}
+.page-list button span{color:#1f2428;font-size:12px}
+.page-list .current{background:#dfe2e6;color:#1b2024;font-weight:500}
+
+/* Plugin modals & settings/deploy/preview panels */
+.plugin-modal-overlay{background:rgba(15,23,42,.24)}
+.plugin-modal{border-radius:22px;border:1px solid rgba(0,0,0,.08);box-shadow:0 16px 48px rgba(15,23,42,.14);color:#1f2428}
+.plugin-modal header h2,.settings-modal header h2,.image-preview-modal header h2{color:#1b2024;font-weight:600}
+.plugin-modal header button{width:30px;height:30px;padding:0;border-radius:50%;display:inline-flex;align-items:center;justify-content:center;color:#606770;transition:background-color .15s,color .15s}
+.plugin-modal header button:hover{background:rgba(0,0,0,.07);color:#1f2428}
+.plugin-modal p,.settings-modal header p,.settings-modal label span,.settings-note{color:#5d6670}
+.plugin-modal input,.settings-modal input,.gitlab-inline-form input{border:1px solid #d5d9df;border-radius:12px;background:#fff;color:#1f2428;padding:9px 12px;transition:border-color .15s,box-shadow .15s,background-color .15s}
+.plugin-modal input:not(:disabled):hover,.settings-modal input:not(:disabled):hover,.gitlab-inline-form input:not(:disabled):hover{border-color:#b4bcc6}
+.plugin-modal input:focus,.settings-modal input:focus,.gitlab-inline-form input:focus{outline:none;border-color:#525d68;box-shadow:0 0 0 3px rgba(52,59,64,.12)}
+.plugin-modal input:disabled,.settings-modal input:disabled,.gitlab-inline-form input:disabled{background:#f1f3f5;border-color:#e3e6ea;color:#78808a}
+.plugin-modal select{border:1px solid #d5d9df;border-radius:12px;background:#fff;color:#1f2428;padding:8px 30px 8px 12px;appearance:none;-webkit-appearance:none;background-image:url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='14' height='14' viewBox='0 0 24 24' fill='none' stroke='%235d6670' stroke-width='2' stroke-linecap='round' stroke-linejoin='round'%3E%3Cpath d='m6 9 6 6 6-6'/%3E%3C/svg%3E");background-repeat:no-repeat;background-position:right 10px center}
+.plugin-modal input[type=radio],.plugin-modal input[type=checkbox],.r2-deploy-popup input[type=radio],.r2-deploy-popup input[type=checkbox]{accent-color:#343b40}
+.plugin-modal fieldset,.settings-group{border:1px solid #dfe3e8;border-radius:16px;background:#f7f8fa}
+.settings-group legend,.settings-group-title{color:#1f2428}
+.settings-modal footer{border-top:1px solid #e6e8ec}
+.settings-modal footer>p{color:#276843}
+.plugin-modal button,.settings-modal footer button,.r2-deploy-popup footer button{border-radius:9999px;padding:8px 16px;font-size:13px;font-weight:500;border:1px solid #d5d9df;background:#fff;color:#2c3237;transition:background-color .15s,border-color .15s,opacity .15s}
+.plugin-modal button:hover:not(:disabled),.settings-modal footer .settings-btn-secondary:hover:not(:disabled),.r2-deploy-popup footer button:hover:not(:disabled){background:#eef0f3;border-color:#c0c6cf}
+.plugin-modal button.primary,.settings-modal footer button.primary,.r2-deploy-popup footer .primary{border:1px solid #343b40;background:#343b40;color:#fff}
+.plugin-modal button.primary:hover:not(:disabled),.settings-modal footer button.primary:hover:not(:disabled),.r2-deploy-popup footer .primary:hover:not(:disabled){border-color:#22282c;background:#22282c}
+.connection-result{border-radius:14px;border:1px solid #dfe3e8;background:#f7f8fa}
+.connection-result.is-passed{border-color:#b8d4c3;background:#f0f7f3;color:#276843}
+.connection-result.is-failed{border-color:#ebc5bf;background:#fdf4f2;color:#a74d40}
+
+/* R2 & inline GitLab deploy popup */
+.r2-deploy-popup{border-radius:22px;background:#eceef1;border:1px solid rgba(0,0,0,.08);box-shadow:0 14px 40px rgba(15,23,42,.15);color:#1f2428}
+.r2-deploy-popup header button{width:28px;height:28px;padding:0;border-radius:50%;display:inline-flex;align-items:center;justify-content:center;color:#606770;transition:background-color .15s,color .15s}
+.r2-deploy-popup header button:hover{background:rgba(0,0,0,.07);color:#1f2428}
+.r2-project,.r2-progress span,.r2-current-file,.deploy-mode-hint,.deploy-mode-desc,.gitlab-inline-dl dt,.deploy-timeline-item,.deploy-timeline-stage{color:#5d6670}
+.r2-progress progress{accent-color:#343b40}
+.r2-result input{border:1px solid #d5d9df;border-radius:12px;background:#fff}
+.r2-copy-button{border-radius:50%;color:#5d6670;transition:background-color .15s,color .15s}
+.r2-copy-button:hover{background:rgba(0,0,0,.06);color:#1f2428}
+.r2-preview-anchor,.r2-result-link{color:#1f2428;font-weight:500}
+.deploy-mode-option{border:1px solid #d8dde3;border-radius:16px;background:#fff;transition:border-color .15s,background-color .15s}
+.deploy-mode-option:hover:not(:disabled){border-color:#9aa3ae;background:#f7f8fa}
+.deploy-mode-title{color:#1b2024}
+.deploy-mode-badge{background:#e3e7ec;color:#2c3237}
+.deploy-timeline{border:1px solid #dfe3e8;border-radius:16px;background:#f7f8fa}
+.deploy-timeline-dot{border-color:#c2c9d1;background:#fff}
+.deploy-timeline-item:not(:last-child)::after{background:#d5dbe2}
+.deploy-timeline-item.is-done{color:#276843}
+.deploy-timeline-item.is-done .deploy-timeline-dot{border-color:#276843;background:#276843}
+.deploy-timeline-item.is-done:not(:last-child)::after{background:#276843}
+.deploy-timeline-item.is-active{color:#1b2024}
+.deploy-timeline-item.is-active .deploy-timeline-dot{border-color:#343b40;box-shadow:0 0 0 3px rgba(52,59,64,.16)}
+.gitlab-inline-form fieldset{border:1px solid #dfe3e8;border-radius:14px;background:#f7f8fa}
+
+/* Dark theme overrides for unified controls */
+:root[data-theme="dark"] .tool-popover{background:rgba(35,39,47,.9);border-color:rgba(255,255,255,.12);box-shadow:0 12px 36px rgba(0,0,0,.5);color:#e2e6ec}
+:root[data-theme="dark"] .popover-heading{color:#eef1f5}
+:root[data-theme="dark"] .popover-heading button{color:#9ba3ae}
+:root[data-theme="dark"] .popover-heading button:hover{background:rgba(255,255,255,.1);color:#fff}
+:root[data-theme="dark"] .tool-popover label{color:#9ba3ae}
+:root[data-theme="dark"] .tool-popover input,:root[data-theme="dark"] .tool-popover select{border-color:#383e49;background:#191c22;color:#e6e9ef}
+:root[data-theme="dark"] .tool-popover select{background-image:url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='14' height='14' viewBox='0 0 24 24' fill='none' stroke='%239ba3ae' stroke-width='2' stroke-linecap='round' stroke-linejoin='round'%3E%3Cpath d='m6 9 6 6 6-6'/%3E%3C/svg%3E")}
+:root[data-theme="dark"] .tool-popover input:focus,:root[data-theme="dark"] .tool-popover select:focus{border-color:#8b949e;box-shadow:0 0 0 3px rgba(230,235,240,.14)}
+:root[data-theme="dark"] .tool-popover .selected-file,:root[data-theme="dark"] .resource-note{border-top-color:#323741;color:#9ba3ae}
+:root[data-theme="dark"] .order-buttons button,:root[data-theme="dark"] .full-button,:root[data-theme="dark"] .zoom-row button{border-color:#383e49;background:#262a33;color:#e2e6ec}
+:root[data-theme="dark"] .order-buttons button:hover,:root[data-theme="dark"] .full-button:hover,:root[data-theme="dark"] .zoom-row button:hover{background:#313641;border-color:#4b5362}
+:root[data-theme="dark"] .tool-popover form>button{background:#e6ebf0;color:#16181d}
+:root[data-theme="dark"] .tool-popover form>button:hover:not(:disabled){background:#fff}
+:root[data-theme="dark"] .tool-popover input[type=range]{accent-color:#e6ebf0;background:transparent}
+:root[data-theme="dark"] .page-list button{color:#9ba3ae}
+:root[data-theme="dark"] .page-list button:hover{background:rgba(255,255,255,.08)}
+:root[data-theme="dark"] .page-list button span{color:#e6e9ef}
+:root[data-theme="dark"] .page-list .current{background:rgba(255,255,255,.12);color:#fff}
+
+:root[data-theme="dark"] .plugin-modal-overlay{background:rgba(10,12,15,.72)}
+:root[data-theme="dark"] .plugin-modal{border-color:#323741;color:#e4e8ee;box-shadow:0 24px 80px rgba(0,0,0,.55)}
+:root[data-theme="dark"] .plugin-modal header h2,:root[data-theme="dark"] .settings-modal header h2,:root[data-theme="dark"] .image-preview-modal header h2{color:#eef1f5}
+:root[data-theme="dark"] .plugin-modal header button{color:#9ba3ae}
+:root[data-theme="dark"] .plugin-modal header button:hover{background:rgba(255,255,255,.1);color:#fff}
+:root[data-theme="dark"] .plugin-modal p,:root[data-theme="dark"] .settings-modal header p,:root[data-theme="dark"] .settings-modal label span,:root[data-theme="dark"] .settings-note{color:#9ba3ae}
+:root[data-theme="dark"] .plugin-modal input,:root[data-theme="dark"] .settings-modal input,:root[data-theme="dark"] .gitlab-inline-form input{border-color:#383e49;background:#15181d;color:#e6e9ef}
+:root[data-theme="dark"] .plugin-modal input:not(:disabled):hover,:root[data-theme="dark"] .settings-modal input:not(:disabled):hover,:root[data-theme="dark"] .gitlab-inline-form input:not(:disabled):hover{border-color:#4f5866}
+:root[data-theme="dark"] .plugin-modal input:focus,:root[data-theme="dark"] .settings-modal input:focus,:root[data-theme="dark"] .gitlab-inline-form input:focus{border-color:#8b949e;box-shadow:0 0 0 3px rgba(230,235,240,.14)}
+:root[data-theme="dark"] .plugin-modal input:disabled,:root[data-theme="dark"] .settings-modal input:disabled,:root[data-theme="dark"] .gitlab-inline-form input:disabled{background:#232730;border-color:#2f343f;color:#838c97}
+:root[data-theme="dark"] .plugin-modal select{border-color:#383e49;background:#15181d;color:#e6e9ef;background-image:url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='14' height='14' viewBox='0 0 24 24' fill='none' stroke='%239ba3ae' stroke-width='2' stroke-linecap='round' stroke-linejoin='round'%3E%3Cpath d='m6 9 6 6 6-6'/%3E%3C/svg%3E")}
+:root[data-theme="dark"] .plugin-modal input[type=radio],:root[data-theme="dark"] .plugin-modal input[type=checkbox],:root[data-theme="dark"] .r2-deploy-popup input[type=radio],:root[data-theme="dark"] .r2-deploy-popup input[type=checkbox]{accent-color:#e6ebf0}
+:root[data-theme="dark"] .plugin-modal fieldset,:root[data-theme="dark"] .settings-group{border-color:#323741;background:#252932}
+:root[data-theme="dark"] .settings-group legend,:root[data-theme="dark"] .settings-group-title{color:#dce1e8}
+:root[data-theme="dark"] .settings-modal footer{border-top-color:#323741}
+:root[data-theme="dark"] .settings-modal footer>p{color:#77c598}
+:root[data-theme="dark"] .plugin-modal button,:root[data-theme="dark"] .settings-modal footer button,:root[data-theme="dark"] .r2-deploy-popup footer button{border-color:#3c434f;background:#262a33;color:#dce1e8}
+:root[data-theme="dark"] .plugin-modal button:hover:not(:disabled),:root[data-theme="dark"] .settings-modal footer .settings-btn-secondary:hover:not(:disabled){background:#313641;border-color:#4f5868}
+:root[data-theme="dark"] .r2-deploy-popup footer button:hover:not(:disabled){background:#313641;border-color:#4f5868}
+:root[data-theme="dark"] .plugin-modal button.primary,:root[data-theme="dark"] .settings-modal footer button.primary,:root[data-theme="dark"] .r2-deploy-popup footer .primary{border-color:#e6ebf0;background:#e6ebf0;color:#16181d}
+:root[data-theme="dark"] .plugin-modal button.primary:hover:not(:disabled),:root[data-theme="dark"] .settings-modal footer button.primary:hover:not(:disabled),:root[data-theme="dark"] .r2-deploy-popup footer .primary:hover:not(:disabled){border-color:#ffffff;background:#ffffff}
+:root[data-theme="dark"] .connection-result{border-color:#343a44;background:#22262e;color:#cfd5dd}
+:root[data-theme="dark"] .connection-result.is-passed{border-color:#2f5c43;background:#1b2f24;color:#7ad3a0}
+:root[data-theme="dark"] .connection-result.is-failed{border-color:#6b352e;background:#36201d;color:#f39a8e}
+
+:root[data-theme="dark"] .r2-deploy-popup{background:#23272f;border-color:rgba(255,255,255,.12);box-shadow:0 14px 40px rgba(0,0,0,.5);color:#e4e8ee}
+:root[data-theme="dark"] .r2-deploy-popup header button{color:#9ba3ae}
+:root[data-theme="dark"] .r2-deploy-popup header button:hover{background:rgba(255,255,255,.1);color:#fff}
+:root[data-theme="dark"] .r2-project,:root[data-theme="dark"] .r2-progress span,:root[data-theme="dark"] .r2-current-file,:root[data-theme="dark"] .deploy-mode-hint,:root[data-theme="dark"] .deploy-mode-desc,:root[data-theme="dark"] .gitlab-inline-dl dt,:root[data-theme="dark"] .deploy-timeline-item,:root[data-theme="dark"] .deploy-timeline-stage{color:#9ba3ae}
+:root[data-theme="dark"] .r2-progress progress{accent-color:#e6ebf0}
+:root[data-theme="dark"] .r2-result input{border-color:#383e49;background:#15181d}
+:root[data-theme="dark"] .r2-copy-button{color:#9ba3ae}
+:root[data-theme="dark"] .r2-copy-button:hover{background:rgba(255,255,255,.1);color:#fff}
+:root[data-theme="dark"] .r2-preview-anchor,:root[data-theme="dark"] .r2-result-link{color:#e6ebf0}
+:root[data-theme="dark"] .deploy-mode-option{border-color:#343a44;background:#2a2f39}
+:root[data-theme="dark"] .deploy-mode-option:hover:not(:disabled){border-color:#5a6374;background:#323844}
+:root[data-theme="dark"] .deploy-mode-title{color:#eef1f5}
+:root[data-theme="dark"] .deploy-mode-badge{background:rgba(255,255,255,.1);color:#dce1e8}
+:root[data-theme="dark"] .deploy-timeline{border-color:#323741;background:#252932}
+:root[data-theme="dark"] .deploy-timeline-dot{border-color:#4f5866;background:#1e2127}
+:root[data-theme="dark"] .deploy-timeline-item:not(:last-child)::after{background:#39404c}
+:root[data-theme="dark"] .deploy-timeline-item.is-done{color:#7ad3a0}
+:root[data-theme="dark"] .deploy-timeline-item.is-done .deploy-timeline-dot{border-color:#5bc28b;background:#5bc28b}
+:root[data-theme="dark"] .deploy-timeline-item.is-done:not(:last-child)::after{background:#5bc28b}
+:root[data-theme="dark"] .deploy-timeline-item.is-active{color:#eef1f5}
+:root[data-theme="dark"] .deploy-timeline-item.is-active .deploy-timeline-dot{border-color:#e6ebf0;box-shadow:0 0 0 3px rgba(230,235,240,.2)}
+:root[data-theme="dark"] .gitlab-inline-form fieldset{border-color:#343a44;background:#252932}
