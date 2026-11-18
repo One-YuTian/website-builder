@@ -1,0 +1,57 @@
+import './compression-fetch-fixture.mjs';
+import assert from 'node:assert/strict';
+import {mkdtemp,readFile,writeFile,unlink,stat} from 'node:fs/promises';
+import {join,resolve} from 'node:path';
+import {tmpdir} from 'node:os';
+import {gunzipSync} from 'node:zlib';
+import {DatabaseSync} from 'node:sqlite';
+import {Client} from '@modelcontextprotocol/sdk/client/index.js';
+import {StdioClientTransport} from '@modelcontextprotocol/sdk/client/stdio.js';
+
+const root=await mkdtemp(join(tmpdir(),'website-material-preview-'));
+const client=new Client({name:'material-preview',version:'1'});
+const env={...process.env,WEBSITE_BUILDER_DATA_DIR:root};delete env.WEBSITE_BUILDER_PROJECT_ROOT;
+const call=async(name,args)=>{const result=await client.callTool({name,arguments:args});assert.ok(!result.isError,JSON.stringify(result));return result;};
+const json=async(name,args)=>JSON.parse((await call(name,args)).content[0].text);
+let db;
+try{
+  await client.connect(new StdioClientTransport({command:process.execPath,args:[resolve('dist/server/index.js')],env}));
+  const panel={thread_id:'material-thread',panel_id:'material-panel'};
+  const project=await json('website_projects',{...panel,action:'create',name:'Material preview'});
+  const ids={thread_id:panel.thread_id,project_id:project.project_id};
+  const image=Buffer.from('iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAYAAAAfFcSJAAAADUlEQVR4nGNwaDjQAAAEhQIBw1cvNgAAAABJRU5ErkJggg==','base64');
+  await json('website_images',{...ids,action:'begin',path:'banner1.png'});
+  await writeFile(join(project.material_directory,'banner1.png'),image);
+  await json('website_images',{...ids,action:'finish',path:'banner1.png'});
+  await writeFile(join(project.material_directory,'candidate.png'),image);
+  await writeFile(join(project.directory,'images','deployment-only.png'),image);
+  const attachedFile=join(root,'attachment.png');await writeFile(attachedFile,image);
+  await json('website_projects',{...panel,project_id:project.project_id,action:'attach',source_path:attachedFile});
+  db=new DatabaseSync(join(root,'db/website-builder.sqlite'));
+  const insert=db.prepare('INSERT INTO resources VALUES (?,?,?,?,?,?,?)');
+  insert.run('stale-deployment',project.project_id,null,'deployment-only.png',join(project.directory,'images/deployment-only.png'),'image/png',image.length);
+  insert.run('stale-removed',project.project_id,null,'removed.png',join(project.material_directory,'removed.png'),'image/png',image.length);
+  db.prepare("INSERT INTO image_tasks(project_id,path,name,width,height,status) VALUES (?,?,?,?,?,'generating')").run(project.project_id,'assets/old.png','Old layout task',960,600);
+  const gallery=()=>json('website_projects',{...panel,project_id:project.project_id,action:'images'});
+  assert.deepEqual((await gallery()).images.map(i=>i.path).sort(),['banner1.png','candidate.png']);
+  await assert.rejects(stat(join(project.directory,'images/candidate.png')),'unused originals are not published');
+  await unlink(join(project.material_directory,'candidate.png'));
+  assert.deepEqual((await gallery()).images.map(i=>i.path),['banner1.png'],'removed files do not survive in database-backed gallery');
+  await json('website_project',{...ids,action:'plan',pages:[{path:'index.html',title:'Home'}]});
+  const written=await json('website_write',{...ids,files:[{path:'js/site.js',content:'window.materialPreview = true;'},{path:'index.html',content:'<!doctype html><html><head><script src="/js/site.js"></script></head><body><h1>Source directory page</h1><img src="images/banner1.png"></body></html>'}]});
+  assert.equal(written.pages[0].status,'ready','root-relative script resolves under src, not the OS root');
+  await assert.rejects(stat(join(project.project_directory,'index.html')));
+  // Reproduce the actual old-runtime error, including missing resourceSignature.
+  const data=JSON.parse(db.prepare('SELECT data FROM projects WHERE id=?').get(project.project_id).data);
+  data.pages[0].status='error';data.pages[0].error=`ENOENT: no such file or directory, open '${join(project.project_directory,'index.html')}'`;
+  delete data.pages[0].resourceSignature;
+  db.prepare('UPDATE projects SET data=? WHERE id=?').run(JSON.stringify(data),project.project_id);
+  const sync=(await call('project_sync',{...ids,wait_ms:0}))._meta.sync;
+  assert.equal(sync.manifest.pages[0].status,'ready');assert.deepEqual(sync.errors,{});
+  const html=gunzipSync(Buffer.from(sync.pages['index.html'],'base64')).toString('utf8');
+  assert.match(html,/Source directory page/);assert.ok(sync.manifest.pages[0].url.includes('/src/index.html'));
+  const script=html.match(/src="data:text\/javascript;base64,([^"]+)"/);
+  assert.ok(script);assert.match(Buffer.from(script[1],'base64').toString(),/materialPreview/);
+  assert.ok((await readFile(join(project.directory,'index.html'),'utf8')).includes('/js/site.js'));
+  console.log('PASS: live material-only gallery, unused originals, no deployment/attachment/stale duplicates, src-only preview, root-relative dependencies and ENOENT-state recovery');
+}finally{db?.close();await client.close();}

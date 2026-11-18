@@ -1,0 +1,89 @@
+import './compression-fetch-fixture.mjs';
+import assert from 'node:assert/strict';
+import fs from 'node:fs';
+import {mkdtemp,readFile,writeFile,unlink,mkdir,rmdir} from 'node:fs/promises';
+import {tmpdir} from 'node:os';
+import {join,resolve} from 'node:path';
+import {createRequire} from 'node:module';
+import {Client} from '@modelcontextprotocol/sdk/client/index.js';
+import {StdioClientTransport} from '@modelcontextprotocol/sdk/client/stdio.js';
+
+const root=await mkdtemp(join(tmpdir(),'website-project-git-'));
+const client=new Client({name:'project-git-test',version:'1'});
+const env={...process.env,WEBSITE_BUILDER_DATA_DIR:root,PATH:''};delete env.WEBSITE_BUILDER_PROJECT_ROOT;
+const raw=(name,args)=>client.callTool({name,arguments:args});
+const call=async(name,args)=>{const result=await raw(name,args);assert.ok(!result.isError,JSON.stringify(result));return JSON.parse(result.content[0].text);};
+try{
+  await client.connect(new StdioClientTransport({command:process.execPath,args:[resolve('dist/server/index.js')],env}));
+  const project=await call('website_projects',{action:'create',thread_id:'git-thread',panel_id:'git-panel',name:'Git project'});
+  const ids={thread_id:'git-thread',project_id:project.project_id};
+  const git=createRequire(import.meta.url)(resolve('dist/runtime/isomorphic-git/load.cjs'));
+  const options={fs,dir:project.project_directory.replaceAll('\\','/')};
+  const head=()=>git.resolveRef({...options,ref:'refs/heads/main'});
+  const finish=()=>call('website_project',{...ids,action:'finish'});
+  assert.equal(await git.currentBranch(options),'main');
+  assert.equal(project.git.committed,true);assert.equal(project.git.oid,await head());
+  const initial=await git.log(options);assert.equal(initial.length,1);
+  assert.equal(initial[0].commit.author.name,'Website Builder');
+  assert.deepEqual(await git.listFiles(options),['README.md']);
+  assert.equal((await finish()).git.committed,false,'no empty initialization commit');
+  await call('website_project',{...ids,action:'plan',pages:[{path:'index.html',title:'Home'}]});
+  const html='<!doctype html><html><body><h1>Version one</h1></body></html>';
+  await call('website_write',{...ids,files:[{path:'index.html',content:html},{path:'js/obsolete.js',content:'window.obsolete = true;'}]});
+  assert.equal((await git.log(options)).length,1,'file output and preview do not wait for task-level commit');
+  const first=await finish();assert.equal(first.git.committed,true);assert.equal(first.git.branch,'main');
+  assert.equal((await git.log(options)).length,2);
+  await call('website_project',{...ids,action:'begin',paths:['index.html']});
+  await writeFile(join(project.directory,'index.html'),html.replace('Version one','Version two'));
+  await unlink(join(project.directory,'js/obsolete.js'));
+  const second=await finish();assert.equal(second.git.committed,true);
+  assert.ok(!(await git.listFiles(options)).includes('src/js/obsolete.js'),'tracked deletion is committed');
+  const committed=await git.readBlob({...options,oid:await head(),filepath:'src/index.html'});
+  assert.match(Buffer.from(committed.blob).toString(),/Version two/);
+  const clean=await finish();assert.equal(clean.git.committed,false);assert.equal(clean.git.oid,second.git.oid);
+  await writeFile(join(project.project_directory,'README.md'),'# Updated information\n');
+  await writeFile(join(project.material_directory,'candidate.txt'),'Material information');
+  assert.equal((await finish()).git.committed,true,'README/material-only modifications are committed');
+  const image=Buffer.from('iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAYAAAAfFcSJAAAADUlEQVR4nGNwaDjQAAAEhQIBw1cvNgAAAABJRU5ErkJggg==','base64');
+  await call('website_images',{...ids,action:'begin',path:'icon1.png'});
+  await writeFile(join(project.material_directory,'icon1.png'),image);
+  await call('website_images',{...ids,action:'finish',path:'icon1.png'});
+  assert.equal((await finish()).git.committed,true,'image-only round is committed');
+  for(const filepath of ['material/icon1.png','src/images/icon1.png']){
+    const blob=await git.readBlob({...options,oid:await head(),filepath});assert.deepEqual(Buffer.from(blob.blob),image);
+  }
+  await writeFile(join(project.project_directory,'.gitignore'),'material/ignored.txt\n');
+  await writeFile(join(project.material_directory,'ignored.txt'),'Ignored material');await finish();
+  assert.ok(!(await git.listFiles(options)).includes('material/ignored.txt'),'honor project gitignore');
+  const expectedHead=await head(),originalSource=await readFile(join(project.directory,'index.html'));
+  const blocked=async(action='finish',extra={})=>{
+    const result=await raw(action==='write'?'website_write':'website_project',{...ids,...(action==='write'?{files:[{path:'index.html',content:html}]}:{action}),...extra});
+    assert.equal(result.isError,true);assert.match(result.content[0].text,/GIT_CONFIRMATION_REQUIRED/);
+    assert.match(result.content[0].text,/确认.*系统环境/);
+    assert.equal(await head(),expectedHead);assert.deepEqual(await readFile(join(project.directory,'index.html')),originalSource);
+  };
+  // Simulate exceptional states only in the isolated fixture; no merge or system Git is executed.
+  for(const name of ['MERGE_HEAD','CHERRY_PICK_HEAD','index.lock']){
+    const path=join(project.project_directory,'.git',name);await writeFile(path,expectedHead+'\n');
+    await blocked();assert.equal(await readFile(path,'utf8'),expectedHead+'\n','backend must not delete operation/lock files');await unlink(path);
+  }
+  const rebase=join(project.project_directory,'.git/rebase-merge');await mkdir(rebase);await blocked();await rmdir(rebase);
+  const headPath=join(project.project_directory,'.git/HEAD');
+  await git.branch({...options,ref:'feature'});await writeFile(headPath,'ref: refs/heads/feature\n');
+  await blocked('write');assert.equal(await git.currentBranch(options),'feature','backend must not switch branches');
+  await writeFile(headPath,expectedHead+'\n');await blocked();assert.equal(await readFile(headPath,'utf8'),expectedHead+'\n');
+  await writeFile(headPath,'ref: refs/heads/main\n');
+  const indexPath=join(project.project_directory,'.git/index'),index=await readFile(indexPath),conflict=Buffer.from(index);
+  conflict.writeUInt16BE(conflict.readUInt16BE(72)|0x1000,72);await writeFile(indexPath,conflict);await blocked();
+  assert.deepEqual(await readFile(indexPath),conflict,'conflict index is preserved');await writeFile(indexPath,index);
+  const readmePath=join(project.project_directory,'README.md'),readme=await readFile(readmePath);
+  await writeFile(readmePath,'# Staged version\n');await git.add({...options,filepath:'README.md'});
+  await writeFile(readmePath,'# Independently changed working version\n');
+  const stagedIndex=await readFile(indexPath);await blocked();
+  assert.deepEqual(await readFile(indexPath),stagedIndex,'independent staged content is not overwritten');
+  await writeFile(readmePath,readme);await writeFile(indexPath,index);
+  assert.deepEqual(await git.listRemotes(options),[]);
+  assert.doesNotMatch(await readFile(join(project.project_directory,'.git/config'),'utf8'),/\[user\]|remote/);
+  assert.equal((await finish()).git.committed,false);
+  console.log('PASS: main initial commit, per-round finish commits, add/update/delete/README/material changes, no empty commit/no remote, no system Git PATH, and confirmation before merge/rebase/locks/conflicts/non-main/detached handling');
+}finally{await client.close();}
