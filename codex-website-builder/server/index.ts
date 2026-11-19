@@ -81,7 +81,7 @@ const manager = projectManager(projects);
 const syncProject = projectService(projects);
 const preview = await createPreview(html, paths.reference, 'www.noventrad.com', syncProject, manager.run,control);
 const skillRoot = (process.env.WEBSITE_BUILDER_SKILL_ROOT || resolve('skills/website-builder')).replaceAll('${PLUGIN_ROOT}',fileURLToPath(new URL('../../',import.meta.url)));
-const server = new McpServer({ name: 'codex-website-builder', version: '0.9.4', icons: [{ src: `data:image/png;base64,${sidebarIcon.toString('base64')}`, mimeType: 'image/png', sizes: ['200x200'] }] },{capabilities:{experimental:{'openai/settings':settingsCapability}}});
+const server = new McpServer({ name: 'codex-website-builder', version: '0.9.5', icons: [{ src: `data:image/png;base64,${sidebarIcon.toString('base64')}`, mimeType: 'image/png', sizes: ['200x200'] }] },{capabilities:{experimental:{'openai/settings':settingsCapability}}});
 const csp = { connectDomains: ['data:', 'blob:'], resourceDomains: ['data:', 'blob:'], frameDomains: ['blob:', 'data:'], baseUriDomains: ['https://website-builder.invalid'] };
 const legacyCsp = { connect_domains: csp.connectDomains, resource_domains: csp.resourceDomains, frame_domains: csp.frameDomains, base_uri_domains: csp.baseUriDomains };
 const panelContent=(resourceUri:string,context:unknown)=>({contents:[{uri:resourceUri,mimeType:RESOURCE_MIME_TYPE,text:preview.render().replace('</head>',`<script>window.__WEBSITE_PANEL_CONTEXT__=${JSON.stringify(context).replaceAll('<','\\u003c')}</script></head>`),_meta:{ui:{csp},'openai/widgetCSP':legacyCsp}}]});

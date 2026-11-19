@@ -268,7 +268,8 @@ try{
   assert.deepEqual(threadSent._meta['openai/message'],{target:'new',send:true},'thread entry also creates a new chat');
   const threadText=threadSent.content.filter(c=>c.type==='text').map(c=>c.text);
   assert.equal(threadText.length,1);
-  assert.ok(threadText[0].startsWith('从对话内插件面板创建另一个任务'));
+  assert.ok(threadText[0].startsWith('[验证模式：手动验证]'));
+  assert.ok(threadText[0].includes('从对话内插件面板创建另一个任务'));
   assert.ok(!threadText[0].includes('巴西')&&!threadText[0].includes('森林绿'),'locale and color reset after previous submission');
   assert.ok(threadText[0].includes('手动验证'),'verification mode is preserved after submission');
   const nextSubmission=await page.evaluate(()=>window.contexts.map(c=>c.structuredContent?.submission).filter(Boolean).at(-1));

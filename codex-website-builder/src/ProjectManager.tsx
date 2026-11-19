@@ -41,7 +41,7 @@ export function ProjectManager({background}:{background:ReactNode}) {
     if(!detail||!detailSubmission.current)return;
     const submission=detailSubmission.current;
     let stopped=false;
-    const acknowledge=()=>{if(detailSubmission.current!==submission)return;void request({action:'submission',panel_id:submission.panel_id,request_id:submission.request_id,visible_panel_id:panelId,detail_ready:true}).then(()=>{if(detailSubmission.current===submission)detailSubmission.current=null;}).catch(error=>{if(!stopped)setError(error.message);});};
+    const acknowledge=()=>{if(detailSubmission.current!==submission)return;void request({action:'submission',panel_id:submission.panel_id,request_id:submission.request_id,visible_panel_id:panelId,detail_ready:true}).then(()=>{if(detailSubmission.current===submission)detailSubmission.current=null;}).catch(()=>{});};
     acknowledge();const timer=setInterval(acknowledge,2000);
     return()=>{stopped=true;clearInterval(timer);};
   },[detail?.project_id,request]);

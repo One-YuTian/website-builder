@@ -65,7 +65,7 @@ export function projectManager(store: ProjectStore) {
     const view=id?await store.get(thread,id).catch(()=>null):null;
     if (view) {
       const rows=store.database.sql.prepare("SELECT key,value FROM settings WHERE key LIKE 'submission:%'").all() as {key:string;value:string}[];
-      const submission=rows.flatMap(row=>{try{const value=JSON.parse(row.value);return value.state==='created'&&value.project_id===view.project.id&&value.thread_id===thread?[{panel_id:row.key.slice('submission:'.length),request_id:value.request_id,state:'created',files:value.files||[]}]:[];}catch{return[];}})[0];
+      const submission=rows.flatMap(row=>{try{const value=JSON.parse(row.value);return value.state==='created'&&!value.chat_detail_ready&&value.project_id===view.project.id&&value.thread_id===thread?[{panel_id:row.key.slice('submission:'.length),request_id:value.request_id,state:'created',files:value.files||[]}]:[];}catch{return[];}})[0];
       return { page: 'project', panel_id: panel.panel_id, ...compactProject(view),thread_id:thread||null,...(submission?{submission}:{}) };
     }
     return { page: 'home', panel_id: panel?.panel_id || panelId || null, projects: await store.list() };
@@ -165,10 +165,12 @@ export function projectManager(store: ProjectStore) {
       }
       if(record?.request_id!==input.request_id)throw Error('此提交已失效，请检查当前对话');
       if(input.detail_ready){
-        if(record.state!=='created'||panel?.project_id!==record.project_id)throw Error('项目详情尚未绑定');
+        if(record.state!=='created')throw Error('项目详情尚未绑定');
+        const active=(input.visible_panel_id?store.database.panelById(input.visible_panel_id):panel)||panel;
+        if(active?.project_id!==record.project_id&&panel?.project_id!==record.project_id)throw Error('项目详情尚未绑定');
         if(input.visible_panel_id&&input.visible_panel_id!==input.panel_id){
           const visible=store.database.panelById(input.visible_panel_id);
-          if(visible?.project_id!==record.project_id||visible.thread_id!==record.thread_id)throw Error('新对话详情面板尚未绑定到本次项目');
+          if(visible?.project_id!==record.project_id||(record.thread_id&&visible.thread_id&&visible.thread_id!==record.thread_id))throw Error('新对话详情面板尚未绑定到本次项目');
           record.chat_detail_ready=true;record.chat_panel_id=input.visible_panel_id;
         }
         record.detail_ready=true;saveSubmission(record);

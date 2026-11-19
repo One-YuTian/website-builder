@@ -391,9 +391,10 @@ export function ProjectPrompt({send,onCreated}:{send:(text:string,content:Prompt
       const optionLines = [
         selectedLocale && selectedLocale.id !== 'auto' ? `国家/语言：${selectedLocale.label}` : '',
         selectedColor && selectedColor.id !== 'auto' ? `配色主题：${selectedColor.label}（${selectedColor.color}）` : '',
-        `验证模式：${verificationMode === 'manual' ? '手动验证（仅输出网站，跳过验证）' : '自动验证（含网站验证 SKILL 全流程检查）'}`,
+        `验证模式：${verificationMode === 'manual' ? '手动验证' : '自动验证'}`,
       ].filter(Boolean);
-      const finalText = optionLines.length ? `${baseText}\n\n[${optionLines.join(' | ')}]` : baseText;
+      const optionHeader = optionLines.length ? `[${optionLines.join(' | ')}]` : '';
+      const finalText = optionHeader ? `${optionHeader}\n\n${baseText}` : baseText;
       const content: PromptContent = [
         {
           type: 'text',

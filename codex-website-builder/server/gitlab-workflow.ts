@@ -137,8 +137,19 @@ export class GitLabWorkflow {
       }
     }
   }
+  private async ensureRemote(view:ProjectView,url:string){
+    const fetchRef=await this.git.getConfig({...this.options(view),path:'remote.origin.fetch'});
+    const originUrl=await this.git.getConfig({...this.options(view),path:'remote.origin.url'});
+    if(!fetchRef||originUrl!==url){
+      await this.git.addRemote({...this.options(view),remote:'origin',url,force:true}).catch(async()=>{
+        await this.git.setConfig({...this.options(view),path:'remote.origin.url',value:url});
+        await this.git.setConfig({...this.options(view),path:'remote.origin.fetch',value:'+refs/heads/*:refs/remotes/origin/*'});
+      });
+    }
+  }
   private async hasConflict(ctx:Awaited<ReturnType<GitLabWorkflow['context']>>){
     if(!ctx.branch||ctx.branch.commit.id===ctx.local)return false;
+    await this.ensureRemote(ctx.view,ctx.url);
     await this.git.fetch({...this.options(ctx.view),http:this.io.http(ctx.c,this.signal(ctx.c)),url:ctx.url,remote:'origin',ref:'main',singleBranch:true,onAuth:()=>({username:'oauth2',password:ctx.c.GITLAB_TOKEN})});
     return !(await this.git.isDescendent({...this.options(ctx.view),oid:ctx.local,ancestor:ctx.branch.commit.id}).catch(()=>false));
   }
@@ -189,7 +200,7 @@ export class GitLabWorkflow {
       this.stage(input.project_id,id,'等待用户确认');return {status:'confirmation_required',challenge:plan};
     }catch(error){this.release(input.project_id,id);if(this.cancelled(id))return {status:'cancelled',message:'发布任务已取消，未创建发布标签'};const token=(await this.settings.get()).GITLAB_TOKEN;throw Error((error as Error).message.replaceAll(token||'\u0000','[REDACTED]'));}finally{stop();}
   }
-  private async bind(view:ProjectView,url:string){await this.git.addRemote({...this.options(view),remote:'origin',url,force:true});}
+  private async bind(view:ProjectView,url:string){await this.ensureRemote(view,url);}
   private async cloud(ctx:Awaited<ReturnType<GitLabWorkflow['context']>>,owner:string){
     const metadata=await realpath(ctx.view.metadataDirectory),state=await realpath(this.store.stateRoot);
     const inside=(root:string,target:string)=>{const rel=relative(root,target);if(rel==='..'||rel.startsWith('..'+sep)||isAbsolute(rel))throw Error('备份路径越界');};
@@ -251,6 +262,7 @@ export class GitLabWorkflow {
           const fresh=await this.api(ctx.c,'GET',`/projects/${ctx.remote.id}/repository/branches/main`,undefined,true);
           if((fresh?.commit?.id||null)!==plan.remote)throw Error('GIT_CONFIRMATION_REQUIRED：云端版本发生变化，请先确认并使用系统Git处理');
           if(plan.force_overwrite&&plan.remote&&fresh?.commit?.id&&fresh.commit.id!==local){
+            await this.ensureRemote(ctx.view,ctx.url);
             await this.git.fetch({...this.options(ctx.view),http:this.io.http(ctx.c,this.signal(ctx.c)),url:ctx.url,remote:'origin',ref:'main',singleBranch:true,onAuth:()=>({username:'oauth2',password:ctx.c.GITLAB_TOKEN})});
             const {commit:localCommit}=await this.git.readCommit({...this.options(ctx.view),oid:local});
             const now=Math.floor(Date.now()/1000),tz=new Date().getTimezoneOffset();
