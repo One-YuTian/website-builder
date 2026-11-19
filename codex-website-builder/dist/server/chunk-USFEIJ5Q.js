@@ -6080,7 +6080,19 @@ import fs from "node:fs";
 import { lstat, mkdir, writeFile, readFile as readFile3, readdir } from "node:fs/promises";
 import { join as join4 } from "node:path";
 import { createRequire as createGitRequire } from "node:module";
+import { execFile } from "node:child_process";
+import { userInfo } from "node:os";
+import { promisify } from "node:util";
 import { fileURLToPath } from "node:url";
+var runExec = promisify(execFile);
+async function systemGitConfig(key) {
+  try {
+    const { stdout } = await runExec("git", ["config", "--get", key], { timeout: 2e3, windowsHide: true });
+    return stdout.trim();
+  } catch {
+    return "";
+  }
+}
 var PROJECT_FORMAT = 2;
 var gitRequire = createGitRequire(import.meta.url);
 var repository = (directory) => ({ fs, dir: directory.replaceAll("\\", "/") });
@@ -6125,7 +6137,7 @@ async function assertMainRepository(directory) {
   };
   await inspect(directory);
 }
-async function commitProject(directory, message) {
+async function commitProject(directory, message, authorOverride) {
   await assertMainRepository(directory);
   const git = gitClient(), options = repository(directory);
   try {
@@ -6140,7 +6152,12 @@ async function commitProject(directory, message) {
     }
     const staged = await git.statusMatrix(options);
     if (staged.every(([, head, , stage]) => head === stage)) return { branch: "main", committed: false, oid: await git.resolveRef({ ...options, ref: "HEAD" }).catch(() => void 0), reason: "\u6CA1\u6709\u6587\u4EF6\u53D8\u5316" };
-    const author = { name: await git.getConfig({ ...options, path: "user.name" }) || "Website Builder", email: await git.getConfig({ ...options, path: "user.email" }) || "website-builder@localhost" };
+    const localName = await git.getConfig({ ...options, path: "user.name" });
+    const localEmail = await git.getConfig({ ...options, path: "user.email" });
+    const fallbackUser = userInfo().username || "user";
+    const name = authorOverride?.name?.trim() || localName || await systemGitConfig("user.name") || fallbackUser;
+    const email = authorOverride?.email?.trim() || localEmail || await systemGitConfig("user.email") || `${name.replace(/\s+/g, "").toLowerCase()}@localhost`;
+    const author = { name, email };
     const oid = await git.commit({ ...options, message, author });
     return { branch: "main", committed: true, oid };
   } catch (error) {
@@ -6713,7 +6730,9 @@ import { basename as basename2, dirname as dirname2, extname as extname2, resolv
 // server/preview-mock.ts
 var previewMock = String.raw`<script>
 (() => {
-  if (!window.__websiteBuilderMockFrame) return;
+  const path = window.__websiteBuilderLocation.pathname.split('/').pop().split('.')[0];
+  const isProduct = path === 'product' || path === 'product-detail';
+  if (!window.__websiteBuilderMockFrame && !isProduct) return;
   let sdk;
   const wrap = value => {
     if (!value || typeof value.init !== 'function' || value.__previewMockWrapped) return value;
@@ -6724,7 +6743,12 @@ var previewMock = String.raw`<script>
         {id:'PREVIEW002',name:'Preview accessory',price:24.9,final_price:24.9,category:'Preview',main_image:'',images:[]}
       ];
       const products = Array.isArray(data) && data.length ? data : Array.isArray(window.productData) && window.productData.length ? window.productData : fallback;
+      if (isProduct && !window.__websiteBuilderLocation.search) {
+        const first = products.find(p => p && p.id);
+        if (first) window.__websiteBuilderLocation.search = '?id=' + encodeURIComponent(first.id);
+      }
       const result = initialize.call(this, products, config);
+      if (!window.__websiteBuilderMockFrame) return result;
       const app = window.APP;
       if (!app?.account || !app?.cart || !app?.wishlist) return result;
 
@@ -6733,7 +6757,6 @@ var previewMock = String.raw`<script>
       const items = products.filter(p => p && p.id).slice(0, 2);
       if (user && localStorage.getItem('cart:' + user.id) === null) for (const p of items) app.cart.add({id:p.id,name:p.name,image:p.main_image||p.image||'',price:Number(p.final_price??p.price)||0},1);
       if (user && localStorage.getItem('wishlist:' + user.id) === null) for (const p of items) app.wishlist.add(p.id);
-      const path = window.__websiteBuilderLocation.pathname.split('/').pop().split('.')[0];
       if (user && ['orders','order','order-confirmation'].includes(path) && localStorage.getItem('orders') === null && app.order?.create && app.cart.list().length) {
         const savedCart = localStorage.getItem('cart:' + user.id);
         app.order.create({notes:'Preview Mock order',ext:{preview:true}});
@@ -6742,6 +6765,17 @@ var previewMock = String.raw`<script>
       window.__websiteBuilderMockReady = true;
       return result;
     };
+    if (isProduct && typeof value.get === 'function') {
+      const getProduct = value.get;
+      value.get = function(id) {
+        const found = getProduct.apply(this, arguments);
+        if (!found && (id === null || id === undefined || id === '')) {
+          const list = typeof value.list === 'function' ? value.list() : [];
+          return (Array.isArray(list) && (list.find(p => p && p.id) || list[0])) || null;
+        }
+        return found;
+      };
+    }
     Object.defineProperty(value,'__previewMockWrapped',{value:true});
     return value;
   };
@@ -7035,11 +7069,18 @@ function instrument(html, embedded = false) {
   const base = embedded ? '<base href="__WEBSITE_BUILDER_BASE_URL__">' : "";
   return /<head\b[^>]*>/i.test(html) ? html.replace(/<head\b[^>]*>/i, (match) => match + base + script + (embedded ? previewMock : "") + proxyRuntime) : base + script + (embedded ? previewMock : "") + proxyRuntime + html;
 }
-async function compileProjectPage(sourceDirectory, path) {
-  const vendor = fileURLToPath3(new URL("../vendor/", import.meta.url));
-  const assets = JSON.parse(await readFile5(join6(vendor, "manifest.json"), "utf8"));
-  const source = await realpath2(sourceDirectory);
-  return instrument(await snapshotCompiler(source, source, vendor, assets)(path), true);
+var cachedVendorManifest;
+function getVendorManifest() {
+  if (!cachedVendorManifest) {
+    const vendor = fileURLToPath3(new URL("../vendor/", import.meta.url));
+    cachedVendorManifest = readFile5(join6(vendor, "manifest.json"), "utf8").then((text2) => ({ vendor, assets: JSON.parse(text2) }));
+  }
+  return cachedVendorManifest;
+}
+async function createProjectCompiler(sourceDirectory) {
+  const [{ vendor, assets }, source] = await Promise.all([getVendorManifest(), realpath2(sourceDirectory)]);
+  const compile = snapshotCompiler(source, source, vendor, assets);
+  return async (path) => instrument(await compile(path), true);
 }
 async function createPreview(ui, configuredRoot, defaultDirectory = "www.noventrad.com", projectSync, manageProjects, control) {
   const referenceRoot = () => realpath2(configuredRoot);
@@ -7248,9 +7289,8 @@ async function replaceAsync(value, regex, replace) {
 }
 function snapshotCompiler(root, site, vendor, vendors) {
   const cache4 = /* @__PURE__ */ new Map();
-  let documentFile = "";
   const missing = "data:image/svg+xml;base64," + Buffer.from('<svg xmlns="http://www.w3.org/2000/svg" width="300" height="200"><rect width="100%" height="100%" fill="#f4f5f4"/><path d="M122 120l20-24 16 16 18-28 20 36z" fill="#d1d8d3"/></svg>').toString("base64");
-  async function asset(url, from, external = false, preserveMissing = false) {
+  async function asset(url, from, docFile, external = false, preserveMissing = false) {
     const decoded = url.replaceAll("&amp;", "&");
     if (/^(data:|blob:|#)/i.test(decoded)) return decoded;
     let file;
@@ -7268,15 +7308,16 @@ function snapshotCompiler(root, site, vendor, vendors) {
     }
     const type = types2[extname2(file).toLowerCase()];
     if (!type) return url;
-    const cacheKey = `${external ? "embedded" : "lazy"}:${preserveMissing ? "literal" : "resource"}:${file}`;
+    const isClassicScript = /\.js$/i.test(file) && !file.startsWith(vendor);
+    const cacheKey = `${external ? "embedded" : "lazy"}:${preserveMissing ? "literal" : "resource"}:${isClassicScript ? dirname2(docFile) : ""}:${file}`;
     if (!cache4.has(cacheKey)) cache4.set(cacheKey, (async () => {
       try {
         const safe = await contained(file.startsWith(vendor) ? vendor : root, file);
         if (!external && /^(?:image\/(?!svg)|video\/|audio\/)/.test(type)) return registerPreviewFile(safe, type);
         let bytes = await readFile6(safe);
-        if (/\.css$/i.test(file)) bytes = Buffer.from(await transform(bytes.toString("utf8"), safe, true));
-        else if (/\.js$/i.test(file) && !file.startsWith(vendor)) {
-          bytes = Buffer.from(await transform(previewScript(bytes.toString("utf8")), documentFile || safe, false, true));
+        if (/\.css$/i.test(file)) bytes = Buffer.from(await transform(bytes.toString("utf8"), safe, docFile, true));
+        else if (isClassicScript) {
+          bytes = Buffer.from(await transform(previewScript(bytes.toString("utf8")), docFile || safe, docFile, false, true));
         }
         return `data:${type};base64,${bytes.toString("base64")}`;
       } catch {
@@ -7287,22 +7328,21 @@ function snapshotCompiler(root, site, vendor, vendors) {
     })());
     return cache4.get(cacheKey);
   }
-  async function transform(text2, from, css = false, script = false) {
+  async function transform(text2, from, docFile, css = false, script = false) {
     if (css) {
-      text2 = await replaceAsync(text2, /@import\s+(['"])([^'"]+)\1/gi, async (match) => `@import url("${await asset(match[2], from, true)}")`);
-      text2 = await replaceAsync(text2, /url\(\s*(['"]?)([^)'"\s]+)\1\s*\)/gi, async (match) => `url("${await asset(match[2], from, true)}")`);
+      text2 = await replaceAsync(text2, /@import\s+(['"])([^'"]+)\1/gi, async (match) => `@import url("${await asset(match[2], from, docFile, true)}")`);
+      text2 = await replaceAsync(text2, /url\(\s*(['"]?)([^)'"\s]+)\1\s*\)/gi, async (match) => `url("${await asset(match[2], from, docFile, true)}")`);
     }
-    if (!css) text2 = await replaceAsync(text2, /(\b(?:from|import)\s*)(['"])((?:https?:)?\/\/[^'"]+)\2/g, async (match) => `${match[1]}${match[2]}${await asset(match[3], from, true)}${match[2]}`);
-    return replaceAsync(text2, /(["'`])((?:https?:\/\/|\.{0,2}\/)?[^"'`\s<>]*\.(?:js|css|png|jpe?g|webp|avif|gif|svg|ico|woff2?|ttf|otf|mp4|mp3)(?:[?#][^"'`\s<>]*)?)\1/gi, async (match) => `${match[1]}${await asset(match[2], from, false, script)}${match[1]}`);
+    if (!css) text2 = await replaceAsync(text2, /(\b(?:from|import)\s*)(['"])((?:https?:)?\/\/[^'"]+)\2/g, async (match) => `${match[1]}${match[2]}${await asset(match[3], from, docFile, true)}${match[2]}`);
+    return replaceAsync(text2, /(["'`])((?:https?:\/\/|\.{0,2}\/)?[^"'`\s<>]*\.(?:js|css|png|jpe?g|webp|avif|gif|svg|ico|woff2?|ttf|otf|mp4|mp3)(?:[?#][^"'`\s<>]*)?)\1/gi, async (match) => `${match[1]}${await asset(match[2], from, docFile, false, script)}${match[1]}`);
   }
   return async (path) => {
     const file = await contained(root, resolve3(site, path));
-    documentFile = file;
     let html = await readFile6(file, "utf8");
     html = await replaceAsync(html, /<(?:script|link)\b[^>]*>/gi, async (match) => {
       if (/^<link/i.test(match[0]) && /\brel\s*=\s*["'](?:preconnect|dns-prefetch)["']/i.test(match[0])) return "";
       if (/^<link/i.test(match[0]) && !/\brel\s*=\s*["']stylesheet["']/i.test(match[0])) return match[0];
-      const tag = await replaceAsync(match[0], /\b(src|href)\s*=\s*(["'])([^"']+)\2/gi, async (attr) => `${attr[1]}=${attr[2]}${await asset(attr[3], file, true)}${attr[2]}`);
+      const tag = await replaceAsync(match[0], /\b(src|href)\s*=\s*(["'])([^"']+)\2/gi, async (attr) => `${attr[1]}=${attr[2]}${await asset(attr[3], file, file, true)}${attr[2]}`);
       return tag.replace(/\s+(?:integrity|crossorigin)\s*=\s*(["'])[^"']*\1/gi, "");
     });
     html = html.replace(/<meta\b[^>]*>/gi, (tag) => /http-equiv\s*=\s*["']?refresh\b/i.test(tag) ? "" : tag);
@@ -7313,20 +7353,20 @@ function snapshotCompiler(root, site, vendor, vendors) {
     });
     html = await replaceAsync(html, /\b(src|href)\s*=\s*(["'])([^"']+)\2/gi, async (match) => {
       if (/\.html?(?:[?#]|$)/i.test(match[3])) return match[0];
-      return `${match[1]}=${match[2]}${await asset(match[3], file)}${match[2]}`;
+      return `${match[1]}=${match[2]}${await asset(match[3], file, file)}${match[2]}`;
     });
     html = await replaceAsync(html, /\bsrcset\s*=\s*(["'])([^"']+)\1/gi, async (match) => {
       if (/data:/i.test(match[2])) return match[0];
       const candidates = await Promise.all(match[2].split(",").map(async (candidate) => {
         const [url, ...descriptor] = candidate.trim().split(/\s+/);
-        return [await asset(url, file), ...descriptor].join(" ");
+        return [await asset(url, file, file), ...descriptor].join(" ");
       }));
       return `srcset=${match[1]}${candidates.join(", ")}${match[1]}`;
     });
-    for (const remote of process.env.WEBSITE_BUILDER_PREVIEW_VENDOR_FIXTURES === "1" ? Object.keys(vendors) : []) html = html.replaceAll(remote.replaceAll("&", "&amp;"), await asset(remote, file)).replaceAll(remote, await asset(remote, file));
-    html = await replaceAsync(html, /<script\b([^>]*)>([\s\S]*?)<\/script>/gi, async (match) => `<script${match[1]}>${await transform(previewScript(match[2]), file, false, true)}</script>`);
-    html = await replaceAsync(html, /<style\b([^>]*)>([\s\S]*?)<\/style>/gi, async (match) => `<style${match[1]}>${await transform(match[2], file, true)}</style>`);
-    html = await replaceAsync(html, /\bstyle\s*=\s*(["'])([\s\S]*?)\1/gi, async (match) => /url\(/i.test(match[2]) ? `style=${match[1]}${(await transform(match[2], file, true)).replaceAll(match[1], match[1] === '"' ? "&quot;" : "&#39;")}${match[1]}` : match[0]);
+    for (const remote of process.env.WEBSITE_BUILDER_PREVIEW_VENDOR_FIXTURES === "1" ? Object.keys(vendors) : []) html = html.replaceAll(remote.replaceAll("&", "&amp;"), await asset(remote, file, file)).replaceAll(remote, await asset(remote, file, file));
+    html = await replaceAsync(html, /<script\b([^>]*)>([\s\S]*?)<\/script>/gi, async (match) => `<script${match[1]}>${await transform(previewScript(match[2]), file, file, false, true)}</script>`);
+    html = await replaceAsync(html, /<style\b([^>]*)>([\s\S]*?)<\/style>/gi, async (match) => `<style${match[1]}>${await transform(match[2], file, file, true)}</style>`);
+    html = await replaceAsync(html, /\bstyle\s*=\s*(["'])([\s\S]*?)\1/gi, async (match) => /url\(/i.test(match[2]) ? `style=${match[1]}${(await transform(match[2], file, file, true)).replaceAll(match[1], match[1] === '"' ? "&quot;" : "&#39;")}${match[1]}` : match[0]);
     html = html.replace(/<(?:img|source|video|audio|track|input|object|embed)\b[^>]*>/gi, (tag) => tag.replace(/\b(src|srcset|poster|data)\s*=\s*(["'])([^"']+)\2/gi, (attribute, name, quote, value) => /^(?:https?:)?\/\//i.test(value) ? `data-wb-${name}=${quote}${value}${quote}` : attribute));
     return html;
   };
@@ -7410,7 +7450,7 @@ function download(value, redirects = 0) {
         }
       });
     });
-    request.setTimeout(2e4, () => request.destroy(new Error(`\u8D44\u6E90\u8BF7\u6C42\u8D85\u65F6\uFF1A${url.href}`)));
+    request.setTimeout(1e4, () => request.destroy(new Error(`\u8D44\u6E90\u8BF7\u6C42\u8D85\u65F6\uFF1A${url.href}`)));
     request.on("error", reject);
   });
 }
@@ -7446,6 +7486,7 @@ async function proxyResource(url, raw = false, chain = []) {
       };
       if (resource.mime === "text/css") {
         let css = resource.bytes.toString("utf8");
+        css = css.replace(/src\s*:[^;{}]*\.woff2[^;{}]*/gi, (rule) => rule.replace(/,\s*url\([^)]*\.(?:ttf|eot|woff)(?:[?#][^)]*)?\)(?:\s*format\([^)]*\))?/gi, ""));
         css = await replaceAsync2(css, /@import\s+(['"])([^'"]+)\1/gi, async (match) => `@import url("${await embed(match[2])}")`);
         css = await replaceAsync2(css, /url\(\s*(['"]?)([^)'"\s]+)\1\s*\)/gi, async (match) => `url("${await embed(match[2])}")`);
         resource.bytes = Buffer.from(css);
@@ -7523,22 +7564,35 @@ function projectService(store) {
     const pages = {}, errors = {};
     let size = 0;
     const ordered = [...view.project.pages].sort((a, b) => Number(b.path === (input.priorityPath || "index.html")) - Number(a.path === (input.priorityPath || "index.html")));
-    for (const page of input.metadataOnly ? [] : ordered) {
-      if (Object.keys(pages).length + Object.keys(errors).length >= (input.pageLimit ?? Infinity)) break;
-      if (page.status !== "ready" || known[page.path] === page.version) continue;
-      const key = `${view.project.id}:${page.path}`;
-      try {
-        let saved = cache4.get(key);
-        if (!saved || saved.version !== page.version) {
-          saved = { version: page.version, gzip: gzipSync(await compileProjectPage(view.directory, page.path)).toString("base64") };
-          cache4.set(key, saved);
+    const pendingPages = (input.metadataOnly ? [] : ordered).filter((page) => page.status === "ready" && known[page.path] !== page.version).slice(0, input.pageLimit ?? Infinity);
+    if (pendingPages.length) {
+      const needsCompile = pendingPages.some((page) => {
+        const saved = cache4.get(`${view.project.id}:${page.path}`);
+        return !saved || saved.version !== page.version;
+      });
+      const compile = needsCompile ? await createProjectCompiler(view.directory) : void 0;
+      const compiled = await Promise.all(pendingPages.map(async (page) => {
+        const key = `${view.project.id}:${page.path}`;
+        try {
+          let saved = cache4.get(key);
+          if (!saved || saved.version !== page.version) {
+            saved = { version: page.version, gzip: gzipSync(await compile(page.path)).toString("base64") };
+            cache4.set(key, saved);
+          }
+          return { page, saved };
+        } catch (error) {
+          return { page, error: error.message };
         }
-        const payload = previewPayload(saved.gzip), length = typeof payload === "string" ? payload.length : payload.resource.length;
+      }));
+      for (const item of compiled) {
+        if ("error" in item) {
+          errors[item.page.path] = item.error;
+          continue;
+        }
+        const payload = previewPayload(item.saved.gzip), length = typeof payload === "string" ? payload.length : payload.resource.length;
         if (size > 0 && size + length > 28e5) break;
-        pages[page.path] = payload;
+        pages[item.page.path] = payload;
         size += length;
-      } catch (error) {
-        errors[page.path] = error.message;
       }
     }
     let cacheBytes = [...cache4.values()].reduce((sum, item) => sum + item.gzip.length, 0);

@@ -49,7 +49,7 @@ Functional regions are annotated directly in the component code implementation v
     <!-- Orders List Container -->
     <!-- Region: Orders List - Cards list rendering past orders with item snapshots, totals, and statuses -->
     <div data-region="orders-list" id="orders-container" class="space-y-6">
-
+      
       <!-- Order Card 1: Delivered -->
       <div class="order-card bg-surface rounded-2xl shadow-sm border border-outline/30 p-5 sm:p-6 transition-shadow hover:shadow-md">
         <!-- Order Header -->

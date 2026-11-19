@@ -16,7 +16,7 @@ import {
   readTemplates,
   resourceChunk,
   screenshotPage
-} from "./chunk-RM7665KW.js";
+} from "./chunk-USFEIJ5Q.js";
 import {
   $ZodObject,
   $ZodType,
@@ -17621,7 +17621,7 @@ import { createRequire as createGitRequire } from "node:module";
 import { fileURLToPath } from "node:url";
 function websiteDomain(value) {
   const domain = domainToASCII(value.trim().toLowerCase());
-  if (!/^www\.(?:[a-z0-9](?:[a-z0-9-]{0,61}[a-z0-9])?\.)+[a-z]{2,63}$/.test(domain)) throw Error("\u8BF7\u786E\u8BA4\u771F\u5B9E\u5B98\u7F51\u57DF\u540D\uFF0C\u683C\u5F0F\u5FC5\u987B\u4E3A www.xxx.xxx\uFF0C\u4E0D\u542B\u534F\u8BAE\u3001\u7AEF\u53E3\u6216\u8DEF\u5F84");
+  if (!/^(?:[a-z0-9](?:[a-z0-9-]{0,61}[a-z0-9])?\.)+[a-z]{2,63}$/.test(domain)) throw Error("\u8BF7\u786E\u8BA4\u771F\u5B9E\u5B98\u7F51\u57DF\u540D\uFF0C\u683C\u5F0F\u5982 example.com \u6216 www.example.com\uFF0C\u4E0D\u542B\u534F\u8BAE\u3001\u7AEF\u53E3\u6216\u8DEF\u5F84");
   return domain;
 }
 function releaseName(environment, date = /* @__PURE__ */ new Date()) {
@@ -17817,10 +17817,10 @@ var GitLabWorkflow = class {
       }
     }
   }
-  async ancestor(ctx) {
-    if (!ctx.branch || ctx.branch.commit.id === ctx.local) return;
+  async hasConflict(ctx) {
+    if (!ctx.branch || ctx.branch.commit.id === ctx.local) return false;
     await this.git.fetch({ ...this.options(ctx.view), http: this.io.http(ctx.c, this.signal(ctx.c)), url: ctx.url, remote: "origin", ref: "main", singleBranch: true, onAuth: () => ({ username: "oauth2", password: ctx.c.GITLAB_TOKEN }) });
-    if (!await this.git.isDescendent({ ...this.options(ctx.view), oid: ctx.local, ancestor: ctx.branch.commit.id })) throw Error("GIT_CONFIRMATION_REQUIRED\uFF1A\u672C\u5730\u4E0E\u4E91\u7AEF\u7248\u672C\u51B2\u7A81\u6216\u4E91\u7AEF\u9886\u5148\uFF0C\u8BF7\u5148\u5411\u7528\u6237\u786E\u8BA4\u5408\u5E76\u7B49\u65B9\u6848\uFF0C\u518D\u7528\u7CFB\u7EDFGit\u5904\u7406\uFF1B\u4E0D\u4F1A\u5F3A\u63A8");
+    return !await this.git.isDescendent({ ...this.options(ctx.view), oid: ctx.local, ancestor: ctx.branch.commit.id }).catch(() => false);
   }
   async origin(view) {
     return await this.git.getConfig({ ...this.options(view), path: "remote.origin.url" }) || "";
@@ -17842,6 +17842,10 @@ var GitLabWorkflow = class {
   async prepare(raw, replacingOwner) {
     const input = { ...raw, domain: websiteDomain(raw.domain) };
     if (input.intent === "deploy" && !["test", "production"].includes(input.environment || "")) throw Error("\u5FC5\u987B\u660E\u786E\u9009\u62E9\u6D4B\u8BD5\u6216\u6B63\u5F0F\u73AF\u5883");
+    if (input.intent === "deploy" && !replacingOwner) {
+      if (this.store.database.status(input.project_id) !== "completed") throw Error("\u9879\u76EE\u5C1A\u672A\u5B8C\u6210\uFF0C\u6682\u4E0D\u80FD\u90E8\u7F72\uFF0C\u8BF7\u5148\u5B8C\u6210\u6216\u4FEE\u590D\u5F53\u524D\u4EFB\u52A1");
+      if (this.store.database.sql.prepare("SELECT path FROM image_tasks WHERE project_id=? AND status='generating' LIMIT 1").get(input.project_id) || this.store.database.sql.prepare("SELECT path FROM image_compressions WHERE project_id=? AND status='running' AND lease_until>? LIMIT 1").get(input.project_id, Date.now())) throw Error("\u56FE\u7247\u4ECD\u5728\u751F\u6210\u6216\u538B\u7F29\uFF0C\u6682\u4E0D\u80FD\u90E8\u7F72");
+    }
     const id = randomUUID2(), expires = Date.now() + 10 * 60 * 1e3;
     await this.store.exclusive(input.project_id, async () => {
       if (replacingOwner) this.checkpoint(replacingOwner);
@@ -17862,10 +17866,10 @@ var GitLabWorkflow = class {
         if (input.intent === "bind" || origin !== ctx.url || binding?.repository_id !== ctx.remote.id || binding?.repository !== ctx.url) kind = "bind";
       }
       if (input.intent === "deploy" || input.intent === "push") await this.ready(ctx.view);
-      if (kind !== "bind" && kind !== "create") await this.ancestor(ctx);
+      const force_overwrite = kind !== "create" ? await this.hasConflict(ctx) : false;
       const matrix = await this.git.statusMatrix(this.options(ctx.view));
       const snapshot = await this.snapshot(ctx.view);
-      const plan = { ...input, id, kind, config: settingsDigest(ctx.c), ...snapshot, local: ctx.local, remote: ctx.branch?.commit.id || null, deploy: ctx.deployBranch.commit.id, repository: ctx.url, deploy_repository: gitlabHost(ctx.c.GITLAB_HOST) + "/" + gitlabPath(ctx.c.GITLAB_WEBSITE_DEPLOY_DIR, gitlabHost(ctx.c.GITLAB_HOST)), deploy_branch: ctx.c.GITLAB_DEFAULT_BRANCH, gitlab_user: ctx.user.username, uncommitted: matrix.some(([, head, work, stage]) => head !== work || head !== stage), choices: kind === "bind" && !ctx.empty && ctx.local !== ctx.branch?.commit.id ? ["local", "cloud"] : ["confirm"], checks: ctx.checks, expires_at: expires };
+      const plan = { ...input, id, kind, force_overwrite, config: settingsDigest(ctx.c), ...snapshot, local: ctx.local, remote: ctx.branch?.commit.id || null, deploy: ctx.deployBranch.commit.id, repository: ctx.url, deploy_repository: gitlabHost(ctx.c.GITLAB_HOST) + "/" + gitlabPath(ctx.c.GITLAB_WEBSITE_DEPLOY_DIR, gitlabHost(ctx.c.GITLAB_HOST)), deploy_branch: ctx.c.GITLAB_DEFAULT_BRANCH, gitlab_user: ctx.user.username, uncommitted: matrix.some(([, head, work, stage]) => head !== work || head !== stage), choices: ["confirm"], checks: ctx.checks, expires_at: expires };
       assertEditable(this.store.database, input.project_id, id);
       this.checkpoint(id);
       this.store.database.sql.prepare("UPDATE deployment_requests SET data=?,used=0 WHERE id=? AND used=1").run(JSON.stringify(plan), id);
@@ -17965,19 +17969,18 @@ var GitLabWorkflow = class {
         await this.bind(ctx.view, ctx.url);
         result = { status: "created", repository: ctx.url, repository_id: created.id };
       } else if (plan.kind === "bind") {
-        this.stage(plan.project_id, id, decision === "cloud" ? "\u5907\u4EFD\u672C\u5730\u5E76\u540C\u6B65\u4E91\u7AEF" : "\u4FDD\u7559\u672C\u5730\u5E76\u7ED1\u5B9A\u4ED3\u5E93");
-        const backup = decision === "cloud" ? await this.cloud(ctx, id) : void 0;
+        this.stage(plan.project_id, id, "\u4EE5\u672C\u5730\u4E3A\u51C6\u7ED1\u5B9A\u4ED3\u5E93");
         this.checkpoint(id);
         await this.bind(ctx.view, ctx.url);
-        result = { status: "bound", strategy: decision === "cloud" ? "cloud" : "local", repository: ctx.url, repository_id: ctx.remote.id, backup };
+        result = { status: "bound", strategy: "local", repository: ctx.url, repository_id: ctx.remote.id };
       } else {
         if (!ctx.remote || await this.origin(ctx.view) !== ctx.url) throw Error("\u5B98\u7F51\u4ED3\u5E93\u5C1A\u672A\u6B63\u786E\u7ED1\u5B9A");
         if (plan.intent === "deploy" || plan.kind === "push") await this.ready(ctx.view);
-        await this.ancestor(ctx);
+        if (!plan.force_overwrite && await this.hasConflict(ctx)) throw Error("GIT_CONFIRMATION_REQUIRED\uFF1A\u4E91\u7AEF\u7248\u672C\u53D1\u751F\u53D8\u5316\uFF0C\u8BF7\u91CD\u65B0\u68C0\u67E5\u5E76\u786E\u8BA4\u5F3A\u5236\u8986\u76D6");
         this.stage(plan.project_id, id, "\u63D0\u4EA4\u672C\u5730\u7248\u672C");
-        const commit = await commitProject(ctx.view.projectDirectory, "Update website for " + plan.domain);
+        const commit = await commitProject(ctx.view.projectDirectory, "Update website for " + plan.domain, { name: ctx.user.name || ctx.user.username, email: ctx.user.email || `${ctx.user.username}@localhost` });
         this.checkpoint(id);
-        const local = await this.git.resolveRef({ ...this.options(ctx.view), ref: "refs/heads/main" });
+        let local = await this.git.resolveRef({ ...this.options(ctx.view), ref: "refs/heads/main" });
         if (plan.kind === "commit") result = { status: "committed", git: commit };
         else {
           await this.trackedSource(ctx.view);
@@ -17985,10 +17988,21 @@ var GitLabWorkflow = class {
           this.stage(plan.project_id, id, "\u6838\u5BF9\u5E76\u63A8\u9001\u5B98\u7F51main");
           const fresh = await this.api(ctx.c, "GET", `/projects/${ctx.remote.id}/repository/branches/main`, void 0, true);
           if ((fresh?.commit?.id || null) !== plan.remote) throw Error("GIT_CONFIRMATION_REQUIRED\uFF1A\u4E91\u7AEF\u7248\u672C\u53D1\u751F\u53D8\u5316\uFF0C\u8BF7\u5148\u786E\u8BA4\u5E76\u4F7F\u7528\u7CFB\u7EDFGit\u5904\u7406");
+          if (plan.force_overwrite && plan.remote && fresh?.commit?.id && fresh.commit.id !== local) {
+            await this.git.fetch({ ...this.options(ctx.view), http: this.io.http(ctx.c, this.signal(ctx.c)), url: ctx.url, remote: "origin", ref: "main", singleBranch: true, onAuth: () => ({ username: "oauth2", password: ctx.c.GITLAB_TOKEN }) });
+            const { commit: localCommit } = await this.git.readCommit({ ...this.options(ctx.view), oid: local });
+            const now = Math.floor(Date.now() / 1e3), tz = (/* @__PURE__ */ new Date()).getTimezoneOffset();
+            const author = { name: ctx.user.name || ctx.user.username, email: ctx.user.email || `${ctx.user.username}@localhost`, timestamp: now, timezoneOffset: tz };
+            const overwriteOid = await this.git.writeCommit({ ...this.options(ctx.view), commit: { tree: localCommit.tree, parent: [plan.remote, local], author, committer: author, message: `Overwrite remote with local website for ${plan.domain}
+` } });
+            await this.git.writeRef({ ...this.options(ctx.view), ref: "refs/heads/main", value: overwriteOid, force: true });
+            local = overwriteOid;
+          }
           if (fresh?.commit?.id !== local) try {
             await this.git.push({ ...this.options(ctx.view), http: this.io.http(ctx.c, this.signal(ctx.c)), url: ctx.url, remote: "origin", ref: "main", remoteRef: "main", force: false, onAuth: () => ({ username: "oauth2", password: ctx.c.GITLAB_TOKEN }) });
           } catch (error) {
-            if (/non.?fast.?forward|push.?rejected|conflict|diverg/i.test(error.message + " " + error.code)) throw Error("GIT_CONFIRMATION_REQUIRED\uFF1A\u4E91\u7AEF\u62D2\u7EDD\u975E\u5FEB\u8FDB\u63A8\u9001\uFF0C\u8BF7\u7528\u6237\u786E\u8BA4\u540E\u4F7F\u7528\u7CFB\u7EDFGit\u5904\u7406\uFF0C\u4E0D\u5F3A\u63A8");
+            if (/non.?fast.?forward|push.?rejected|conflict|diverg/i.test(error.message + " " + error.code)) throw Error("GIT_CONFIRMATION_REQUIRED\uFF1A\u4E91\u7AEF\u62D2\u7EDD\u975E\u5FEB\u8FDB\u63A8\u9001\uFF0C\u8BF7\u91CD\u65B0\u68C0\u67E5\u5E76\u786E\u8BA4\u8986\u76D6");
+            if (/pre-receive hook declined/i.test(error.message)) throw Error("GitLab \u670D\u52A1\u7AEF\u62D2\u7EDD\u63A8\u9001\uFF08pre-receive hook declined\uFF09\uFF0C\u8BF7\u68C0\u67E5\u5206\u652F\u4FDD\u62A4\u6216\u63A8\u9001\u6743\u9650");
             throw error;
           }
           const verified = await this.api(ctx.c, "GET", `/projects/${ctx.remote.id}/repository/branches/main`);
@@ -18477,7 +18491,7 @@ var manager = projectManager(projects);
 var syncProject = projectService(projects);
 var preview = await createPreview(html, paths.reference, "www.noventrad.com", syncProject, manager.run, control);
 var skillRoot = (process.env.WEBSITE_BUILDER_SKILL_ROOT || resolve("skills/website-builder")).replaceAll("${PLUGIN_ROOT}", fileURLToPath2(new URL("../../", import.meta.url)));
-var server = new McpServer({ name: "codex-website-builder", version: "0.9.2", icons: [{ src: `data:image/png;base64,${sidebarIcon.toString("base64")}`, mimeType: "image/png", sizes: ["200x200"] }] }, { capabilities: { experimental: { "openai/settings": settingsCapability } } });
+var server = new McpServer({ name: "codex-website-builder", version: "0.9.4", icons: [{ src: `data:image/png;base64,${sidebarIcon.toString("base64")}`, mimeType: "image/png", sizes: ["200x200"] }] }, { capabilities: { experimental: { "openai/settings": settingsCapability } } });
 var csp = { connectDomains: ["data:", "blob:"], resourceDomains: ["data:", "blob:"], frameDomains: ["blob:", "data:"], baseUriDomains: ["https://website-builder.invalid"] };
 var legacyCsp = { connect_domains: csp.connectDomains, resource_domains: csp.resourceDomains, frame_domains: csp.frameDomains, base_uri_domains: csp.baseUriDomains };
 var panelContent = (resourceUri, context) => ({ contents: [{ uri: resourceUri, mimeType: p, text: preview.render().replace("</head>", `<script>window.__WEBSITE_PANEL_CONTEXT__=${JSON.stringify(context).replaceAll("<", "\\u003c")}</script></head>`), _meta: { ui: { csp }, "openai/widgetCSP": legacyCsp } }] });
