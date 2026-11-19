@@ -16,7 +16,7 @@ import {
   readTemplates,
   resourceChunk,
   screenshotPage
-} from "./chunk-USFEIJ5Q.js";
+} from "./chunk-ZWPDP6IQ.js";
 import {
   $ZodObject,
   $ZodType,
@@ -17817,8 +17817,19 @@ var GitLabWorkflow = class {
       }
     }
   }
+  async ensureRemote(view, url) {
+    const fetchRef = await this.git.getConfig({ ...this.options(view), path: "remote.origin.fetch" });
+    const originUrl = await this.git.getConfig({ ...this.options(view), path: "remote.origin.url" });
+    if (!fetchRef || originUrl !== url) {
+      await this.git.addRemote({ ...this.options(view), remote: "origin", url, force: true }).catch(async () => {
+        await this.git.setConfig({ ...this.options(view), path: "remote.origin.url", value: url });
+        await this.git.setConfig({ ...this.options(view), path: "remote.origin.fetch", value: "+refs/heads/*:refs/remotes/origin/*" });
+      });
+    }
+  }
   async hasConflict(ctx) {
     if (!ctx.branch || ctx.branch.commit.id === ctx.local) return false;
+    await this.ensureRemote(ctx.view, ctx.url);
     await this.git.fetch({ ...this.options(ctx.view), http: this.io.http(ctx.c, this.signal(ctx.c)), url: ctx.url, remote: "origin", ref: "main", singleBranch: true, onAuth: () => ({ username: "oauth2", password: ctx.c.GITLAB_TOKEN }) });
     return !await this.git.isDescendent({ ...this.options(ctx.view), oid: ctx.local, ancestor: ctx.branch.commit.id }).catch(() => false);
   }
@@ -17885,7 +17896,7 @@ var GitLabWorkflow = class {
     }
   }
   async bind(view, url) {
-    await this.git.addRemote({ ...this.options(view), remote: "origin", url, force: true });
+    await this.ensureRemote(view, url);
   }
   async cloud(ctx, owner) {
     const metadata = await realpath(ctx.view.metadataDirectory), state = await realpath(this.store.stateRoot);
@@ -17989,6 +18000,7 @@ var GitLabWorkflow = class {
           const fresh = await this.api(ctx.c, "GET", `/projects/${ctx.remote.id}/repository/branches/main`, void 0, true);
           if ((fresh?.commit?.id || null) !== plan.remote) throw Error("GIT_CONFIRMATION_REQUIRED\uFF1A\u4E91\u7AEF\u7248\u672C\u53D1\u751F\u53D8\u5316\uFF0C\u8BF7\u5148\u786E\u8BA4\u5E76\u4F7F\u7528\u7CFB\u7EDFGit\u5904\u7406");
           if (plan.force_overwrite && plan.remote && fresh?.commit?.id && fresh.commit.id !== local) {
+            await this.ensureRemote(ctx.view, ctx.url);
             await this.git.fetch({ ...this.options(ctx.view), http: this.io.http(ctx.c, this.signal(ctx.c)), url: ctx.url, remote: "origin", ref: "main", singleBranch: true, onAuth: () => ({ username: "oauth2", password: ctx.c.GITLAB_TOKEN }) });
             const { commit: localCommit } = await this.git.readCommit({ ...this.options(ctx.view), oid: local });
             const now = Math.floor(Date.now() / 1e3), tz = (/* @__PURE__ */ new Date()).getTimezoneOffset();
@@ -18491,7 +18503,7 @@ var manager = projectManager(projects);
 var syncProject = projectService(projects);
 var preview = await createPreview(html, paths.reference, "www.noventrad.com", syncProject, manager.run, control);
 var skillRoot = (process.env.WEBSITE_BUILDER_SKILL_ROOT || resolve("skills/website-builder")).replaceAll("${PLUGIN_ROOT}", fileURLToPath2(new URL("../../", import.meta.url)));
-var server = new McpServer({ name: "codex-website-builder", version: "0.9.4", icons: [{ src: `data:image/png;base64,${sidebarIcon.toString("base64")}`, mimeType: "image/png", sizes: ["200x200"] }] }, { capabilities: { experimental: { "openai/settings": settingsCapability } } });
+var server = new McpServer({ name: "codex-website-builder", version: "0.9.5", icons: [{ src: `data:image/png;base64,${sidebarIcon.toString("base64")}`, mimeType: "image/png", sizes: ["200x200"] }] }, { capabilities: { experimental: { "openai/settings": settingsCapability } } });
 var csp = { connectDomains: ["data:", "blob:"], resourceDomains: ["data:", "blob:"], frameDomains: ["blob:", "data:"], baseUriDomains: ["https://website-builder.invalid"] };
 var legacyCsp = { connect_domains: csp.connectDomains, resource_domains: csp.resourceDomains, frame_domains: csp.frameDomains, base_uri_domains: csp.baseUriDomains };
 var panelContent = (resourceUri, context) => ({ contents: [{ uri: resourceUri, mimeType: p, text: preview.render().replace("</head>", `<script>window.__WEBSITE_PANEL_CONTEXT__=${JSON.stringify(context).replaceAll("<", "\\u003c")}</script></head>`), _meta: { ui: { csp }, "openai/widgetCSP": legacyCsp } }] });

@@ -8698,7 +8698,7 @@ function projectManager(store) {
       const submission = rows.flatMap((row) => {
         try {
           const value = JSON.parse(row.value);
-          return value.state === "created" && value.project_id === view.project.id && value.thread_id === thread ? [{ panel_id: row.key.slice("submission:".length), request_id: value.request_id, state: "created", files: value.files || [] }] : [];
+          return value.state === "created" && !value.chat_detail_ready && value.project_id === view.project.id && value.thread_id === thread ? [{ panel_id: row.key.slice("submission:".length), request_id: value.request_id, state: "created", files: value.files || [] }] : [];
         } catch {
           return [];
         }
@@ -8815,10 +8815,12 @@ function projectManager(store) {
       }
       if (record?.request_id !== input.request_id) throw Error("\u6B64\u63D0\u4EA4\u5DF2\u5931\u6548\uFF0C\u8BF7\u68C0\u67E5\u5F53\u524D\u5BF9\u8BDD");
       if (input.detail_ready) {
-        if (record.state !== "created" || panel?.project_id !== record.project_id) throw Error("\u9879\u76EE\u8BE6\u60C5\u5C1A\u672A\u7ED1\u5B9A");
+        if (record.state !== "created") throw Error("\u9879\u76EE\u8BE6\u60C5\u5C1A\u672A\u7ED1\u5B9A");
+        const active = (input.visible_panel_id ? store.database.panelById(input.visible_panel_id) : panel) || panel;
+        if (active?.project_id !== record.project_id && panel?.project_id !== record.project_id) throw Error("\u9879\u76EE\u8BE6\u60C5\u5C1A\u672A\u7ED1\u5B9A");
         if (input.visible_panel_id && input.visible_panel_id !== input.panel_id) {
           const visible = store.database.panelById(input.visible_panel_id);
-          if (visible?.project_id !== record.project_id || visible.thread_id !== record.thread_id) throw Error("\u65B0\u5BF9\u8BDD\u8BE6\u60C5\u9762\u677F\u5C1A\u672A\u7ED1\u5B9A\u5230\u672C\u6B21\u9879\u76EE");
+          if (visible?.project_id !== record.project_id || record.thread_id && visible.thread_id && visible.thread_id !== record.thread_id) throw Error("\u65B0\u5BF9\u8BDD\u8BE6\u60C5\u9762\u677F\u5C1A\u672A\u7ED1\u5B9A\u5230\u672C\u6B21\u9879\u76EE");
           record.chat_detail_ready = true;
           record.chat_panel_id = input.visible_panel_id;
         }
