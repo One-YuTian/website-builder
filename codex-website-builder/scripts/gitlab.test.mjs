@@ -64,19 +64,27 @@ try{
   const ignored=await fixture();await writeFile(join(ignored.view.projectDirectory,'.gitignore'),'src/\n');
   let ignoredPlan=await ignored.workflow.prepare(ignored.input);ignoredPlan=await ignored.workflow.execute(ignoredPlan.challenge.id,ignored.input.actor,'confirm');
   await assert.rejects(ignored.workflow.execute(ignoredPlan.challenge.id,ignored.input.actor,'confirm'),/未被Git跟踪/);assert.equal(ignored.state.tags.size,0);ignored.store.database.sql.close();
-  // Cloud selection must preserve a complete backup before replacing source.
-  const cloud=await fixture();await cloud.remote();
-  const original=await readFile(join(cloud.view.directory,'index.html'),'utf8');
-  let choice=await cloud.workflow.prepare({...cloud.input,intent:'bind'});assert.deepEqual(choice.challenge.choices,['local','cloud']);
-  assert.equal(await readFile(join(cloud.view.directory,'index.html'),'utf8'),original);
-  const replaced=await cloud.workflow.execute(choice.challenge.id,cloud.input.actor,'cloud');
-  assert.ok(replaced.backup);assert.equal(await readFile(join(replaced.backup,'local/src/index.html'),'utf8'),original);
-  assert.match(await readFile(join(cloud.view.directory,'index.html'),'utf8'),/Cloud content/);
-  assert.ok((await stat(join(replaced.backup,'project.json'))).isFile());cloud.store.database.sql.close();
-  const local=await fixture();await local.remote();choice=await local.workflow.prepare({...local.input,intent:'bind'});
-  const before=await readFile(join(local.view.directory,'index.html'),'utf8');await local.workflow.execute(choice.challenge.id,local.input.actor,'local');
+  // Incomplete projects are rejected before accessing GitLab.
+  const incomplete=await fixture();incomplete.store.database.activity(incomplete.view.project.id,'project:build',true);
+  await assert.rejects(incomplete.workflow.prepare(incomplete.input),/项目尚未完成/);
+  assert.equal(incomplete.state.calls.length,0);incomplete.store.database.sql.close();
+  // Conflicting or unrelated remote history defaults to local-wins force push with secondary confirmation.
+  const local=await fixture();await local.remote();
+  const choice=await local.workflow.prepare({...local.input,intent:'bind'});
+  assert.deepEqual(choice.challenge.choices,['confirm']);
+  assert.equal(choice.challenge.force_overwrite,true);
+  const before=await readFile(join(local.view.directory,'index.html'),'utf8');
+  await local.workflow.execute(choice.challenge.id,local.input.actor,'confirm');
   assert.equal(await readFile(join(local.view.directory,'index.html'),'utf8'),before);
-  await assert.rejects(local.workflow.prepare(local.input),/GIT_CONFIRMATION_REQUIRED/);assert.equal(local.state.calls.filter(c=>c.method==='POST'&&c.path.includes('/tags')).length,0);local.store.database.sql.close();
+  const forcePlan=await local.workflow.prepare(local.input);
+  assert.equal(forcePlan.status,'confirmation_required');
+  assert.equal(forcePlan.challenge.force_overwrite,true);
+  assert.equal(local.state.calls.filter(c=>c.method==='POST'&&c.path.includes('/tags')).length,0);
+  const forced=await local.workflow.execute(forcePlan.challenge.id,local.input.actor,'confirm');
+  assert.equal(forced.status,'deployment_triggered');
+  assert.equal(local.state.pushes,1);
+  assert.equal(local.state.forcePushes,0,'overwrite uses fast-forward commit so protected main accepts it');
+  local.store.database.sql.close();
   const {McpServer}=await import('@modelcontextprotocol/sdk/server/mcp.js');
   // Cancellation remains available during checks, repository work and pushes;
   // only dispatching the tag request crosses the irreversible boundary.

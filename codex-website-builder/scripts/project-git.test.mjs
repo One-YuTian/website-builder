@@ -24,7 +24,7 @@ try{
   assert.equal(await git.currentBranch(options),'main');
   assert.equal(project.git.committed,true);assert.equal(project.git.oid,await head());
   const initial=await git.log(options);assert.equal(initial.length,1);
-  assert.equal(initial[0].commit.author.name,'Website Builder');
+  assert.ok(initial[0].commit.author.name&&initial[0].commit.author.name!=='Website Builder','uses real user name instead of Website Builder');
   assert.deepEqual(await git.listFiles(options),['README.md']);
   assert.equal((await finish()).git.committed,false,'no empty initialization commit');
   await call('website_project',{...ids,action:'plan',pages:[{path:'index.html',title:'Home'}]});

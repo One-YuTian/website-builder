@@ -421,6 +421,12 @@ export function ProjectPrompt({send,onCreated}:{send:(text:string,content:Prompt
         if (entry.previewUrl) URL.revokeObjectURL(entry.previewUrl);
       }
       filesMap.current.clear();
+      writeStorage(COLOR_ID_STORAGE_KEY, '');
+      writeStorage(LOCALE_ID_STORAGE_KEY, '');
+      writeStorage(PROMPT_DRAFT_STORAGE_KEY, '');
+      setColorId('auto');
+      setLocaleId('auto');
+      setMenu(null);
       setHasContent(false);
       setPending(false);
       locked.current = false;

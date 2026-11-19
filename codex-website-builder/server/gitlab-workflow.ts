@@ -30,7 +30,7 @@ async function fileFingerprint(root:string){
   }};await scan(root);return hash.digest('hex');
 }
 type Input={project_id:string;actor:string;intent:GitLabIntent;domain:string;environment?:DeployEnvironment};
-type Plan=Input&{id:string;kind:'create'|'bind'|'publish'|'commit'|'push';config:string;files:string;index:string;local:string;remote:string|null;deploy:string;repository:string;deploy_repository:string;deploy_branch:string;gitlab_user:string;uncommitted:boolean;choices:string[];checks:string[];expires_at:number};
+type Plan=Input&{id:string;kind:'create'|'bind'|'publish'|'commit'|'push';force_overwrite?:boolean;config:string;files:string;index:string;local:string;remote:string|null;deploy:string;repository:string;deploy_repository:string;deploy_branch:string;gitlab_user:string;uncommitted:boolean;choices:string[];checks:string[];expires_at:number};
 export class GitLabWorkflow {
   private git:any;
   private active=new Map<string,AbortController>();
@@ -137,10 +137,10 @@ export class GitLabWorkflow {
       }
     }
   }
-  private async ancestor(ctx:Awaited<ReturnType<GitLabWorkflow['context']>>){
-    if(!ctx.branch||ctx.branch.commit.id===ctx.local)return;
+  private async hasConflict(ctx:Awaited<ReturnType<GitLabWorkflow['context']>>){
+    if(!ctx.branch||ctx.branch.commit.id===ctx.local)return false;
     await this.git.fetch({...this.options(ctx.view),http:this.io.http(ctx.c,this.signal(ctx.c)),url:ctx.url,remote:'origin',ref:'main',singleBranch:true,onAuth:()=>({username:'oauth2',password:ctx.c.GITLAB_TOKEN})});
-    if(!await this.git.isDescendent({...this.options(ctx.view),oid:ctx.local,ancestor:ctx.branch.commit.id}))throw Error('GIT_CONFIRMATION_REQUIRED：本地与云端版本冲突或云端领先，请先向用户确认合并等方案，再用系统Git处理；不会强推');
+    return !(await this.git.isDescendent({...this.options(ctx.view),oid:ctx.local,ancestor:ctx.branch.commit.id}).catch(()=>false));
   }
   private async origin(view:ProjectView){return await this.git.getConfig({...this.options(view),path:'remote.origin.url'})||'';}
   private async snapshot(view:ProjectView){return {files:await fileFingerprint(view.projectDirectory),index:createHash('sha256').update(await readFile(join(view.projectDirectory,'.git/index')).catch(()=>Buffer.alloc(0))).digest('hex')};}
@@ -155,6 +155,10 @@ export class GitLabWorkflow {
   async prepare(raw:Input,replacingOwner?:string){
     const input={...raw,domain:websiteDomain(raw.domain)};
     if(input.intent==='deploy'&&!['test','production'].includes(input.environment||''))throw Error('必须明确选择测试或正式环境');
+    if(input.intent==='deploy'&&!replacingOwner){
+      if(this.store.database.status(input.project_id)!=='completed')throw Error('项目尚未完成，暂不能部署，请先完成或修复当前任务');
+      if(this.store.database.sql.prepare("SELECT path FROM image_tasks WHERE project_id=? AND status='generating' LIMIT 1").get(input.project_id)||this.store.database.sql.prepare("SELECT path FROM image_compressions WHERE project_id=? AND status='running' AND lease_until>? LIMIT 1").get(input.project_id,Date.now()))throw Error('图片仍在生成或压缩，暂不能部署');
+    }
     const id=randomUUID(),expires=Date.now()+10*60*1000;
     await this.store.exclusive(input.project_id,async()=>{
       if(replacingOwner)this.checkpoint(replacingOwner);
@@ -175,10 +179,10 @@ export class GitLabWorkflow {
         if(input.intent==='bind'||origin!==ctx.url||binding?.repository_id!==ctx.remote.id||binding?.repository!==ctx.url)kind='bind';
       }
       if(input.intent==='deploy'||input.intent==='push')await this.ready(ctx.view);
-      if(kind!=='bind'&&kind!=='create')await this.ancestor(ctx);
+      const force_overwrite=kind!=='create'?await this.hasConflict(ctx):false;
       const matrix=await this.git.statusMatrix(this.options(ctx.view));
       const snapshot=await this.snapshot(ctx.view);
-      const plan:Plan={...input,id,kind,config:settingsDigest(ctx.c),...snapshot,local:ctx.local,remote:ctx.branch?.commit.id||null,deploy:ctx.deployBranch.commit.id,repository:ctx.url,deploy_repository:gitlabHost(ctx.c.GITLAB_HOST)+'/'+gitlabPath(ctx.c.GITLAB_WEBSITE_DEPLOY_DIR,gitlabHost(ctx.c.GITLAB_HOST)),deploy_branch:ctx.c.GITLAB_DEFAULT_BRANCH,gitlab_user:ctx.user.username,uncommitted:matrix.some(([,head,work,stage]:[string,number,number,number])=>head!==work||head!==stage),choices:kind==='bind'&&!ctx.empty&&ctx.local!==ctx.branch?.commit.id?['local','cloud']:['confirm'],checks:ctx.checks,expires_at:expires};
+      const plan:Plan={...input,id,kind,force_overwrite,config:settingsDigest(ctx.c),...snapshot,local:ctx.local,remote:ctx.branch?.commit.id||null,deploy:ctx.deployBranch.commit.id,repository:ctx.url,deploy_repository:gitlabHost(ctx.c.GITLAB_HOST)+'/'+gitlabPath(ctx.c.GITLAB_WEBSITE_DEPLOY_DIR,gitlabHost(ctx.c.GITLAB_HOST)),deploy_branch:ctx.c.GITLAB_DEFAULT_BRANCH,gitlab_user:ctx.user.username,uncommitted:matrix.some(([,head,work,stage]:[string,number,number,number])=>head!==work||head!==stage),choices:['confirm'],checks:ctx.checks,expires_at:expires};
       assertEditable(this.store.database,input.project_id,id);
       this.checkpoint(id);
       this.store.database.sql.prepare('UPDATE deployment_requests SET data=?,used=0 WHERE id=? AND used=1').run(JSON.stringify(plan),id);
@@ -229,16 +233,16 @@ export class GitLabWorkflow {
         if(!Number.isInteger(created.id)||created.empty_repo!==true||created.path_with_namespace!==ctx.group.full_path+'/'+plan.domain||created.http_url_to_repo!==ctx.url)throw Error('创建结果与确认的空官网仓库不一致，请人工核对');
         this.checkpoint(id);await this.bind(ctx.view,ctx.url);result={status:'created',repository:ctx.url,repository_id:created.id};
       }else if(plan.kind==='bind'){
-        this.stage(plan.project_id,id,decision==='cloud'?'备份本地并同步云端':'保留本地并绑定仓库');
-        const backup=decision==='cloud'?await this.cloud(ctx,id):undefined;
-        this.checkpoint(id);await this.bind(ctx.view,ctx.url);result={status:'bound',strategy:decision==='cloud'?'cloud':'local',repository:ctx.url,repository_id:ctx.remote.id,backup};
+        this.stage(plan.project_id,id,'以本地为准绑定仓库');
+        this.checkpoint(id);await this.bind(ctx.view,ctx.url);result={status:'bound',strategy:'local',repository:ctx.url,repository_id:ctx.remote.id};
       }else{
         if(!ctx.remote||await this.origin(ctx.view)!==ctx.url)throw Error('官网仓库尚未正确绑定');
         if(plan.intent==='deploy'||plan.kind==='push')await this.ready(ctx.view);
-        await this.ancestor(ctx);this.stage(plan.project_id,id,'提交本地版本');
-        const commit=await commitProject(ctx.view.projectDirectory,'Update website for '+plan.domain);
+        if(!plan.force_overwrite&&await this.hasConflict(ctx))throw Error('GIT_CONFIRMATION_REQUIRED：云端版本发生变化，请重新检查并确认强制覆盖');
+        this.stage(plan.project_id,id,'提交本地版本');
+        const commit=await commitProject(ctx.view.projectDirectory,'Update website for '+plan.domain,{name:ctx.user.name||ctx.user.username,email:ctx.user.email||`${ctx.user.username}@localhost`});
         this.checkpoint(id);
-        const local=await this.git.resolveRef({...this.options(ctx.view),ref:'refs/heads/main'});
+        let local=await this.git.resolveRef({...this.options(ctx.view),ref:'refs/heads/main'});
         if(plan.kind==='commit')result={status:'committed',git:commit};
         else{
           await this.trackedSource(ctx.view);
@@ -246,7 +250,16 @@ export class GitLabWorkflow {
           this.stage(plan.project_id,id,'核对并推送官网main');
           const fresh=await this.api(ctx.c,'GET',`/projects/${ctx.remote.id}/repository/branches/main`,undefined,true);
           if((fresh?.commit?.id||null)!==plan.remote)throw Error('GIT_CONFIRMATION_REQUIRED：云端版本发生变化，请先确认并使用系统Git处理');
-          if(fresh?.commit?.id!==local)try{await this.git.push({...this.options(ctx.view),http:this.io.http(ctx.c,this.signal(ctx.c)),url:ctx.url,remote:'origin',ref:'main',remoteRef:'main',force:false,onAuth:()=>({username:'oauth2',password:ctx.c.GITLAB_TOKEN})});}catch(error){if(/non.?fast.?forward|push.?rejected|conflict|diverg/i.test((error as Error).message+' '+(error as any).code))throw Error('GIT_CONFIRMATION_REQUIRED：云端拒绝非快进推送，请用户确认后使用系统Git处理，不强推');throw error;}
+          if(plan.force_overwrite&&plan.remote&&fresh?.commit?.id&&fresh.commit.id!==local){
+            await this.git.fetch({...this.options(ctx.view),http:this.io.http(ctx.c,this.signal(ctx.c)),url:ctx.url,remote:'origin',ref:'main',singleBranch:true,onAuth:()=>({username:'oauth2',password:ctx.c.GITLAB_TOKEN})});
+            const {commit:localCommit}=await this.git.readCommit({...this.options(ctx.view),oid:local});
+            const now=Math.floor(Date.now()/1000),tz=new Date().getTimezoneOffset();
+            const author={name:ctx.user.name||ctx.user.username,email:ctx.user.email||`${ctx.user.username}@localhost`,timestamp:now,timezoneOffset:tz};
+            const overwriteOid=await this.git.writeCommit({...this.options(ctx.view),commit:{tree:localCommit.tree,parent:[plan.remote,local],author,committer:author,message:`Overwrite remote with local website for ${plan.domain}\n`}});
+            await this.git.writeRef({...this.options(ctx.view),ref:'refs/heads/main',value:overwriteOid,force:true});
+            local=overwriteOid;
+          }
+          if(fresh?.commit?.id!==local)try{await this.git.push({...this.options(ctx.view),http:this.io.http(ctx.c,this.signal(ctx.c)),url:ctx.url,remote:'origin',ref:'main',remoteRef:'main',force:false,onAuth:()=>({username:'oauth2',password:ctx.c.GITLAB_TOKEN})});}catch(error){if(/non.?fast.?forward|push.?rejected|conflict|diverg/i.test((error as Error).message+' '+(error as any).code))throw Error('GIT_CONFIRMATION_REQUIRED：云端拒绝非快进推送，请重新检查并确认覆盖');if(/pre-receive hook declined/i.test((error as Error).message))throw Error('GitLab 服务端拒绝推送（pre-receive hook declined），请检查分支保护或推送权限');throw error;}
           const verified=await this.api(ctx.c,'GET',`/projects/${ctx.remote.id}/repository/branches/main`);
           if(verified.commit?.id!==local)throw Error('推送后云端版本与本地不一致，未发布');
           result={status:'pushed',oid:local,repository:ctx.url};

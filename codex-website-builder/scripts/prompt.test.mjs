@@ -269,6 +269,8 @@ try{
   const threadText=threadSent.content.filter(c=>c.type==='text').map(c=>c.text);
   assert.equal(threadText.length,1);
   assert.ok(threadText[0].startsWith('从对话内插件面板创建另一个任务'));
+  assert.ok(!threadText[0].includes('巴西')&&!threadText[0].includes('森林绿'),'locale and color reset after previous submission');
+  assert.ok(threadText[0].includes('手动验证'),'verification mode is preserved after submission');
   const nextSubmission=await page.evaluate(()=>window.contexts.map(c=>c.structuredContent?.submission).filter(Boolean).at(-1));
   const second=JSON.parse((await call('website_projects',{action:'create',panel_id:nextSubmission.panel_id,request_id:nextSubmission.request_id,thread_id:'prompt-another-new-thread',name:'Second'})).content[0].text);
   assert.notEqual(second.project_id,created.project_id);

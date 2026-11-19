@@ -2,7 +2,20 @@ import fs from 'node:fs';
 import { lstat, mkdir, writeFile, readFile, readdir } from 'node:fs/promises';
 import { join } from 'node:path';
 import { createRequire as createGitRequire } from 'node:module';
+import { execFile } from 'node:child_process';
+import { userInfo } from 'node:os';
+import { promisify } from 'node:util';
 import { fileURLToPath } from 'node:url';
+
+const runExec = promisify(execFile);
+async function systemGitConfig(key: string): Promise<string> {
+  try {
+    const { stdout } = await runExec('git', ['config', '--get', key], { timeout: 2000, windowsHide: true });
+    return stdout.trim();
+  } catch {
+    return '';
+  }
+}
 
 export const PROJECT_FORMAT = 2;
 const gitRequire = createGitRequire(import.meta.url);
@@ -40,7 +53,7 @@ export async function assertMainRepository(directory:string) {
   }};
   await inspect(directory);
 }
-export async function commitProject(directory:string,message:string):Promise<ProjectCommit> {
+export async function commitProject(directory:string,message:string,authorOverride?:{name?:string;email?:string}):Promise<ProjectCommit> {
   await assertMainRepository(directory);
   const git=gitClient(),options=repository(directory);
   try{
@@ -54,7 +67,12 @@ export async function commitProject(directory:string,message:string):Promise<Pro
     }
     const staged=await git.statusMatrix(options) as [string,number,number,number][];
     if(staged.every(([,head,,stage])=>head===stage))return {branch:'main',committed:false,oid:await git.resolveRef({...options,ref:'HEAD'}).catch(()=>undefined),reason:'没有文件变化'};
-    const author={name:await git.getConfig({...options,path:'user.name'})||'Website Builder',email:await git.getConfig({...options,path:'user.email'})||'website-builder@localhost'};
+    const localName=await git.getConfig({...options,path:'user.name'});
+    const localEmail=await git.getConfig({...options,path:'user.email'});
+    const fallbackUser=userInfo().username||'user';
+    const name=authorOverride?.name?.trim()||localName||await systemGitConfig('user.name')||fallbackUser;
+    const email=authorOverride?.email?.trim()||localEmail||await systemGitConfig('user.email')||`${name.replace(/\s+/g,'').toLowerCase()}@localhost`;
+    const author={name,email};
     const oid=await git.commit({...options,message,author});
     return {branch:'main',committed:true,oid};
   }catch(error){

@@ -160,7 +160,7 @@ try{
   assert.equal(await dialog.getByLabel('部署域名').inputValue(),'www.example.com','auto-pulls bound domain');
   assert.ok(await dialog.getByRole('radio',{name:/正式环境/}).isChecked(),'remembers last selected environment');
   await dialog.getByRole('radio',{name:/测试环境/}).check();await dialog.getByRole('button',{name:'开始检查并发布'}).click();
-  await dialog.getByRole('button',{name:'确认发布到测试环境'}).waitFor();await dialog.getByRole('button',{name:'取消发布',exact:true}).click();
+  await dialog.getByRole('button',{name:'确认发布到测试环境'}).waitFor();await dialog.getByRole('button',{name:'返回',exact:true}).click();
   await dialog.waitFor({state:'hidden'});await app.locator('.deployment-cover').waitFor({state:'hidden'});
   assert.equal(mock.state.tags.size,1);assert.equal(mock.workflow.status(mock.view.project.id).locked,false);
   await app.getByRole('button',{name:'部署网站',exact:true}).click();
@@ -169,9 +169,12 @@ try{
   let entered,release;const reached=new Promise(resolve=>entered=resolve),blocked=new Promise(resolve=>release=resolve),probe=mock.io.probe;
   mock.io.probe=async(...args)=>{entered();await blocked;return probe(...args);};
   await dialog.getByRole('radio',{name:/测试环境/}).check();await dialog.getByRole('button',{name:'开始检查并发布'}).click();await reached;
-  await dialog.getByRole('button',{name:'取消发布',exact:true}).click();release();
-  await dialog.getByRole('status').filter({hasText:'发布任务已取消'}).waitFor();
-  await dialog.getByRole('button',{name:'完成',exact:true}).click();await dialog.waitFor({state:'hidden'});
+  assert.equal(await dialog.getByRole('button',{name:'取消发布',exact:true}).count(),0,'cancel button removed');
+  assert.equal(await dialog.locator('.deployment-running').count(),0,'bottom status text removed');
+  assert.ok(await dialog.getByRole('button',{name:'返回',exact:true}).isEnabled(),'back button enabled during check');
+  await dialog.getByRole('button',{name:'返回',exact:true}).click();release();
+  await app.getByRole('dialog',{name:'部署网站',exact:true}).waitFor();
+  await app.getByRole('button',{name:'关闭部署面板'}).click();await dialog.waitFor({state:'hidden'});
   assert.equal(mock.state.tags.size,1);assert.equal(mock.workflow.status(mock.view.project.id).locked,false);
   await app.getByRole('button',{name:'返回主界面',exact:true}).click();
   await app.locator('body').evaluate(()=>{window.openai={requestModal:async()=>{throw Error('Not supported');}};});
