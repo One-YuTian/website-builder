@@ -16,6 +16,7 @@ import {resourceChunk} from './resource-proxy';
 import { prepareCommerce } from './commerce';
 import { screenshotPage } from './screenshot';
 import { importProducts } from './product-import';
+import { clearStagedProducts, downloadProductImage, fetchProductsFromUrl, getStagedProducts, stageProducts } from './product-library';
 import { dataPaths } from './data-paths';
 import { projectManager } from './project-manager';
 import {PluginSettings,settingNames} from './plugin-settings';
@@ -40,11 +41,19 @@ let openNativeSettings:()=>Promise<unknown>;
 const r2Settings=new R2Settings(paths.root);
 const r2=new R2Deployment(projects,r2Settings);
 const control=async(input:any)=>{
- if(input.type==='panel'){
-  if(!['settings','deploy'].includes(input.view))throw Error('未知独立面板');
+  if(input.type==='panel'){
+  if(!['settings','deploy','products'].includes(input.view))throw Error('未知独立面板');
   if(input.view==='deploy'){const panel=projects.database.panelById(input.panel_id);if(!panel||panel.project_id!==input.project_id||input.thread_id&&panel.thread_id!==input.thread_id)throw Error('发布面板不属于当前项目');}
   const key=randomUUID();projects.database.sql.prepare('INSERT INTO settings VALUES (?,?)').run('modal:'+key,JSON.stringify({view:input.view,project_id:input.project_id,panel_id:input.panel_id,thread_id:input.thread_id,expires:Date.now()+600000}));
   return {resource_uri:'ui://codex-website-builder/panel/'+key};
+ }
+ if(input.type==='products'){
+  if(input.action==='fetch')return fetchProductsFromUrl(input.url||'');
+  if(input.action==='import')return stageProducts(projects,input.panel_id,input.raw_json||'');
+  if(input.action==='get')return getStagedProducts(projects,input.panel_id);
+  if(input.action==='clear')return clearStagedProducts(projects,input.panel_id);
+  if(input.action==='download')return downloadProductImage(input.url||'');
+  throw Error('未知商品库操作');
  }
  if(input.type==='settings'){
   if(input.action==='open')return openNativeSettings();
@@ -81,7 +90,7 @@ const manager = projectManager(projects);
 const syncProject = projectService(projects);
 const preview = await createPreview(html, paths.reference, 'www.noventrad.com', syncProject, manager.run,control);
 const skillRoot = (process.env.WEBSITE_BUILDER_SKILL_ROOT || resolve('skills/website-builder')).replaceAll('${PLUGIN_ROOT}',fileURLToPath(new URL('../../',import.meta.url)));
-const server = new McpServer({ name: 'codex-website-builder', version: '0.9.5', icons: [{ src: `data:image/png;base64,${sidebarIcon.toString('base64')}`, mimeType: 'image/png', sizes: ['200x200'] }] },{capabilities:{experimental:{'openai/settings':settingsCapability}}});
+const server = new McpServer({ name: 'codex-website-builder', version: '0.9.6', icons: [{ src: `data:image/png;base64,${sidebarIcon.toString('base64')}`, mimeType: 'image/png', sizes: ['200x200'] }] },{capabilities:{experimental:{'openai/settings':settingsCapability}}});
 const csp = { connectDomains: ['data:', 'blob:'], resourceDomains: ['data:', 'blob:'], frameDomains: ['blob:', 'data:'], baseUriDomains: ['https://website-builder.invalid'] };
 const legacyCsp = { connect_domains: csp.connectDomains, resource_domains: csp.resourceDomains, frame_domains: csp.frameDomains, base_uri_domains: csp.baseUriDomains };
 const panelContent=(resourceUri:string,context:unknown)=>({contents:[{uri:resourceUri,mimeType:RESOURCE_MIME_TYPE,text:preview.render().replace('</head>',`<script>window.__WEBSITE_PANEL_CONTEXT__=${JSON.stringify(context).replaceAll('<','\\u003c')}</script></head>`),_meta:{ui:{csp},'openai/widgetCSP':legacyCsp}}]});
@@ -120,7 +129,7 @@ server.registerTool('website_panel_context', {
 }, async input => { try { const value=await manager.run({...input,action:'context'});return {content:[{type:'text',text:JSON.stringify(value)}]}; } catch(error) { return {isError:true,content:[{type:'text',text:(error as Error).message}]}; } });
 server.registerTool('website_projects', {
   description: '管理全局 SQLite 项目：list 列出项目，open/create 绑定当前会话和面板，home 返回主界面，delete 软删除（保留文件），resources 列出资源，attach 复制用户明确提供的图片/文件到项目资源目录。panel_id 来自面板上下文；thread_id 必须是真实当前会话 ID。首页submission用create与request_id创建空项目，随后必须调用open_thread_canvas(thread_id=新对话ID)一次打开侧边UI进入详情，查询submission到chat_detail_ready=true后再规划页面和生成；会话途中可按需open_canvas(thread_id)恢复同一项目详情。',
-  inputSchema: { action:z.enum(['list','resume','open','create','bind','home','delete','restore','resources','attach','folder','images','capture','submission','upload']).default('list'), upload_id:z.string().optional(),file_name:z.string().max(255).optional(),mime_type:z.string().max(200).optional(),total_size:z.number().int().min(0).max(12*1024*1024).optional(),sha256:z.string().regex(/^[a-f0-9]{64}$/).optional(),file_count:z.number().int().min(0).max(10).optional(),visible_panel_id:z.string().optional(),requirement:z.string().max(100000).optional(),request_id:z.string().max(128).optional(),submission_start:z.boolean().optional(),detail_ready:z.boolean().optional(),cancel:z.boolean().optional(),panel_id:z.string().optional(),thread_id:z.string().optional(),project_id:z.string().optional(),name:z.string().max(200).optional(),country:z.string().trim().max(100).optional(),language:z.string().trim().max(100).optional(),categories:z.array(z.string().trim().min(1).max(100)).max(2).optional(),brand:z.string().trim().max(200).optional(),domain:z.string().trim().max(255).optional(),source_path:z.string().optional(),path:z.string().optional(),width:z.number().int().min(320).max(2560).optional(),capture_id:z.string().optional(),chunk:z.string().max(512000).optional(),offset:z.number().int().nonnegative().optional(),final:z.boolean().optional() },
+  inputSchema: { action:z.enum(['list','resume','open','create','bind','home','delete','restore','resources','attach','folder','images','capture','submission','upload']).default('list'), upload_id:z.string().optional(),file_name:z.string().max(255).optional(),mime_type:z.string().max(200).optional(),total_size:z.number().int().min(0).max(12*1024*1024).optional(),sha256:z.string().regex(/^[a-f0-9]{64}$/).optional(),file_count:z.number().int().min(0).max(10).optional(),has_product_library:z.boolean().optional(),visible_panel_id:z.string().optional(),requirement:z.string().max(100000).optional(),request_id:z.string().max(128).optional(),submission_start:z.boolean().optional(),detail_ready:z.boolean().optional(),cancel:z.boolean().optional(),panel_id:z.string().optional(),thread_id:z.string().optional(),project_id:z.string().optional(),name:z.string().max(200).optional(),country:z.string().trim().max(100).optional(),language:z.string().trim().max(100).optional(),categories:z.array(z.string().trim().min(1).max(100)).max(2).optional(),brand:z.string().trim().max(200).optional(),domain:z.string().trim().max(255).optional(),source_path:z.string().optional(),path:z.string().optional(),width:z.number().int().min(320).max(2560).optional(),capture_id:z.string().optional(),chunk:z.string().max(512000).optional(),offset:z.number().int().nonnegative().optional(),final:z.boolean().optional() },
   annotations: { readOnlyHint:false,destructiveHint:false,openWorldHint:true },
 }, async input => { try {const value=await manager.run(input);return {content:[{type:'text',text:JSON.stringify(value)}],_meta:{manager:value}};} catch(error) {return {isError:true,content:[{type:'text',text:(error as Error).message}]};} });
 server.registerTool('website_images', {
@@ -231,7 +240,7 @@ server.registerTool('project_sync',{
   annotations:{readOnlyHint:true,destructiveHint:false,openWorldHint:false},_meta:{ui:{visibility:['app']}},
 },async input=>{try{return{content:[],_meta:{sync:await syncProject({metadataOnly:input.metadata_only,pageLimit:input.page_limit,priorityPath:input.priority_path,since:input.since,known:input.known,threadId:input.thread_id,projectId:input.project_id,waitMs:input.wait_ms})}};}catch(error){return{isError:true,content:[{type:'text',text:(error as Error).message}]};}});
 registerGitLabTools(server,gitlab,projects);
-server.registerTool('website_control',{description:'UI-only plugin configuration and deployment dialogs (GitLab & R2 preview); settings fields are visible only to the app; redact credentials from diagnostics.',inputSchema:{type:z.enum(['settings','deploy','panel','r2']),action:z.enum(['get','save','test','status','domain','prepare','execute','cancel','open','start','preview']),view:z.enum(['settings','deploy']).optional(),panel_id:z.string().optional(),thread_id:z.string().optional(),project_id:z.string().optional(),values:z.record(z.string(),z.string()).optional(),clear_token:z.boolean().optional(),domain:z.string().optional(),environment:z.enum(['test','production']).optional(),confirmation_id:z.string().optional(),decision:z.enum(['confirm','local','cloud']).optional()},annotations:{readOnlyHint:false,destructiveHint:true,openWorldHint:true},_meta:{ui:{visibility:['app']}}},async input=>{try{return{content:[],_meta:{control:await control(input)}};}catch(error){return{isError:true,content:[{type:'text',text:(error as Error).message}]};}});
+server.registerTool('website_control',{description:'UI-only plugin configuration, product library and deployment dialogs (GitLab & R2 preview); settings fields are visible only to the app; redact credentials from diagnostics.',inputSchema:{type:z.enum(['settings','deploy','panel','r2','products']),action:z.enum(['get','save','test','status','domain','prepare','execute','cancel','open','start','preview','fetch','import','clear','download']),view:z.enum(['settings','deploy','products']).optional(),panel_id:z.string().optional(),thread_id:z.string().optional(),project_id:z.string().optional(),values:z.record(z.string(),z.string()).optional(),clear_token:z.boolean().optional(),domain:z.string().optional(),environment:z.enum(['test','production']).optional(),confirmation_id:z.string().optional(),decision:z.enum(['confirm','local','cloud']).optional(),url:z.string().optional(),raw_json:z.string().optional()},annotations:{readOnlyHint:false,destructiveHint:true,openWorldHint:true},_meta:{ui:{visibility:['app']}}},async input=>{try{return{content:[],_meta:{control:await control(input)}};}catch(error){return{isError:true,content:[{type:'text',text:(error as Error).message}]};}});
 server.registerTool('website_r2_deploy',{description:'将当前会话项目src精确同步到R2项目ID目录；start覆盖同名文件并删除该前缀内本地不存在的文件，仅用户明确要求部署时调用。status查询进度，cancel取消。成功返回链接，不自动配置DNS/Worker。',inputSchema:{action:z.enum(['start','status','cancel']),thread_id:z.string(),project_id:z.string()},annotations:{readOnlyHint:false,destructiveHint:true,openWorldHint:true}},async input=>{try{if(projects.database.binding(input.thread_id)?.projectId!==input.project_id)throw Error('只能部署当前真实会话绑定项目');const value=input.action==='status'?r2.status(input.project_id):input.action==='cancel'?r2.cancel(input.project_id,input.thread_id):await r2.start(input.project_id,input.thread_id);return {content:[{type:'text',text:JSON.stringify(value)}]};}catch(error){return {isError:true,content:[{type:'text',text:(error as Error).message}]};}});
 const shutdown = async () => { preview.service.closeAllConnections(); preview.service.close(); await manager.close(); };
 process.once('SIGTERM', () => { void shutdown().finally(()=>process.exit(0)); });

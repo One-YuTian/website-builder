@@ -43,18 +43,19 @@ try{
   const clean=await finish();assert.equal(clean.git.committed,false);assert.equal(clean.git.oid,second.git.oid);
   await writeFile(join(project.project_directory,'README.md'),'# Updated information\n');
   await writeFile(join(project.material_directory,'candidate.txt'),'Material information');
-  assert.equal((await finish()).git.committed,true,'README/material-only modifications are committed');
+  assert.equal((await finish()).git.committed,true,'README modifications are committed while material is ignored');
   const image=Buffer.from('iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAYAAAAfFcSJAAAADUlEQVR4nGNwaDjQAAAEhQIBw1cvNgAAAABJRU5ErkJggg==','base64');
   await call('website_images',{...ids,action:'begin',path:'icon1.png'});
   await writeFile(join(project.material_directory,'icon1.png'),image);
   await call('website_images',{...ids,action:'finish',path:'icon1.png'});
   assert.equal((await finish()).git.committed,true,'image-only round is committed');
-  for(const filepath of ['material/icon1.png','src/images/icon1.png']){
-    const blob=await git.readBlob({...options,oid:await head(),filepath});assert.deepEqual(Buffer.from(blob.blob),image);
-  }
-  await writeFile(join(project.project_directory,'.gitignore'),'material/ignored.txt\n');
-  await writeFile(join(project.material_directory,'ignored.txt'),'Ignored material');await finish();
-  assert.ok(!(await git.listFiles(options)).includes('material/ignored.txt'),'honor project gitignore');
+  const blob=await git.readBlob({...options,oid:await head(),filepath:'src/images/icon1.png'});assert.deepEqual(Buffer.from(blob.blob),image);
+  const tracked=await git.listFiles({...options,ref:await head()});
+  assert.ok(!tracked.includes('material/icon1.png'),'material/ is ignored by default .gitignore');
+  assert.ok(!tracked.includes('.gitignore'),'.gitignore itself is ignored by default .gitignore');
+  await writeFile(join(project.project_directory,'.gitignore'),'src/ignored.txt\n',{flag:'a'});
+  await writeFile(join(project.directory,'ignored.txt'),'Ignored src');await finish();
+  assert.ok(!(await git.listFiles(options)).includes('src/ignored.txt'),'honor project gitignore');
   const expectedHead=await head(),originalSource=await readFile(join(project.directory,'index.html'));
   const blocked=async(action='finish',extra={})=>{
     const result=await raw(action==='write'?'website_write':'website_project',{...ids,...(action==='write'?{files:[{path:'index.html',content:html}]}:{action}),...extra});

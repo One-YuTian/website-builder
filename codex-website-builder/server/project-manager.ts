@@ -14,6 +14,7 @@ import { assertMainRepository } from './project-layout';
 import {assertEditable,operationLock} from './project-operations';
 import {imagePublisher} from './image-compression';
 import {SubmissionFiles,type UploadInput} from './submission-files';
+import {importStagedProducts} from './product-library';
 
 const mime = (path: string) => ({'.png':'image/png','.jpg':'image/jpeg','.jpeg':'image/jpeg','.webp':'image/webp','.avif':'image/avif','.ico':'image/x-icon','.svg':'image/svg+xml','.gif':'image/gif','.pdf':'application/pdf','.json':'application/json'}[extname(path).toLowerCase()] || 'application/octet-stream');
 export function projectManager(store: ProjectStore) {
@@ -109,7 +110,7 @@ export function projectManager(store: ProjectStore) {
     }
     return [...material,...files,...rows.filter(row=>{const rel=relative(join(view.metadataDirectory,'session-assets'),row.path);return rel!=='..'&&!rel.startsWith(`..${sep}`)&&!isAbsolute(rel);})];
   }
-  async function run(input: UploadInput & {file_count?:number;visible_panel_id?:string;requirement?:string;request_id?:string;submission_start?:boolean;detail_ready?:boolean;cancel?:boolean;action?: string; panel_id?: string; thread_id?: string; project_id?: string; country?:string;language?:string;categories?:string[];brand?:string;domain?:string;name?: string; source_path?: string; path?:string;width?:number;capture_id?:string}) {
+  async function run(input: UploadInput & {file_count?:number;has_product_library?:boolean;visible_panel_id?:string;requirement?:string;request_id?:string;submission_start?:boolean;detail_ready?:boolean;cancel?:boolean;action?: string; panel_id?: string; thread_id?: string; project_id?: string; country?:string;language?:string;categories?:string[];brand?:string;domain?:string;name?: string; source_path?: string; path?:string;width?:number;capture_id?:string}) {
     const action = input.action || 'list';
     const panel=input.panel_id?store.database.panelById(input.panel_id):undefined;
     const thread = input.thread_id || process.env.CODEX_THREAD_ID || process.env.CODEX_SESSION_ID || panel?.thread_id || undefined;
@@ -161,7 +162,7 @@ export function projectManager(store: ProjectStore) {
       if(input.submission_start){
         if(record?.request_id===input.request_id)return record;
         const count=input.file_count??0;if(!Number.isInteger(count)||count<0||count>10)throw Error('附件数量无效');
-        saveSubmission({request_id:input.request_id,state:'pending',file_count:count,created_at:new Date().toISOString(),...(input.requirement?.trim()?{requirement_hash:createHash('sha256').update(input.requirement.trim().replace(/\s+/g,' ')).digest('hex')}:{})});return{state:'pending'};
+        saveSubmission({request_id:input.request_id,state:'pending',file_count:count,has_product_library:Boolean(input.has_product_library),created_at:new Date().toISOString(),...(input.requirement?.trim()?{requirement_hash:createHash('sha256').update(input.requirement.trim().replace(/\s+/g,' ')).digest('hex')}:{})});return{state:'pending'};
       }
       if(record?.request_id!==input.request_id)throw Error('此提交已失效，请检查当前对话');
       if(input.detail_ready){
@@ -182,15 +183,24 @@ export function projectManager(store: ProjectStore) {
     if (action === 'home') { store.database.panel(input.panel_id, thread||'', null); return context(thread, input.panel_id); }
     if (action === 'create' || action === 'open' || action === 'bind') {
       if (action !== 'create' && !id) throw Error('需要项目 ID');
-      if(input.request_id){const record=readSubmission();if(record?.request_id!==input.request_id||record.state==='cancelled')throw Error('创建请求已取消或失效');if(record.state==='created'){const existing=await store.get(undefined,record.project_id);if(!existing)throw Error('项目不可用');return{page:'project',...compactProject(existing),thread_id:record.thread_id,files:record.files||[]};}if(record.state==='creating')throw Error('项目正在创建，请稍后查询结果');if(record.state!=='pending')throw Error('创建请求已失效');const attached=uploads.rows(input.panel_id,input.request_id);if(attached.length!==(record.file_count||0)||attached.some(file=>file.status!=='ready'))throw Error('附件尚未完整上传，不能创建项目');saveSubmission({...record,state:'creating'});}
+      const submissionRecord = input.request_id ? readSubmission() : null;
+      if(input.request_id){const record=submissionRecord;if(record?.request_id!==input.request_id||record.state==='cancelled')throw Error('创建请求已取消或失效');if(record.state==='created'){const existing=await store.get(undefined,record.project_id);if(!existing)throw Error('项目不可用');return{page:'project',...compactProject(existing),thread_id:record.thread_id,files:record.files||[]};}if(record.state==='creating')throw Error('项目正在创建，请稍后查询结果');if(record.state!=='pending')throw Error('创建请求已失效');const attached=uploads.rows(input.panel_id,input.request_id);if(attached.length!==(record.file_count||0)||attached.some(file=>file.status!=='ready'))throw Error('附件尚未完整上传，不能创建项目');saveSubmission({...record,state:'creating'});}
       try {
       const view = thread ? await store.open({ threadId: thread, projectId: id, newProject: action === 'create', name: input.name,country:input.country,language:input.language,categories:input.categories,brand:input.brand,domain:input.domain,...(action==='create'?{pages:[]}:{}) })
         : action === 'create' ? await store.createProject({name:input.name,country:input.country,language:input.language,categories:input.categories,brand:input.brand,domain:input.domain,pages:[]}) : await store.get(undefined,id);
       if(!view)throw Error('项目不存在或已删除');
       store.database.panel(input.panel_id, thread||'', view.project.id, action==='create' && submissionHandoff);
-      const attachedFiles=input.request_id?await store.exclusive(view.project.id,()=>uploads.import(input.panel_id!,input.request_id!,view)):[];
+      const hasProductLibrary = Boolean(submissionRecord?.has_product_library);
+      const attachedFiles=input.request_id?await store.exclusive(view.project.id,async()=>{
+        const importedProducts=hasProductLibrary?await importStagedProducts(store,input.panel_id!,view):null;
+        const uploaded=await uploads.import(input.panel_id!,input.request_id!,view);
+        return importedProducts?[importedProducts,...uploaded]:uploaded;
+      }):[];
       if(input.request_id)saveSubmission({request_id:input.request_id,state:'created',project_id:view.project.id,thread_id:thread||null,files:attachedFiles});
-      return { page: 'project', panel_id: input.panel_id, ...compactProject(view),thread_id:thread||null,files:attachedFiles,...(input.request_id?{ui_reused:true,request_id:input.request_id,next_action:'必须调用open_thread_canvas(thread_id=本次新对话真实ID)一次，在新对话打开侧边UI并进入本项目；查询website_projects(action=submission,panel_id,request_id)等待chat_detail_ready=true再生成。附件已存入files_directory，先用website_projects(resources)获取本地绝对路径，商品JSON交给website_products(file_path)，不读取attachment://引用。不重建项目，不反复打开面板。'}:{}) };
+      const fileHint=hasProductLibrary
+        ?'商品库数据已导入至 files_directory/data.json，先用website_projects(resources)获取 data.json 的本地绝对路径并交给website_products(file_path)，不再从用户上传的其他附件中读取商品数据，不读取attachment://引用。'
+        :'附件已存入files_directory，先用website_projects(resources)获取本地绝对路径，商品JSON交给website_products(file_path)，不读取attachment://引用。';
+      return { page: 'project', panel_id: input.panel_id, ...compactProject(view),thread_id:thread||null,files:attachedFiles,...(input.request_id?{ui_reused:true,request_id:input.request_id,next_action:`必须调用open_thread_canvas(thread_id=本次新对话真实ID)一次，在新对话打开侧边UI并进入本项目；查询website_projects(action=submission,panel_id,request_id)等待chat_detail_ready=true再生成。${fileHint}不重建项目，不反复打开面板。`}:{}) };
       }catch(error){if(input.request_id)saveSubmission({request_id:input.request_id,state:'failed',error:(error as Error).message});throw error;}
     }
     if (!id) throw Error('需要项目 ID');

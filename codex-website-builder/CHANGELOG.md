@@ -2,6 +2,13 @@
 
 后续版本在本文件顶部追加，保留全部历史记录。
 
+## 0.9.6 — 2026-11-20
+
+- 新增首页 `+ 商品库` 入口与插件级商品库导入弹窗，支持接口链接（`GET xxx/api/products`）、JSON/文本文件与粘贴导入，以及列表勾选、价格/折扣/评分排序、图片列表主图筛选设置、单条详情与多图预览。
+- 支持将商品库原始数据导入项目 `files/data.json`，同输入框存在 `data.json` 时自动递增重命名并同步替换 `ui://` 上下文；输入框展示 `xx件商品` 胶囊并输出 `[商品xx件]` 与 `ui://` 上下文。
+- 初始化项目时自动生成 `.gitignore`，默认忽略 `.gitignore`、`files/`、`material/`、`node_modules/` 及常见日志/缓存目录。
+- 更新 `website-copywriter` 文案 SKILL：明确 About Us 聚焦品牌介绍而非网站功能说明，隐私政策/服务条款/退换货政策不暴露网站接口、数据或存储逻辑。
+
 ## 0.9.5 — 2026-11-19
 
 - 修复 GitLab 预检拉取云端分支时缺少 fetch refspec 引起的 `NoRefspecError`（`Could not find a fetch refspec for remote "origin"`），在 fetch/push 前自动确保远端与 refspec 配置就绪。

@@ -27,7 +27,6 @@ export function PluginSettings(){
     <div className="settings-grid settings-form-grid">
      {gitlabFields.map(([name,label])=><label key={name}><span>{label}</span><input name={name} type="text" placeholder={name==='GITLAB_HOST'?'http://内网域名或IP:端口':undefined} autoComplete="off" spellCheck={false} disabled={inactive||!loaded} value={values[name]||''} onChange={event=>setValues(old=>({...old,[name]:event.target.value}))}/></label>)}
     </div>
-    <p className="settings-note">内网 HTTP 服务请填写 http:// 地址；Token 明文保存并回显，清空后保存即可删除。</p>
    </form>
   </div>
   <footer><button type="button" className="settings-btn-secondary" disabled={inactive||!loaded} onClick={()=>void test()}>{testing?<><span className="prompt-spinner" aria-hidden="true"/>测试中…</>:'测试连接'}</button><button className="primary" type="submit" form="plugin-settings-form" disabled={inactive||!loaded}>{busy?'保存中…':'保存配置'}</button></footer>

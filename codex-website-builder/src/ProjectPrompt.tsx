@@ -17,7 +17,19 @@ export type PromptOptions = {
   country?: string;
   language?: string;
   localeLabel?: string;
+  hasProductLibrary?: boolean;
+  productCount?: number;
 };
+
+export type StagedProductsInfo = {
+  count: number;
+  size: number;
+  updated_at?: string;
+};
+
+const DATA_CHIP_ICON = 'data:image/svg+xml,' + encodeURIComponent(
+  '<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="#2f5a44" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><polyline points="14 2 14 8 20 8"/><path d="M9 13c-.8 0-1 .5-1 1.2v.6c0 .5-.4.9-.9.9.5 0 .9.4.9.9v.6c0 .7.2 1.2 1 1.2"/><path d="M15 13c.8 0 1 .5 1 1.2v.6c0 .5.4.9.9.9-.5 0-.9.4-.9.9v.6c0 .7-.2 1.2-1 1.2"/></svg>'
+);
 
 const COLOR_PRESETS = [
   { id: 'auto', label: '自动', color: '' },
@@ -106,7 +118,7 @@ function extractPromptContent(root: HTMLElement, includeChips = true): { text: s
   };
 }
 
-export function ProjectPrompt({send,onCreated}:{send:(text:string,content:PromptContent,signal:AbortSignal,files:File[],options?:PromptOptions)=>Promise<CreatedProject>;onCreated:(project:CreatedProject)=>void}) {
+export function ProjectPrompt({send,onCreated,stagedProducts,onClearStagedProducts}:{send:(text:string,content:PromptContent,signal:AbortSignal,files:File[],options?:PromptOptions)=>Promise<CreatedProject>;onCreated:(project:CreatedProject)=>void;stagedProducts?:StagedProductsInfo|null;onClearStagedProducts?:()=>void}) {
   const editorRef = useRef<HTMLDivElement>(null);
   const filesMap = useRef<Map<string, FileEntry>>(new Map());
   const [hasContent, setHasContent] = useState(false);
@@ -217,14 +229,96 @@ export function ProjectPrompt({send,onCreated}:{send:(text:string,content:Prompt
         filesMap.current.delete(id);
       }
     }
+    if (stagedProducts && !presentIds.has('product-library')) {
+      onClearStagedProducts?.();
+    }
     const { text, orderedFileIds } = extractPromptContent(editor);
     const { text: draftText } = extractPromptContent(editor, false);
     writeStorage(PROMPT_DRAFT_STORAGE_KEY, draftText);
-    const empty = !text && orderedFileIds.length === 0 && filesMap.current.size === 0;
+    const empty = !text && orderedFileIds.length === 0 && filesMap.current.size === 0 && !presentIds.has('product-library');
     if (empty && editor.innerHTML !== '') editor.innerHTML = '';
     setHasContent(!empty);
     saveSelection();
-  }, [saveSelection]);
+  }, [saveSelection, stagedProducts, onClearStagedProducts]);
+
+  const removeProductLibraryChip = useCallback(() => {
+    const chip = editorRef.current?.querySelector('.prompt-chip[data-chip-kind="product-library"]');
+    if (chip) chip.remove();
+    onClearStagedProducts?.();
+    const editor = editorRef.current;
+    if (editor) {
+      const { text, orderedFileIds } = extractPromptContent(editor);
+      const empty = !text && orderedFileIds.length === 0 && filesMap.current.size === 0;
+      if (empty && editor.innerHTML !== '') editor.innerHTML = '';
+      setHasContent(!empty);
+    }
+  }, [onClearStagedProducts]);
+
+  useEffect(() => {
+    const editor = editorRef.current;
+    if (!editor) return;
+    const existing = editor.querySelector('.prompt-chip[data-chip-kind="product-library"]') as HTMLElement | null;
+    if (!stagedProducts) {
+      if (existing) {
+        existing.remove();
+        handleEditorChange();
+      }
+      return;
+    }
+    const displayLabel = `${stagedProducts.count}件商品`;
+    const outputLabel = `商品${stagedProducts.count}件`;
+    if (existing) {
+      existing.dataset.fileName = outputLabel;
+      const titleEl = existing.querySelector('.chip-title');
+      if (titleEl) {
+        titleEl.textContent = displayLabel;
+        (titleEl as HTMLElement).title = displayLabel;
+      }
+      return;
+    }
+    const chip = document.createElement('span');
+    chip.className = 'prompt-chip prompt-chip-products';
+    chip.contentEditable = 'false';
+    chip.dataset.chipKind = 'product-library';
+    chip.dataset.fileId = 'product-library';
+    chip.dataset.fileName = outputLabel;
+
+    const iconWrap = document.createElement('span');
+    iconWrap.className = 'chip-icon';
+    const thumb = document.createElement('img');
+    thumb.className = 'chip-data-icon';
+    thumb.src = DATA_CHIP_ICON;
+    thumb.alt = '商品数据';
+    iconWrap.appendChild(thumb);
+    chip.appendChild(iconWrap);
+
+    const title = document.createElement('span');
+    title.className = 'chip-title';
+    title.title = displayLabel;
+    title.textContent = displayLabel;
+    chip.appendChild(title);
+
+    const closeBtn = document.createElement('button');
+    closeBtn.type = 'button';
+    closeBtn.className = 'chip-close';
+    closeBtn.setAttribute('aria-label', `移除 ${displayLabel}`);
+    closeBtn.title = '删除';
+    closeBtn.innerHTML = '<svg viewBox="0 0 12 12" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" aria-hidden="true"><path d="M2.5 2.5 9.5 9.5M9.5 2.5 2.5 9.5"/></svg>';
+    closeBtn.onclick = e => {
+      e.preventDefault();
+      e.stopPropagation();
+      removeProductLibraryChip();
+    };
+    chip.appendChild(closeBtn);
+
+    const fragment = document.createDocumentFragment();
+    fragment.appendChild(document.createTextNode('\u200B'));
+    fragment.appendChild(chip);
+    fragment.appendChild(document.createTextNode('\u00A0'));
+    editor.appendChild(fragment);
+    setHasContent(true);
+    saveSelection();
+  }, [stagedProducts, removeProductLibraryChip, handleEditorChange, saveSelection]);
 
   const removeFile = useCallback((fileId: string) => {
     const chip = editorRef.current?.querySelector(`.prompt-chip[data-file-id="${fileId}"]`);
@@ -282,7 +376,7 @@ export function ProjectPrompt({send,onCreated}:{send:(text:string,content:Prompt
     closeBtn.className = 'chip-close';
     closeBtn.setAttribute('aria-label', `移除 ${file.name}`);
     closeBtn.title = '删除';
-    closeBtn.innerHTML = '×';
+    closeBtn.innerHTML = '<svg viewBox="0 0 12 12" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" aria-hidden="true"><path d="M2.5 2.5 9.5 9.5M9.5 2.5 2.5 9.5"/></svg>';
     closeBtn.onclick = (e) => {
       e.preventDefault();
       e.stopPropagation();
@@ -358,18 +452,39 @@ export function ProjectPrompt({send,onCreated}:{send:(text:string,content:Prompt
     const editor = editorRef.current;
     if (!editor) return;
 
-    const { text: promptText, orderedFileIds } = extractPromptContent(editor);
-    const orderedFiles = orderedFileIds
+    const { text: rawPromptText, orderedFileIds } = extractPromptContent(editor);
+    const hasProductChip = Boolean(stagedProducts && editor.querySelector('.prompt-chip[data-chip-kind="product-library"]'));
+    const rawOrderedFiles = orderedFileIds
       .map(id => filesMap.current.get(id)?.file)
       .filter((f): f is File => Boolean(f));
 
     for (const [id, entry] of filesMap.current.entries()) {
       if (!orderedFileIds.includes(id)) {
-        orderedFiles.push(entry.file);
+        rawOrderedFiles.push(entry.file);
       }
     }
 
-    if (!promptText && orderedFiles.length === 0) return;
+    if (!rawPromptText && rawOrderedFiles.length === 0 && !hasProductChip) return;
+
+    let promptText = rawPromptText;
+    let orderedFiles = rawOrderedFiles;
+    if (hasProductChip) {
+      const usedNames = new Set<string>(['data.json']);
+      orderedFiles = rawOrderedFiles.map(file => {
+        let targetName = file.name;
+        if (usedNames.has(targetName.toLowerCase())) {
+          const dot = targetName.lastIndexOf('.');
+          const stem = dot > 0 ? targetName.slice(0, dot) : targetName;
+          const ext = dot > 0 ? targetName.slice(dot) : '';
+          let seq = 1;
+          while (usedNames.has(`${stem}_${seq}${ext}`.toLowerCase())) seq++;
+          targetName = `${stem}_${seq}${ext}`;
+          promptText = promptText.split(`[${file.name}]`).join(`[${targetName}]`);
+        }
+        usedNames.add(targetName.toLowerCase());
+        return targetName === file.name ? file : new File([file], targetName, { type: file.type, lastModified: file.lastModified });
+      });
+    }
 
     locked.current = true;
     setPending(true);
@@ -386,8 +501,12 @@ export function ProjectPrompt({send,onCreated}:{send:(text:string,content:Prompt
         colorTheme: colorId,
         ...(selectedColor && selectedColor.id !== 'auto' ? { colorThemeLabel: selectedColor.label, colorPalette: [selectedColor.color] } : {}),
         ...(selectedLocale && selectedLocale.id !== 'auto' ? { country: selectedLocale.country, language: selectedLocale.language, localeLabel: selectedLocale.label } : {}),
+        ...(hasProductChip && stagedProducts ? { hasProductLibrary: true, productCount: stagedProducts.count } : {}),
       };
-      const baseText = promptText || orderedFiles.map(f => `[${f.name}]`).join(' ') || '请根据附件创建网站。';
+      const baseText = promptText || [
+        ...(hasProductChip && stagedProducts ? [`[商品${stagedProducts.count}件]`] : []),
+        ...orderedFiles.map(f => `[${f.name}]`),
+      ].join(' ') || '请根据附件创建网站。';
       const optionLines = [
         selectedLocale && selectedLocale.id !== 'auto' ? `国家/语言：${selectedLocale.label}` : '',
         selectedColor && selectedColor.id !== 'auto' ? `配色主题：${selectedColor.label}（${selectedColor.color}）` : '',
@@ -401,6 +520,17 @@ export function ProjectPrompt({send,onCreated}:{send:(text:string,content:Prompt
           text: finalText,
         }
       ];
+
+      if (hasProductChip && stagedProducts) {
+        content.push({
+          type: 'resource_link',
+          uri: 'ui://codex-website-builder/files/data.json',
+          name: `商品${stagedProducts.count}件`,
+          title: `商品${stagedProducts.count}件`,
+          mimeType: 'application/json',
+          size: stagedProducts.size,
+        });
+      }
 
       for (const file of orderedFiles) {
         content.push({
@@ -417,6 +547,7 @@ export function ProjectPrompt({send,onCreated}:{send:(text:string,content:Prompt
       if (controller.signal.aborted) return;
 
       editor.innerHTML = '';
+      if (hasProductChip) onClearStagedProducts?.();
       writeStorage(PROMPT_DRAFT_STORAGE_KEY, '');
       for (const entry of filesMap.current.values()) {
         if (entry.previewUrl) URL.revokeObjectURL(entry.previewUrl);

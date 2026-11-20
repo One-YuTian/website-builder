@@ -2,8 +2,9 @@ import { StrictMode, useEffect, useRef, useState } from 'react';
 import { createRoot } from 'react-dom/client';
 import './style.css';
 import { ProjectManager } from './ProjectManager';
-import {PluginSettings} from './PluginSettings';
-import {DeploymentPanel} from './DeploymentControls';
+import { PluginSettings } from './PluginSettings';
+import { ProductLibraryModal } from './ProductLibraryModal';
+import { DeploymentPanel } from './DeploymentControls';
 import {ImagePreviewPanel} from './ImagePreviewPanel';
 import {getPluginPanelContext,isPluginModal} from './plugin-modal';
 import {applyTheme,hostApp,hostReady,resolveTheme} from './bridge';
@@ -109,6 +110,7 @@ function PanelRoot(){
  if(!ready)return null;
  if(modal&&!panel)return <div className="empty-state" role="status">正在加载弹窗内容…</div>;
  if(panel?.view==='image-preview'&&panel.url)return <ImagePreviewPanel url={panel.url} name={panel.name}/>;
+ if(panel?.view==='products')return <ProductLibraryModal panelId={panel.panel_id}/>;
  return panel?.view==='settings'?<PluginSettings/>:panel?.view==='deploy'&&panel.project_id&&panel.panel_id?<DeploymentPanel projectId={panel.project_id} panelId={panel.panel_id} threadId={panel.thread_id}/>:<ProjectManager background={<DotCanvas />} />;
 }
 createRoot(document.getElementById('root')!).render(<StrictMode><PanelRoot/></StrictMode>);

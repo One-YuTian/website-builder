@@ -103,11 +103,35 @@ export async function recognizedProject(directory: string, format?: number) {
 export function projectReadme(project: {name:string;brief:string;language:string;country?:string;brand?:string}) {
   return `# ${project.name.replace(/[\r\n]/g, ' ')}\n\n${project.brief || 'Website project generated with Website Builder.'}\n\n- Brand: ${project.brand || project.name}\n- Country: ${project.country || 'To be specified'}\n- Language: ${project.language}\n\n## Project structure\n\n- \`src/\`: deployable website source; serve this directory as the website root.\n- \`src/images/\`: website assets, including logo.png, favicon.png, banner1.png, banner2.png and about.png as needed.\n- \`files/\`: original files uploaded through the project home prompt; not deployed.\n- \`material/\`: generated original image assets; these are not part of the deployed website.\n- \`.git/\`: local repository, initialized on main without a remote.\n\nOpen src/index.html through a static HTTP server. Website details and running instructions can be expanded here as the website is generated.\n`;
 }
+export function projectGitignore() {
+  return [
+    '.gitignore',
+    'files/',
+    'material/',
+    'node_modules/',
+    '.DS_Store',
+    'Thumbs.db',
+    '*.log',
+    'npm-debug.log*',
+    'pnpm-debug.log*',
+    'yarn-debug.log*',
+    'yarn-error.log*',
+    '.env',
+    '.env.*',
+    'dist/',
+    'build/',
+    '.cache/',
+    'tmp/',
+    'temp/',
+    '',
+  ].join('\n');
+}
 export async function scaffoldProject(directory: string, project: Parameters<typeof projectReadme>[0]) {
   await mkdir(join(directory, 'src', 'images'), {recursive:true});
   await mkdir(join(directory, 'material'), {recursive:true});
   await mkdir(join(directory, 'files'), {recursive:true});
   await initializeRepository(directory);
+  await writeFile(join(directory, '.gitignore'), projectGitignore());
   await writeFile(join(directory, 'README.md'), projectReadme(project));
   return commitProject(directory,'Initialize website project');
 }

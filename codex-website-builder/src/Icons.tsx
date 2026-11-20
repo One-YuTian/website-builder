@@ -1,5 +1,6 @@
-export function Icon({ name }: { name: 'select'|'hand'|'fit'|'width'|'pages'|'refresh'|'zoom'|'reset'|'folder'|'search'|'trash'|'send'|'copy'|'images'|'deploy'|'settings'|'palette'|'globe'|'sparkles'|'bolt'|'chevronDown'|'sidebar' }) {
+export function Icon({ name }: { name: 'select'|'hand'|'fit'|'width'|'pages'|'refresh'|'zoom'|'reset'|'folder'|'search'|'trash'|'send'|'copy'|'images'|'deploy'|'settings'|'palette'|'globe'|'sparkles'|'bolt'|'chevronDown'|'sidebar'|'plus' }) {
   const paths = {
+    plus:<path d="M12 5v14M5 12h14"/>,
     sidebar:<><rect x="3" y="4" width="18" height="16" rx="3"/><path d="M9 4v16"/></>,
     palette:<><path d="M12 2a10 10 0 0 0 0 20c1.4 0 2.2-.8 2.2-1.8 0-.5-.2-.9-.5-1.3-.3-.4-.5-.8-.5-1.3 0-1 .8-1.8 1.8-1.8h2.2A4.8 4.8 0 0 0 22 11C22 6 17.5 2 12 2Z"/><circle cx="7.5" cy="10.5" r="1.15" fill="currentColor" stroke="none"/><circle cx="10.5" cy="7" r="1.15" fill="currentColor" stroke="none"/><circle cx="15" cy="7.5" r="1.15" fill="currentColor" stroke="none"/><circle cx="17.5" cy="11" r="1.15" fill="currentColor" stroke="none"/></>,
     globe:<><circle cx="12" cy="12" r="9"/><path d="M3.6 9h16.8M3.6 15h16.8M12 3a14 14 0 0 1 0 18M12 3a14 14 0 0 0 0 18"/></>,
