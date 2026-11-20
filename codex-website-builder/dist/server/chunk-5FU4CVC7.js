@@ -6207,11 +6207,35 @@ ${project.brief || "Website project generated with Website Builder."}
 Open src/index.html through a static HTTP server. Website details and running instructions can be expanded here as the website is generated.
 `;
 }
+function projectGitignore() {
+  return [
+    ".gitignore",
+    "files/",
+    "material/",
+    "node_modules/",
+    ".DS_Store",
+    "Thumbs.db",
+    "*.log",
+    "npm-debug.log*",
+    "pnpm-debug.log*",
+    "yarn-debug.log*",
+    "yarn-error.log*",
+    ".env",
+    ".env.*",
+    "dist/",
+    "build/",
+    ".cache/",
+    "tmp/",
+    "temp/",
+    ""
+  ].join("\n");
+}
 async function scaffoldProject(directory, project) {
   await mkdir(join4(directory, "src", "images"), { recursive: true });
   await mkdir(join4(directory, "material"), { recursive: true });
   await mkdir(join4(directory, "files"), { recursive: true });
   await initializeRepository(directory);
+  await writeFile(join4(directory, ".gitignore"), projectGitignore());
   await writeFile(join4(directory, "README.md"), projectReadme(project));
   return commitProject(directory, "Initialize website project");
 }
@@ -8238,6 +8262,199 @@ function dataPaths(env = process.env) {
   };
 }
 
+// server/product-library.ts
+import { constants } from "node:fs";
+import { createHash as createHash5 } from "node:crypto";
+import { mkdir as mkdir4, open as open2, writeFile as writeFile4 } from "node:fs/promises";
+import { homedir as homedir3 } from "node:os";
+import { basename as basename3, extname as extname4, join as join13 } from "node:path";
+var STAGED_PREFIX = "staged_products:";
+function extractProductRows(parsed) {
+  let rows = parsed;
+  if (!Array.isArray(rows) && parsed && typeof parsed === "object") {
+    const obj = parsed;
+    const data2 = obj.data && typeof obj.data === "object" ? obj.data : null;
+    rows = obj.products ?? obj.productData ?? obj.items ?? data2?.products ?? data2?.items ?? obj.data;
+  }
+  if (!Array.isArray(rows) || rows.length === 0) {
+    throw new Error("\u672A\u8BC6\u522B\u5230\u975E\u7A7A\u5546\u54C1\u6570\u7EC4\uFF08\u652F\u6301\u6570\u7EC4\u3001products\u3001productData\u3001items \u6216 data \u5305\u88C5\uFF09");
+  }
+  if (rows.some((item) => !item || typeof item !== "object" || Array.isArray(item))) {
+    throw new Error("\u5546\u54C1\u5217\u8868\u5305\u542B\u975E\u5BF9\u8C61\u6761\u76EE");
+  }
+  return rows;
+}
+function normalizeProductsApiUrl(rawUrl) {
+  const trimmed = rawUrl.trim();
+  if (!trimmed) throw new Error("\u8BF7\u8F93\u5165\u5546\u54C1\u63A5\u53E3\u94FE\u63A5");
+  let url;
+  try {
+    url = new URL(/^https?:\/\//i.test(trimmed) ? trimmed : `https://${trimmed}`);
+  } catch {
+    throw new Error("\u5BFC\u5165\u5931\u8D25\uFF1A\u94FE\u63A5\u683C\u5F0F\u65E0\u6548");
+  }
+  if (!/^https?:$/.test(url.protocol) || url.username || url.password) {
+    throw new Error("\u5BFC\u5165\u5931\u8D25\uFF1A\u4EC5\u652F\u6301\u65E0\u51ED\u636E HTTP(S) \u94FE\u63A5");
+  }
+  const pathname = url.pathname.replace(/\/+$/, "");
+  if (!pathname) {
+    url.pathname = "/api/products";
+  } else if (!pathname.endsWith("/api/products")) {
+    url.pathname = `${pathname}/api/products`;
+  } else {
+    url.pathname = pathname;
+  }
+  return url;
+}
+async function fetchProductsFromUrl(rawUrl) {
+  const target = normalizeProductsApiUrl(rawUrl);
+  let response;
+  try {
+    response = await fetch(target.href, {
+      method: "GET",
+      headers: { Accept: "application/json" },
+      signal: AbortSignal.timeout(15e3)
+    });
+  } catch (error) {
+    const isTimeout = error?.name === "TimeoutError" || error?.name === "AbortError";
+    throw new Error(isTimeout ? "\u5BFC\u5165\u5931\u8D25\uFF1A\u8BF7\u6C42\u8D85\u65F6" : "\u5BFC\u5165\u5931\u8D25\uFF1A\u65E0\u6CD5\u8FDE\u63A5\u76EE\u6807\u5730\u5740");
+  }
+  if (!response.ok) {
+    throw new Error(`\u5BFC\u5165\u5931\u8D25\uFF1AHTTP ${response.status}`);
+  }
+  const text2 = (await response.text()).replace(/^\uFEFF/, "");
+  let parsed;
+  try {
+    parsed = JSON.parse(text2);
+  } catch {
+    throw new Error("\u5BFC\u5165\u5931\u8D25\uFF1A\u8FD4\u56DE\u5185\u5BB9\u975E\u6709\u6548 JSON");
+  }
+  let products;
+  try {
+    products = extractProductRows(parsed);
+  } catch {
+    throw new Error("\u5BFC\u5165\u5931\u8D25\uFF1A\u672A\u8BC6\u522B\u5230\u6709\u6548\u5546\u54C1\u6570\u7EC4");
+  }
+  return { raw_json: text2, products, count: products.length, url: target.href };
+}
+function parseRawProductJson(rawJson) {
+  if (typeof rawJson !== "string" || !rawJson.trim()) {
+    throw new Error("\u5546\u54C1 JSON \u5185\u5BB9\u4E0D\u80FD\u4E3A\u7A7A");
+  }
+  if (Buffer.byteLength(rawJson, "utf8") > 64 * 1024 * 1024) {
+    throw new Error("\u5546\u54C1 JSON \u8D85\u8FC7 64MB \u4E0A\u9650");
+  }
+  const clean = rawJson.replace(/^\uFEFF/, "");
+  let parsed;
+  try {
+    parsed = JSON.parse(clean);
+  } catch {
+    throw new Error("JSON \u89E3\u6790\u5931\u8D25\uFF0C\u8BF7\u68C0\u67E5\u6570\u636E\u683C\u5F0F");
+  }
+  const products = extractProductRows(parsed);
+  return { raw_json: clean, products, count: products.length, size: Buffer.byteLength(clean, "utf8") };
+}
+function validPanelId(panelId) {
+  if (!panelId || !/^[a-zA-Z0-9_-]{8,128}$/.test(panelId)) {
+    throw new Error("\u9700\u8981\u6709\u6548\u7684\u9762\u677F ID");
+  }
+}
+function stageProducts(store, panelId, rawJson) {
+  validPanelId(panelId);
+  const { raw_json, count, size } = parseRawProductJson(rawJson);
+  const record = { raw_json, count, size, updated_at: (/* @__PURE__ */ new Date()).toISOString() };
+  store.database.sql.prepare("INSERT INTO settings VALUES (?,?) ON CONFLICT(key) DO UPDATE SET value=excluded.value").run(STAGED_PREFIX + panelId, JSON.stringify(record));
+  return { has_products: true, count, size, updated_at: record.updated_at };
+}
+function getStagedProducts(store, panelId) {
+  validPanelId(panelId);
+  const row = store.database.sql.prepare("SELECT value FROM settings WHERE key=?").get(STAGED_PREFIX + panelId);
+  if (!row) return { has_products: false, count: 0, size: 0 };
+  try {
+    const parsed = JSON.parse(row.value);
+    return { has_products: true, count: parsed.count, size: parsed.size, updated_at: parsed.updated_at };
+  } catch {
+    return { has_products: false, count: 0, size: 0 };
+  }
+}
+function clearStagedProducts(store, panelId) {
+  validPanelId(panelId);
+  store.database.sql.prepare("DELETE FROM settings WHERE key=?").run(STAGED_PREFIX + panelId);
+  return { has_products: false, count: 0, size: 0 };
+}
+async function importStagedProducts(store, panelId, view) {
+  const key = STAGED_PREFIX + panelId;
+  const row = store.database.sql.prepare("SELECT value FROM settings WHERE key=?").get(key);
+  if (!row) return null;
+  const parsed = JSON.parse(row.value);
+  const filesDir = join13(view.projectDirectory, "files");
+  await mkdir4(filesDir, { recursive: true });
+  const targetPath = join13(filesDir, "data.json");
+  const bytes = Buffer.from(parsed.raw_json, "utf8");
+  await writeFile4(targetPath, bytes);
+  const sha256 = createHash5("sha256").update(bytes).digest("hex");
+  const id = createHash5("sha256").update(view.project.id + targetPath).digest("hex");
+  store.database.sql.prepare("INSERT INTO resources VALUES (?,?,?,?,?,?,?) ON CONFLICT(project_id,path) DO UPDATE SET thread_id=excluded.thread_id,mime=excluded.mime,size=excluded.size").run(id, view.project.id, view.threadId || null, "data.json", targetPath, "application/json", bytes.length);
+  store.database.sql.prepare("DELETE FROM settings WHERE key=?").run(key);
+  return {
+    id,
+    name: "data.json",
+    original_name: "data.json",
+    path: targetPath,
+    mime: "application/json",
+    size: bytes.length,
+    sha256,
+    product_count: parsed.count
+  };
+}
+async function downloadProductImage(rawUrl) {
+  const trimmed = rawUrl.trim();
+  if (!trimmed) throw new Error("\u56FE\u7247\u5730\u5740\u4E0D\u80FD\u4E3A\u7A7A");
+  let url;
+  try {
+    url = new URL(trimmed);
+  } catch {
+    throw new Error("\u56FE\u7247\u5730\u5740\u65E0\u6548");
+  }
+  if (!/^https?:$/.test(url.protocol) || url.username || url.password) {
+    throw new Error("\u4EC5\u652F\u6301\u65E0\u51ED\u636E HTTP(S) \u56FE\u7247\u5730\u5740");
+  }
+  const response = await fetch(url.href, { signal: AbortSignal.timeout(15e3) });
+  if (!response.ok) {
+    throw new Error(`\u56FE\u7247\u4E0B\u8F7D\u5931\u8D25\uFF08HTTP ${response.status}\uFF09`);
+  }
+  const bytes = Buffer.from(await response.arrayBuffer());
+  if (!bytes.length) throw new Error("\u56FE\u7247\u5185\u5BB9\u4E3A\u7A7A");
+  const downloadsDir = join13(homedir3(), "Downloads");
+  await mkdir4(downloadsDir, { recursive: true });
+  let base = basename3(url.pathname).replace(/[<>:"/\\|?*\x00-\x1f]/g, "_") || "product-image.png";
+  if (!extname4(base)) {
+    const ct = response.headers.get("content-type") || "";
+    const ext2 = ct.includes("jpeg") ? ".jpg" : ct.includes("webp") ? ".webp" : ct.includes("gif") ? ".gif" : ".png";
+    base += ext2;
+  }
+  const ext = extname4(base);
+  const stem = basename3(base, ext);
+  let targetName = base;
+  let targetPath = join13(downloadsDir, targetName);
+  for (let attempt = 1; ; attempt++) {
+    try {
+      const handle = await open2(targetPath, constants.O_CREAT | constants.O_EXCL | constants.O_WRONLY);
+      try {
+        await handle.writeFile(bytes);
+      } finally {
+        await handle.close();
+      }
+      break;
+    } catch (error) {
+      if (error.code !== "EEXIST") throw error;
+      targetName = `${stem}_${attempt}${ext}`;
+      targetPath = join13(downloadsDir, targetName);
+    }
+  }
+  return { downloaded: true, name: targetName, path: targetPath };
+}
+
 // server/project-presentation.ts
 var statusLabels = { pending: "\u5F85\u5F00\u59CB", generating: "\u751F\u6210\u4E2D", modifying: "\u4FEE\u6539\u4E2D", completed: "\u5DF2\u5B8C\u6210", failed: "\u6267\u884C\u5931\u8D25", paused: "\u5DF2\u6682\u505C" };
 function projectTitle(project) {
@@ -8256,9 +8473,9 @@ function projectTitle(project) {
 }
 
 // server/project-manager.ts
-import { readFile as readFile14, mkdir as mkdir6, copyFile as copyFile2, realpath as realpath7, stat as stat8, readdir as readdir4 } from "node:fs/promises";
-import { createHash as createHash7 } from "node:crypto";
-import { extname as extname5, join as join15, relative as relative6, sep as sep6, isAbsolute as isAbsolute8 } from "node:path";
+import { readFile as readFile14, mkdir as mkdir7, copyFile as copyFile2, realpath as realpath7, stat as stat8, readdir as readdir4 } from "node:fs/promises";
+import { createHash as createHash8 } from "node:crypto";
+import { extname as extname6, join as join16, relative as relative6, sep as sep6, isAbsolute as isAbsolute8 } from "node:path";
 
 // server/open-directory.ts
 import { spawn } from "node:child_process";
@@ -8333,12 +8550,12 @@ async function openDirectory(directory, platform = process.platform, start = spa
 import { gunzipSync as gunzipSync2 } from "node:zlib";
 
 // server/image-dimensions.ts
-import { open as open2, stat as stat6 } from "node:fs/promises";
+import { open as open3, stat as stat6 } from "node:fs/promises";
 var cache3 = /* @__PURE__ */ new Map();
 async function imageDimensions(path) {
   const info = await stat6(path), key = `${info.size}:${info.mtimeMs}`;
   if (cache3.get(path)?.key === key) return cache3.get(path).dimensions;
-  const file = await open2(path, "r");
+  const file = await open3(path, "r");
   try {
     const buffer = Buffer.alloc(Math.min(65536, info.size));
     await file.read(buffer, 0, buffer.length, 0);
@@ -8382,11 +8599,11 @@ async function imageDimensions(path) {
 }
 
 // server/image-compression.ts
-import { readFile as readFile12, lstat as lstat2, mkdir as mkdir4, open as open3, rename as rename2, unlink as unlink2 } from "node:fs/promises";
-import { createHash as createHash5, randomUUID as randomUUID2 } from "node:crypto";
-import { join as join13, resolve as resolve5 } from "node:path";
+import { readFile as readFile12, lstat as lstat2, mkdir as mkdir5, open as open4, rename as rename2, unlink as unlink2 } from "node:fs/promises";
+import { createHash as createHash6, randomUUID as randomUUID2 } from "node:crypto";
+import { join as join14, resolve as resolve5 } from "node:path";
 import { fileURLToPath as fileURLToPath6, pathToFileURL } from "node:url";
-var hash = (bytes) => createHash5("sha256").update(bytes).digest("hex");
+var hash = (bytes) => createHash6("sha256").update(bytes).digest("hex");
 function imagePublisher(store, compressor) {
   const active = /* @__PURE__ */ new Map();
   const row = (id, path) => store.database.sql.prepare("SELECT * FROM image_compressions WHERE project_id=? AND path=?").get(id, path);
@@ -8404,8 +8621,8 @@ function imagePublisher(store, compressor) {
         const source = await contained(view.materialDirectory, path), info = await lstat2(source);
         if (!info.isFile()) throw Error("\u539F\u56FE\u4E0D\u662F\u666E\u901A\u6587\u4EF6");
         const input = await readFile12(source), sourceHash = hash(input), previous = row(id, path);
-        await mkdir4(join13(view.directory, "images"), { recursive: true });
-        const images = await contained(view.directory, "images"), target = join13(images, path);
+        await mkdir5(join14(view.directory, "images"), { recursive: true });
+        const images = await contained(view.directory, "images"), target = join14(images, path);
         const targetHash = await contained(images, path).then((file) => readFile12(file)).then(hash).catch((error) => {
           if (error.code === "ENOENT") return "";
           throw error;
@@ -8430,7 +8647,7 @@ function imagePublisher(store, compressor) {
         store.database.sql.prepare("UPDATE image_compressions SET lease_until=? WHERE project_id=? AND path=? AND owner=?").run(Date.now() + 18e4, id, path, owner);
       }, 1e4);
       const pluginRoot = fileURLToPath6(new URL("../../", import.meta.url));
-      const skill = (process.env.WEBSITE_BUILDER_SKILL_ROOT || join13(pluginRoot, "skills/website-builder")).replaceAll("${PLUGIN_ROOT}", pluginRoot);
+      const skill = (process.env.WEBSITE_BUILDER_SKILL_ROOT || join14(pluginRoot, "skills/website-builder")).replaceAll("${PLUGIN_ROOT}", pluginRoot);
       const compress = compressor || (await import(pathToFileURL(resolve5(skill, "../website-image-generator/scripts/compress-image.mjs")).href)).compressImageWithRetry;
       const result = await compress(initial.input, path, { attemptsUsed: initial.attempts, onAttempt: (attempt) => {
         const current2 = row(id, path);
@@ -8449,9 +8666,9 @@ function imagePublisher(store, compressor) {
           throw error;
         });
         if (currentHash !== initial.targetHash) throw Error("\u7F51\u7AD9\u56FE\u7247\u5728\u538B\u7F29\u671F\u95F4\u88AB\u4FEE\u6539\uFF0C\u672A\u8986\u76D6");
-        const temporary = join13(images, "." + path + "." + owner + ".tmp");
+        const temporary = join14(images, "." + path + "." + owner + ".tmp");
         try {
-          const handle = await open3(temporary, "wx");
+          const handle = await open4(temporary, "wx");
           try {
             await handle.writeFile(result.binary);
             await handle.sync();
@@ -8503,12 +8720,12 @@ function imagePublisher(store, compressor) {
 }
 
 // server/submission-files.ts
-import { constants } from "node:fs";
-import { copyFile, lstat as lstat3, mkdir as mkdir5, open as open4, readFile as readFile13, realpath as realpath6, stat as stat7, unlink as unlink3 } from "node:fs/promises";
-import { basename as basename3, extname as extname4, isAbsolute as isAbsolute7, join as join14, relative as relative5, sep as sep5 } from "node:path";
-import { createHash as createHash6 } from "node:crypto";
+import { constants as constants2 } from "node:fs";
+import { copyFile, lstat as lstat3, mkdir as mkdir6, open as open5, readFile as readFile13, realpath as realpath6, stat as stat7, unlink as unlink3 } from "node:fs/promises";
+import { basename as basename4, extname as extname5, isAbsolute as isAbsolute7, join as join15, relative as relative5, sep as sep5 } from "node:path";
+import { createHash as createHash7 } from "node:crypto";
 var validId = (id) => /^[-a-zA-Z0-9_]{8,128}$/.test(id);
-var hash2 = (bytes) => createHash6("sha256").update(bytes).digest("hex");
+var hash2 = (bytes) => createHash7("sha256").update(bytes).digest("hex");
 var safeName = (name) => {
   let value = name.normalize("NFC").replace(/[<>:"/\\|?*\x00-\x1f]/g, "_").replace(/[ .]+$/g, "");
   if (value.startsWith(".")) value = "file_" + value;
@@ -8531,7 +8748,7 @@ var SubmissionFiles = class {
     return this.store.database.sql.prepare("SELECT * FROM submission_files WHERE panel_id=? AND request_id=? ORDER BY rowid").all(panel, request);
   }
   directory(panel, request) {
-    return join14(this.store.stateRoot, "submissions", hash2(panel + ":" + request));
+    return join15(this.store.stateRoot, "submissions", hash2(panel + ":" + request));
   }
   async upload(panel, request, input) {
     const id = input.upload_id, totalSize = input.total_size, offset2 = input.offset;
@@ -8541,14 +8758,14 @@ var SubmissionFiles = class {
     if (typeof input.chunk !== "string" || input.chunk.length > 262144 || !/^(?:[A-Za-z0-9+/]{4})*(?:[A-Za-z0-9+/]{2}==|[A-Za-z0-9+/]{3}=)?$/.test(input.chunk)) throw Error("\u9644\u4EF6\u5206\u7247\u65E0\u6548");
     if (typeof offset2 !== "number" || !Number.isInteger(offset2) || offset2 < 0) throw Error("\u9644\u4EF6\u5206\u7247\u504F\u79FB\u65E0\u6548");
     const directory = this.directory(panel, request);
-    await mkdir5(directory, { recursive: true });
+    await mkdir6(directory, { recursive: true });
     const state = await realpath6(this.store.stateRoot), actual = await realpath6(directory), rel = relative5(state, actual);
     if (rel === ".." || rel.startsWith(`..${sep5}`) || isAbsolute7(rel)) throw Error("\u9644\u4EF6\u6682\u5B58\u76EE\u5F55\u4E0D\u80FD\u8D8A\u754C");
-    const lockPath = join14(directory, "upload.lock");
+    const lockPath = join15(directory, "upload.lock");
     let lock;
     for (let attempt = 0; attempt < 200; attempt++) {
       try {
-        lock = await open4(lockPath, "wx");
+        lock = await open5(lockPath, "wx");
         break;
       } catch (error) {
         if (error.code !== "EEXIST") throw error;
@@ -8565,8 +8782,8 @@ var SubmissionFiles = class {
         const rows = this.rows(panel, request);
         if (rows.length >= 10 || rows.reduce((sum, item) => sum + item.size, 0) + totalSize > 12 * 1024 * 1024) throw Error("\u6700\u591A\u9009\u62E910\u4E2A\u6587\u4EF6\uFF0C\u603B\u5927\u5C0F\u4E0D\u8D85\u8FC712MB\u3002");
         if (offset2 !== 0) throw Error("\u9644\u4EF6\u5FC5\u987B\u4ECE\u9996\u4E2A\u5206\u7247\u5F00\u59CB\u4E0A\u4F20");
-        const path = join14(directory, id + ".part");
-        const file2 = await open4(path, "wx");
+        const path = join15(directory, id + ".part");
+        const file2 = await open5(path, "wx");
         await file2.close();
         this.store.database.sql.prepare("INSERT INTO submission_files VALUES (?,?,?,?,?,?,0,?,'uploading',NULL,?)").run(panel, request, id, safeName(input.file_name), input.mime_type || "application/octet-stream", totalSize, input.sha256, path);
         row = this.rows(panel, request).find((item) => item.upload_id === id);
@@ -8576,7 +8793,7 @@ var SubmissionFiles = class {
       if (offset2 > row.received || offset2 + bytes.length > row.size) throw Error("\u9644\u4EF6\u5206\u7247\u987A\u5E8F\u6216\u5927\u5C0F\u65E0\u6548");
       const info = await lstat3(row.path);
       if (!info.isFile() || info.isSymbolicLink()) throw Error("\u9644\u4EF6\u6682\u5B58\u8DEF\u5F84\u65E0\u6548");
-      const file = await open4(row.path, "r+");
+      const file = await open5(row.path, "r+");
       try {
         if (offset2 < row.received) {
           if (offset2 + bytes.length > row.received) throw Error("\u9644\u4EF6\u91CD\u8BD5\u5206\u7247\u8303\u56F4\u65E0\u6548");
@@ -8610,8 +8827,8 @@ var SubmissionFiles = class {
   async import(panel, request, view) {
     const rows = this.rows(panel, request);
     if (rows.some((row) => row.status !== "ready" && row.status !== "imported")) throw Error("\u9644\u4EF6\u5C1A\u672A\u5B8C\u6574\u4E0A\u4F20\uFF0C\u4E0D\u80FD\u521B\u5EFA\u9879\u76EE");
-    const directory = join14(view.projectDirectory, "files");
-    await mkdir5(directory, { recursive: true });
+    const directory = join15(view.projectDirectory, "files");
+    await mkdir6(directory, { recursive: true });
     const root = await realpath6(view.projectDirectory), actual = await realpath6(directory), rel = relative5(root, actual);
     if (rel !== "files") throw Error("\u9879\u76EE files \u76EE\u5F55\u65E0\u6548\u6216\u6307\u5411\u9879\u76EE\u5916\u90E8");
     const imported = [];
@@ -8619,18 +8836,18 @@ var SubmissionFiles = class {
       if (row.project_id && row.project_id !== view.project.id) throw Error("\u9644\u4EF6\u5DF2\u5C5E\u4E8E\u5176\u4ED6\u9879\u76EE");
       const bytes = await readFile13(row.path);
       if (bytes.length !== row.size || hash2(bytes) !== row.sha256) throw Error("\u9644\u4EF6\u539F\u59CB\u6570\u636E\u6821\u9A8C\u5931\u8D25");
-      let name = row.name, path = join14(actual, name);
+      let name = row.name, path = join15(actual, name);
       for (let attempt = 0; ; attempt++) {
         try {
-          await copyFile(row.path, path, constants.COPYFILE_EXCL);
+          await copyFile(row.path, path, constants2.COPYFILE_EXCL);
           break;
         } catch (error) {
           if (error.code !== "EEXIST") throw error;
           const info = await lstat3(path);
           if (info.isFile() && !info.isSymbolicLink() && info.size === row.size && hash2(await readFile13(path)) === row.sha256) break;
-          const ext = extname4(row.name);
-          name = basename3(row.name, ext) + "-" + row.sha256.slice(0, 12) + (attempt ? "-" + attempt : "") + ext;
-          path = join14(actual, name);
+          const ext = extname5(row.name);
+          name = basename4(row.name, ext) + "-" + row.sha256.slice(0, 12) + (attempt ? "-" + attempt : "") + ext;
+          path = join15(actual, name);
         }
       }
       const id = hash2(view.project.id + path);
@@ -8643,7 +8860,7 @@ var SubmissionFiles = class {
 };
 
 // server/project-manager.ts
-var mime3 = (path) => ({ ".png": "image/png", ".jpg": "image/jpeg", ".jpeg": "image/jpeg", ".webp": "image/webp", ".avif": "image/avif", ".ico": "image/x-icon", ".svg": "image/svg+xml", ".gif": "image/gif", ".pdf": "application/pdf", ".json": "application/json" })[extname5(path).toLowerCase()] || "application/octet-stream";
+var mime3 = (path) => ({ ".png": "image/png", ".jpg": "image/jpeg", ".jpeg": "image/jpeg", ".webp": "image/webp", ".avif": "image/avif", ".ico": "image/x-icon", ".svg": "image/svg+xml", ".gif": "image/gif", ".pdf": "application/pdf", ".json": "application/json" })[extname6(path).toLowerCase()] || "application/octet-stream";
 function projectManager(store) {
   const publisher = imagePublisher(store);
   const uploads = new SubmissionFiles(store);
@@ -8715,7 +8932,7 @@ function projectManager(store) {
         throw error;
       })) {
         if (entry.name.startsWith(".") || entry.name === "node_modules") continue;
-        const path = join15(directory, entry.name);
+        const path = join16(directory, entry.name);
         if (entry.isDirectory()) await scan(path);
         else if (entry.isFile() && !/\.(?:html?|js|mjs|css)$/i.test(path)) {
           const info = await stat8(path).catch((error) => {
@@ -8723,7 +8940,7 @@ function projectManager(store) {
             throw error;
           });
           if (!info) continue;
-          const resource = { id: createHash7("sha256").update(id + path).digest("hex"), name: entry.name, path, mime: mime3(path), size: info.size };
+          const resource = { id: createHash8("sha256").update(id + path).digest("hex"), name: entry.name, path, mime: mime3(path), size: info.size };
           found.push(resource);
           store.database.sql.prepare("INSERT INTO resources VALUES (?,?,?,?,?,?,?) ON CONFLICT(project_id,path) DO UPDATE SET size=excluded.size,mime=excluded.mime").run(resource.id, id, null, entry.name, path, resource.mime, info.size);
         }
@@ -8738,17 +8955,17 @@ function projectManager(store) {
     const material = await materialResources(view);
     const rows = store.database.sql.prepare("SELECT id,name,path,mime,size,thread_id FROM resources WHERE project_id=? ORDER BY name").all(id);
     const files = [];
-    const directory = join15(view.projectDirectory, "files");
+    const directory = join16(view.projectDirectory, "files");
     const base = await realpath7(directory).catch(() => null), root = await realpath7(view.projectDirectory);
     if (base && relative6(root, base) !== "files") throw Error("\u9879\u76EE files \u76EE\u5F55\u4E0D\u80FD\u6307\u5411\u5916\u90E8");
     if (base) for (const entry of await readdir4(base, { withFileTypes: true })) {
       if (!entry.isFile()) continue;
-      const path = join15(base, entry.name), info = await stat8(path);
+      const path = join16(base, entry.name), info = await stat8(path);
       const row = rows.find((row2) => row2.path === path);
-      files.push({ id: row?.id || createHash7("sha256").update(id + path).digest("hex"), name: entry.name, path, mime: row?.mime || mime3(path), size: info.size, thread_id: row?.thread_id || null });
+      files.push({ id: row?.id || createHash8("sha256").update(id + path).digest("hex"), name: entry.name, path, mime: row?.mime || mime3(path), size: info.size, thread_id: row?.thread_id || null });
     }
     return [...material, ...files, ...rows.filter((row) => {
-      const rel = relative6(join15(view.metadataDirectory, "session-assets"), row.path);
+      const rel = relative6(join16(view.metadataDirectory, "session-assets"), row.path);
       return rel !== ".." && !rel.startsWith(`..${sep6}`) && !isAbsolute8(rel);
     })];
   }
@@ -8760,7 +8977,7 @@ function projectManager(store) {
     if (action === "context") {
       const value = await context(thread, input.panel_id);
       if (!input.requirement?.trim()) return value;
-      const fingerprint = createHash7("sha256").update(input.requirement.trim().replace(/\s+/g, " ")).digest("hex");
+      const fingerprint = createHash8("sha256").update(input.requirement.trim().replace(/\s+/g, " ")).digest("hex");
       const rows = store.database.sql.prepare("SELECT key,value FROM settings WHERE key LIKE 'submission:%'").all();
       const matches = rows.flatMap((row) => {
         try {
@@ -8810,7 +9027,7 @@ function projectManager(store) {
         if (record?.request_id === input.request_id) return record;
         const count = input.file_count ?? 0;
         if (!Number.isInteger(count) || count < 0 || count > 10) throw Error("\u9644\u4EF6\u6570\u91CF\u65E0\u6548");
-        saveSubmission({ request_id: input.request_id, state: "pending", file_count: count, created_at: (/* @__PURE__ */ new Date()).toISOString(), ...input.requirement?.trim() ? { requirement_hash: createHash7("sha256").update(input.requirement.trim().replace(/\s+/g, " ")).digest("hex") } : {} });
+        saveSubmission({ request_id: input.request_id, state: "pending", file_count: count, has_product_library: Boolean(input.has_product_library), created_at: (/* @__PURE__ */ new Date()).toISOString(), ...input.requirement?.trim() ? { requirement_hash: createHash8("sha256").update(input.requirement.trim().replace(/\s+/g, " ")).digest("hex") } : {} });
         return { state: "pending" };
       }
       if (record?.request_id !== input.request_id) throw Error("\u6B64\u63D0\u4EA4\u5DF2\u5931\u6548\uFF0C\u8BF7\u68C0\u67E5\u5F53\u524D\u5BF9\u8BDD");
@@ -8841,8 +9058,9 @@ function projectManager(store) {
     }
     if (action === "create" || action === "open" || action === "bind") {
       if (action !== "create" && !id) throw Error("\u9700\u8981\u9879\u76EE ID");
+      const submissionRecord = input.request_id ? readSubmission() : null;
       if (input.request_id) {
-        const record = readSubmission();
+        const record = submissionRecord;
         if (record?.request_id !== input.request_id || record.state === "cancelled") throw Error("\u521B\u5EFA\u8BF7\u6C42\u5DF2\u53D6\u6D88\u6216\u5931\u6548");
         if (record.state === "created") {
           const existing = await store.get(void 0, record.project_id);
@@ -8859,9 +9077,15 @@ function projectManager(store) {
         const view2 = thread ? await store.open({ threadId: thread, projectId: id, newProject: action === "create", name: input.name, country: input.country, language: input.language, categories: input.categories, brand: input.brand, domain: input.domain, ...action === "create" ? { pages: [] } : {} }) : action === "create" ? await store.createProject({ name: input.name, country: input.country, language: input.language, categories: input.categories, brand: input.brand, domain: input.domain, pages: [] }) : await store.get(void 0, id);
         if (!view2) throw Error("\u9879\u76EE\u4E0D\u5B58\u5728\u6216\u5DF2\u5220\u9664");
         store.database.panel(input.panel_id, thread || "", view2.project.id, action === "create" && submissionHandoff);
-        const attachedFiles = input.request_id ? await store.exclusive(view2.project.id, () => uploads.import(input.panel_id, input.request_id, view2)) : [];
+        const hasProductLibrary = Boolean(submissionRecord?.has_product_library);
+        const attachedFiles = input.request_id ? await store.exclusive(view2.project.id, async () => {
+          const importedProducts = hasProductLibrary ? await importStagedProducts(store, input.panel_id, view2) : null;
+          const uploaded = await uploads.import(input.panel_id, input.request_id, view2);
+          return importedProducts ? [importedProducts, ...uploaded] : uploaded;
+        }) : [];
         if (input.request_id) saveSubmission({ request_id: input.request_id, state: "created", project_id: view2.project.id, thread_id: thread || null, files: attachedFiles });
-        return { page: "project", panel_id: input.panel_id, ...compactProject(view2), thread_id: thread || null, files: attachedFiles, ...input.request_id ? { ui_reused: true, request_id: input.request_id, next_action: "\u5FC5\u987B\u8C03\u7528open_thread_canvas(thread_id=\u672C\u6B21\u65B0\u5BF9\u8BDD\u771F\u5B9EID)\u4E00\u6B21\uFF0C\u5728\u65B0\u5BF9\u8BDD\u6253\u5F00\u4FA7\u8FB9UI\u5E76\u8FDB\u5165\u672C\u9879\u76EE\uFF1B\u67E5\u8BE2website_projects(action=submission,panel_id,request_id)\u7B49\u5F85chat_detail_ready=true\u518D\u751F\u6210\u3002\u9644\u4EF6\u5DF2\u5B58\u5165files_directory\uFF0C\u5148\u7528website_projects(resources)\u83B7\u53D6\u672C\u5730\u7EDD\u5BF9\u8DEF\u5F84\uFF0C\u5546\u54C1JSON\u4EA4\u7ED9website_products(file_path)\uFF0C\u4E0D\u8BFB\u53D6attachment://\u5F15\u7528\u3002\u4E0D\u91CD\u5EFA\u9879\u76EE\uFF0C\u4E0D\u53CD\u590D\u6253\u5F00\u9762\u677F\u3002" } : {} };
+        const fileHint = hasProductLibrary ? "\u5546\u54C1\u5E93\u6570\u636E\u5DF2\u5BFC\u5165\u81F3 files_directory/data.json\uFF0C\u5148\u7528website_projects(resources)\u83B7\u53D6 data.json \u7684\u672C\u5730\u7EDD\u5BF9\u8DEF\u5F84\u5E76\u4EA4\u7ED9website_products(file_path)\uFF0C\u4E0D\u518D\u4ECE\u7528\u6237\u4E0A\u4F20\u7684\u5176\u4ED6\u9644\u4EF6\u4E2D\u8BFB\u53D6\u5546\u54C1\u6570\u636E\uFF0C\u4E0D\u8BFB\u53D6attachment://\u5F15\u7528\u3002" : "\u9644\u4EF6\u5DF2\u5B58\u5165files_directory\uFF0C\u5148\u7528website_projects(resources)\u83B7\u53D6\u672C\u5730\u7EDD\u5BF9\u8DEF\u5F84\uFF0C\u5546\u54C1JSON\u4EA4\u7ED9website_products(file_path)\uFF0C\u4E0D\u8BFB\u53D6attachment://\u5F15\u7528\u3002";
+        return { page: "project", panel_id: input.panel_id, ...compactProject(view2), thread_id: thread || null, files: attachedFiles, ...input.request_id ? { ui_reused: true, request_id: input.request_id, next_action: `\u5FC5\u987B\u8C03\u7528open_thread_canvas(thread_id=\u672C\u6B21\u65B0\u5BF9\u8BDD\u771F\u5B9EID)\u4E00\u6B21\uFF0C\u5728\u65B0\u5BF9\u8BDD\u6253\u5F00\u4FA7\u8FB9UI\u5E76\u8FDB\u5165\u672C\u9879\u76EE\uFF1B\u67E5\u8BE2website_projects(action=submission,panel_id,request_id)\u7B49\u5F85chat_detail_ready=true\u518D\u751F\u6210\u3002${fileHint}\u4E0D\u91CD\u5EFA\u9879\u76EE\uFF0C\u4E0D\u53CD\u590D\u6253\u5F00\u9762\u677F\u3002` } : {} };
       } catch (error) {
         if (input.request_id) saveSubmission({ request_id: input.request_id, state: "failed", error: error.message });
         throw error;
@@ -8898,7 +9122,7 @@ function projectManager(store) {
         } catch {
         }
       }
-      for (const task of pending.values()) images.push({ id: createHash7("sha256").update(id + task.path).digest("hex"), path: task.path, name: task.name, mime: mime3(task.path), status: task.status, error: task.error, width: task.width, height: task.height });
+      for (const task of pending.values()) images.push({ id: createHash8("sha256").update(id + task.path).digest("hex"), path: task.path, name: task.name, mime: mime3(task.path), status: task.status, error: task.error, width: task.width, height: task.height });
       return { images };
     }
     if (action === "capture") {
@@ -8938,13 +9162,13 @@ function projectManager(store) {
       if (!input.source_path || !isAbsolute8(input.source_path)) throw Error("\u9700\u8981\u7528\u6237\u63D0\u4F9B\u7684\u8D44\u6E90\u7EDD\u5BF9\u8DEF\u5F84");
       const source = await realpath7(input.source_path), info = await stat8(source);
       if (!info.isFile() || info.size > 64 * 1024 * 1024) throw Error("\u8D44\u6E90\u5FC5\u987B\u662F\u6587\u4EF6\u4E14\u4E0D\u8D85\u8FC7 64 MB");
-      const bytes = await readFile14(source), hash3 = createHash7("sha256").update(bytes).digest("hex");
-      const folder = join15(view.metadataDirectory, "session-assets");
-      await mkdir6(folder, { recursive: true });
-      const path = join15(folder, hash3 + extname5(source));
+      const bytes = await readFile14(source), hash3 = createHash8("sha256").update(bytes).digest("hex");
+      const folder = join16(view.metadataDirectory, "session-assets");
+      await mkdir7(folder, { recursive: true });
+      const path = join16(folder, hash3 + extname6(source));
       await copyFile2(source, path);
       const name = source.split(/[\\/]/).pop();
-      store.database.sql.prepare("INSERT INTO resources VALUES (?,?,?,?,?,?,?) ON CONFLICT(project_id,path) DO UPDATE SET thread_id=excluded.thread_id,name=excluded.name").run(createHash7("sha256").update(id + path).digest("hex"), id, thread || null, name, path, mime3(path), info.size);
+      store.database.sql.prepare("INSERT INTO resources VALUES (?,?,?,?,?,?,?) ON CONFLICT(project_id,path) DO UPDATE SET thread_id=excluded.thread_id,name=excluded.name").run(createHash8("sha256").update(id + path).digest("hex"), id, thread || null, name, path, mime3(path), info.size);
       return { resources: await resources(id) };
     }
     throw Error("\u4E0D\u652F\u6301\u7684\u9879\u76EE\u7BA1\u7406\u64CD\u4F5C");
@@ -8971,12 +9195,12 @@ function projectManager(store) {
       if (input.action === "finish" && (!info?.isFile() || !info.size || `${info.size}:${info.mtimeMs}` === task.baseline)) throw Error("\u672C\u6B21\u56FE\u7247\u6210\u54C1\u5C1A\u672A\u5199\u5165\u9879\u76EE");
       if (input.action === "finish") {
         compression = await publisher.publish(view, path);
-        if (compression?.pending) return { project_id: input.project_id, path, material_path: join15(view.materialDirectory, path), website_path: `images/${path}`, status: "generating", phase: "compressing", compression };
+        if (compression?.pending) return { project_id: input.project_id, path, material_path: join16(view.materialDirectory, path), website_path: `images/${path}`, status: "generating", phase: "compressing", compression };
       }
       store.database.sql.prepare("UPDATE image_tasks SET status=?,error=? WHERE project_id=? AND path=?").run(input.action === "finish" ? "ready" : "error", input.action === "fail" ? input.error || "\u56FE\u7247\u751F\u6210\u5931\u8D25\uFF0C\u8BF7\u91CD\u8BD5" : "", input.project_id, path);
     }
     store.database.activity(input.project_id, "image:" + path, input.action === "begin");
-    return { project_id: input.project_id, path, material_path: join15(view.materialDirectory, path), website_path: `images/${path}`, compression, status: input.action === "begin" ? "generating" : input.action === "finish" ? "ready" : "error" };
+    return { project_id: input.project_id, path, material_path: join16(view.materialDirectory, path), website_path: `images/${path}`, compression, status: input.action === "begin" ? "generating" : input.action === "finish" ? "ready" : "error" };
   }
   return { run, context, thumbnail, imageTask, close: async () => {
     shutdown.abort();
@@ -9001,5 +9225,10 @@ export {
   screenshotPage,
   importProducts,
   dataPaths,
+  fetchProductsFromUrl,
+  stageProducts,
+  getStagedProducts,
+  clearStagedProducts,
+  downloadProductImage,
   projectManager
 };

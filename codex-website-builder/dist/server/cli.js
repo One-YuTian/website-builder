@@ -9,7 +9,7 @@ import {
   projectManager,
   readTemplates,
   screenshotPage
-} from "./chunk-ZWPDP6IQ.js";
+} from "./chunk-5FU4CVC7.js";
 import "./chunk-WPQ5MXLX.js";
 
 // server/cli.ts

@@ -3,10 +3,14 @@ import {
   ProjectStore,
   assertEditable,
   assertMainRepository,
+  clearStagedProducts,
   commitProject,
   compactProject,
   createPreview,
   dataPaths,
+  downloadProductImage,
+  fetchProductsFromUrl,
+  getStagedProducts,
   importProducts,
   operationLock,
   prepareCommerce,
@@ -15,8 +19,9 @@ import {
   projectService,
   readTemplates,
   resourceChunk,
-  screenshotPage
-} from "./chunk-ZWPDP6IQ.js";
+  screenshotPage,
+  stageProducts
+} from "./chunk-5FU4CVC7.js";
 import {
   $ZodObject,
   $ZodType,
@@ -18447,7 +18452,7 @@ var r2Settings = new R2Settings(paths.root);
 var r2 = new R2Deployment(projects, r2Settings);
 var control = async (input) => {
   if (input.type === "panel") {
-    if (!["settings", "deploy"].includes(input.view)) throw Error("\u672A\u77E5\u72EC\u7ACB\u9762\u677F");
+    if (!["settings", "deploy", "products"].includes(input.view)) throw Error("\u672A\u77E5\u72EC\u7ACB\u9762\u677F");
     if (input.view === "deploy") {
       const panel2 = projects.database.panelById(input.panel_id);
       if (!panel2 || panel2.project_id !== input.project_id || input.thread_id && panel2.thread_id !== input.thread_id) throw Error("\u53D1\u5E03\u9762\u677F\u4E0D\u5C5E\u4E8E\u5F53\u524D\u9879\u76EE");
@@ -18455,6 +18460,14 @@ var control = async (input) => {
     const key = randomUUID4();
     projects.database.sql.prepare("INSERT INTO settings VALUES (?,?)").run("modal:" + key, JSON.stringify({ view: input.view, project_id: input.project_id, panel_id: input.panel_id, thread_id: input.thread_id, expires: Date.now() + 6e5 }));
     return { resource_uri: "ui://codex-website-builder/panel/" + key };
+  }
+  if (input.type === "products") {
+    if (input.action === "fetch") return fetchProductsFromUrl(input.url || "");
+    if (input.action === "import") return stageProducts(projects, input.panel_id, input.raw_json || "");
+    if (input.action === "get") return getStagedProducts(projects, input.panel_id);
+    if (input.action === "clear") return clearStagedProducts(projects, input.panel_id);
+    if (input.action === "download") return downloadProductImage(input.url || "");
+    throw Error("\u672A\u77E5\u5546\u54C1\u5E93\u64CD\u4F5C");
   }
   if (input.type === "settings") {
     if (input.action === "open") return openNativeSettings();
@@ -18503,7 +18516,7 @@ var manager = projectManager(projects);
 var syncProject = projectService(projects);
 var preview = await createPreview(html, paths.reference, "www.noventrad.com", syncProject, manager.run, control);
 var skillRoot = (process.env.WEBSITE_BUILDER_SKILL_ROOT || resolve("skills/website-builder")).replaceAll("${PLUGIN_ROOT}", fileURLToPath2(new URL("../../", import.meta.url)));
-var server = new McpServer({ name: "codex-website-builder", version: "0.9.5", icons: [{ src: `data:image/png;base64,${sidebarIcon.toString("base64")}`, mimeType: "image/png", sizes: ["200x200"] }] }, { capabilities: { experimental: { "openai/settings": settingsCapability } } });
+var server = new McpServer({ name: "codex-website-builder", version: "0.9.6", icons: [{ src: `data:image/png;base64,${sidebarIcon.toString("base64")}`, mimeType: "image/png", sizes: ["200x200"] }] }, { capabilities: { experimental: { "openai/settings": settingsCapability } } });
 var csp = { connectDomains: ["data:", "blob:"], resourceDomains: ["data:", "blob:"], frameDomains: ["blob:", "data:"], baseUriDomains: ["https://website-builder.invalid"] };
 var legacyCsp = { connect_domains: csp.connectDomains, resource_domains: csp.resourceDomains, frame_domains: csp.frameDomains, base_uri_domains: csp.baseUriDomains };
 var panelContent = (resourceUri, context) => ({ contents: [{ uri: resourceUri, mimeType: p, text: preview.render().replace("</head>", `<script>window.__WEBSITE_PANEL_CONTEXT__=${JSON.stringify(context).replaceAll("<", "\\u003c")}</script></head>`), _meta: { ui: { csp }, "openai/widgetCSP": legacyCsp } }] });
@@ -18550,7 +18563,7 @@ server.registerTool("website_panel_context", {
 });
 server.registerTool("website_projects", {
   description: "\u7BA1\u7406\u5168\u5C40 SQLite \u9879\u76EE\uFF1Alist \u5217\u51FA\u9879\u76EE\uFF0Copen/create \u7ED1\u5B9A\u5F53\u524D\u4F1A\u8BDD\u548C\u9762\u677F\uFF0Chome \u8FD4\u56DE\u4E3B\u754C\u9762\uFF0Cdelete \u8F6F\u5220\u9664\uFF08\u4FDD\u7559\u6587\u4EF6\uFF09\uFF0Cresources \u5217\u51FA\u8D44\u6E90\uFF0Cattach \u590D\u5236\u7528\u6237\u660E\u786E\u63D0\u4F9B\u7684\u56FE\u7247/\u6587\u4EF6\u5230\u9879\u76EE\u8D44\u6E90\u76EE\u5F55\u3002panel_id \u6765\u81EA\u9762\u677F\u4E0A\u4E0B\u6587\uFF1Bthread_id \u5FC5\u987B\u662F\u771F\u5B9E\u5F53\u524D\u4F1A\u8BDD ID\u3002\u9996\u9875submission\u7528create\u4E0Erequest_id\u521B\u5EFA\u7A7A\u9879\u76EE\uFF0C\u968F\u540E\u5FC5\u987B\u8C03\u7528open_thread_canvas(thread_id=\u65B0\u5BF9\u8BDDID)\u4E00\u6B21\u6253\u5F00\u4FA7\u8FB9UI\u8FDB\u5165\u8BE6\u60C5\uFF0C\u67E5\u8BE2submission\u5230chat_detail_ready=true\u540E\u518D\u89C4\u5212\u9875\u9762\u548C\u751F\u6210\uFF1B\u4F1A\u8BDD\u9014\u4E2D\u53EF\u6309\u9700open_canvas(thread_id)\u6062\u590D\u540C\u4E00\u9879\u76EE\u8BE6\u60C5\u3002",
-  inputSchema: { action: external_exports.enum(["list", "resume", "open", "create", "bind", "home", "delete", "restore", "resources", "attach", "folder", "images", "capture", "submission", "upload"]).default("list"), upload_id: external_exports.string().optional(), file_name: external_exports.string().max(255).optional(), mime_type: external_exports.string().max(200).optional(), total_size: external_exports.number().int().min(0).max(12 * 1024 * 1024).optional(), sha256: external_exports.string().regex(/^[a-f0-9]{64}$/).optional(), file_count: external_exports.number().int().min(0).max(10).optional(), visible_panel_id: external_exports.string().optional(), requirement: external_exports.string().max(1e5).optional(), request_id: external_exports.string().max(128).optional(), submission_start: external_exports.boolean().optional(), detail_ready: external_exports.boolean().optional(), cancel: external_exports.boolean().optional(), panel_id: external_exports.string().optional(), thread_id: external_exports.string().optional(), project_id: external_exports.string().optional(), name: external_exports.string().max(200).optional(), country: external_exports.string().trim().max(100).optional(), language: external_exports.string().trim().max(100).optional(), categories: external_exports.array(external_exports.string().trim().min(1).max(100)).max(2).optional(), brand: external_exports.string().trim().max(200).optional(), domain: external_exports.string().trim().max(255).optional(), source_path: external_exports.string().optional(), path: external_exports.string().optional(), width: external_exports.number().int().min(320).max(2560).optional(), capture_id: external_exports.string().optional(), chunk: external_exports.string().max(512e3).optional(), offset: external_exports.number().int().nonnegative().optional(), final: external_exports.boolean().optional() },
+  inputSchema: { action: external_exports.enum(["list", "resume", "open", "create", "bind", "home", "delete", "restore", "resources", "attach", "folder", "images", "capture", "submission", "upload"]).default("list"), upload_id: external_exports.string().optional(), file_name: external_exports.string().max(255).optional(), mime_type: external_exports.string().max(200).optional(), total_size: external_exports.number().int().min(0).max(12 * 1024 * 1024).optional(), sha256: external_exports.string().regex(/^[a-f0-9]{64}$/).optional(), file_count: external_exports.number().int().min(0).max(10).optional(), has_product_library: external_exports.boolean().optional(), visible_panel_id: external_exports.string().optional(), requirement: external_exports.string().max(1e5).optional(), request_id: external_exports.string().max(128).optional(), submission_start: external_exports.boolean().optional(), detail_ready: external_exports.boolean().optional(), cancel: external_exports.boolean().optional(), panel_id: external_exports.string().optional(), thread_id: external_exports.string().optional(), project_id: external_exports.string().optional(), name: external_exports.string().max(200).optional(), country: external_exports.string().trim().max(100).optional(), language: external_exports.string().trim().max(100).optional(), categories: external_exports.array(external_exports.string().trim().min(1).max(100)).max(2).optional(), brand: external_exports.string().trim().max(200).optional(), domain: external_exports.string().trim().max(255).optional(), source_path: external_exports.string().optional(), path: external_exports.string().optional(), width: external_exports.number().int().min(320).max(2560).optional(), capture_id: external_exports.string().optional(), chunk: external_exports.string().max(512e3).optional(), offset: external_exports.number().int().nonnegative().optional(), final: external_exports.boolean().optional() },
   annotations: { readOnlyHint: false, destructiveHint: false, openWorldHint: true }
 }, async (input) => {
   try {
@@ -18736,7 +18749,7 @@ server.registerTool("project_sync", {
   }
 });
 registerGitLabTools(server, gitlab, projects);
-server.registerTool("website_control", { description: "UI-only plugin configuration and deployment dialogs (GitLab & R2 preview); settings fields are visible only to the app; redact credentials from diagnostics.", inputSchema: { type: external_exports.enum(["settings", "deploy", "panel", "r2"]), action: external_exports.enum(["get", "save", "test", "status", "domain", "prepare", "execute", "cancel", "open", "start", "preview"]), view: external_exports.enum(["settings", "deploy"]).optional(), panel_id: external_exports.string().optional(), thread_id: external_exports.string().optional(), project_id: external_exports.string().optional(), values: external_exports.record(external_exports.string(), external_exports.string()).optional(), clear_token: external_exports.boolean().optional(), domain: external_exports.string().optional(), environment: external_exports.enum(["test", "production"]).optional(), confirmation_id: external_exports.string().optional(), decision: external_exports.enum(["confirm", "local", "cloud"]).optional() }, annotations: { readOnlyHint: false, destructiveHint: true, openWorldHint: true }, _meta: { ui: { visibility: ["app"] } } }, async (input) => {
+server.registerTool("website_control", { description: "UI-only plugin configuration, product library and deployment dialogs (GitLab & R2 preview); settings fields are visible only to the app; redact credentials from diagnostics.", inputSchema: { type: external_exports.enum(["settings", "deploy", "panel", "r2", "products"]), action: external_exports.enum(["get", "save", "test", "status", "domain", "prepare", "execute", "cancel", "open", "start", "preview", "fetch", "import", "clear", "download"]), view: external_exports.enum(["settings", "deploy", "products"]).optional(), panel_id: external_exports.string().optional(), thread_id: external_exports.string().optional(), project_id: external_exports.string().optional(), values: external_exports.record(external_exports.string(), external_exports.string()).optional(), clear_token: external_exports.boolean().optional(), domain: external_exports.string().optional(), environment: external_exports.enum(["test", "production"]).optional(), confirmation_id: external_exports.string().optional(), decision: external_exports.enum(["confirm", "local", "cloud"]).optional(), url: external_exports.string().optional(), raw_json: external_exports.string().optional() }, annotations: { readOnlyHint: false, destructiveHint: true, openWorldHint: true }, _meta: { ui: { visibility: ["app"] } } }, async (input) => {
   try {
     return { content: [], _meta: { control: await control(input) } };
   } catch (error) {
