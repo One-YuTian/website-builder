@@ -613,6 +613,8 @@ export function ProjectPrompt({send,onCreated,stagedProducts,onClearStagedProduc
       }}
       onClick={e => {
         if (e.target !== picker.current && !(e.target as HTMLElement).closest('button, .prompt-chip, .prompt-menu-popover')) {
+          const sel = window.getSelection();
+          if (sel && !sel.isCollapsed) return;
           if (!editorRef.current?.contains(e.target as Node)) {
             focusEditor(e);
           }
